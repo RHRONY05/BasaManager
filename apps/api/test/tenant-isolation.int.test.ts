@@ -1,0 +1,142 @@
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
+import { createPrisma, type Db } from '../src/config/db';
+import { appUrl } from './helpers/env';
+import { resetData, closeOwner, asApp, connectAs, pgErrorCode, q } from './helpers/pg';
+import { makeOrg, makeBuilding, type Org } from './helpers/factories';
+
+let db: Db;
+let A: Org;
+let B: Org;
+let bldA: string;
+let bldB: string;
+
+beforeAll(() => {
+  db = createPrisma(appUrl());
+});
+afterAll(async () => {
+  await db.$disconnect();
+  await closeOwner();
+});
+beforeEach(async () => {
+  await resetData();
+  A = await makeOrg({ name: 'Org A' });
+  B = await makeOrg({ name: 'Org B' });
+  bldA = await makeBuilding(A.id, { name: 'A Tower' });
+  bldB = await makeBuilding(B.id, { name: 'B Tower' });
+});
+
+const ctxA = () => ({ orgId: A.id, userId: A.landlordUserId, role: 'landlord' as const });
+
+describe('tenant isolation via db.$tx as bm_app (tenant-isolation.int.test.ts)', () => {
+  it('findMany returns only the current org rows', async () => {
+    const rows = await db.$tx(ctxA(), (tx) => tx.building.findMany());
+    expect(rows.map((r) => r.id)).toEqual([bldA]);
+  });
+
+  it('findUnique of another org id returns null', async () => {
+    const row = await db.$tx(ctxA(), (tx) => tx.building.findUnique({ where: { id: bldB } }));
+    expect(row).toBeNull();
+  });
+
+  it('update of another org id touches nothing (throws not-found; updateMany count 0)', async () => {
+    await expect(
+      db.$tx(ctxA(), (tx) => tx.building.update({ where: { id: bldB }, data: { name: 'hacked' } })),
+    ).rejects.toThrow();
+    const res = await db.$tx(ctxA(), (tx) =>
+      tx.building.updateMany({ where: { id: bldB }, data: { name: 'hacked' } }),
+    );
+    expect(res.count).toBe(0);
+    const [row] = await q<{ name: string }>('select name from buildings where id = $1', [bldB]);
+    expect(row!.name).toBe('B Tower');
+  });
+
+  it('delete of another org id touches nothing', async () => {
+    await expect(db.$tx(ctxA(), (tx) => tx.building.delete({ where: { id: bldB } }))).rejects.toThrow();
+    const res = await db.$tx(ctxA(), (tx) => tx.building.deleteMany({ where: { id: bldB } }));
+    expect(res.count).toBe(0);
+    expect(await q('select 1 from buildings where id = $1', [bldB])).toHaveLength(1);
+  });
+
+  it('create with another orgId is rejected by the WITH CHECK policy', async () => {
+    await expect(
+      db.$tx(ctxA(), (tx) =>
+        tx.building.create({
+          data: {
+            orgId: B.id,
+            name: 'Smuggled',
+            address: 'x',
+            area: 'x',
+            city: 'x',
+            lateFeeType: 'none',
+            lateFeeValue: 0,
+          },
+        }),
+      ),
+    ).rejects.toThrow();
+    expect(await q(`select 1 from buildings where name = 'Smuggled'`)).toHaveLength(0);
+  });
+
+  it('create with the own orgId works and is visible in the same context', async () => {
+    const created = await db.$tx(ctxA(), (tx) =>
+      tx.building.create({
+        data: {
+          orgId: A.id,
+          name: 'A Two',
+          address: 'x',
+          area: 'x',
+          city: 'x',
+          lateFeeType: 'none',
+          lateFeeValue: 0,
+        },
+      }),
+    );
+    const rows = await db.$tx(ctxA(), (tx) => tx.building.findMany());
+    expect(rows.map((r) => r.id)).toContain(created.id);
+    expect(rows).toHaveLength(2);
+  });
+
+  it('a raw $queryRaw with org A context cannot see org B rows', async () => {
+    const rows = await db.$tx(ctxA(), (tx) => tx.$queryRaw<{ id: string }[]>`select id from buildings`);
+    expect(rows.map((r) => r.id)).toEqual([bldA]);
+    const none = await db.$tx(
+      ctxA(),
+      (tx) => tx.$queryRaw<{ id: string }[]>`select id from buildings where org_id = ${B.id}::uuid`,
+    );
+    expect(none).toEqual([]);
+  });
+
+  it('with NO context set, a plain bm_app connection sees 0 rows (policy compares to NULL)', async () => {
+    const rows = await asApp(null, (c) => c.query('select * from buildings'));
+    expect(rows.rowCount).toBe(0);
+  });
+
+  it('after a tenant transaction on the SAME connection, a context-less query still returns 0 rows (no uuid cast error)', async () => {
+    // set_config(..., true) leaves an empty string, not NULL, once the setting existed on the session.
+    // Policies must cope with '' (e.g. nullif(current_setting(..), '')::uuid) instead of raising 22P02.
+    const c = await connectAs(appUrl());
+    try {
+      await c.query('begin');
+      await c.query(`select set_config('app.org_id', $1, true), set_config('app.user_id', $2, true)`, [
+        A.id,
+        A.landlordUserId,
+      ]);
+      expect((await c.query('select id from buildings')).rowCount).toBe(1);
+      await c.query('commit');
+      const err = await pgErrorCode(c.query('select * from buildings'));
+      expect(err).toBeUndefined();
+      expect((await c.query('select * from buildings')).rowCount).toBe(0);
+      expect((await c.query('select * from organizations')).rowCount).toBe(0);
+    } finally {
+      await c.end();
+    }
+  });
+
+  it('organizations: a member context sees only its own org; an admin context may read all', async () => {
+    const own = await asApp(ctxA(), (c) => c.query('select id from organizations'));
+    expect(own.rows.map((r) => r.id)).toEqual([A.id]);
+    const admin = await asApp({ orgId: null, userId: A.landlordUserId, role: null, isAdmin: true }, (c) =>
+      c.query('select id from organizations order by name'),
+    );
+    expect(admin.rows.map((r) => r.id).sort()).toEqual([A.id, B.id].sort());
+  });
+});
