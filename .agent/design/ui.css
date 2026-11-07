@@ -19,6 +19,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 h1, h2, h3, h4, p, ul, ol, dl, dd, figure { margin: 0; }
+h1, h2, h3, h4 { font-size: inherit; font-weight: var(--weight-bold); line-height: inherit; } /* headings are sized by class only */
 ul, ol { padding: 0; list-style: none; }
 a { color: var(--accent-text); text-underline-offset: 0.18em; }
 button, input, select, textarea { font: inherit; color: inherit; }
@@ -120,6 +121,7 @@ svg.lucide { width: var(--size-icon); height: var(--size-icon); flex-shrink: 0; 
 .m-topbar { position: sticky; top: 0; z-index: var(--z-sticky); display: flex; align-items: center; gap: var(--space-1); height: var(--size-topbar); padding: 0 var(--space-2) 0 var(--space-4); background: var(--bg-app); border-bottom: 1px solid var(--border-muted); }
 .m-topbar__title { flex: 1; min-width: 0; font-weight: var(--weight-bold); font-size: var(--text-lg); line-height: var(--leading-lg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .m-topbar--back { padding-left: var(--space-1); }
+.m-topbar .brand { min-width: var(--size-tap); justify-content: center; margin-left: calc(var(--space-1) * -1); }
 .m-main { display: grid; gap: var(--space-5); align-content: start; padding: var(--space-4) var(--space-4) calc(var(--size-bottom-nav) + env(safe-area-inset-bottom) + var(--space-8)); }
 .m-main--flow { padding-bottom: calc(var(--size-control) + var(--space-4) * 2 + env(safe-area-inset-bottom) + var(--space-6)); } /* focused flows with a sticky action bar instead of the nav */
 .m-main--plain { padding-bottom: var(--space-10); }
@@ -168,6 +170,7 @@ svg.lucide { width: var(--size-icon); height: var(--size-icon); flex-shrink: 0; 
 .btn--danger-ghost { background: transparent; color: var(--danger-text); border-color: var(--danger-border); }
 .btn--danger-ghost:hover:not([disabled]) { background: var(--danger-soft); }
 .btn--link { min-height: var(--size-tap); padding: 0 var(--space-1); background: transparent; color: var(--accent-text); text-decoration: underline; text-underline-offset: 0.18em; }
+/* --sm is desktop-only (inside table rows); never on mobile */
 .btn--sm { min-height: var(--size-control-sm); padding: 0 var(--space-3); font-size: var(--text-sm); border-radius: var(--radius-sm); }
 .btn--lg { min-height: calc(var(--size-control) + var(--space-2)); padding: 0 var(--space-6); font-size: var(--text-lg); }
 .btn--block { display: flex; width: 100%; }
@@ -338,6 +341,15 @@ a.card:hover { background: var(--bg-surface-hover); box-shadow: var(--shadow-md)
 .due-card__top { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
 .due-card__meta { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; color: var(--fg-secondary); }
 .due-card__strip { display: flex; align-items: center; gap: var(--space-2); margin: 0 calc(var(--space-5) * -1); padding: var(--space-3) var(--space-5); background: var(--danger-soft); color: var(--danger-text); font-weight: var(--weight-semibold); font-size: var(--text-sm); line-height: var(--leading-sm); border-top: 1px solid var(--danger-border); border-bottom: 1px solid var(--danger-border); }
+.due-card__actions { display: grid; gap: var(--space-2); }
+.due-card__when { display: flex; align-items: center; gap: var(--space-1-5); color: var(--warning-text); font-weight: var(--weight-semibold); font-size: var(--text-sm); line-height: var(--leading-sm); }
+.due-card__when--late { color: var(--danger-text); }
+/* the hero total: same rule + double rule as .ledger__total, at hero size */
+.hero-total { display: grid; gap: var(--space-1); padding-top: var(--space-3); border-top: 1px solid var(--fg-default); }
+.hero-total .amount { justify-self: start; padding-bottom: var(--space-1); border-bottom: 4px double var(--fg-default); }
+/* push opt-in card → <PushOptInCard> */
+.push-card { display: flex; gap: var(--space-3); align-items: flex-start; }
+.push-card__icon { display: grid; place-items: center; width: var(--size-tap); height: var(--size-tap); border-radius: var(--radius-full); background: var(--accent-soft); color: var(--accent-primary); flex-shrink: 0; }
 .due-card__strip--ok { background: var(--success-soft); color: var(--success-text); border-color: var(--success-border); }
 
 /* ---- Key/value list → <DescriptionList> --------------------------------------- */

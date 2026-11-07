@@ -76,10 +76,14 @@ if (!args.includes('--no-audit')) {
         await page.goto(pathToFileURL(path.join(designDir, s.file)).href + '?theme=' + theme, { waitUntil: 'networkidle' }).catch(() => {});
         await page.evaluate(() => document.fonts.ready);
         await page.waitForTimeout(150);
+        // Audit with the viewport as tall as the artboard: a fixed bottom nav then sits below all content, as on
+        // the artboard. (At 844 high, anything scrolled under a fixed nav is reported as overlapping-targets.)
+        const full = await page.evaluate(() => document.documentElement.scrollHeight);
+        if (full > 844) { await page.setViewportSize({ width: w, height: full }); await page.waitForTimeout(100); }
         const v = await auditLayout(page);
         const base = `${path.basename(s.file, '.html')}.${w}.${theme}`;
         if (theme === 'light' && w !== 390) await page.screenshot({ path: path.join(auditDir, base + '.png'), fullPage: true });
-        auditRows.push({ file: s.file, w, theme, violations: v });
+        auditRows.push({ file: s.file, w, theme, violations: v, height: full });
         await ctx.close();
       }
     }
@@ -91,7 +95,8 @@ if (!args.includes('--no-audit')) {
     await page.goto(pathToFileURL(path.join(designDir, s.file)).href + '?theme=light', { waitUntil: 'networkidle' }).catch(() => {});
     await page.evaluate(() => document.fonts.ready);
     const v = await auditLayout(page);
-    auditRows.push({ file: s.file, w: s.w, theme: 'light', violations: v });
+    const full = await page.evaluate(() => document.documentElement.scrollHeight);
+    auditRows.push({ file: s.file, w: s.w, theme: 'light', violations: v, height: full });
     await ctx.close();
   }
   await browser.close();
@@ -99,6 +104,20 @@ if (!args.includes('--no-audit')) {
   for (const r of auditRows) md.push(`| ${r.file} | ${r.w} | ${r.theme} | ${r.violations.length}${r.violations.length ? ': ' + r.violations.map((x) => `${x.rule} ${x.selector} (${x.detail})`).join('; ') : ''} |`);
   fs.writeFileSync(path.join(auditDir, 'report.md'), md.join('\n') + '\n');
   fs.writeFileSync(path.join(auditDir, 'report.json'), JSON.stringify(auditRows, null, 2));
+}
+
+// keep manifest heights equal to the real artboard height at its design width (gallery + shoot use them)
+if (!args.includes('--no-audit')) {
+  let src = fs.readFileSync(path.join(designDir, 'screens.js'), 'utf8');
+  for (const r of auditRows) {
+    if (r.theme !== 'light' || (r.w !== 390 && r.w < 768) || !r.height) continue;
+    const at = src.indexOf(`file: '${r.file}'`);
+    if (at < 0) continue;
+    const hAt = src.indexOf('h: ', at) + 3;
+    const end = hAt + /^\d+/.exec(src.slice(hAt))[0].length;
+    src = src.slice(0, hAt) + Math.max(r.w < 768 ? 844 : 900, r.height) + src.slice(end);
+  }
+  fs.writeFileSync(path.join(designDir, 'screens.js'), src);
 }
 
 let bad = 0;

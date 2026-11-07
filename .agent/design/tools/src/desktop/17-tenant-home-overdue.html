@@ -1,0 +1,66 @@
+<!--meta {"title": "D17 · Tenant home — overdue", "shell": "tenant-d", "active": "home", "bell": "3"} -->
+<style>
+  .greet { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-4); }
+  .due-grid { display: grid; grid-template-columns: minmax(0, 1fr) 248px; gap: var(--space-8); align-items: start; }
+  .due-side { display: grid; gap: var(--space-3); padding-left: var(--space-8); border-left: 1px solid var(--border-muted); }
+  .push-card .btn-row { flex-wrap: nowrap; flex-shrink: 0; }
+  .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-6); align-items: start; }
+</style>
+<section class="greet" aria-label="Your flat">
+  <div class="stack-sm">
+    <p class="eyebrow">Shanti Neer · Flat 4A · Nasirabad</p>
+    <h1 class="t-title">Good evening, <span data-user>Nusrat</span></h1>
+  </div>
+  <a class="btn btn--ghost" href="#/t/lease"><i data-lucide="file-text"></i>Lease and documents</a>
+</section>
+
+<section class="due-card due-card--overdue fade-in" aria-labelledby="due-h">
+  <div class="due-card__top">
+    <h2 class="t-card" id="due-h">November 2026</h2>
+    <span class="badge badge--danger"><i data-lucide="alarm-clock"></i>Overdue</span>
+  </div>
+  <p class="due-card__strip" role="status"><i data-lucide="triangle-alert" class="i-sm"></i>Overdue since 10 Nov. A 5% late fee was added on 13 Nov.</p>
+  <div class="due-grid">
+    <div class="stack">
+      <div class="ledger">
+        <div class="ledger__row"><span class="ledger__label">November bill</span><span class="ledger__leader"></span><span class="ledger__amount">৳16,475</span><span class="ledger__explain">Rent ৳12,000 · charges ৳3,080 · electricity ৳1,395</span></div>
+        <div class="ledger__row"><span class="ledger__label">Paid by bKash</span><span class="ledger__leader"></span><span class="ledger__amount ledger__amount--neg">−৳9,000</span><span class="ledger__explain">5 Nov · receipt BM-2026-000203</span></div>
+        <div class="ledger__row"><span class="ledger__label">Late fee</span><span class="ledger__leader"></span><span class="ledger__amount ledger__amount--fee">+৳374</span><span class="ledger__explain">5% of ৳7,475 still unpaid after 12 Nov (2 grace days). Added once, never again.</span></div>
+      </div>
+      <div class="hero-total">
+        <span class="t-sm t-strong secondary">Left to pay</span>
+        <span class="amount amount--hero">৳7,849</span>
+      </div>
+    </div>
+    <div class="due-side">
+      <span class="due-card__when due-card__when--late"><i data-lucide="calendar-x-2" class="i-sm"></i>Was due 10 Nov · 4 days ago</span>
+      <a class="btn btn--primary btn--lg btn--block" href="#/t/pay">Pay ৳7,849 now</a>
+      <a class="btn btn--secondary btn--block" href="#/t/claim">I paid another way</a>
+      <a class="btn btn--link" href="#/t/bills/nov-2026">See every line of this bill</a>
+    </div>
+  </div>
+</section>
+
+<div class="two">
+  <section class="stack-sm" aria-labelledby="notice-h">
+    <div class="section-head"><h2 id="notice-h">Building notice</h2><a class="btn btn--link" href="#/t/notices">All notices</a></div>
+    <article class="notice notice--pinned">
+      <div class="notice__head"><h3 class="notice__title">Water supply off on Sunday, 10 AM – 2 PM</h3><span class="pin"><i data-lucide="pin" class="i-sm"></i>Pinned</span></div>
+      <p class="notice__body t-sm">WASA is repairing the main line on Road 3. Please store water on Saturday night. The lift will work as usual.</p>
+      <div class="notice__meta"><span>Farhana Chowdhury</span><span>7 Nov</span></div>
+    </article>
+  </section>
+  <section class="stack-sm" aria-labelledby="req-h">
+    <div class="section-head"><h2 id="req-h">Your requests</h2><a class="btn btn--link" href="#/t/requests/new">New request</a></div>
+    <div class="list">
+      <a class="list-row" href="#/t/requests/r-1042">
+        <span class="list-row__main"><span class="list-row__title">Kitchen sink leaking under the cabinet</span><span class="list-row__meta">Plumbing · Jamal Uddin · updated 11:10 AM</span></span>
+        <span class="list-row__end"><span class="badge badge--warning"><i data-lucide="wrench"></i>In progress</span></span>
+      </a>
+      <a class="list-row" href="#/t/requests/r-0998">
+        <span class="list-row__main"><span class="list-row__title">Bedroom window latch broken</span><span class="list-row__meta">Other · closed 21 Oct</span></span>
+        <span class="list-row__end"><span class="badge badge--neutral"><i data-lucide="archive"></i>Closed</span></span>
+      </a>
+    </div>
+  </section>
+</div>
