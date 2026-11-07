@@ -3,11 +3,13 @@
   "private": true,
   "type": "module",
   "packageManager": "pnpm@12.18.0",
-  "engines": { "node": ">=22.12 <23" },
+  "engines": {
+    "node": ">=22.12 <23"
+  },
   "scripts": {
     "dev": "docker compose -f infra/compose.dev.yml up -d && concurrently -n api,worker,web -c blue,magenta,green \"pnpm --filter @bm/api dev\" \"pnpm --filter @bm/worker dev\" \"pnpm --filter @bm/web dev\"",
     "typecheck": "pnpm -r --parallel typecheck",
-    "lint": "eslint . && prettier --check . && node scripts/lint-tokens.mjs && pnpm --filter @bm/web size",
+    "lint": "eslint . && prettier --check . && node scripts/lint-tokens.mjs && pnpm --filter @bm/web size && pnpm openapi:check",
     "format": "prettier --write .",
     "test": "vitest run",
     "test:int": "vitest run -c vitest.int.config.ts",
