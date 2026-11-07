@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 640" width="1800" height="640" font-family="'Segoe UI', Inter, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1f1f1f"/>
+    </marker>
+  </defs>
+
+  <rect width="1800" height="640" fill="#ffffff"/>
+
+  <!-- Title + legend -->
+  <text x="40" y="52" font-size="28" font-weight="700" fill="#1f1f1f">One request through apps/api/src/app.ts</text>
+  <text x="40" y="82" font-size="16" fill="#3a3a3a">The middleware chain exactly as it is after task V1. Numbers are the order Express runs them.</text>
+  <g font-size="15" fill="#3a3a3a">
+    <line x1="1330" y1="36" x2="1390" y2="36" stroke="#1f1f1f" stroke-width="2.4" marker-end="url(#arrow)"/>
+    <text x="1402" y="41">call / read</text>
+    <line x1="1330" y1="62" x2="1390" y2="62" stroke="#1f1f1f" stroke-width="2.4" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <text x="1402" y="67">return / error path</text>
+    <rect x="1330" y="80" width="26" height="18" rx="3" fill="#FEC8C3"/><text x="1366" y="95">outside world</text>
+    <rect x="1560" y="27" width="26" height="18" rx="7" fill="#BFE3FD"/><text x="1596" y="41">our code</text>
+    <rect x="1560" y="53" width="26" height="18" rx="3" fill="#FFF1B8"/><text x="1596" y="67">fallback</text>
+    <circle cx="1573" cy="89" r="9" fill="#E3CCFD"/><text x="1596" y="95">data store</text>
+    <rect x="1700" y="53" width="26" height="18" rx="3" fill="#C9F2D6"/><text x="1736" y="67" font-size="13">output</text>
+  </g>
+
+  <!-- ===== Arrows (drawn first so shapes sit on top) ===== -->
+  <g fill="none" stroke="#1f1f1f" stroke-width="2.4">
+    <!-- Browser -> 1 -->
+    <path d="M172,240 H284" marker-end="url(#arrow)"/>
+    <!-- 1 -> 2 -> 3 -> 4 -> 5 -> 6 -->
+    <path d="M460,240 H494" marker-end="url(#arrow)"/>
+    <path d="M670,240 H704" marker-end="url(#arrow)"/>
+    <path d="M880,240 H914" marker-end="url(#arrow)"/>
+    <path d="M1090,240 H1124" marker-end="url(#arrow)"/>
+    <path d="M1300,240 H1334" marker-end="url(#arrow)"/>
+    <!-- 6 -> Postgres, Redis -->
+    <path d="M1560,225 L1647,206" marker-end="url(#arrow)"/>
+    <path d="M1560,258 L1653,308" marker-end="url(#arrow)"/>
+    <!-- 6 -> 7 : no route matched -->
+    <path d="M1450,290 V414" marker-end="url(#arrow)"/>
+    <!-- 4 -> 8 : any thrown error -->
+    <path d="M1005,290 V414" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <!-- 7 -> 8 -->
+    <path d="M1338,465 H1116" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <!-- 8 -> response -->
+    <path d="M898,465 H806" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <!-- response -> Browser -->
+    <path d="M558,465 H117 Q105,465 105,453 V286" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <!-- 6 -> Browser : success -->
+    <path d="M1450,186 V162 Q1450,150 1438,150 H117 Q105,150 105,162 V194" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+  </g>
+
+  <!-- Arrow labels -->
+  <g font-size="16" fill="#1f1f1f" text-anchor="middle">
+    <text x="228" y="228" font-weight="700">request</text>
+    <text x="770" y="140" font-weight="700">200 JSON from a route (health, ready, public-config)</text>
+    <text x="1227" y="453">next(ApiError 404)</text>
+    <text x="852" y="453">error JSON</text>
+    <text x="330" y="453" font-weight="700">response + X-Request-Id header</text>
+  </g>
+  <g font-size="16" fill="#1f1f1f">
+    <text x="1022" y="358">any error thrown in 1 to 6</text>
+    <text x="1440" y="358" text-anchor="end">no route matched</text>
+    <text x="1604" y="192" text-anchor="middle">select 1</text>
+    <text x="1602" y="318" text-anchor="middle">PING</text>
+  </g>
+
+  <!-- ===== Shapes ===== -->
+  <!-- Browser -->
+  <rect x="40" y="200" width="130" height="80" rx="6" fill="#FEC8C3"/>
+  <text x="105" y="236" font-size="20" font-weight="700" text-anchor="middle" fill="#1f1f1f">Browser</text>
+  <text x="105" y="258" font-size="14" text-anchor="middle" fill="#3a3a3a">or Supertest</text>
+
+  <!-- 1 requestId -->
+  <rect x="290" y="190" width="170" height="100" rx="28" fill="#BFE3FD"/>
+  <text x="375" y="224" font-size="19" font-weight="700" text-anchor="middle" fill="#1f1f1f">① requestId</text>
+  <text x="375" y="248" font-size="14" text-anchor="middle" fill="#3a3a3a">reuse or make an id</text>
+  <text x="375" y="268" font-size="14" text-anchor="middle" fill="#3a3a3a">sets req.id + header</text>
+
+  <!-- 2 pino-http -->
+  <rect x="500" y="190" width="170" height="100" rx="28" fill="#BFE3FD"/>
+  <text x="585" y="224" font-size="19" font-weight="700" text-anchor="middle" fill="#1f1f1f">② pino-http</text>
+  <text x="585" y="248" font-size="14" text-anchor="middle" fill="#3a3a3a">logs every request</text>
+  <text x="585" y="268" font-size="14" text-anchor="middle" fill="#3a3a3a">redacts secrets</text>
+
+  <!-- 3 helmet -->
+  <rect x="710" y="190" width="170" height="100" rx="28" fill="#BFE3FD"/>
+  <text x="795" y="224" font-size="19" font-weight="700" text-anchor="middle" fill="#1f1f1f">③ helmet</text>
+  <text x="795" y="248" font-size="14" text-anchor="middle" fill="#3a3a3a">security headers</text>
+  <text x="795" y="268" font-size="14" text-anchor="middle" fill="#3a3a3a">on every response</text>
+
+  <!-- 4 express.json -->
+  <rect x="920" y="190" width="170" height="100" rx="28" fill="#BFE3FD"/>
+  <text x="1005" y="224" font-size="19" font-weight="700" text-anchor="middle" fill="#1f1f1f">④ express.json</text>
+  <text x="1005" y="248" font-size="14" text-anchor="middle" fill="#3a3a3a">parses JSON body</text>
+  <text x="1005" y="268" font-size="14" text-anchor="middle" fill="#3a3a3a">limit 100 kb</text>
+
+  <!-- 5 cookieParser -->
+  <rect x="1130" y="190" width="170" height="100" rx="28" fill="#BFE3FD"/>
+  <text x="1215" y="224" font-size="19" font-weight="700" text-anchor="middle" fill="#1f1f1f">⑤ cookieParser</text>
+  <text x="1215" y="248" font-size="14" text-anchor="middle" fill="#3a3a3a">reads req.cookies</text>
+  <text x="1215" y="268" font-size="14" text-anchor="middle" fill="#3a3a3a">(unused until V5)</text>
+
+  <!-- 6 /api router -->
+  <rect x="1340" y="190" width="220" height="100" rx="28" fill="#BFE3FD"/>
+  <text x="1450" y="224" font-size="19" font-weight="700" text-anchor="middle" fill="#1f1f1f">⑥ /api routes</text>
+  <text x="1450" y="248" font-size="14" text-anchor="middle" fill="#3a3a3a">health, ready, public-config</text>
+  <text x="1450" y="268" font-size="14" text-anchor="middle" fill="#3a3a3a">controller answers</text>
+
+  <!-- 7 notFound -->
+  <rect x="1340" y="420" width="220" height="90" rx="6" fill="#FFF1B8"/>
+  <text x="1450" y="456" font-size="19" font-weight="700" text-anchor="middle" fill="#1f1f1f">⑦ notFound</text>
+  <text x="1450" y="480" font-size="14" text-anchor="middle" fill="#3a3a3a">no route matched:</text>
+  <text x="1450" y="498" font-size="14" text-anchor="middle" fill="#3a3a3a">raise ApiError.notFound</text>
+
+  <!-- 8 errorHandler -->
+  <rect x="900" y="420" width="214" height="90" rx="28" fill="#BFE3FD"/>
+  <text x="1007" y="456" font-size="19" font-weight="700" text-anchor="middle" fill="#1f1f1f">⑧ errorHandler</text>
+  <text x="1007" y="480" font-size="14" text-anchor="middle" fill="#3a3a3a">ApiError, ZodError or 500</text>
+  <text x="1007" y="498" font-size="14" text-anchor="middle" fill="#3a3a3a">always the shared shape</text>
+
+  <!-- response -->
+  <rect x="560" y="420" width="244" height="90" rx="6" fill="#C9F2D6"/>
+  <text x="682" y="456" font-size="19" font-weight="700" text-anchor="middle" fill="#1f1f1f">JSON error body</text>
+  <text x="682" y="480" font-size="14" text-anchor="middle" fill="#3a3a3a">{ error: { code, message,</text>
+  <text x="682" y="498" font-size="14" text-anchor="middle" fill="#3a3a3a">details?, requestId } }</text>
+
+  <!-- Postgres, Redis -->
+  <circle cx="1710" cy="190" r="60" fill="#E3CCFD"/>
+  <text x="1710" y="190" font-size="18" font-weight="700" text-anchor="middle" fill="#1f1f1f">Postgres</text>
+  <text x="1710" y="210" font-size="13" text-anchor="middle" fill="#3a3a3a">only /ready</text>
+  <circle cx="1710" cy="340" r="60" fill="#E3CCFD"/>
+  <text x="1710" y="340" font-size="18" font-weight="700" text-anchor="middle" fill="#1f1f1f">Redis</text>
+  <text x="1710" y="360" font-size="13" text-anchor="middle" fill="#3a3a3a">only /ready</text>
+
+  <!-- Footnote -->
+  <text x="40" y="590" font-size="15" fill="#3a3a3a">Today ⑥ knows three routes. Every later module (auth, buildings, billing...) is mounted at the same place, after ⑤ and before ⑦.</text>
+</svg>
