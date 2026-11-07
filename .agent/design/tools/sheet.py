@@ -2,6 +2,8 @@
 import sys
 from PIL import Image
 out, scale, files = sys.argv[1], float(sys.argv[2]), sys.argv[3:]
+import os
+files = [f.replace('.png', '.full.png') if os.path.exists(f.replace('.png', '.full.png')) and os.path.getmtime(f.replace('.png', '.full.png')) >= os.path.getmtime(f) - 5 else f for f in files]
 ims = [Image.open(f).convert('RGB') for f in files]
 ims = [i.resize((int(i.width*scale), int(i.height*scale))) for i in ims]
 W = sum(i.width for i in ims) + 20*(len(ims)-1); H = max(i.height for i in ims)

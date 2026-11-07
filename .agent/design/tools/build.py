@@ -216,7 +216,7 @@ def build():
         page = page.replace('{{MARK}}', MARK)
         out = ROOT / f.parent.name / f.name
         out.parent.mkdir(exist_ok=True)
-        out.write_text(head(m['title'], style, m.get('pseudo')) + page, encoding='utf8')
+        out.write_text(head(m['title'], style, m.get('pseudo')) + page, encoding='utf8', newline='\n')
         n += 1
     print(f'built {n} artboards')
 

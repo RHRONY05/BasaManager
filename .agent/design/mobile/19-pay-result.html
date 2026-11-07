@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>M19 · Pay result — paid — BasaManager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../ui.css">
+<script src="https://unpkg.com/lucide@1.70.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+<style>
+  /* layout only — tokens only */
+  .result { display: grid; justify-items: center; gap: var(--space-2); text-align: center; padding-top: var(--space-4); }
+  .result__icon { display: grid; place-items: center; width: var(--space-16); height: var(--space-16); border-radius: var(--radius-full); background: var(--success-soft); color: var(--success-text); }
+  .result__icon svg.lucide { width: var(--space-8); height: var(--space-8); }
+</style>
+</head>
+<body>
+<div class="frame-m">
+<header class="m-topbar"><a class="brand" href="#home" aria-label="BasaManager home"><svg class="brand__mark" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15 16 6l10 9"/><path d="M9 13v9h14v-9"/><path d="M13.5 22v-5h5v5"/><path d="M5 26h22M5 29.5h22" stroke-width="1.6"/></svg></a><h1 class="m-topbar__title" title="Payment">Payment</h1></header>
+<main class="m-main m-main--plain">
+<section class="result" aria-labelledby="res-h" role="status">
+  <span class="result__icon"><i data-lucide="circle-check"></i></span>
+  <h2 class="t-title" id="res-h">Payment received</h2>
+  <span class="amount amount--hero">৳7,475</span>
+  <p class="secondary">paid to Chowdhury Properties for Shanti Neer 4A</p>
+</section>
+
+<section class="card" aria-labelledby="rc-h">
+  <div class="card__head"><h2 class="card__title" id="rc-h">Receipt</h2><span class="mono t-sm">BM-2026-000214</span></div>
+  <div class="dl">
+    <div class="dl__row"><dt>Paid</dt><dd class="num">8 Nov 2026, 7:42 PM</dd></div>
+    <div class="dl__row"><dt>Method</dt><dd>Online · SSLCommerz</dd></div>
+    <div class="dl__row"><dt>Transaction</dt><dd class="mono">BMT-8N2K4Q7R1T</dd></div>
+  </div>
+  <div class="ledger ledger--sm">
+    <div class="ledger__row"><span class="ledger__label">November bill, left to pay</span><span class="ledger__leader"></span><span class="ledger__amount">৳7,475</span></div>
+    <div class="ledger__row"><span class="ledger__label">This payment</span><span class="ledger__leader"></span><span class="ledger__amount ledger__amount--neg">−৳7,475</span></div>
+    <div class="ledger__total"><span class="ledger__total-label">Left to pay</span><span class="ledger__total-amount">৳0</span></div>
+  </div>
+</section>
+
+<p class="t-sm secondary">Confirmed with SSLCommerz by our server, so it is final. A copy of the receipt was emailed to <span class="wrap" data-user>nusrat.jahan@gmail.com</span>.</p>
+
+<div class="btn-stack">
+  <a class="btn btn--primary btn--block" href="#/receipts/BM-2026-000214" data-button><i data-lucide="download"></i>Download receipt</a>
+  <a class="btn btn--secondary btn--block" href="#/t" data-button>Back to home</a>
+</div>
+
+</main>
+
+</div>
+</body>
+</html>

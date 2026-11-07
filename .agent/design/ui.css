@@ -21,6 +21,8 @@ body {
 h1, h2, h3, h4, p, ul, ol, dl, dd, figure { margin: 0; }
 h1, h2, h3, h4 { font-size: inherit; font-weight: var(--weight-bold); line-height: inherit; } /* headings are sized by class only */
 ul, ol { padding: 0; list-style: none; }
+fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+legend { padding: 0; margin-bottom: var(--space-1-5); }
 a { color: var(--accent-text); text-underline-offset: 0.18em; }
 button, input, select, textarea { font: inherit; color: inherit; }
 img, svg { display: block; max-width: 100%; }
@@ -372,6 +374,7 @@ a.card:hover { background: var(--bg-surface-hover); box-shadow: var(--shadow-md)
 .table tbody tr[aria-selected='true'] { background: var(--accent-soft); }
 .table tbody tr.is-attention td:first-child { box-shadow: inset 3px 0 0 var(--warning-primary); }
 .table .r { text-align: right; }
+.table .mono { white-space: nowrap; }
 .table .c { text-align: center; }
 .table td .row-link { display: inline-flex; align-items: center; min-height: var(--space-6); color: var(--fg-default); font-weight: var(--weight-semibold); text-decoration: none; }
 .table td .row-link:hover { text-decoration: underline; }
@@ -500,9 +503,9 @@ a.list-row:hover { background: var(--bg-surface-hover); }
 /* ---- Photo thumbnails + labelled placeholder → <PhotoThumb>, <Dropzone> ---------- */
 .ph { display: grid; place-items: center; background: var(--bg-muted); color: var(--fg-muted); border: 1px dashed var(--border-strong); border-radius: var(--radius-md); font-size: var(--text-xs); line-height: var(--leading-xs); font-weight: var(--weight-semibold); text-align: center; padding: var(--space-2); min-width: 0; }
 .thumbs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
-.thumb { position: relative; aspect-ratio: 1 / 1; }
+.thumb { position: relative; aspect-ratio: 1 / 1; text-decoration: none; }
 .thumb .icon-btn { position: absolute; top: var(--space-1); right: var(--space-1); background: var(--bg-surface); box-shadow: var(--shadow-sm); }
-.dropzone { display: grid; justify-items: center; gap: var(--space-2); padding: var(--space-6) var(--space-4); border: 2px dashed var(--border-strong); border-radius: var(--radius-lg); background: var(--bg-surface); text-align: center; color: var(--fg-secondary); font-size: var(--text-sm); line-height: var(--leading-sm); }
+.dropzone { display: grid; justify-items: center; align-content: center; gap: var(--space-2); padding: var(--space-6) var(--space-4); border: 2px dashed var(--border-strong); border-radius: var(--radius-lg); background: var(--bg-surface); text-align: center; color: var(--fg-secondary); font-size: var(--text-sm); line-height: var(--leading-sm); }
 
 /* ---- Category tile (new request) → <CategoryTile> (radio group) ------------------ */
 .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: var(--space-2); }

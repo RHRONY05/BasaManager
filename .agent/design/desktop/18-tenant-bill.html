@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>D18 · Tenant bill detail — BasaManager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../ui.css">
+<script src="https://unpkg.com/lucide@1.70.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+<style>
+  /* layout only — tokens only */
+  .back { justify-self: start; }
+  .bill-head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-6); }
+  .bill-sum { display: grid; justify-items: end; gap: var(--space-1); }
+</style>
+</head>
+<body>
+<div class="frame-d">
+<header class="t-topnav">
+  <div class="t-topnav__inner">
+    <a class="brand" href="#home"><svg class="brand__mark" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15 16 6l10 9"/><path d="M9 13v9h14v-9"/><path d="M13.5 22v-5h5v5"/><path d="M5 26h22M5 29.5h22" stroke-width="1.6"/></svg>BasaManager</a>
+    <nav class="t-topnav__links" aria-label="Main"><a class="t-topnav__link" href="#home">Home</a><a class="t-topnav__link" href="#bills" aria-current="page">Bills</a><a class="t-topnav__link" href="#requests">Requests</a><a class="t-topnav__link" href="#notices">Notices</a></nav>
+    <div class="topbar__actions"><span class="bell"><a class="icon-btn" href="#notifications" aria-label="Notifications, 2 unread"><i data-lucide="bell"></i></a><span class="bell__count" aria-hidden="true">2</span></span><a class="account-btn" href="#account" aria-label="Account, Nusrat Jahan"><span class="avatar">NJ</span><i data-lucide="chevron-down" class="i-sm"></i></a></div>
+  </div>
+</header>
+<main class="t-column">
+<a class="btn btn--ghost back" href="#/t/bills"><i data-lucide="arrow-left"></i>All bills</a>
+<section class="bill-head" aria-label="Bill summary">
+  <div class="stack-sm">
+    <p class="eyebrow">Shanti Neer · Flat 4A</p>
+    <h1 class="t-title">November 2026 bill</h1>
+    <div class="row"><span class="badge badge--warning"><i data-lucide="circle-dashed"></i>Partially paid</span><span class="due-card__when"><i data-lucide="calendar-clock" class="i-sm"></i>Due 10 Nov 2026 · in 2 days</span></div>
+  </div>
+  <div class="bill-sum">
+    <span class="t-sm t-strong secondary">Left to pay</span>
+    <span class="amount amount--xl">৳7,475</span>
+    <a class="btn btn--primary" href="#/t/pay">Pay ৳7,475 now</a>
+  </div>
+</section>
+
+<section class="card" aria-labelledby="lines-h">
+  <div class="card__head"><h2 class="card__title" id="lines-h">What this bill is for</h2><a class="btn btn--ghost" href="#/bills/nov-2026.pdf"><i data-lucide="printer"></i>Print</a></div>
+  <div class="ledger">
+    <div class="ledger__row"><span class="ledger__label">Rent</span><span class="ledger__leader"></span><span class="ledger__amount">৳12,000</span><span class="ledger__explain">Flat 4A, 1–30 Nov, paid in advance</span></div>
+    <div class="ledger__row"><span class="ledger__label">Service charge</span><span class="ledger__leader"></span><span class="ledger__amount">৳1,500</span><span class="ledger__explain">Lift, guard, stair lights, cleaning</span></div>
+    <div class="ledger__row"><span class="ledger__label">Gas (double burner)</span><span class="ledger__leader"></span><span class="ledger__amount">৳1,080</span></div>
+    <div class="ledger__row"><span class="ledger__label">Water</span><span class="ledger__leader"></span><span class="ledger__amount">৳500</span></div>
+    <div class="ledger__row"><span class="ledger__label">Electricity</span><span class="ledger__leader"></span><span class="ledger__amount">৳1,395</span><span class="ledger__explain">1,240 → 1,395 = 155 units × ৳9.00 · October use, meter read 1 Nov by Jamal Uddin</span></div>
+    <div class="ledger__total"><span class="ledger__total-label">Bill total</span><span class="ledger__total-amount">৳16,475</span></div>
+  </div>
+</section>
+
+<section class="card card--flush" aria-labelledby="pay-h">
+  <div class="card__head card__head--pad"><h2 class="card__title" id="pay-h">Payments on this bill</h2></div>
+  <table class="table">
+    <thead><tr><th>Date</th><th>Method</th><th>Reference</th><th>Status</th><th class="r">Amount</th><th class="r" aria-label="Receipt"></th></tr></thead>
+    <tbody>
+      <tr><td class="num">5 Nov 2026</td><td>bKash</td><td class="mono">9ABCD1EFGH</td><td><span class="badge badge--success"><i data-lucide="circle-check"></i>Confirmed</span></td><td class="r num t-strong t-pos">−৳9,000</td><td class="r"><a class="btn btn--secondary btn--sm" href="#/receipts/BM-2026-000203" title="Receipt BM-2026-000203"><i data-lucide="download" class="i-sm"></i>Receipt</a></td></tr>
+    </tbody>
+  </table>
+  <div class="table-foot"><span>Paid so far</span><span class="num t-strong">৳9,000 of ৳16,475</span></div>
+</section>
+
+<div class="banner banner--info" role="note"><i data-lucide="info"></i><div class="banner__body"><span class="banner__title">Late fee rule for Shanti Neer</span><span>If anything is still unpaid after 12 Nov (due date + 2 grace days), 5% of the unpaid amount is added once. Today that would be ৳374.</span></div></div>
+<p class="t-xs muted">Issued 1 Nov 2026 by Farhana Chowdhury · Shanti Neer, House 14, Road 3, Nasirabad, Chattogram</p>
+
+</main>
+</div>
+</body>
+</html>
