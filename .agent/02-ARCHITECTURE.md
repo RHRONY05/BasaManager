@@ -70,6 +70,7 @@ BasaManager/
 │   │   └── ../prisma/    (beside src/) schema.prisma · migrations/ · seed.ts; `apps/api/prisma.config.ts` holds the datasource URL
 │   ├── worker/ src/      jobs/ (generateBills, issueReminders, applyLateFees, deliverOutbox, autoCloseRequests,
 │   │                     recheckPaymentIntents, monthlyStatements, retention, backupVerify) · pdf/ · emails/ · index.ts
+│   │                     (imports api code via `@bm/api/config/*`, `lib/*`, later `modules/*` — the `exports` map in apps/api/package.json; fails fast if Redis is down)
 │   └── docs/             .vitepress/config.ts (+ theme/); builds the Markdown in ../../docs through srcDir
 ├── packages/shared/src/ · packages/domain/src/billing/ · packages/domain/src/settlement/
 ├── docs/                 learning docs (10-LEARNING.md), diagrams/

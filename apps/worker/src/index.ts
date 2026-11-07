@@ -1,7 +1,7 @@
-import { Redis } from 'ioredis';
-// Reused from apps/api because @bm/api does not export subpaths in package.json
-import { loadEnv } from '../../api/src/config/env';
-import { createLogger } from '../../api/src/lib/logger';
+import { loadEnv } from '@bm/api/config/env';
+import { createRedis } from '@bm/api/config/redis';
+import { createLogger } from '@bm/api/lib/logger';
+import { startWorker } from './boot';
 
 async function bootstrap() {
   let env;
@@ -14,14 +14,10 @@ async function bootstrap() {
   }
 
   const logger = createLogger({ level: env.LOG_LEVEL });
+  const redis = createRedis(env.REDIS_URL);
 
-  const redis = new Redis(env.REDIS_URL, {
-    lazyConnect: true,
-    maxRetriesPerRequest: 2,
-  });
-  redis.on('error', () => {});
-
-  logger.info({ appEnv: env.APP_ENV }, 'worker started');
+  const worker = await startWorker({ env, logger, redis, exit: (code) => process.exit(code) });
+  if (!worker) return;
 
   // Graceful shutdown
   let isShuttingDown = false;
@@ -30,7 +26,7 @@ async function bootstrap() {
     isShuttingDown = true;
     logger.info({ signal }, `Worker received ${signal}, shutting down gracefully...`);
     try {
-      await redis.quit();
+      await worker.shutdown();
       logger.info('Worker shutdown complete.');
       process.exit(0);
     } catch (err) {

@@ -124,7 +124,7 @@ flowchart LR
 - `apps/api/src/middleware/logger.ts`: `createHttpLogger`
 - `apps/api/src/middleware/errorHandler.ts`: the `req.log.error` call
 - `apps/api/src/middleware/requestId.ts`: where the id comes from
-- `apps/worker/src/index.ts`: the worker's logger (uses `createLogger`)
+- `apps/worker/src/index.ts`: the worker's logger (imports `createLogger` from `@bm/api/lib/logger`)
 - `apps/api/src/config/env.ts`: `LOG_LEVEL`
 
 ## Self-check
