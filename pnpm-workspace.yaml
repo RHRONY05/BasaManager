@@ -1,0 +1,10 @@
+packages:
+  - apps/*
+  - packages/*
+allowBuilds:
+  argon2: true
+  sharp: true
+  puppeteer: true
+  prisma: true
+  "@prisma/engines": true
+  esbuild: true

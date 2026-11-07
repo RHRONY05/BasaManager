@@ -1,0 +1,51 @@
+# tbls config: ER diagrams + per-table docs generated from the live database.
+# The connection string is NOT stored here. scripts/db-docs.mjs passes it in as TBLS_DSN.
+# Copy to the project root as .tbls.yml and adjust `name` and `exclude`.
+
+name: Project Database
+docPath: docs/database
+
+er:
+  format: svg      # rendered by tbls itself; no Graphviz install needed
+  comment: true    # show table comments inside the diagram boxes
+  distance: 1      # per-table pages show direct neighbours only
+  hideDef: true    # hide the long "FOREIGN KEY ... REFERENCES ..." labels on the lines
+
+format:
+  adjust: true     # align Markdown tables so they read well as raw text
+
+exclude:
+  - public._prisma_migrations   # migration bookkeeping (Prisma). Use public.schema_migrations etc. for other tools
+  # Uncomment if the database uses pgvector: hides its ~100 extension functions from the README.
+  # Check these patterns do not match any of your own tables.
+  # - public.vector*
+  # - public.halfvec*
+  # - public.sparsevec*
+  # - public.array_to_*
+  # - public.hnsw*
+  # - public.ivfflat*
+  # - public.*_distance
+  # - public.l1_*
+  # - public.l2_*
+  # - public.inner_product
+  # - public.binary_quantize
+  # - public.subvector
+  # - public.avg
+  # - public.sum
+
+lint:
+  requireForeignKeyIndex:
+    enabled: true  # every FK column should be indexed, or joins/deletes do full scans
+  duplicateRelations:
+    enabled: true
+  unrelatedTable:
+    enabled: true  # flags tables with no relations; add intentional ones to `exclude` below
+    exclude: []    # e.g. public.processed_webhook_events (standalone log tables)
+
+# Prisma does not write COMMENT ON to the database, so table/column descriptions go here instead.
+# They show up in the docs and inside the ER diagram boxes.
+# comments:
+#   - table: public.orders
+#     tableComment: A placed order, created when Stripe checkout completes
+#     columnComments:
+#       status: Lifecycle state, see the OrderStatus enum

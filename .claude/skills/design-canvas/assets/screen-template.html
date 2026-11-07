@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>[ID · Screen name] — [Project]</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../kit.css">
+<script>/* the canvas passes ?theme=dark */(function(){var t=new URLSearchParams(location.search).get("theme");if(t)document.documentElement.dataset.theme=t;})();</script>
+<style>
+  /* Layout for THIS screen only. Every value is a token: var(--space-*), var(--radius-*), …
+     Components (buttons, chips, cards, inputs, nav) come from kit.css — don't restyle them here. */
+  .screen {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+    padding: var(--space-4) var(--gutter) calc(var(--space-24) + env(safe-area-inset-bottom));
+  }
+</style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="btn btn--icon btn--ghost" href="#" aria-label="Back"><i data-lucide="arrow-left" aria-hidden="true"></i></a>
+    <h1 class="t-title">[Screen title]</h1>
+  </header>
+
+  <main class="screen">
+    <!-- Compose from kit classes. Real content only — no lorem ipsum. -->
+  </main>
+
+  <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

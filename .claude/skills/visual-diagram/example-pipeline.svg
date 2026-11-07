@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1640 1060" width="1640" height="1060" font-family="'Segoe UI', Inter, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1f1f1f"/>
+    </marker>
+    <marker id="arrowOpen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto-start-reverse">
+      <path d="M1,1 L9,5 L1,9" fill="none" stroke="#1f1f1f" stroke-width="1.6"/>
+    </marker>
+  </defs>
+
+  <rect width="1640" height="1060" fill="#ffffff"/>
+
+  <!-- Title + legend -->
+  <text x="60" y="78" font-size="34" font-weight="700" fill="#1f1f1f">English Tutor — one day</text>
+  <text x="60" y="112" font-size="18" fill="#555">Type <tspan font-weight="700">start-session</tspan> → learn ~25 min → 5-min ChatGPT talk → tomorrow continues from Notion</text>
+  <g font-size="15" fill="#444">
+    <line x1="1130" y1="70" x2="1190" y2="70" stroke="#1f1f1f" stroke-width="2.4" marker-end="url(#arrow)"/>
+    <text x="1202" y="75">trigger / read</text>
+    <line x1="1130" y1="102" x2="1190" y2="102" stroke="#1f1f1f" stroke-width="2.4" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <text x="1202" y="107">write / send back</text>
+    <rect x="1350" y="58" width="26" height="18" rx="3" fill="#FEC8C3"/><text x="1384" y="73">you / apps</text>
+    <circle cx="1363" cy="101" r="10" fill="#E3CCFD"/><text x="1384" y="107">Notion records</text>
+    <rect x="1490" y="58" width="26" height="18" rx="7" fill="#BFE3FD"/><text x="1524" y="73">tutor</text>
+  </g>
+
+  <!-- ===== Arrows (drawn first so shapes sit on top) ===== -->
+  <g fill="none" stroke="#1f1f1f" stroke-width="2.4">
+    <!-- You -> Tutor : start-session -->
+    <path d="M304,430 H462" marker-end="url(#arrow)"/>
+    <!-- Tutor -> You : lesson + feedback -->
+    <path d="M466,492 H308" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <!-- Notion -> Tutor : read state -->
+    <path d="M1186,400 H1018" marker-end="url(#arrow)"/>
+    <!-- Tutor -> Notion : save + brief -->
+    <path d="M1014,560 H1182" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <!-- Progress -> ChatGPT : Speaking Brief -->
+    <path d="M1452,322 H1548 Q1560,322 1560,334 V868 Q1560,880 1548,880 H1018" marker-end="url(#arrow)"/>
+    <!-- ChatGPT -> Progress : Speaking Report -->
+    <path d="M1014,930 H1578 Q1590,930 1590,918 V262 Q1590,250 1578,250 H1452" stroke-dasharray="8 6" marker-end="url(#arrowOpen)"/>
+    <!-- You -> ChatGPT : voice talk -->
+    <path d="M180,524 V888 Q180,900 192,900 H462" marker-end="url(#arrow)"/>
+  </g>
+
+  <!-- Arrow labels -->
+  <g font-size="16" fill="#1f1f1f" text-anchor="middle">
+    <text x="383" y="420" font-weight="700">start-session</text>
+    <text x="383" y="518">lesson + rewrites</text>
+    <text x="1100" y="390" font-weight="700">① read state</text>
+    <text x="1100" y="588">④ save + read back</text>
+    <text x="1100" y="608">⑤ Speaking Brief</text>
+    <text x="1290" y="868" font-weight="700">Speaking Brief: topic + target grammar</text>
+    <text x="1290" y="956">Speaking Report: 3 corrections · 1 strength (next session reads it)</text>
+    <text x="305" y="884">5-min voice talk (any time that day)</text>
+  </g>
+
+  <!-- ===== YOU ===== -->
+  <rect x="60" y="400" width="244" height="124" rx="6" fill="#FEC8C3"/>
+  <text x="182" y="452" font-size="26" font-weight="700" text-anchor="middle" fill="#1f1f1f">YOU</text>
+  <text x="182" y="480" font-size="16" text-anchor="middle" fill="#3a3a3a">laptop (this repo)</text>
+  <text x="182" y="502" font-size="16" text-anchor="middle" fill="#3a3a3a">or phone</text>
+
+  <!-- ===== TUTOR AGENT ===== -->
+  <rect x="466" y="250" width="548" height="420" rx="54" fill="#BFE3FD"/>
+  <text x="740" y="306" font-size="28" font-weight="700" text-anchor="middle" fill="#1f1f1f">TUTOR AGENT</text>
+  <text x="740" y="334" font-size="15" text-anchor="middle" fill="#3a3a3a">Claude Code · Codex · Antigravity · Claude app — runs the start-session skill</text>
+  <g font-size="18" fill="#1f1f1f">
+    <text x="506" y="390"><tspan font-weight="700">①</tspan> Load plan, levels, weaknesses, last report</text>
+    <text x="506" y="436"><tspan font-weight="700">②</tspan> Retention checks first (no hints)</text>
+    <text x="506" y="482"><tspan font-weight="700">③</tspan> Teach → practice → close + fluent rewrites</text>
+    <text x="506" y="528"><tspan font-weight="700">④</tspan> Save levels + plan, read back → "Saved ✅"</text>
+    <text x="506" y="574"><tspan font-weight="700">⑤</tspan> Write today's Speaking Brief</text>
+  </g>
+  <text x="740" y="632" font-size="15" text-anchor="middle" fill="#3a3a3a">~25 min · can't reach Notion? → gives you a SAVE BLOCK to paste next time</text>
+
+  <!-- ===== NOTION ===== -->
+  <rect x="1190" y="150" width="340" height="650" rx="22" fill="none" stroke="#9a8fb0" stroke-width="2" stroke-dasharray="6 6"/>
+  <text x="1360" y="182" font-size="20" font-weight="700" text-anchor="middle" fill="#5b4b7a">NOTION</text>
+
+  <circle cx="1360" cy="290" r="95" fill="#E3CCFD"/>
+  <text x="1360" y="282" font-size="22" font-weight="700" text-anchor="middle" fill="#1f1f1f">Progress</text>
+  <text x="1360" y="306" font-size="14" text-anchor="middle" fill="#3a3a3a">next plan · brief</text>
+  <text x="1360" y="324" font-size="14" text-anchor="middle" fill="#3a3a3a">report · revision</text>
+
+  <circle cx="1360" cy="490" r="82" fill="#E3CCFD"/>
+  <text x="1360" y="486" font-size="22" font-weight="700" text-anchor="middle" fill="#1f1f1f">Roadmap</text>
+  <text x="1360" y="510" font-size="14" text-anchor="middle" fill="#3a3a3a">20 objectives + levels</text>
+
+  <circle cx="1360" cy="680" r="82" fill="#E3CCFD"/>
+  <text x="1360" y="676" font-size="22" font-weight="700" text-anchor="middle" fill="#1f1f1f">Weaknesses</text>
+  <text x="1360" y="700" font-size="14" text-anchor="middle" fill="#3a3a3a">repeat mistakes</text>
+
+  <!-- ===== CHATGPT ===== -->
+  <rect x="466" y="840" width="548" height="124" rx="6" fill="#FEC8C3"/>
+  <text x="740" y="890" font-size="26" font-weight="700" text-anchor="middle" fill="#1f1f1f">CHATGPT / GEMINI VOICE</text>
+  <text x="740" y="918" font-size="16" text-anchor="middle" fill="#3a3a3a">"Read my English speaking brief from Notion and start"</text>
+  <text x="740" y="942" font-size="15" text-anchor="middle" fill="#3a3a3a">no corrections during the talk · skippable</text>
+
+  <!-- Next-day loop note -->
+  <text x="60" y="1020" font-size="16" fill="#555">Next day: <tspan font-weight="700">start-session</tspan> reads Progress again — including the Speaking Report — so the lesson continues exactly where it stopped.</text>
+</svg>

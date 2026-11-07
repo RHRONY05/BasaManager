@@ -1,0 +1,19 @@
+# BasaManager — never commit secrets
+.claude/settings.local.json
+.env
+.env.*
+!.env.example
+!.env.test.example
+node_modules/
+dist/
+build/
+coverage/
+.data/
+.turbo/
+*.log
+playwright-report/
+test-results/
+blob-report/
+apps/docs/.vitepress/cache/
+apps/docs/.vitepress/dist/
+.DS_Store
