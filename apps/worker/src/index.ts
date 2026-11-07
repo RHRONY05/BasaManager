@@ -1,6 +1,7 @@
 import { loadEnv } from '@bm/api/config/env';
 import { createRedis } from '@bm/api/config/redis';
 import { createLogger } from '@bm/api/lib/logger';
+import { initSentry, captureError, flushSentry } from '@bm/api/config/sentry';
 import { startWorker } from './boot';
 
 async function bootstrap() {
@@ -13,7 +14,14 @@ async function bootstrap() {
     process.exit(1);
   }
 
+  initSentry({ dsn: env.SENTRY_DSN_WORKER, release: env.SENTRY_RELEASE, environment: env.APP_ENV });
   const logger = createLogger({ level: env.LOG_LEVEL });
+
+  // TEMPORARY (V3): one test error to prove Sentry works; removed right after verification.
+  if (process.env['SENTRY_TEST_ERROR'] === '1') {
+    captureError(new Error('BasaManager worker Sentry test error (V3)'));
+    await flushSentry();
+  }
   const redis = createRedis(env.REDIS_URL);
 
   const worker = await startWorker({ env, logger, redis, exit: (code) => process.exit(code) });

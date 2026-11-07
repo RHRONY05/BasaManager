@@ -10,6 +10,9 @@ WORKDIR /repo
 FROM base AS web-build
 COPY . .
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --frozen-lockfile --filter @bm/web...
+# The release is the git SHA; it is also what CI uploads the source maps under.
+ARG GIT_SHA=dev
+ENV VITE_RELEASE=$GIT_SHA
 RUN pnpm --filter @bm/web build
 
 FROM caddy:2-alpine AS runtime

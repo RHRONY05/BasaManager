@@ -372,9 +372,6 @@ importers:
       '@bm/shared':
         specifier: workspace:*
         version: link:../../packages/shared
-      '@sentry/node':
-        specifier: 11.11.0
-        version: 11.11.0(rollup@4.68.0)
       ioredis:
         specifier: 6.0.0
         version: 6.0.0(supports-color@10.2.2)
