@@ -38,7 +38,7 @@ export function LandlordLayout() {
             { to: '/l/payments', label: t('nav.payments'), icon: CreditCard, end: false },
             { to: '/l/maintenance', label: t('nav.maintenance'), icon: Wrench, end: false },
           ],
-    [isCaretaker, t]
+    [isCaretaker, t],
   );
 
   useEffect(() => {
@@ -56,7 +56,9 @@ export function LandlordLayout() {
             to={isCaretaker ? '/c' : '/l'}
             className="text-lg font-bold text-fg hover:text-accent transition-colors min-h-tap flex items-center whitespace-nowrap min-w-0"
           >
-            <span title={t('appName')} className="truncate">{t('appName')}</span>
+            <span title={t('appName')} className="truncate">
+              {t('appName')}
+            </span>
           </PrefetchLink>
         </div>
         <nav className="flex-1 p-4 space-y-1">
@@ -76,7 +78,9 @@ export function LandlordLayout() {
                 }
               >
                 <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
-                <span title={item.label} className="truncate">{item.label}</span>
+                <span title={item.label} className="truncate">
+                  {item.label}
+                </span>
               </PrefetchLink>
             );
           })}
@@ -87,7 +91,9 @@ export function LandlordLayout() {
             className="flex items-center gap-3 px-3 py-2.5 min-h-tap rounded-md text-sm font-medium text-fg-muted hover:text-fg hover:bg-surface-hover transition-colors whitespace-nowrap"
           >
             <User className="h-5 w-5 shrink-0" aria-hidden="true" />
-            <span title={t('nav.account')} className="truncate">{t('nav.account')}</span>
+            <span title={t('nav.account')} className="truncate">
+              {t('nav.account')}
+            </span>
           </PrefetchLink>
         </div>
       </aside>
@@ -99,7 +105,9 @@ export function LandlordLayout() {
             to={isCaretaker ? '/c' : '/l'}
             className="text-base font-bold text-fg min-h-tap flex items-center whitespace-nowrap min-w-0"
           >
-            <span title={t('appName')} className="truncate">{t('appName')}</span>
+            <span title={t('appName')} className="truncate">
+              {t('appName')}
+            </span>
           </PrefetchLink>
           <PrefetchLink
             to="/account"
@@ -132,14 +140,14 @@ export function LandlordLayout() {
               end={item.end}
               className={({ isActive }) =>
                 `flex-1 basis-0 min-w-0 min-h-bottom-nav flex flex-col items-center justify-center p-1 text-center whitespace-nowrap transition-colors ${
-                  isActive
-                    ? 'text-accent font-medium'
-                    : 'text-fg-muted hover:text-fg'
+                  isActive ? 'text-accent font-medium' : 'text-fg-muted hover:text-fg'
                 }`
               }
             >
               <Icon className="h-5 w-5 shrink-0 mb-1" aria-hidden="true" />
-              <span title={item.label} className="text-xs truncate max-w-full block leading-none">{item.label}</span>
+              <span title={item.label} className="text-xs truncate max-w-full block leading-none">
+                {item.label}
+              </span>
             </PrefetchLink>
           );
         })}

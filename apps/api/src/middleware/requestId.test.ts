@@ -18,9 +18,7 @@ describe('requestId middleware', () => {
     const app = createApp();
     const validId = 'custom-request-id-1234';
 
-    const res = await request(app)
-      .get('/test')
-      .set('X-Request-Id', validId);
+    const res = await request(app).get('/test').set('X-Request-Id', validId);
 
     expect(res.status).toBe(200);
     expect(res.headers['x-request-id']).toBe(validId);
@@ -31,14 +29,12 @@ describe('requestId middleware', () => {
     const app = createApp();
     const invalidId = 'bad characters! @#$%';
 
-    const res = await request(app)
-      .get('/test')
-      .set('X-Request-Id', invalidId);
+    const res = await request(app).get('/test').set('X-Request-Id', invalidId);
 
     expect(res.status).toBe(200);
     expect(res.headers['x-request-id']).not.toBe(invalidId);
     expect(res.headers['x-request-id']).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
     );
     expect(res.body.id).toBe(res.headers['x-request-id']);
   });
@@ -47,14 +43,12 @@ describe('requestId middleware', () => {
     const app = createApp();
     const longId = 'a'.repeat(65);
 
-    const res = await request(app)
-      .get('/test')
-      .set('X-Request-Id', longId);
+    const res = await request(app).get('/test').set('X-Request-Id', longId);
 
     expect(res.status).toBe(200);
     expect(res.headers['x-request-id']).not.toBe(longId);
     expect(res.headers['x-request-id']).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
     );
   });
 
@@ -65,7 +59,7 @@ describe('requestId middleware', () => {
 
     expect(res.status).toBe(200);
     expect(res.headers['x-request-id']).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
     );
     expect(res.body.id).toBe(res.headers['x-request-id']);
   });

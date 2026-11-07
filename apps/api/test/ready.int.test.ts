@@ -35,10 +35,7 @@ describe('Ready & Health Integration (ready.int.test.ts)', () => {
   });
 
   afterAll(async () => {
-    await Promise.allSettled([
-      prisma?.$disconnect(),
-      redis?.quit(),
-    ]);
+    await Promise.allSettled([prisma?.$disconnect(), redis?.quit()]);
   });
 
   it('GET /api/health -> 200 with bare body', async () => {

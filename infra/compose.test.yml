@@ -8,30 +8,30 @@ services:
       POSTGRES_USER: bm_owner
       POSTGRES_PASSWORD: bm_owner_dev
       POSTGRES_DB: basamanager_test
-    ports: ["5433:5432"]
+    ports: ['5433:5432']
     tmpfs:
       - /var/lib/postgresql/data
     volumes:
       - ./postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U bm_owner -d basamanager_test"]
+      test: ['CMD-SHELL', 'pg_isready -U bm_owner -d basamanager_test']
       interval: 5s
       timeout: 3s
       retries: 20
   redis:
     image: redis:7
-    command: ["redis-server", "--requirepass", "redis_dev"]
-    ports: ["6380:6379"]
+    command: ['redis-server', '--requirepass', 'redis_dev']
+    ports: ['6380:6379']
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a redis_dev --no-auth-warning ping | grep -q PONG"]
+      test: ['CMD-SHELL', 'redis-cli -a redis_dev --no-auth-warning ping | grep -q PONG']
       interval: 5s
       timeout: 3s
       retries: 20
   mailpit:
     image: axllent/mailpit
-    ports: ["1026:1025", "8026:8025"]
+    ports: ['1026:1025', '8026:8025']
     healthcheck:
-      test: ["CMD", "/mailpit", "readyz"]
+      test: ['CMD', '/mailpit', 'readyz']
       interval: 5s
       timeout: 3s
       retries: 20

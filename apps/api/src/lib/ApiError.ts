@@ -44,7 +44,7 @@ export class ApiError extends Error {
   static badRequest(
     code: ErrorCode = ErrorCode.VALIDATION_FAILED,
     message?: string,
-    details?: ErrorDetail[]
+    details?: ErrorDetail[],
   ): ApiError {
     return new ApiError(code, message, details);
   }

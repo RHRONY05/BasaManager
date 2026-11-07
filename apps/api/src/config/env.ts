@@ -33,13 +33,10 @@ export const envSchema = z
     APP_URL: z.string().url('APP_URL must be a valid URL'),
     PORT: z.preprocess(
       (val) => (val === undefined || val === '' ? 4000 : val),
-      z.coerce.number().int().min(1).max(65535)
+      z.coerce.number().int().min(1).max(65535),
     ),
     LOG_LEVEL: z
-      .preprocess(
-        emptyToUndefined,
-        z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
-      )
+      .preprocess(emptyToUndefined, z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']))
       .default('info'),
     DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
     REDIS_URL: z.string().min(1, 'REDIS_URL is required'),
@@ -52,20 +49,18 @@ export const envSchema = z
     JWT_SECRET: optionalString,
     JWT_ACCESS_TTL_SECONDS: z.preprocess(
       (val) => (val === undefined || val === '' ? 900 : val),
-      z.coerce.number().int().positive().optional()
+      z.coerce.number().int().positive().optional(),
     ),
     REFRESH_TTL_DAYS: z.preprocess(
       (val) => (val === undefined || val === '' ? 30 : val),
-      z.coerce.number().int().positive().optional()
+      z.coerce.number().int().positive().optional(),
     ),
     COOKIE_SECURE: booleanFromEnv(false),
     GOOGLE_OAUTH_CLIENT_ID: optionalString,
     GOOGLE_OAUTH_CLIENT_SECRET: optionalString,
 
     // ── File storage (optional in V1) ─────────────────────────────────────────
-    STORAGE_DRIVER: z
-      .preprocess(emptyToUndefined, z.enum(['local', 'cloudinary']))
-      .default('local'),
+    STORAGE_DRIVER: z.preprocess(emptyToUndefined, z.enum(['local', 'cloudinary'])).default('local'),
     STORAGE_LOCAL_DIR: optionalString,
     STORAGE_URL_SECRET: optionalString,
     STORAGE_FOLDER: optionalString,
@@ -110,15 +105,11 @@ export const envSchema = z
     path: ['SSLCOMMERZ_SANDBOX'],
   })
   .refine(
-    (data) =>
-      !(
-        data.PAYMENTS_MOCK === true &&
-        (data.APP_ENV === 'staging' || data.APP_ENV === 'prod')
-      ),
+    (data) => !(data.PAYMENTS_MOCK === true && (data.APP_ENV === 'staging' || data.APP_ENV === 'prod')),
     {
       message: 'PAYMENTS_MOCK=true is not allowed when APP_ENV is staging or prod',
       path: ['PAYMENTS_MOCK'],
-    }
+    },
   )
   .refine(
     (data) =>
@@ -131,18 +122,14 @@ export const envSchema = z
     {
       message: 'CLOCK_OVERRIDE is not allowed unless APP_ENV is dev or test',
       path: ['CLOCK_OVERRIDE'],
-    }
+    },
   )
   .refine(
-    (data) =>
-      !(
-        (data.APP_ENV === 'staging' || data.APP_ENV === 'prod') &&
-        data.COOKIE_SECURE !== true
-      ),
+    (data) => !((data.APP_ENV === 'staging' || data.APP_ENV === 'prod') && data.COOKIE_SECURE !== true),
     {
       message: 'COOKIE_SECURE must be true when APP_ENV is staging or prod',
       path: ['COOKIE_SECURE'],
-    }
+    },
   );
 
 export type Env = z.infer<typeof envSchema>;
@@ -158,9 +145,7 @@ export function loadEnv(source: Record<string, string | undefined> = process.env
       const path = issue.path.join('.');
       return ` - ${path ? path : 'env'}: ${issue.message}`;
     });
-    throw new Error(
-      `[CONFIG ERROR] Invalid environment configuration:\n${errorMessages.join('\n')}`
-    );
+    throw new Error(`[CONFIG ERROR] Invalid environment configuration:\n${errorMessages.join('\n')}`);
   }
   return result.data;
 }

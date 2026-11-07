@@ -31,7 +31,7 @@ export async function pingRedis(redis: Redis, timeoutMs: number): Promise<boolea
 
   const query = redis.ping().then(
     (res) => res === 'PONG',
-    () => false
+    () => false,
   );
 
   try {

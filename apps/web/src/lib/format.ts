@@ -6,25 +6,13 @@
  */
 export function formatMoney(poisha: number | bigint): string {
   const isNegative = poisha < 0;
-  const absVal =
-    typeof poisha === 'bigint'
-      ? poisha < 0n
-        ? -poisha
-        : poisha
-      : Math.abs(poisha);
+  const absVal = typeof poisha === 'bigint' ? (poisha < 0n ? -poisha : poisha) : Math.abs(poisha);
 
-  const poishaRemainder =
-    typeof absVal === 'bigint'
-      ? absVal % 100n
-      : Math.round(absVal % 100);
+  const poishaRemainder = typeof absVal === 'bigint' ? absVal % 100n : Math.round(absVal % 100);
 
   const hasDecimals = poishaRemainder > 0;
   const takaAmount =
-    typeof absVal === 'bigint'
-      ? hasDecimals
-        ? Number(absVal) / 100
-        : absVal / 100n
-      : absVal / 100;
+    typeof absVal === 'bigint' ? (hasDecimals ? Number(absVal) / 100 : absVal / 100n) : absVal / 100;
 
   const formatted = new Intl.NumberFormat('en-IN', {
     minimumFractionDigits: hasDecimals ? 2 : 0,

@@ -93,7 +93,7 @@ export async function auditLayout(page: Page): Promise<Violation[]> {
 
     const controls = [
       ...document.querySelectorAll(
-        'button, [role="button"], [role="tab"], nav a, a[data-button], [data-single-line]'
+        'button, [role="button"], [role="tab"], nav a, a[data-button], [data-single-line]',
       ),
     ].filter(visible);
     for (const el of controls) {

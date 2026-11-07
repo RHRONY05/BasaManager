@@ -37,7 +37,7 @@ test.describe('Layout Audit Specs', () => {
               if (violations.length > 0) {
                 console.error(
                   `Layout violations on ${route.path} (${width}px, ${colorScheme}, ${lng}):`,
-                  JSON.stringify(violations, null, 2)
+                  JSON.stringify(violations, null, 2),
                 );
               }
               expect(violations).toEqual([]);

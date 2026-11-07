@@ -19,7 +19,7 @@ export function TenantLayout() {
       { to: '/t/notices', label: t('nav.notices'), icon: Bell, end: false },
       { to: '/t/account', label: t('nav.account'), icon: User, end: false },
     ],
-    [t]
+    [t],
   );
 
   useEffect(() => {
@@ -37,7 +37,9 @@ export function TenantLayout() {
             to="/t"
             className="text-base font-bold text-fg min-h-tap flex items-center whitespace-nowrap min-w-0"
           >
-            <span title={t('appName')} className="truncate">{t('appName')}</span>
+            <span title={t('appName')} className="truncate">
+              {t('appName')}
+            </span>
           </PrefetchLink>
 
           {/* Desktop Top Nav (≥ md) */}
@@ -58,7 +60,9 @@ export function TenantLayout() {
                   }
                 >
                   <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-                  <span title={item.label} className="truncate">{item.label}</span>
+                  <span title={item.label} className="truncate">
+                    {item.label}
+                  </span>
                 </PrefetchLink>
               );
             })}
@@ -87,14 +91,14 @@ export function TenantLayout() {
               end={item.end}
               className={({ isActive }) =>
                 `flex-1 basis-0 min-w-0 min-h-bottom-nav flex flex-col items-center justify-center p-1 text-center whitespace-nowrap transition-colors ${
-                  isActive
-                    ? 'text-accent font-medium'
-                    : 'text-fg-muted hover:text-fg'
+                  isActive ? 'text-accent font-medium' : 'text-fg-muted hover:text-fg'
                 }`
               }
             >
               <Icon className="h-5 w-5 shrink-0 mb-1" aria-hidden="true" />
-              <span title={item.label} className="text-xs truncate max-w-full block leading-none">{item.label}</span>
+              <span title={item.label} className="text-xs truncate max-w-full block leading-none">
+                {item.label}
+              </span>
             </PrefetchLink>
           );
         })}

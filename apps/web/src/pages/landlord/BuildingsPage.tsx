@@ -6,9 +6,7 @@ export default function BuildingsPage() {
 
   return (
     <div className="space-y-6 max-w-4xl min-w-0">
-      <h1 className="text-2xl font-bold text-fg break-words">
-        {t('headings.buildings')}
-      </h1>
+      <h1 className="text-2xl font-bold text-fg break-words">{t('headings.buildings')}</h1>
       <PlaceholderDataRegion />
     </div>
   );

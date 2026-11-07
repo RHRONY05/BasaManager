@@ -20,7 +20,10 @@ export function hash(str) {
 }
 
 export function sanitizeTaskId(taskId) {
-  return taskId.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+  return taskId
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
 }
 
 export function resolveTaskId(taskId) {

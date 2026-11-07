@@ -6,9 +6,7 @@ export default function PaymentsPage() {
 
   return (
     <div className="space-y-6 max-w-4xl min-w-0">
-      <h1 className="text-2xl font-bold text-fg break-words">
-        {t('headings.payments')}
-      </h1>
+      <h1 className="text-2xl font-bold text-fg break-words">{t('headings.payments')}</h1>
       <PlaceholderDataRegion />
     </div>
   );

@@ -14,9 +14,5 @@ export function Providers({ children }: ProvidersProps) {
     void queryClient.prefetchQuery(publicConfigQuery);
   }, []);
 
-  return (
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
-  );
+  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 }

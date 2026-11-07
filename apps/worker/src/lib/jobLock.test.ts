@@ -8,34 +8,22 @@ describe('withJobLock', () => {
 
     const fakeRedis: JobLockRedis = {
       set: vi.fn(
-        async (
-          key: string,
-          value: string,
-          _mode: 'PX',
-          _ttl: number,
-          nx: 'NX'
-        ): Promise<'OK' | null> => {
+        async (key: string, value: string, _mode: 'PX', _ttl: number, nx: 'NX'): Promise<'OK' | null> => {
           if (nx === 'NX' && store.has(key)) {
             return null;
           }
           store.set(key, value);
           return 'OK';
-        }
+        },
       ),
-      eval: vi.fn(
-        async (
-          _script: string,
-          _numkeys: number,
-          ...args: string[]
-        ): Promise<number> => {
-          const [key, token] = args;
-          if (key && store.get(key) === token) {
-            store.delete(key);
-            return 1;
-          }
-          return 0;
+      eval: vi.fn(async (_script: string, _numkeys: number, ...args: string[]): Promise<number> => {
+        const [key, token] = args;
+        if (key && store.get(key) === token) {
+          store.delete(key);
+          return 1;
         }
-      ),
+        return 0;
+      }),
     };
 
     let executionCount = 0;

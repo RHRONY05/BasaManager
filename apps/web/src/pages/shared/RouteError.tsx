@@ -7,11 +7,7 @@ export default function RouteError() {
   const { t } = useTranslation();
 
   const errorMessage =
-    error instanceof Error
-      ? error.message
-      : typeof error === 'string'
-        ? error
-        : t('status.routeError');
+    error instanceof Error ? error.message : typeof error === 'string' ? error : t('status.routeError');
 
   const handleRetry = () => {
     navigate(0);

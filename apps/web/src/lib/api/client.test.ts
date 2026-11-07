@@ -25,7 +25,7 @@ describe('apiFetch', () => {
             count: 42,
           },
         }),
-      })
+      }),
     );
 
     const result = await apiFetch('/api/test', { schema: testSchema });
@@ -47,7 +47,7 @@ describe('apiFetch', () => {
             details: [{ path: 'name', message: 'Name is required' }],
           },
         }),
-      })
+      }),
     );
 
     await expect(apiFetch('/api/fail')).rejects.toThrow(ApiRequestError);
@@ -75,7 +75,7 @@ describe('apiFetch', () => {
         json: async () => {
           throw new Error('Not JSON');
         },
-      })
+      }),
     );
 
     try {

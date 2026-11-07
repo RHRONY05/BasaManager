@@ -11,9 +11,7 @@ export default function LandingPage() {
         <h1 className="text-3xl sm:text-4xl font-extrabold text-fg tracking-tight break-words">
           {t('landing.title')}
         </h1>
-        <p className="text-lg text-fg-muted max-w-2xl break-words">
-          {t('landing.subtitle')}
-        </p>
+        <p className="text-lg text-fg-muted max-w-2xl break-words">{t('landing.subtitle')}</p>
         <div className="flex flex-col sm:flex-row gap-4 pt-2">
           <Link
             to="/signup"

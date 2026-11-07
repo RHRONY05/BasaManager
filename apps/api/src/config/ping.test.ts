@@ -8,28 +8,63 @@ const fakeRedis = (impl: () => Promise<unknown>) => ({ ping: impl }) as unknown 
 
 describe('pingDb', () => {
   it('true when the query resolves', async () => {
-    expect(await pingDb(fakeDb(() => Promise.resolve([])), 100)).toBe(true);
+    expect(
+      await pingDb(
+        fakeDb(() => Promise.resolve([])),
+        100,
+      ),
+    ).toBe(true);
   });
   it('false when the query rejects', async () => {
-    expect(await pingDb(fakeDb(() => Promise.reject(new Error('x'))), 100)).toBe(false);
+    expect(
+      await pingDb(
+        fakeDb(() => Promise.reject(new Error('x'))),
+        100,
+      ),
+    ).toBe(false);
   });
   it('false when the query hangs past the timeout', async () => {
-    expect(await pingDb(fakeDb(() => new Promise(() => {})), 20)).toBe(false);
+    expect(
+      await pingDb(
+        fakeDb(() => new Promise(() => {})),
+        20,
+      ),
+    ).toBe(false);
   });
 });
 
 describe('pingRedis', () => {
   it('true on PONG', async () => {
-    expect(await pingRedis(fakeRedis(() => Promise.resolve('PONG')), 100)).toBe(true);
+    expect(
+      await pingRedis(
+        fakeRedis(() => Promise.resolve('PONG')),
+        100,
+      ),
+    ).toBe(true);
   });
   it('false on any other reply', async () => {
-    expect(await pingRedis(fakeRedis(() => Promise.resolve('nope')), 100)).toBe(false);
+    expect(
+      await pingRedis(
+        fakeRedis(() => Promise.resolve('nope')),
+        100,
+      ),
+    ).toBe(false);
   });
   it('false when ping rejects', async () => {
-    expect(await pingRedis(fakeRedis(() => Promise.reject(new Error('x'))), 100)).toBe(false);
+    expect(
+      await pingRedis(
+        fakeRedis(() => Promise.reject(new Error('x'))),
+        100,
+      ),
+    ).toBe(false);
   });
   it('false when ping hangs past the timeout', async () => {
-    expect(await pingRedis(fakeRedis(() => new Promise(() => {})), 20)).toBe(false);
+    expect(
+      await pingRedis(
+        fakeRedis(() => new Promise(() => {})),
+        20,
+      ),
+    ).toBe(false);
   });
 });
 

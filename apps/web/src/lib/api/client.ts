@@ -12,7 +12,7 @@ export class ApiRequestError extends Error {
     code: ErrorCode | 'INTERNAL',
     message: string,
     requestId: string,
-    details?: ErrorDetail[]
+    details?: ErrorDetail[],
   ) {
     super(message);
     this.name = 'ApiRequestError';
@@ -31,10 +31,7 @@ export interface ApiFetchOptions<T> {
   headers?: Record<string, string>;
 }
 
-export async function apiFetch<T = unknown>(
-  path: string,
-  options: ApiFetchOptions<T> = {}
-): Promise<T> {
+export async function apiFetch<T = unknown>(path: string, options: ApiFetchOptions<T> = {}): Promise<T> {
   const { schema, method = 'GET', body, signal, headers = {} } = options;
 
   const init: RequestInit = {
@@ -72,8 +69,7 @@ export async function apiFetch<T = unknown>(
   }
 
   const json = await response.json();
-  const rawData =
-    json && typeof json === 'object' && 'data' in json ? json.data : json;
+  const rawData = json && typeof json === 'object' && 'data' in json ? json.data : json;
 
   if (schema) {
     return schema.parse(rawData);

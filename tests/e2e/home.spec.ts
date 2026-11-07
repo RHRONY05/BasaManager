@@ -10,7 +10,7 @@ test.describe('Home & 404 specs', () => {
     });
 
     const publicConfigPromise = page.waitForResponse(
-      (resp) => resp.url().includes('/api/public-config') && resp.status() === 200
+      (resp) => resp.url().includes('/api/public-config') && resp.status() === 200,
     );
 
     await page.goto('/');

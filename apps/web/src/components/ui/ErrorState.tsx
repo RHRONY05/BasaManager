@@ -13,9 +13,7 @@ export function ErrorState({ message, onRetry }: ErrorStateProps) {
       role="alert"
       className="rounded-lg border border-border bg-surface p-6 text-center space-y-4 max-w-md mx-auto"
     >
-      <div className="text-fg font-medium">
-        {message || t('status.error')}
-      </div>
+      <div className="text-fg font-medium">{message || t('status.error')}</div>
       {onRetry && (
         <button
           type="button"

@@ -25,11 +25,7 @@ describe('HealthController', () => {
     VAPID_PUBLIC_KEY: 'test-vapid-public-key',
   };
 
-  const createTestApp = (
-    prisma: Db,
-    redis: Redis,
-    env: Env = mockEnv
-  ) => {
+  const createTestApp = (prisma: Db, redis: Redis, env: Env = mockEnv) => {
     const app = express();
     const controller = new HealthController(env, prisma, redis);
 

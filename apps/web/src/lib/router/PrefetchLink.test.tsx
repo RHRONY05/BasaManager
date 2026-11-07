@@ -12,7 +12,7 @@ describe('PrefetchLink', () => {
         <PrefetchLink to="/l/buildings" prefetch={prefetch}>
           Buildings
         </PrefetchLink>
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     const link = screen.getByRole('link', { name: 'Buildings' });
@@ -34,7 +34,7 @@ describe('PrefetchLink', () => {
         <PrefetchLink to="/l/billing" prefetch={prefetch}>
           Billing
         </PrefetchLink>
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     const link = screen.getByRole('link', { name: 'Billing' });

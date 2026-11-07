@@ -51,7 +51,7 @@ export function createApp(deps: AppDeps): Express {
       env: deps.env,
       prisma: deps.prisma,
       redis: deps.redis,
-    })
+    }),
   );
 
   // 7. Not Found handler for unmatched routes

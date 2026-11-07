@@ -32,8 +32,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const outFile = resolve(root, 'docs/reference/openapi.json');
 
 const shared = await import('../packages/shared/src/index.ts');
-const { errorBodySchema, healthResponseSchema, readyResponseSchema, publicConfigResponseSchema } =
-  shared;
+const { errorBodySchema, healthResponseSchema, readyResponseSchema, publicConfigResponseSchema } = shared;
 
 // Schemas with `.meta({ id })` in packages/shared become named components automatically.
 const registry = new OpenAPIRegistry();

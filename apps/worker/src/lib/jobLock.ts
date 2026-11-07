@@ -13,18 +13,8 @@ end
  * Compatible with real ioredis client instances and lightweight test mocks.
  */
 export interface JobLockRedis {
-  set(
-    key: string,
-    value: string,
-    mode: 'PX',
-    ttl: number,
-    nx: 'NX'
-  ): Promise<'OK' | null | string>;
-  eval(
-    script: string,
-    numKeys: number,
-    ...args: string[]
-  ): Promise<unknown>;
+  set(key: string, value: string, mode: 'PX', ttl: number, nx: 'NX'): Promise<'OK' | null | string>;
+  eval(script: string, numKeys: number, ...args: string[]): Promise<unknown>;
 }
 
 /**
@@ -37,7 +27,7 @@ export async function withJobLock<T>(
   redis: JobLockRedis,
   name: string,
   ttlMs: number,
-  fn: () => Promise<T>
+  fn: () => Promise<T>,
 ): Promise<T | null> {
   const token = crypto.randomUUID();
   const key = `lock:job:${name}`;

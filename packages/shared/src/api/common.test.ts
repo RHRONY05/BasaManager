@@ -68,9 +68,7 @@ describe('envelopes', () => {
   it('listEnvelope wraps items and a page', () => {
     const body = { data: [{ n: 1 }, { n: 2 }], page: { nextCursor: null } };
     expect(listEnvelope(item).parse(body)).toEqual(body);
-    expect(
-      listEnvelope(item).safeParse({ data: [{ n: 1 }], page: { nextCursor: 'c2' } }).success,
-    ).toBe(true);
+    expect(listEnvelope(item).safeParse({ data: [{ n: 1 }], page: { nextCursor: 'c2' } }).success).toBe(true);
     expect(listEnvelope(item).safeParse({ data: [] }).success).toBe(false);
   });
 });

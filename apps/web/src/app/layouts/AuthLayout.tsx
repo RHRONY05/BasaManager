@@ -18,7 +18,9 @@ export function AuthLayout() {
             to="/"
             className="text-base sm:text-lg font-bold text-fg hover:text-accent transition-colors min-h-tap flex items-center whitespace-nowrap min-w-0"
           >
-            <span title={t('appName')} className="truncate">{t('appName')}</span>
+            <span title={t('appName')} className="truncate">
+              {t('appName')}
+            </span>
           </Link>
           <nav className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             <Link

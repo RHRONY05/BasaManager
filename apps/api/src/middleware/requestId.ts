@@ -14,11 +14,7 @@ export function requestId(req: Request, res: Response, next: NextFunction): void
 
   if (typeof incomingHeader === 'string') {
     const trimmed = incomingHeader.trim();
-    if (
-      trimmed.length > 0 &&
-      trimmed.length <= MAX_REQUEST_ID_LENGTH &&
-      REQUEST_ID_REGEX.test(trimmed)
-    ) {
+    if (trimmed.length > 0 && trimmed.length <= MAX_REQUEST_ID_LENGTH && REQUEST_ID_REGEX.test(trimmed)) {
       id = trimmed;
     }
   }

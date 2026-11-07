@@ -29,6 +29,6 @@ export function useChunkPending(): boolean {
   return useSyncExternalStore(
     subscribe,
     () => pending > 0,
-    () => false
+    () => false,
   );
 }

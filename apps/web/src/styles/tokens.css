@@ -56,7 +56,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
+  :root:not([data-theme='light']) {
     --bg-app: #0b0f17;
     --bg-surface: #111827;
     --bg-surface-hover: #1f2937;
@@ -78,7 +78,7 @@
   }
 }
 
-[data-theme="dark"] {
+[data-theme='dark'] {
   --bg-app: #0b0f17;
   --bg-surface: #111827;
   --bg-surface-hover: #1f2937;
@@ -99,7 +99,7 @@
   --danger-fg: #ffffff;
 }
 
-[data-theme="light"] {
+[data-theme='light'] {
   --bg-app: #f8fafc;
   --bg-surface: #ffffff;
   --bg-surface-hover: #f1f5f9;

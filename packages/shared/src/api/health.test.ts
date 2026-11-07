@@ -25,15 +25,12 @@ describe('readyResponseSchema', () => {
       readyResponseSchema.safeParse({ status: 'ready', checks: { db: true, redis: true } }).success,
     ).toBe(true);
     expect(
-      readyResponseSchema.safeParse({ status: 'not_ready', checks: { db: false, redis: true } })
-        .success,
+      readyResponseSchema.safeParse({ status: 'not_ready', checks: { db: false, redis: true } }).success,
     ).toBe(true);
   });
 
   it('requires both checks', () => {
-    expect(readyResponseSchema.safeParse({ status: 'ready', checks: { db: true } }).success).toBe(
-      false,
-    );
+    expect(readyResponseSchema.safeParse({ status: 'ready', checks: { db: true } }).success).toBe(false);
   });
 });
 
@@ -45,8 +42,7 @@ describe('publicConfigSchema', () => {
 
   it('rejects an unknown appEnv and undefined keys', () => {
     expect(
-      publicConfigSchema.safeParse({ appEnv: 'local', sentryDsn: null, vapidPublicKey: null })
-        .success,
+      publicConfigSchema.safeParse({ appEnv: 'local', sentryDsn: null, vapidPublicKey: null }).success,
     ).toBe(false);
     expect(publicConfigSchema.safeParse({ appEnv: 'prod' }).success).toBe(false);
   });

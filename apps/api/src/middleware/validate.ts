@@ -45,10 +45,7 @@ export function validate(schemas: ValidationSchemas): RequestHandler {
 /**
  * Typed helper to retrieve parsed validation results from `res.locals.validated`.
  */
-export function getValidated<T = unknown>(
-  res: Response,
-  target: 'body' | 'query' | 'params'
-): T {
+export function getValidated<T = unknown>(res: Response, target: 'body' | 'query' | 'params'): T {
   // Safe cast of res.locals.validated slice to requested type
   return res.locals.validated?.[target] as T;
 }

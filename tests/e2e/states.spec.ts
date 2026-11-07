@@ -109,9 +109,7 @@ test.describe('UI States Specs', () => {
     }
   });
 
-  test('check 2: slow chunks - shell stays, skeleton and progress bar visible', async ({
-    page,
-  }) => {
+  test('check 2: slow chunks - shell stays, skeleton and progress bar visible', async ({ page }) => {
     // Delay JS chunk downloads BEFORE initial navigation so idle-preloads are in flight
     await page.route('**/assets/*.js', async (route) => {
       await new Promise((r) => setTimeout(r, 1500));

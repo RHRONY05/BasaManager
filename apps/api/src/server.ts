@@ -24,10 +24,7 @@ async function bootstrap() {
 
   // Fail fast: verify database and cache connection before binding port
   logger.info('Verifying database and redis connections before startup...');
-  const [dbOk, redisOk] = await Promise.all([
-    pingDb(prisma, 2000),
-    pingRedis(redis, 2000),
-  ]);
+  const [dbOk, redisOk] = await Promise.all([pingDb(prisma, 2000), pingRedis(redis, 2000)]);
 
   if (!dbOk || !redisOk) {
     if (!dbOk) {
@@ -45,10 +42,7 @@ async function bootstrap() {
   const app = createApp({ env, prisma, redis, logger });
 
   const server = app.listen(env.PORT, () => {
-    logger.info(
-      { port: env.PORT, appEnv: env.APP_ENV },
-      `API server listening on port ${env.PORT}`
-    );
+    logger.info({ port: env.PORT, appEnv: env.APP_ENV }, `API server listening on port ${env.PORT}`);
   });
 
   // Graceful shutdown handling

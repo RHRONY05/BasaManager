@@ -12,6 +12,6 @@ if (rootEl) {
       <Providers>
         <RouterProvider router={router} />
       </Providers>
-    </StrictMode>
+    </StrictMode>,
   );
 }

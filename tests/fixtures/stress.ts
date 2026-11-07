@@ -4,8 +4,7 @@ export const STRESS_NAMES = [
   'Nusrat Jahan Binte Kamal',
 ] as const;
 
-export const STRESS_BUILDING =
-  'Al-Madina Tower, House 12/B, Road 5, Block C, Nasirabad Housing Society';
+export const STRESS_BUILDING = 'Al-Madina Tower, House 12/B, Road 5, Block C, Nasirabad Housing Society';
 
 export const STRESS_MONEY = ['৳1,25,00,000', '−৳12,500', '৳0'] as const;
 

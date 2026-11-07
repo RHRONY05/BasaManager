@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 env:
-  NODE_VERSION: "22"
+  NODE_VERSION: '22'
 
 jobs:
   lint-typecheck:
@@ -55,13 +55,13 @@ jobs:
           POSTGRES_USER: bm_owner
           POSTGRES_PASSWORD: bm_owner_dev
           POSTGRES_DB: basamanager_test
-        ports: ["5433:5432"]
+        ports: ['5433:5432']
         options: >-
           --health-cmd "pg_isready -U bm_owner -d basamanager_test"
           --health-interval 5s --health-timeout 3s --health-retries 20
       mailpit:
         image: axllent/mailpit
-        ports: ["1026:1025", "8026:8025"]
+        ports: ['1026:1025', '8026:8025']
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

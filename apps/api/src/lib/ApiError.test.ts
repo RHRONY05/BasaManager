@@ -18,14 +18,10 @@ describe('ApiError', () => {
     expect(notFound.code).toBe(ErrorCode.NOT_FOUND);
     expect(notFound.message).toBe('Custom missing');
 
-    const validation = ApiError.validation([
-      { path: 'email', message: 'invalid email' },
-    ]);
+    const validation = ApiError.validation([{ path: 'email', message: 'invalid email' }]);
     expect(validation.status).toBe(400);
     expect(validation.code).toBe(ErrorCode.VALIDATION_FAILED);
-    expect(validation.details).toEqual([
-      { path: 'email', message: 'invalid email' },
-    ]);
+    expect(validation.details).toEqual([{ path: 'email', message: 'invalid email' }]);
 
     const unauth = ApiError.unauthenticated();
     expect(unauth.status).toBe(401);

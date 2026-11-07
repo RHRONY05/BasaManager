@@ -48,7 +48,14 @@ export default tseslint.config(
     },
   },
   {
-    files: ['apps/api/**', 'apps/worker/**', 'scripts/**', 'apps/*/scripts/**', 'tests/**', '*.config.{js,ts,mjs}'],
+    files: [
+      'apps/api/**',
+      'apps/worker/**',
+      'scripts/**',
+      'apps/*/scripts/**',
+      'tests/**',
+      '*.config.{js,ts,mjs}',
+    ],
     languageOptions: {
       globals: {
         ...globals.node,

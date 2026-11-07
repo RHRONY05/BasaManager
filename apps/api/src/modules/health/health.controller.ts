@@ -10,7 +10,7 @@ export class HealthController {
   constructor(
     private readonly env: Env,
     private readonly prisma: Db,
-    private readonly redis: Redis
+    private readonly redis: Redis,
   ) {}
 
   /**
@@ -30,10 +30,7 @@ export class HealthController {
    * Answers 200 when DB and Redis answer within 1 second; otherwise 503 with the same bare shape.
    */
   public getReady = async (_req: Request, res: Response): Promise<void> => {
-    const [dbOk, redisOk] = await Promise.all([
-      pingDb(this.prisma, 1000),
-      pingRedis(this.redis, 1000),
-    ]);
+    const [dbOk, redisOk] = await Promise.all([pingDb(this.prisma, 1000), pingRedis(this.redis, 1000)]);
 
     const isReady = dbOk && redisOk;
     const body: ReadyResponse = {
