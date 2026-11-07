@@ -1,0 +1,15 @@
+// BasaManager database schema. Owner: architect (03-DATABASE.md). Implementers never edit this file.
+// Prisma 7: the connection URL lives in ../prisma.config.ts (migrations, DATABASE_OWNER_URL), and the
+// running app connects through the pg driver adapter in src/config/db.ts (DATABASE_URL, role bm_app).
+// Roles, RLS, checks and partial indexes are hand-written SQL migrations next to this file.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  runtime      = "nodejs"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
