@@ -1,0 +1,44 @@
+# The shared front door of the VM: Caddy (HTTPS, routing) and the docs site. Project name: bm-edge.
+# Caddy is the ONLY container with published ports (80 and 443). The Caddyfile lives at a stable path on the VM
+# (/opt/basamanager/edge/Caddyfile) that deploy.sh refreshes, then `caddy reload` applies it without downtime.
+x-logging: &logging
+  driver: json-file
+  options: { max-size: 20m, max-file: '5' }
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    logging: *logging
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL:?}
+    volumes:
+      - /opt/basamanager/edge/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [edge]
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:2019/config/']
+      interval: 15s
+      timeout: 3s
+      retries: 5
+
+  docs:
+    image: ghcr.io/rhrony05/basamanager-docs:${IMAGE_TAG:?}
+    restart: unless-stopped
+    logging: *logging
+    networks:
+      edge:
+        aliases: ['docs']
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+networks:
+  edge:
+    name: bm-edge
+    external: true

@@ -1,0 +1,79 @@
+# BasaManager edge. One Caddy container for the whole VM (compose.edge.yml). Certificates: automatic, Let's Encrypt (HTTP-01).
+#   basamanager.rhrony05.me          -> prod stack    (proxied by Cloudflare: orange cloud)
+#   staging.basamanager.rhrony05.me  -> staging stack (DNS-only: grey cloud, see infra/cloudflare/dns.sh)
+#   docs.basamanager.rhrony05.me     -> docs site      (DNS-only)
+# Upstream names (prod-api, staging-web, docs ...) are network aliases on the shared Docker network "bm-edge".
+{
+	email {$ACME_EMAIL}
+	servers {
+		# HTTP/3 needs UDP 443, which the Azure firewall does not open.
+		protocols h1 h2
+		# Only believe CF-Connecting-IP when the TCP peer really is Cloudflare. Everyone else: the peer address is the client.
+		trusted_proxies static 173.245.48.0/20 103.21.244.0/22 103.22.200.0/22 103.31.4.0/22 141.101.64.0/18 108.162.192.0/18 190.93.240.0/20 188.114.96.0/20 197.234.240.0/22 198.41.128.0/17 162.158.0.0/15 104.16.0.0/13 104.24.0.0/14 172.64.0.0/13 131.0.72.0/22 2400:cb00::/32 2606:4700::/32 2803:f800::/32 2405:b500::/32 2405:8100::/32 2a06:98c0::/29 2c0f:f248::/32
+		client_ip_headers CF-Connecting-IP
+	}
+}
+
+(security_headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(self), payment=()"
+		X-Frame-Options "DENY"
+		-Server
+	}
+}
+
+# args: <env name used in the upstream aliases: prod | staging>
+(app) {
+	import security_headers
+	encode zstd gzip
+
+	header {
+		# Content-Security-Policy for the React app. Google Fonts hosts are allowed because the design may load its
+		# web fonts from there; tighten this if the fonts are self-hosted. Sentry ingest host is the project's region.
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://res.cloudinary.com https://*.tile.openstreetmap.org; connect-src 'self' wss: https://*.ingest.us.sentry.io; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
+	}
+
+	@api path /api/* /socket.io/*
+	handle @api {
+		reverse_proxy {args[0]}-api:4000 {
+			# No buffering delay for server-sent events / websockets.
+			flush_interval -1
+			health_uri /api/health
+			health_interval 15s
+		}
+	}
+
+	handle {
+		@hashed path /assets/*
+		header @hashed Cache-Control "public, max-age=31536000, immutable"
+		@shell path / /index.html /sw.js /manifest.json /registerSW.js /workbox-*
+		header @shell Cache-Control "no-cache"
+		reverse_proxy {args[0]}-web:8080
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}
+
+basamanager.rhrony05.me {
+	import app prod
+}
+
+staging.basamanager.rhrony05.me {
+	import app staging
+}
+
+docs.basamanager.rhrony05.me {
+	import security_headers
+	encode zstd gzip
+	reverse_proxy docs:8080
+	log {
+		output stdout
+		format json
+	}
+}
