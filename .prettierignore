@@ -1,0 +1,11 @@
+.agent
+.claude
+pnpm-lock.yaml
+**/generated
+docs/reference/openapi.json
+**/dist
+coverage
+playwright-report
+test-results
+docs/.vitepress/cache
+docs/.vitepress/dist
