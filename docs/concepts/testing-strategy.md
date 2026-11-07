@@ -71,7 +71,7 @@ routes to them.
 
 - **`tests/e2e/layout.spec.ts`** opens every route at widths 320, 360, 390, 414, 768 and 1440, in light and
   dark, in English and in the pseudo-locale `en-XA` (every string is accented and made 40% longer, so a layout
-  that survives it survives Bangla and long names). Each page is run through `auditLayout()` in
+  that survives it survives Bangla and long names). `?lng=en-XA` is honoured only in dev/test builds, so the e2e web server is built with `vite build --mode test`; a production build ignores it. Each page is run through `auditLayout()` in
   `tests/helpers/layout-audit.ts`, which measures the real rendered boxes and reports a violation for:
   horizontal page scroll, an element sticking out of the viewport, text overflowing or clipped, truncated
   text without a `title`, text under 11 px, a wrapped button/nav label, a label not centred in its button,

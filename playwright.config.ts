@@ -42,7 +42,7 @@ export default defineConfig({
       },
     },
     {
-      command: 'pnpm --filter @bm/web build && pnpm --filter @bm/web preview',
+      command: 'pnpm --filter @bm/web build --mode test && pnpm --filter @bm/web preview',
       url: 'http://localhost:4173',
       reuseExistingServer: !process.env.CI,
       env: {
