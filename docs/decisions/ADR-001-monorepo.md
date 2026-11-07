@@ -51,8 +51,10 @@ extra orchestration tool.
 
 - **Import direction is a rule, not something the tooling enforces.** `web` may import `shared`; `api` may
   import `shared` and `domain`; `shared` and `domain` import nothing from the apps. Today one rule bends:
-  `apps/worker/src/index.ts` reaches into `../../api/src/config/env` by relative path, because `@bm/api` does
-  not export subpaths. A cleaner arrangement, not yet decided, would be to move the config loader to a place both apps import from.
+  `apps/worker` imports code from `apps/api` (the worker shares its services, see 02-ARCHITECTURE).
+  It does so through the `exports` map in `apps/api/package.json` (`@bm/api/config/*`, `@bm/api/lib/*`, later
+  `@bm/api/modules/*`), never by a relative path across packages. A Docker build for the worker must therefore
+  copy `apps/api` too.
 - **Shared code must stay "erasable" TypeScript** (no `enum`, no `namespace`): `scripts/openapi.mjs` runs the
   `shared` sources directly with Node's type stripping.
 - **A failure anywhere blocks everyone.** CI has six required checks; a red check in a package you did not touch

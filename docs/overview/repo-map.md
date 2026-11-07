@@ -49,12 +49,14 @@ the health module exists.
 ### `apps/worker`
 
 A separate Node process for work that must not block web requests: scheduled jobs, notification delivery,
-PDF rendering. After V1 it only loads config, creates a logger and Redis client, logs `worker started` and
-shuts down cleanly on SIGTERM/SIGINT.
+PDF rendering. After V1 it only loads config (`@bm/api/config/env`), creates a logger (`@bm/api/lib/logger`),
+connects to Redis and exits 1 if it cannot (fail fast, like the API), logs `worker started` and shuts down
+cleanly on SIGTERM/SIGINT.
 
 | Path                             | What it is                                                                         |
 | -------------------------------- | ---------------------------------------------------------------------------------- |
 | `apps/worker/src/index.ts`       | Boot and graceful shutdown                                                         |
+| `apps/worker/src/boot.ts`        | `startWorker`: pings Redis, exits 1 when unreachable (tested)                      |
 | `apps/worker/src/jobs/index.ts`  | The job registry: an empty `jobs` array of `{ name, schedule, ttlMs, run }`        |
 | `apps/worker/src/lib/jobLock.ts` | `withJobLock`: a Redis lock so two workers never run the same job at once (tested) |
 

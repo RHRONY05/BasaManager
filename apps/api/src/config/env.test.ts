@@ -65,6 +65,25 @@ describe('loadEnv', () => {
     expect(loadEnv(testEnv).CLOCK_OVERRIDE).toBe('2026-11-08T00:00:00Z');
   });
 
+  it('refuses a CLOCK_OVERRIDE that is not an ISO datetime', () => {
+    for (const bad of ['yesterday', '2026-11-08', '2026-13-45T00:00:00Z', '2026-11-08 00:00:00']) {
+      expect(() => loadEnv({ ...baseValidEnv, APP_ENV: 'dev', CLOCK_OVERRIDE: bad })).toThrow(
+        /CLOCK_OVERRIDE/,
+      );
+    }
+  });
+
+  it('accepts CLOCK_OVERRIDE with an offset and treats empty as unset', () => {
+    expect(
+      loadEnv({ ...baseValidEnv, APP_ENV: 'dev', CLOCK_OVERRIDE: '2026-11-08T06:00:00+06:00' })
+        .CLOCK_OVERRIDE,
+    ).toBe('2026-11-08T06:00:00+06:00');
+    expect(
+      loadEnv({ ...baseValidEnv, APP_ENV: 'staging', COOKIE_SECURE: 'true', CLOCK_OVERRIDE: '' })
+        .CLOCK_OVERRIDE,
+    ).toBeUndefined();
+  });
+
   it('refuses SSLCOMMERZ_SANDBOX=false in any environment', () => {
     const invalidEnv = {
       ...baseValidEnv,
