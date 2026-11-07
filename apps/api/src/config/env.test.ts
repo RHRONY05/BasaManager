@@ -93,3 +93,32 @@ describe('loadEnv', () => {
     expect(parsed.COOKIE_SECURE).toBe(true);
   });
 });
+
+describe('lazy env proxy', () => {
+  it('parses process.env on first access and exposes keys and descriptors', async () => {
+    const { vi } = await import('vitest');
+    vi.resetModules();
+    for (const [k, v] of Object.entries(baseValidEnv)) vi.stubEnv(k, v);
+    try {
+      const mod = await import('./env');
+      expect(mod.env.PORT).toBe(4000);
+      expect(Object.keys(mod.env)).toContain('DATABASE_URL');
+      expect(Object.getOwnPropertyDescriptor(mod.env, 'APP_ENV')?.value).toBe('dev');
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it('throws a readable CONFIG ERROR on first access when process.env is invalid', async () => {
+    const { vi } = await import('vitest');
+    vi.resetModules();
+    vi.stubEnv('APP_ENV', 'nonsense');
+    vi.stubEnv('DATABASE_URL', '');
+    try {
+      const mod = await import('./env');
+      expect(() => mod.env.PORT).toThrow(/CONFIG ERROR/);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+});

@@ -56,6 +56,9 @@ export default defineConfig({
         'apps/worker/src/**',
         'apps/web/src/**',
       ],
+      // Process bootstraps are exercised by integration/e2e boots, not unit tests; generated Prisma code and the
+      // domain stub (real code from V8) are not ours to cover. Decided 2026-11-08 (PROGRESS.md).
+      exclude: ['**/generated/**', '**/*.test.*', 'apps/api/src/server.ts', 'apps/worker/src/index.ts', 'packages/domain/src/index.ts'],
       thresholds: {
         'packages/domain/src/**': {
           lines: 95,
