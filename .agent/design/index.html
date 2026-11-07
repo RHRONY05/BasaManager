@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BasaManager · UI design</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="ui.css">
+<script src="screens.js"></script>
+<style>
+  /* gallery chrome only — layout, tokens only */
+  .g-head { position: sticky; top: 0; z-index: var(--z-sticky); display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; padding: var(--space-3) var(--space-8); background: var(--bg-surface); border-bottom: 1px solid var(--border-default); }
+  .g-head h1 { font-size: var(--text-lg); line-height: var(--leading-lg); }
+  .g-head p { color: var(--fg-muted); font-size: var(--text-sm); }
+  .g-head .segmented { margin-left: auto; }
+  .g-group { padding: var(--space-8) var(--space-8) 0; display: grid; gap: var(--space-4); }
+  .g-group h2 { font-size: var(--text-sm); line-height: var(--leading-sm); letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--fg-muted); font-weight: var(--weight-bold); }
+  .g-grid { display: flex; flex-wrap: wrap; gap: var(--space-8); align-items: flex-start; }
+  .g-fig { display: grid; gap: var(--space-2); }
+  .g-cap { display: flex; align-items: baseline; gap: var(--space-2); font-size: var(--text-sm); font-weight: var(--weight-semibold); }
+  .g-cap a { font-weight: var(--weight-regular); }
+  .g-cap .muted { font-weight: var(--weight-regular); font-family: var(--font-mono); font-size: var(--text-xs); }
+  .g-clip { overflow: hidden; border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--bg-app); box-shadow: var(--shadow-md); }
+  .g-clip iframe { border: 0; display: block; transform-origin: 0 0; }
+  .g-foot { padding: var(--space-12) var(--space-8); color: var(--fg-muted); font-size: var(--text-sm); }
+</style>
+</head>
+<body>
+<header class="g-head">
+  <span class="brand"><svg class="brand__mark" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15 16 6l10 9"/><path d="M9 13v9h14v-9"/><path d="M13.5 22v-5h5v5"/><path d="M5 26h22M5 29.5h22" stroke-width="1.6"/></svg>BasaManager <span class="brand__bn" lang="bn">বাসা ম্যানেজার</span></span>
+  <h1>UI design · V2</h1>
+  <p>Desktop at 40 %, mobile at 60 %. Click a title to open the artboard at full size.</p>
+  <div class="segmented" role="group" aria-label="Theme">
+    <button type="button" data-t="system" aria-pressed="true">System</button>
+    <button type="button" data-t="light" aria-pressed="false">Light</button>
+    <button type="button" data-t="dark" aria-pressed="false">Dark</button>
+  </div>
+</header>
+<main id="gallery"></main>
+<p class="g-foot">Sample names and amounts are examples, not seed data. Source of truth for looks: this folder. Behaviour: .agent/06-UI.md.</p>
+<script>
+  (function () {
+    var C = window.CANVAS;
+    var root = document.getElementById('gallery');
+    function render(theme) {
+      root.innerHTML = '';
+      C.groups.forEach(function (g) {
+        var sec = document.createElement('section');
+        sec.className = 'g-group';
+        sec.innerHTML = '<h2>' + g.title + '</h2><div class="g-grid"></div>';
+        var grid = sec.querySelector('.g-grid');
+        g.screens.forEach(function (s) {
+          var k = s.w >= 768 ? 0.4 : 0.6;
+          var src = s.file + (theme === 'system' ? '' : '?theme=' + theme);
+          var fig = document.createElement('figure');
+          fig.className = 'g-fig';
+          fig.innerHTML = '<figcaption class="g-cap">' + s.title + ' <a href="' + src + '" target="_blank" rel="noopener">open</a>' + (s.route ? ' <span class="muted">' + s.route + '</span>' : '') + '</figcaption>' +
+            '<div class="g-clip" style="width:' + Math.round(s.w * k) + 'px;height:' + Math.round(s.h * k) + 'px">' +
+            '<iframe src="' + src + '" width="' + s.w + '" height="' + s.h + '" style="transform:scale(' + k + ')" loading="lazy" title="' + s.title + '"></iframe></div>';
+          var iframe = fig.querySelector('iframe'), clip = fig.querySelector('.g-clip');
+          iframe.addEventListener('load', function () {
+            try { // same-origin when served over http: fit the frame to the artboard's real height
+              var h = Math.max(s.h, iframe.contentDocument.documentElement.scrollHeight);
+              iframe.height = h; clip.style.height = Math.round(h * k) + 'px';
+            } catch (e) { /* file:// — keep manifest height */ }
+          });
+          grid.appendChild(fig);
+        });
+        root.appendChild(sec);
+      });
+    }
+    document.querySelectorAll('.segmented button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        document.querySelectorAll('.segmented button').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+        var t = b.getAttribute('data-t');
+        if (t === 'system') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', t);
+        render(t);
+      });
+    });
+    render('system');
+  })();
+</script>
+</body>
+</html>
