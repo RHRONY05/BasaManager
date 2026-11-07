@@ -47,7 +47,8 @@ async function runOnce(): Promise<string[]> {
       const body = (await res.json()) as { status?: string; release?: string };
       assert(body.status === 'ok', `status field is ${String(body.status)}`);
       if (forceFail) assert(false, 'SMOKE_FORCE_FAIL=1 (deliberate failure to prove rollback)');
-      if (expectSha) assert(body.release === expectSha, `release ${String(body.release)} != expected ${expectSha}`);
+      if (expectSha)
+        assert(body.release === expectSha, `release ${String(body.release)} != expected ${expectSha}`);
     }),
   );
   failures.push(
@@ -62,7 +63,8 @@ async function runOnce(): Promise<string[]> {
       assert(res.status === 200, `status ${res.status}`);
       const body = (await res.json()) as { data?: { appEnv?: string } };
       assert(Boolean(body.data?.appEnv), 'appEnv missing');
-      if (expectEnv) assert(body.data?.appEnv === expectEnv, `appEnv ${String(body.data?.appEnv)} != ${expectEnv}`);
+      if (expectEnv)
+        assert(body.data?.appEnv === expectEnv, `appEnv ${String(body.data?.appEnv)} != ${expectEnv}`);
     }),
   );
   failures.push(

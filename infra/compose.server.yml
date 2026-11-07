@@ -38,7 +38,12 @@ services:
     restart: unless-stopped
     logging: *logging
     # The password comes from the environment so it does not show up in `ps` or `docker inspect` arguments.
-    command: ['sh', '-c', 'exec redis-server --requirepass "$${REDIS_PASSWORD}" --appendonly yes --maxmemory 128mb --maxmemory-policy noeviction']
+    command:
+      [
+        'sh',
+        '-c',
+        'exec redis-server --requirepass "$${REDIS_PASSWORD}" --appendonly yes --maxmemory 128mb --maxmemory-policy noeviction',
+      ]
     volumes:
       - redisdata:/data
     environment:
