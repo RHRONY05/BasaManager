@@ -85,6 +85,15 @@ CI green (lint, typecheck, unit, integration, e2e desktop + mobile, docs build, 
 · reviewer approval · the learning docs for the feature updated · PROGRESS.md entry. Staging smoke
 tests must pass before the lead tags a release; prod deploys only from a tag.
 
+Reviewer approval = the reviewer agent's APPROVE review (or comment) on the PR; it posts from the owner's own
+GitHub account, which GitHub does not let approve its own PR, so "required approving reviews" is 0 and the
+**lead checks the approval before merging**. Required status checks (CI job names): `lint-typecheck`, `unit`,
+`integration`, `e2e`, `docs`, `security` (pnpm audit, gitleaks, CodeQL). **GitHub branch protection and
+rulesets are unavailable** for a private repo on the free plan (HTTP 403, checked 2026-11-08), so these gates
+are **enforced by the lead by hand**: merge only with all six checks green and the branch up to date, squash
+only (the repo setting allows nothing else), never force-push or delete `main`. If the repo ever becomes
+public or the plan changes, apply the protection with the checks above (strict, linear history, 0 reviews).
+
 ## Escalation (instead of asking the human)
 | Situation | Who decides |
 |---|---|

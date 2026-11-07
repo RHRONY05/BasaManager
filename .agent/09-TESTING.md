@@ -109,5 +109,5 @@ for app pages. Local production build in V16, then **prod** in V17.
 Jobs in parallel where possible: `lint+typecheck` → `unit` → `integration` (services: postgres:17, redis:7,
 mailpit) → `e2e` (full stack via `compose.test.yml`, Playwright both projects, upload report +
 traces on failure) · `docs` · `security` (pnpm audit --prod high, gitleaks, CodeQL) · `build-images`
-(on `main` only). Cache pnpm store and Playwright browsers. Flaky tests are fixed, never retried away
+(V3, on `main` only; not in `ci.yml` yet). Actual job names: `lint-typecheck`, `unit`, `integration`, `e2e`, `docs`, `security`. `integration` uses service containers (postgres:17, mailpit) plus a `docker run` Redis with the test password and runs `infra/postgres/init/01-roles.sql` with `psql`; `e2e` starts `infra/compose.test.yml`. Cache pnpm store and Playwright browsers. Flaky tests are fixed, never retried away
 (Playwright `retries: 0` locally, `1` in CI with flake report; a flaky test opens a debugger task).

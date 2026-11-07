@@ -94,6 +94,20 @@ BasaManager/
 | Deploy | — | — | every merge to `main` | every `v*` tag |
 | Seed | demo org (`pnpm db:seed`) | per-test factories | demo org + role test users | admin user only (+ demo org flagged `is_demo`) |
 
+### Local ports and database roles (decided in V1)
+| | dev (`infra/compose.dev.yml`, project `bm-dev`) | test (`infra/compose.test.yml`, project `bm-test`, data in tmpfs) |
+|---|---|---|
+| Postgres 17 | 5432, db `basamanager_dev` | 5433, db `basamanager_test` |
+| Redis 7 (`requirepass redis_dev`) | 6379 | 6380 |
+| Mailpit SMTP / UI | 1025 / 8025 | 1026 / 8026 |
+| API / web | 4000 / 5173 | 4100 / 4173 (e2e preview) |
+
+Postgres superuser `bm_owner` (password `bm_owner_dev`) owns the database. `infra/postgres/init/01-roles.sql`
+(run on first container start, and by `psql` in CI) creates login roles `bm_app` (`NOBYPASSRLS`, `bm_app_dev`),
+`bm_worker` (`BYPASSRLS`, `bm_worker_dev`), `bm_readonly` (`bm_readonly_dev`) plus the `citext` and `pgcrypto`
+extensions. These passwords are **dev/test only**; staging/prod get generated ones in V3. The V4 migration
+`0001_roles.sql` is idempotent on top of this. Copy `.env.example` to `.env` and `.env.test.example` to `.env.test`.
+
 ## Environment variables (`.env.example`)
 ```dotenv
 # ── core ───────────────────────────────────────────────
