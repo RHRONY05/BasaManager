@@ -18,9 +18,12 @@
     "db:migrate": "pnpm --filter @bm/api db:migrate",
     "db:seed": "pnpm --filter @bm/api db:seed",
     "e2e:seed": "pnpm --filter @bm/api e2e:seed",
-    "db:docs": "node scripts/db-docs.mjs"
+    "db:docs": "node scripts/db-docs.mjs",
+    "openapi": "node scripts/openapi.mjs",
+    "openapi:check": "node scripts/openapi.mjs --check"
   },
   "devDependencies": {
+    "@asteasolutions/zod-to-openapi": "9.1.0",
     "@axe-core/playwright": "4.14.0",
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.65.0",
