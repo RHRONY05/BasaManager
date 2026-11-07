@@ -78,9 +78,15 @@ export async function auditLayout(page: import('@playwright/test').Page): Promis
       const r = el.getBoundingClientRect(); const cs = getComputedStyle(el);
       return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none' && cs.opacity !== '0';
     };
+    // Counts lines of TEXT only (decided 2026-11-08, V1): an icon above a label (bottom nav) is not a wrapped label.
     const lineCount = (el: Element) => {
-      const range = document.createRange(); range.selectNodeContents(el);
-      const tops = new Set([...range.getClientRects()].filter(r => r.width > 1).map(r => Math.round(r.top)));
+      const tops = new Set<number>();
+      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+        if (!n.textContent!.trim()) continue;
+        const range = document.createRange(); range.selectNodeContents(n);
+        for (const r of range.getClientRects()) if (r.width > 1) tops.add(Math.round(r.top));
+      }
       return tops.size;
     };
 
