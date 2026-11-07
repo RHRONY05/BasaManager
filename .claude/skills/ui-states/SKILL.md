@@ -28,6 +28,11 @@ bug. It's one or more of these, all common in agent-written React:
   `useQuery` and shows its skeleton while `isPending`.
 - `<Suspense>` boundaries sit **inside** each layout, around the `<Outlet />`, with that route's skeleton as the
   fallback, so the shell (sidebar, top bar, bottom nav) never disappears and the content area shows a skeleton.
+- **Route components are `React.lazy` pages** (`page()` in `apps/web/src/app/router.tsx`), never React Router route
+  `lazy`: route `lazy` resolves inside the navigation and freezes the old page with no URL or nav change (found in V1,
+  2026-11-08). Each layout wraps its `<Outlet/>` in `<Suspense key={location.pathname} fallback={<RouteSkeleton/>}>`;
+  the **key is required**, because an already-mounted boundary keeps the old UI during a transition. `RouteSkeleton`
+  also drives the top progress bar, since `useNavigation()` stays `idle` while a `React.lazy` page loads.
 - Avoid `useSuspenseQuery` for page content. Use `useQuery` + explicit skeletons (predictable, no transition surprises).
 - A global **top progress bar** (2 px, accent token) appears if a navigation or route-chunk load takes
   more than 150 ms (`useNavigation().state !== 'idle'`), and finishes when the route renders.
