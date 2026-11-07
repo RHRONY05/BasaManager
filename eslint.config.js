@@ -27,7 +27,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['scripts/**', 'tests/**'],
+    files: ['scripts/**', 'apps/*/scripts/**', 'tests/**'],
     rules: {
       'no-console': 'off',
     },
@@ -48,7 +48,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['apps/api/**', 'apps/worker/**', 'scripts/**', 'tests/**'],
+    files: ['apps/api/**', 'apps/worker/**', 'scripts/**', 'apps/*/scripts/**', 'tests/**', '*.config.{js,ts,mjs}'],
     languageOptions: {
       globals: {
         ...globals.node,
