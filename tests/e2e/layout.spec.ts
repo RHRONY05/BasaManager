@@ -1,19 +1,12 @@
 import { test, expect } from '@playwright/test';
 import { auditLayout } from '../helpers/layout-audit';
+import { ROUTE_PATHS } from '../../apps/web/src/lib/router/preload';
 
 /**
- * Table of routes to audit. Later tasks append their new routes and roles here.
+ * Every routed page, taken from the one list the router is tested against (ROUTE_PATHS), so a new page
+ * cannot be forgotten. Plus the 404 page, which is not a listed route.
  */
-const ROUTES = [
-  { path: '/', name: 'Landing' },
-  { path: '/login', name: 'Login' },
-  { path: '/signup', name: 'Signup' },
-  { path: '/l', name: 'Landlord Dashboard' },
-  { path: '/t', name: 'Tenant Home' },
-  { path: '/a', name: 'Admin' },
-  { path: '/account', name: 'Account' },
-  { path: '/does-not-exist', name: 'Not Found' },
-];
+const ROUTES = [...ROUTE_PATHS, '/does-not-exist'].map((path) => ({ path, name: path }));
 
 const WIDTHS = [320, 360, 390, 414, 768, 1440];
 const COLOR_SCHEMES = ['light', 'dark'] as const;

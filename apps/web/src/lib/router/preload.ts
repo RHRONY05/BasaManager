@@ -23,6 +23,12 @@ export const pageLoaders = {
 
 export type RoutePath = keyof typeof pageLoaders;
 
+/**
+ * Every routed page path. The single source for the router test and the e2e specs (layout, states),
+ * so a new page cannot be added without being audited.
+ */
+export const ROUTE_PATHS = Object.keys(pageLoaders) as RoutePath[];
+
 const preloadedSet = new Set<string>();
 
 export function preloadRoute(path: string): Promise<unknown> {

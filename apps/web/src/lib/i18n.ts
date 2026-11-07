@@ -2,31 +2,22 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import commonEn from '../locales/en/common.json';
 import { generatePseudoLocale } from './pseudo-locale';
+import { resolveInitialLng } from './lng';
 
 const pseudoCommon = generatePseudoLocale(commonEn);
 
-let initialLng = 'en';
-if (typeof window !== 'undefined') {
-  const searchParams = new URLSearchParams(window.location.search);
-  const urlLng = searchParams.get('lng');
-  if (urlLng) {
-    initialLng = urlLng;
-    try {
-      localStorage.setItem('bm.lng', urlLng);
-    } catch {
-      // Ignore storage errors
-    }
-  } else {
-    try {
-      const savedLng = localStorage.getItem('bm.lng');
-      if (savedLng) {
-        initialLng = savedLng;
-      }
-    } catch {
-      // Ignore storage errors
-    }
+function safeLocalStorage(): Storage | null {
+  try {
+    return localStorage;
+  } catch {
+    return null;
   }
 }
+
+const initialLng =
+  typeof window === 'undefined'
+    ? 'en'
+    : resolveInitialLng(window.location.search, import.meta.env.MODE, safeLocalStorage());
 
 void i18n.use(initReactI18next).init({
   lng: initialLng,

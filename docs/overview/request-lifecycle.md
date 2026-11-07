@@ -104,11 +104,14 @@ sequenceDiagram
 
 ### What `errorHandler` does with each kind of error
 
-| What was thrown                          | Response                                                                      | Logged?                                             |
-| ---------------------------------------- | ----------------------------------------------------------------------------- | --------------------------------------------------- |
-| `ApiError` (our own typed error)         | Its status and code, its message, `details` if any                            | By pino-http as a 4xx `warn`                        |
-| `ZodError` (a schema rejected the input) | 400 `VALIDATION_FAILED`, `details` from `toErrorDetails(issues)`              | By pino-http as a 4xx `warn`                        |
-| Anything else                            | 500 `INTERNAL`, message "Something went wrong". **No stack trace, no detail** | `req.log.error` with the full error and `requestId` |
+| What was thrown                                                                                        | Response                                                                                                       | Logged?                                             |
+| ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| `ApiError` (our own typed error)                                                                       | Its status and code, its message, `details` if any                                                             | By pino-http as a 4xx `warn`                        |
+| `ZodError` (a schema rejected the input)                                                               | 400 `VALIDATION_FAILED`, `details` from `toErrorDetails(issues)`                                               | By pino-http as a 4xx `warn`                        |
+| Malformed JSON body (`entity.parse.failed`)                                                            | 400 `VALIDATION_FAILED`, "Request body is not valid JSON"                                                      | By pino-http as a 4xx `warn`                        |
+| Body over 100 kB (`entity.too.large`)                                                                  | 413 `PAYLOAD_TOO_LARGE`                                                                                        | By pino-http as a 4xx `warn`                        |
+| Any other error with a 4xx `status` (bad `%` in the path, unsupported charset 415, failed body verify) | 400 `VALIDATION_FAILED`, fixed message "Request could not be processed" (the original message is never echoed) | By pino-http as a 4xx `warn`                        |
+| Anything else                                                                                          | 500 `INTERNAL`, message "Something went wrong". **No stack trace, no detail**                                  | `req.log.error` with the full error and `requestId` |
 
 Every body has the same shape and a `requestId`. When a user reports "it said something went wrong", the
 `requestId` they quote is the key you search the logs for. See [Error codes](/reference/error-codes).
