@@ -28,6 +28,11 @@ describe('errorHandler middleware', () => {
       throw new Error('Secret database crashed unexpectedly');
     });
 
+    app.use(express.json({ limit: '100kb' }));
+    app.post('/echo', (_req, res) => {
+      res.json({ ok: true });
+    });
+
     app.use(errorHandler);
     return app;
   };
@@ -76,5 +81,27 @@ describe('errorHandler middleware', () => {
     expect(res.body.error.stack).toBeUndefined();
     expect(res.text).not.toContain('Secret database crashed unexpectedly');
     expect(res.text).not.toContain('at createTestApp');
+  });
+  it('maps malformed JSON bodies to 400 VALIDATION_FAILED', async () => {
+    const res = await request(createTestApp())
+      .post('/echo')
+      .set('Content-Type', 'application/json')
+      .send('{bad');
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe(ErrorCode.VALIDATION_FAILED);
+    expect(res.body.error.message).toBe('Request body is not valid JSON');
+    expect(res.body.error.requestId).toBe(res.headers['x-request-id']);
+  });
+
+  it('maps bodies over the limit to 413 PAYLOAD_TOO_LARGE', async () => {
+    const res = await request(createTestApp())
+      .post('/echo')
+      .set('Content-Type', 'application/json')
+      .send(JSON.stringify({ blob: 'x'.repeat(101 * 1024) }));
+
+    expect(res.status).toBe(413);
+    expect(res.body.error.code).toBe(ErrorCode.PAYLOAD_TOO_LARGE);
+    expect(res.body.error.requestId).toBe(res.headers['x-request-id']);
   });
 });

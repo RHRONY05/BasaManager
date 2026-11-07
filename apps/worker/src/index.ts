@@ -1,7 +1,7 @@
-import pino from 'pino';
 import { Redis } from 'ioredis';
 // Reused from apps/api because @bm/api does not export subpaths in package.json
 import { loadEnv } from '../../api/src/config/env';
+import { createLogger } from '../../api/src/lib/logger';
 
 async function bootstrap() {
   let env;
@@ -13,10 +13,7 @@ async function bootstrap() {
     process.exit(1);
   }
 
-  const logger = pino({
-    level: env.LOG_LEVEL,
-    timestamp: pino.stdTimeFunctions.isoTime,
-  });
+  const logger = createLogger({ level: env.LOG_LEVEL });
 
   const redis = new Redis(env.REDIS_URL, {
     lazyConnect: true,

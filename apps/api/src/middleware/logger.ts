@@ -1,7 +1,8 @@
 import type { RequestHandler, Request, Response, NextFunction } from 'express';
 import pinoHttp from 'pino-http';
 import type { Logger } from 'pino';
-import { REDACT_PATHS } from '../lib/logger';
+import pino from 'pino';
+import { REDACT_PATHS, redactUrl } from '../lib/logger';
 import { newRequestId } from '../lib/ids';
 
 /**
@@ -26,7 +27,16 @@ export function createHttpLogger(logger: Logger): RequestHandler {
     autoLogging: {
       ignore: (req) => {
         const path = req.url ? req.url.split('?')[0] : '';
-        return path === '/api/health' || path === '/health';
+        return path === '/api/health' || path === '/health' || path === '/api/ready' || path === '/ready';
+      },
+    },
+    serializers: {
+      // Default serializer minus the raw query object, with sensitive query values masked in the url.
+      req: (req: Parameters<typeof pino.stdSerializers.req>[0]) => {
+        const { query: _query, ...rest } = pino.stdSerializers.req(req) as ReturnType<
+          typeof pino.stdSerializers.req
+        > & { query?: unknown };
+        return { ...rest, url: redactUrl(rest.url) };
       },
     },
     customLogLevel: (_req, res, err) => {

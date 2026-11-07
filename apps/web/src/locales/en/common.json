@@ -29,7 +29,9 @@
     "notFound": "Page not found",
     "notFoundDesc": "The page you are looking for does not exist or has been moved.",
     "routeError": "An error occurred while rendering this page.",
-    "env": "Environment: {{env}}"
+    "env": "Environment: {{env}}",
+    "systemStatus": "System Status",
+    "loadingPage": "Loading page"
   },
   "landing": {
     "title": "Apartment management for Bangladesh",

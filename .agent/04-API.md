@@ -12,6 +12,7 @@ in CI, so docs and code can't drift.
   Codes live in `packages/shared/src/errors.ts`. The UI shows `message`; the code drives special handling.
 - Standard codes: `VALIDATION_FAILED` 400 · `UNAUTHENTICATED` 401 · `FORBIDDEN` 403 · `NOT_FOUND` 404 (also
   used for "exists but not yours", never leak existence) · `CONFLICT` 409 · `RATE_LIMITED` 429 ·
+  `PAYLOAD_TOO_LARGE` 413 (JSON body over 100 kB; malformed JSON is `VALIDATION_FAILED`) ·
   `ORG_SUSPENDED` 423 · `INTERNAL` 500.
 - Specific codes (one code → one status, `errorStatus` in `errors.ts`): `TOKEN_INVALID` 400 ·
   `INVALID_CREDENTIALS` 401 · `ACCOUNT_LOCKED` 423 · `SESSION_REVOKED` 401 · `INVITE_EMAIL_MISMATCH` 403 ·

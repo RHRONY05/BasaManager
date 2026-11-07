@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigation } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { useChunkPending } from './chunkPending';
 
 export function TopProgressBar() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const chunkPending = useChunkPending();
   const isNavigating = navigation.state !== 'idle' || chunkPending;
@@ -34,7 +36,7 @@ export function TopProgressBar() {
   return (
     <div
       role="progressbar"
-      aria-label="Loading page"
+      aria-label={t('status.loadingPage')}
       aria-valuemin={0}
       aria-valuemax={100}
       className="fixed top-0 left-0 right-0 h-0.5 bg-accent z-50 animate-pulse"

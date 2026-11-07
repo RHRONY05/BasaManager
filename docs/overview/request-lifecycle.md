@@ -29,7 +29,7 @@ All of it is wired in `apps/api/src/app.ts`. The order matters, and the reasons 
 | #   | Middleware                               | What it does                                                                                                                                                                                      |
 | --- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1   | `requestId`                              | Reuses the caller's `X-Request-Id` if it is 1 to 64 characters of letters, digits and `-`; otherwise makes a new UUID. Stores it as `req.id` and echoes it in the `X-Request-Id` response header. |
-| 2   | `createHttpLogger` (pino-http)           | Writes one JSON log line per finished request, tagged with `req.id`. Redacts secrets. Skips `/api/health`. Never logs bodies.                                                                     |
+| 2   | `createHttpLogger` (pino-http)           | Writes one JSON log line per finished request, tagged with `req.id`. Redacts secrets (including sensitive query values in the URL). Skips `/api/health` and `/api/ready`. Never logs bodies.      |
 | 3   | `helmet()`                               | Adds the standard security response headers.                                                                                                                                                      |
 | 4   | `express.json({ limit: '100kb' })`       | Parses JSON request bodies; anything bigger than 100 kb is rejected.                                                                                                                              |
 | 5   | `cookieParser()`                         | Fills `req.cookies`. Nothing reads it until auth arrives in V5.                                                                                                                                   |
@@ -132,27 +132,26 @@ say "check my body, query and params against these Zod schemas": parsed values g
 
 ## Edge cases
 
-| Case                                               | What happens                                                                  | Proved by                                      |
-| -------------------------------------------------- | ----------------------------------------------------------------------------- | ---------------------------------------------- |
-| Caller sends a good `X-Request-Id`                 | It is reused, so a request can be traced across systems                       | `apps/api/src/middleware/requestId.test.ts`    |
-| Caller sends a bad or 65+ character `X-Request-Id` | Ignored; a fresh UUID is used (stops log injection and giant ids)             | `apps/api/src/middleware/requestId.test.ts`    |
-| Redis is down                                      | `/api/ready` returns 503 `not_ready` with `redis: false`, in about 1 second   | `apps/api/test/ready.int.test.ts`              |
-| Postgres is down                                   | Same, with `db: false`                                                        | `apps/api/src/modules/health/health.test.ts`   |
-| Unknown route                                      | 404 `NOT_FOUND` in the shared error shape, `requestId` equals the header      | `apps/api/test/ready.int.test.ts`              |
-| A handler throws an ordinary `Error`               | 500 `INTERNAL`, generic message, the real error text never reaches the client | `apps/api/src/middleware/errorHandler.test.ts` |
-| A Zod schema rejects input                         | 400 `VALIDATION_FAILED` with `details`                                        | `apps/api/src/middleware/errorHandler.test.ts` |
-| Startup with Postgres or Redis unreachable         | Logs `fatal`, exits 1 before binding the port                                 | `server.ts` (no automated test yet)            |
-| **Malformed JSON body, or a body over 100 kb**     | **Today this returns 500 `INTERNAL`**, see the gotcha below                   | Checked by hand, no test                       |
+| Case                                               | What happens                                                                  | Proved by                                         |
+| -------------------------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------- |
+| Caller sends a good `X-Request-Id`                 | It is reused, so a request can be traced across systems                       | `apps/api/src/middleware/requestId.test.ts`       |
+| Caller sends a bad or 65+ character `X-Request-Id` | Ignored; a fresh UUID is used (stops log injection and giant ids)             | `apps/api/src/middleware/requestId.test.ts`       |
+| Redis is down                                      | `/api/ready` returns 503 `not_ready` with `redis: false`, in about 1 second   | `apps/api/test/ready.int.test.ts`                 |
+| Postgres is down                                   | Same, with `db: false`                                                        | `apps/api/src/modules/health/health.test.ts`      |
+| Unknown route                                      | 404 `NOT_FOUND` in the shared error shape, `requestId` equals the header      | `apps/api/test/ready.int.test.ts`                 |
+| A handler throws an ordinary `Error`               | 500 `INTERNAL`, generic message, the real error text never reaches the client | `apps/api/src/middleware/errorHandler.test.ts`    |
+| A Zod schema rejects input                         | 400 `VALIDATION_FAILED` with `details`                                        | `apps/api/src/middleware/errorHandler.test.ts`    |
+| Startup with Postgres or Redis unreachable         | Logs `fatal`, exits 1 before binding the port                                 | `server.ts` (no automated test yet)               |
+| Malformed JSON body                                | 400 `VALIDATION_FAILED`, "Request body is not valid JSON"                     | `errorHandler.test.ts`, `body-errors.int.test.ts` |
+| A body over 100 kb                                 | 413 `PAYLOAD_TOO_LARGE`                                                       | `errorHandler.test.ts`, `body-errors.int.test.ts` |
 
 ## Gotchas
 
-- **A known gap.** The JSON parser (`express.json`) throws its own errors for bad JSON (status 400) and
-  oversized bodies (status 413). `errorHandler` only recognises `ApiError` and `ZodError`, so these fall into
-  the "anything else" branch and are answered as `500 INTERNAL` and logged as errors. A client that sends
-  `{bad` should get a 400 `VALIDATION_FAILED`, and an oversized body should get 413. This is not fixed yet;
-  when it is, update this page and add a test.
-- `/api/health` is deliberately **not logged** (it is polled constantly); `/api/ready` **is** logged on every
-  call, so a probe that hits it every few seconds will fill the logs with `info` lines.
+- **Body-parser errors are mapped.** The JSON parser (`express.json`) throws its own errors, tagged with a
+  `type`. `errorHandler` turns `entity.parse.failed` (bad JSON) into 400 `VALIDATION_FAILED` and
+  `entity.too.large` (over 100 kb) into 413 `PAYLOAD_TOO_LARGE`, so neither becomes a 500. Because parsing runs
+  before routing, this applies to every route, including ones that do not exist yet.
+- `/api/health` and `/api/ready` are deliberately **not logged** (probes poll them constantly).
 - Two kinds of success body exist: the probe endpoints are bare; everything else is `{ data }`. The web
   client's `apiFetch` copes with both by unwrapping `data` only when it is present.
 
@@ -163,4 +162,4 @@ say "check my body, query and params against these Zod schemas": parsed values g
 3. What happens if Redis dies while the API is running? <details><summary>Answer</summary>Requests that do not need Redis keep working. <code>/api/ready</code> starts returning 503 with <code>redis: false</code>, so the proxy or monitor can take the instance out of rotation. Nothing crashes, because <code>pingRedis</code> never throws and the Redis client has an error handler attached.</details>
 4. What happens if Redis is down when you **start** the API? <details><summary>Answer</summary>It logs a fatal message and exits with code 1 before opening the port. Failing at start is intentional: a deploy with a broken dependency should fail loudly and roll back.</details>
 5. Where would a stack trace go if a controller crashes? <details><summary>Answer</summary>Into the log, via <code>req.log.error</code> in <code>errorHandler</code>, tagged with the request id. The HTTP body only says "Something went wrong" plus the <code>requestId</code>.</details>
-6. What happens if a client POSTs `{bad` as JSON today? <details><summary>Answer</summary>The JSON parser throws a 400-status error that <code>errorHandler</code> does not recognise, so the client gets 500 <code>INTERNAL</code>. This is the known gap above.</details>
+6. What happens if a client POSTs `{bad` as JSON today? <details><summary>Answer</summary>The JSON parser throws an <code>entity.parse.failed</code> error, which <code>errorHandler</code> maps to 400 <code>VALIDATION_FAILED</code> ("Request body is not valid JSON"). An oversized body maps to 413 <code>PAYLOAD_TOO_LARGE</code>.</details>

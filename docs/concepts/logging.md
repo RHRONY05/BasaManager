@@ -50,15 +50,16 @@ response finishes ("request errored"). Search for the `req.id` to see both.
 Redaction replaces a value with `[REDACTED]` _before_ the line is written. The list is `REDACT_PATHS` in
 `apps/api/src/lib/logger.ts`:
 
-| Path                          | Why                                                    |
-| ----------------------------- | ------------------------------------------------------ |
-| `req.headers.cookie`          | Holds the session and refresh cookies                  |
-| `req.headers.authorization`   | Bearer tokens                                          |
-| `req.headers["x-csrf-token"]` | The CSRF token                                         |
-| `res.headers["set-cookie"]`   | Cookies the server sets (new session tokens)           |
-| `*.password`                  | A password one level down, for example `user.password` |
-| `*.token`                     | A token one level down, for example `body.token`       |
-| `*.refreshToken`              | A refresh token one level down                         |
+| Path                                                                  | Why                                                                                                   |
+| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `req.headers.cookie`                                                  | Holds the session and refresh cookies                                                                 |
+| `req.headers.authorization`                                           | Bearer tokens                                                                                         |
+| `req.headers["x-csrf-token"]`                                         | The CSRF token                                                                                        |
+| `res.headers["set-cookie"]`                                           | Cookies the server sets (new session tokens)                                                          |
+| `password`, `newPassword`, `currentPassword`, `token`, `refreshToken` | A secret at the top level, one level down (`body.password`) or two levels down (`body.user.password`) |
+
+The request URL is also sanitised: the values of the query keys `token`, `sig`, `signature`, `code`, `state` and
+`exp` become `[REDACTED]` (`redactUrl`), and the raw `req.query` object is not logged at all.
 
 A real request line, shortened, with the redaction applied:
 
@@ -69,7 +70,7 @@ A real request line, shortened, with the redaction applied:
   "req": {
     "id": "b7ca1fe5-ec19-4a1b-9fcc-9e861337850e",
     "method": "GET",
-    "url": "/api/ready",
+    "url": "/api/things?page=2",
     "headers": { "cookie": "[REDACTED]", "authorization": "[REDACTED]" }
   },
   "res": { "statusCode": 200 },
@@ -80,9 +81,8 @@ A real request line, shortened, with the redaction applied:
 
 ### The worker
 
-`apps/worker/src/index.ts` creates its own plain `pino` logger (level and ISO time only). It is **not** built
-with `createLogger`, so it has no redaction list yet. Nothing sensitive is logged there today; when jobs start
-handling emails and tokens, switch it to the shared setup.
+`apps/worker/src/index.ts` builds its logger with the same `createLogger` factory as the API, so the worker
+has the same redaction list and the same ISO timestamps.
 
 ## Diagram
 
@@ -105,16 +105,14 @@ flowchart LR
 
 ## Gotchas
 
-- **Redaction is by exact path, and `*` is exactly one level.** `*.password` hides `user.password` but **not** a
-  top-level `password` key, and not `a.b.password` two levels down. (Checked by logging all three.) Never put a
-  secret in a log call and rely on redaction to save you; do not log it.
-- **The URL and query string are logged as-is.** Only headers are redacted. A request to
-  `/api/x?token=abc` is logged with `url` and `query` showing `abc`. Today no route puts a secret in the URL.
-  Signed file-download URLs (task V9) will, so when files arrive the logger must redact `req.url` and
-  `req.query`, or those routes must use a header or path segment instead. The security rules already say "never
-  log file URLs".
-- **`/api/ready` is logged on every call**, unlike `/api/health`. A probe that polls it every few seconds
-  produces a steady stream of `info` lines.
+- **Redaction is by explicit path, and `*` is exactly one level.** The list covers each secret key at the top
+  level, one level and two levels deep, because pino has no deep wildcard. A `password` three levels down is
+  **not** hidden. Never put a secret in a log call and rely on redaction to save you; do not log it.
+- **Only listed query keys are masked.** `redactUrl` hides `token`, `sig`, `signature`, `code`, `state` and
+  `exp`. A secret in any other query key, or in a path segment, would still be logged: choose those names
+  carefully (signed file URLs from V9 use `sig` and `exp`).
+- **`/api/health` and `/api/ready` are not logged**, so probes do not fill the logs. A failing readiness probe
+  is visible through the 503 and the uptime monitor, not through a log line.
 - **Do not use `console.log`.** ESLint (`no-console`) fails the build. Use the logger; in a route, `req.log`
   already carries the request id.
 - **Logs are not an audit trail.** They rotate and are filtered by level. Anything the business must keep
@@ -122,11 +120,11 @@ flowchart LR
 
 ## Where in code
 
-- `apps/api/src/lib/logger.ts`: `createLogger`, `REDACT_PATHS`
+- `apps/api/src/lib/logger.ts`: `createLogger`, `REDACT_PATHS`, `redactUrl`
 - `apps/api/src/middleware/logger.ts`: `createHttpLogger`
 - `apps/api/src/middleware/errorHandler.ts`: the `req.log.error` call
 - `apps/api/src/middleware/requestId.ts`: where the id comes from
-- `apps/worker/src/index.ts`: the worker's logger
+- `apps/worker/src/index.ts`: the worker's logger (uses `createLogger`)
 - `apps/api/src/config/env.ts`: `LOG_LEVEL`
 
 ## Self-check

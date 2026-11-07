@@ -10,10 +10,7 @@
     "schemas": {
       "HealthResponse": {
         "type": "object",
-        "properties": {
-          "status": { "type": "string", "enum": ["ok"] },
-          "release": { "type": "string" }
-        },
+        "properties": { "status": { "type": "string", "enum": ["ok"] }, "release": { "type": "string" } },
         "required": ["status", "release"]
       },
       "ReadyResponse": {
@@ -22,10 +19,7 @@
           "status": { "type": "string", "enum": ["ready", "not_ready"] },
           "checks": {
             "type": "object",
-            "properties": {
-              "db": { "type": "boolean" },
-              "redis": { "type": "boolean" }
-            },
+            "properties": { "db": { "type": "boolean" }, "redis": { "type": "boolean" } },
             "required": ["db", "redis"]
           }
         },
@@ -40,10 +34,7 @@
         },
         "required": ["appEnv", "sentryDsn", "vapidPublicKey"]
       },
-      "AppEnv": {
-        "type": "string",
-        "enum": ["dev", "test", "staging", "prod"]
-      },
+      "AppEnv": { "type": "string", "enum": ["dev", "test", "staging", "prod"] },
       "ErrorBody": {
         "type": "object",
         "properties": {
@@ -59,6 +50,7 @@
                   "NOT_FOUND",
                   "CONFLICT",
                   "RATE_LIMITED",
+                  "PAYLOAD_TOO_LARGE",
                   "ORG_SUSPENDED",
                   "INTERNAL",
                   "TOKEN_INVALID",
@@ -74,10 +66,7 @@
                 ]
               },
               "message": { "type": "string" },
-              "details": {
-                "type": "array",
-                "items": { "$ref": "#/components/schemas/ErrorDetail" }
-              },
+              "details": { "type": "array", "items": { "$ref": "#/components/schemas/ErrorDetail" } },
               "requestId": { "type": "string" }
             },
             "required": ["code", "message", "requestId"]
@@ -87,10 +76,7 @@
       },
       "ErrorDetail": {
         "type": "object",
-        "properties": {
-          "path": { "type": "string" },
-          "message": { "type": "string" }
-        },
+        "properties": { "path": { "type": "string" }, "message": { "type": "string" } },
         "required": ["path", "message"]
       }
     },
@@ -105,11 +91,7 @@
         "responses": {
           "200": {
             "description": "The process is up.",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/HealthResponse" }
-              }
-            }
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/HealthResponse" } } }
           }
         }
       }
@@ -122,19 +104,11 @@
         "responses": {
           "200": {
             "description": "Ready.",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ReadyResponse" }
-              }
-            }
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReadyResponse" } } }
           },
           "503": {
             "description": "A dependency did not answer in time.",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ReadyResponse" }
-              }
-            }
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReadyResponse" } } }
           }
         }
       }
@@ -151,9 +125,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": {
-                    "data": { "$ref": "#/components/schemas/PublicConfig" }
-                  },
+                  "properties": { "data": { "$ref": "#/components/schemas/PublicConfig" } },
                   "required": ["data"]
                 }
               }
@@ -161,11 +133,7 @@
           },
           "500": {
             "description": "Unexpected error.",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorBody" }
-              }
-            }
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
           }
         }
       }

@@ -28,6 +28,7 @@ describe('ErrorCode', () => {
       NOT_FOUND: 404,
       CONFLICT: 409,
       RATE_LIMITED: 429,
+      PAYLOAD_TOO_LARGE: 413,
       ORG_SUSPENDED: 423,
       INTERNAL: 500,
       TOKEN_INVALID: 400,
@@ -70,12 +71,10 @@ describe('errorBodySchema', () => {
   });
 
   it('rejects unknown codes and a missing requestId', () => {
-    expect(
-      errorBodySchema.safeParse({ error: { code: 'NOPE', message: 'x', requestId: 'r' } }).success,
-    ).toBe(false);
-    expect(errorBodySchema.safeParse({ error: { code: 'INTERNAL', message: 'x' } }).success).toBe(
+    expect(errorBodySchema.safeParse({ error: { code: 'NOPE', message: 'x', requestId: 'r' } }).success).toBe(
       false,
     );
+    expect(errorBodySchema.safeParse({ error: { code: 'INTERNAL', message: 'x' } }).success).toBe(false);
   });
 });
 

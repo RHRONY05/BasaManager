@@ -1,6 +1,6 @@
 import type { ErrorRequestHandler, Request } from 'express';
 import { z } from 'zod';
-import { ErrorCode, toErrorDetails, type ErrorBody } from '@bm/shared/errors';
+import { ErrorCode, errorStatus, toErrorDetails, type ErrorBody } from '@bm/shared/errors';
 import { ApiError } from '../lib/ApiError';
 
 /**
@@ -40,6 +40,32 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
       },
     };
     res.status(400).json(body);
+    return;
+  }
+
+  // body-parser (express.json) errors carry a `type` and a 4xx `status`; map the ones clients can cause.
+  const parserType = (err as { type?: unknown } | null)?.type;
+  if (parserType === 'entity.parse.failed') {
+    const body: ErrorBody = {
+      error: {
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'Request body is not valid JSON',
+        requestId,
+      },
+    };
+    res.status(errorStatus.VALIDATION_FAILED).json(body);
+    return;
+  }
+
+  if (parserType === 'entity.too.large') {
+    const body: ErrorBody = {
+      error: {
+        code: ErrorCode.PAYLOAD_TOO_LARGE,
+        message: 'Request body is too large',
+        requestId,
+      },
+    };
+    res.status(errorStatus.PAYLOAD_TOO_LARGE).json(body);
     return;
   }
 

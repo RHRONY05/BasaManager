@@ -12,6 +12,7 @@
     "lint": "eslint . && prettier --check . && node scripts/lint-tokens.mjs && pnpm --filter @bm/web size && pnpm openapi:check",
     "format": "prettier --write .",
     "test": "vitest run",
+    "test:cov": "vitest run --coverage",
     "test:int": "vitest run -c vitest.int.config.ts",
     "test:e2e": "playwright test",
     "test:load": "k6 run tests/load/smoke.js",

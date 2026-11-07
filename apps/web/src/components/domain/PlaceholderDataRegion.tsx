@@ -9,7 +9,11 @@ export function PlaceholderDataRegion() {
 
   if (isPending) {
     return (
-      <div data-skeleton aria-busy="true" className="rounded-lg border border-border bg-surface p-6 space-y-3 max-w-xl">
+      <div
+        data-skeleton
+        aria-busy="true"
+        className="rounded-lg border border-border bg-surface p-6 space-y-3 max-w-xl"
+      >
         <Skeleton className="h-6 w-36" />
         <Skeleton className="h-4 w-64" />
       </div>
@@ -34,11 +38,9 @@ export function PlaceholderDataRegion() {
   return (
     <div className="rounded-lg border border-border bg-surface p-6 max-w-xl space-y-2">
       <div className="text-sm font-medium text-fg-muted uppercase tracking-wider">
-        System Status
+        {t('status.systemStatus')}
       </div>
-      <div className="text-base text-fg font-medium">
-        {t('status.env', { env: config.appEnv })}
-      </div>
+      <div className="text-base text-fg font-medium">{t('status.env', { env: config.appEnv })}</div>
     </div>
   );
 }
