@@ -11,7 +11,7 @@ WORKDIR /repo
 FROM base AS build
 COPY . .
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --frozen-lockfile --filter @bm/worker...
-RUN pnpm --filter @bm/worker deploy --prod --legacy /out \
+RUN pnpm --filter @bm/worker deploy --prod --legacy --ignore-scripts /out \
  && cp -r apps/api/src/generated "$(readlink -f /out/node_modules/@bm/api)/src/generated"
 
 FROM node:22-bookworm-slim AS runtime

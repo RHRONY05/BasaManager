@@ -12,6 +12,7 @@
     "@bm/api": "workspace:*",
     "@bm/domain": "workspace:*",
     "@bm/shared": "workspace:*",
+    "@sentry/node": "11.11.0",
     "ioredis": "6.0.0",
     "node-cron": "4.6.0",
     "pino": "10.4.0",
