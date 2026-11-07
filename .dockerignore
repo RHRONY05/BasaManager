@@ -1,0 +1,17 @@
+.git
+.github
+.claude
+.agent
+.secrets
+**/node_modules
+**/dist
+**/coverage
+**/.data
+.env
+.env.*
+!.env.example
+playwright-report
+test-results
+apps/docs/.vitepress/cache
+apps/docs/.vitepress/dist
+**/*.log
