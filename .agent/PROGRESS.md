@@ -97,6 +97,7 @@ Agents append one line per choice the docs didn't cover (newest last). If it cha
 - 2026-11-08 — Lead (V1): pnpm 12 refuses packages published < 1 day ago (`minimumReleaseAge`). Kept the policy (supply-chain safety) and pinned the previous release instead: @tanstack/react-query 5.106.1, concurrently 10.0.6; lockfile rebuilt with a fresh resolution. Rule for later tasks: never add a package version younger than the policy; pick the newest older one.
 - 2026-11-08 — Lead (V1): `auditLayout()` counts lines of text nodes only; the reference version counted an icon above a label (bottom nav) as a wrapped label. Updated `.claude/skills/mobile-layout-qa/SKILL.md`.
 - 2026-11-08 — Debugger (V1): pages are `React.lazy` components inside a `Suspense` keyed by pathname, not React Router route `lazy` (route lazy kept the old page on screen during chunk loads). Updated `ui-states` skill + 02.
+- 2026-11-08 — Lead (V1): coverage excludes process bootstraps (`apps/api/src/server.ts`, `apps/worker/src/index.ts`; booted by integration/e2e), generated code and the `packages/domain` stub; thresholds unchanged (api 80% lines, domain 95%). New error code `PAYLOAD_TOO_LARGE` (413) for bodies over the limit (04 updated).
 
 ## Session log
 Newest at the bottom. One entry per task. Keep entries short.
