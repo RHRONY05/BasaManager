@@ -13,6 +13,20 @@ The architect owns this file and the schema; implementers never change the schem
 - Soft delete only where the table says so (`deleted_at`/`archived_at`); otherwise rows are immutable
   history (payments, bill lines, events) or truly deleted.
 
+## Prisma setup (Prisma 7)
+- `apps/api/prisma/schema.prisma`: generator `prisma-client` (ESM, `runtime = "nodejs"`) with output
+  `apps/api/src/generated/prisma/` (git-ignored; regenerate with `pnpm --filter @bm/api db:generate`,
+  which CI must run before `typecheck`). The datasource block has no `url` (Prisma 7).
+- `apps/api/prisma.config.ts`: schema + `prisma/migrations` path, datasource URL from
+  `DATABASE_OWNER_URL` (migrations run as `bm_owner`). It loads the root `.env` only when the variable
+  isn't already set; `generate` works without any URL.
+- Runtime: `apps/api/src/config/db.ts` `createPrisma(url)` builds the client on `@prisma/adapter-pg`
+  (API passes `DATABASE_URL` / `bm_app`, worker `DATABASE_WORKER_URL` / `bm_worker`). Code types against
+  `Db` (its return type), so the tenant extension added in V4 (`withTenantExtension`, which adds
+  `db.$tx(ctx, fn)`) changes the client type everywhere at once. `pingDb(db, timeoutMs)` → `boolean`
+  (never throws) backs `GET /api/ready`. Import the client from `src/generated/prisma/client`, never
+  from `@prisma/client`.
+
 ## Database roles (migration `0001_roles.sql`, idempotent)
 | Role | Used by | Rights |
 |---|---|---|

@@ -1,0 +1,143 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "BasaManager API",
+    "version": "0.1.0",
+    "description": "Generated from packages/shared by scripts/openapi.mjs. Do not edit by hand. Conventions: .agent/04-API.md."
+  },
+  "servers": [{ "url": "/" }],
+  "components": {
+    "schemas": {
+      "HealthResponse": {
+        "type": "object",
+        "properties": { "status": { "type": "string", "enum": ["ok"] }, "release": { "type": "string" } },
+        "required": ["status", "release"]
+      },
+      "ReadyResponse": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string", "enum": ["ready", "not_ready"] },
+          "checks": {
+            "type": "object",
+            "properties": { "db": { "type": "boolean" }, "redis": { "type": "boolean" } },
+            "required": ["db", "redis"]
+          }
+        },
+        "required": ["status", "checks"]
+      },
+      "PublicConfig": {
+        "type": "object",
+        "properties": {
+          "appEnv": { "$ref": "#/components/schemas/AppEnv" },
+          "sentryDsn": { "type": ["string", "null"] },
+          "vapidPublicKey": { "type": ["string", "null"] }
+        },
+        "required": ["appEnv", "sentryDsn", "vapidPublicKey"]
+      },
+      "AppEnv": { "type": "string", "enum": ["dev", "test", "staging", "prod"] },
+      "ErrorBody": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "VALIDATION_FAILED",
+                  "UNAUTHENTICATED",
+                  "FORBIDDEN",
+                  "NOT_FOUND",
+                  "CONFLICT",
+                  "RATE_LIMITED",
+                  "PAYLOAD_TOO_LARGE",
+                  "ORG_SUSPENDED",
+                  "INTERNAL",
+                  "TOKEN_INVALID",
+                  "INVALID_CREDENTIALS",
+                  "ACCOUNT_LOCKED",
+                  "SESSION_REVOKED",
+                  "INVITE_EMAIL_MISMATCH",
+                  "LANDLORD_MUST_TRANSFER",
+                  "READING_REQUIRED",
+                  "READING_LOWER_THAN_PREVIOUS",
+                  "DUPLICATE_REFERENCE",
+                  "INVALID_TRANSITION"
+                ]
+              },
+              "message": { "type": "string" },
+              "details": { "type": "array", "items": { "$ref": "#/components/schemas/ErrorDetail" } },
+              "requestId": { "type": "string" }
+            },
+            "required": ["code", "message", "requestId"]
+          }
+        },
+        "required": ["error"]
+      },
+      "ErrorDetail": {
+        "type": "object",
+        "properties": { "path": { "type": "string" }, "message": { "type": "string" } },
+        "required": ["path", "message"]
+      }
+    },
+    "parameters": {}
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Liveness probe",
+        "description": "Bare body (no `data` envelope). `release` is the git SHA of the running image.",
+        "responses": {
+          "200": {
+            "description": "The process is up.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/HealthResponse" } } }
+          }
+        }
+      }
+    },
+    "/api/ready": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Readiness probe",
+        "description": "Bare body (no `data` envelope). 200 when Postgres and Redis both answer within 1 s; otherwise 503 with the same shape.",
+        "responses": {
+          "200": {
+            "description": "Ready.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReadyResponse" } } }
+          },
+          "503": {
+            "description": "A dependency did not answer in time.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReadyResponse" } } }
+          }
+        }
+      }
+    },
+    "/api/public-config": {
+      "get": {
+        "tags": ["Config"],
+        "summary": "Public runtime config for the web app",
+        "description": "No auth. Values are public by design; `null` when not configured.",
+        "responses": {
+          "200": {
+            "description": "The config.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "data": { "$ref": "#/components/schemas/PublicConfig" } },
+                  "required": ["data"]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {}
+}

@@ -1,0 +1,60 @@
+{
+  "appName": "BasaManager",
+  "nav": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "buildings": "Buildings",
+    "billing": "Billing",
+    "payments": "Payments",
+    "maintenance": "Maintenance",
+    "bills": "Bills",
+    "requests": "Requests",
+    "notices": "Notices",
+    "account": "Account",
+    "today": "Today",
+    "organizations": "Organizations"
+  },
+  "actions": {
+    "retry": "Retry",
+    "goHome": "Go home",
+    "signIn": "Sign in",
+    "createAccount": "Create landlord account",
+    "createAccountShort": "Get started",
+    "signUp": "Sign up"
+  },
+  "status": {
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "empty": "No items found",
+    "notFound": "Page not found",
+    "notFoundDesc": "The page you are looking for does not exist or has been moved.",
+    "routeError": "An error occurred while rendering this page.",
+    "env": "Environment: {{env}}",
+    "systemStatus": "System Status",
+    "loadingPage": "Loading page"
+  },
+  "landing": {
+    "title": "Apartment management for Bangladesh",
+    "subtitle": "Run buildings, units, leases and billing with automated receipts and tenant tracking."
+  },
+  "auth": {
+    "loginTitle": "Sign in to BasaManager",
+    "signupTitle": "Create your landlord account"
+  },
+  "headings": {
+    "dashboard": "Landlord Dashboard",
+    "buildings": "Buildings",
+    "billing": "Billing",
+    "payments": "Payments",
+    "maintenance": "Maintenance",
+    "today": "Today",
+    "tenantHome": "Tenant Home",
+    "tenantBills": "My Bills",
+    "tenantRequests": "Maintenance Requests",
+    "notices": "Building Notices",
+    "tenantNotices": "Building Notices",
+    "tenantAccount": "Tenant Account",
+    "admin": "Admin Dashboard",
+    "account": "Account Settings"
+  }
+}

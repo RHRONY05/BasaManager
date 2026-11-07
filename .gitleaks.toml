@@ -1,0 +1,13 @@
+title = "BasaManager gitleaks"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Dev/test-only values that are public by design"
+paths = [
+  '''^\.env\.example$''',
+  '''^\.env\.test\.example$''',
+  '''^infra/compose\.(dev|test)\.yml$''',
+  '''^infra/postgres/init/.*\.sql$''',
+]

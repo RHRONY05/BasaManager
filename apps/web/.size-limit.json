@@ -1,0 +1,7 @@
+[
+  {
+    "name": "Initial entry chunk",
+    "path": "dist/assets/index-*.js",
+    "limit": "200 kB"
+  }
+]

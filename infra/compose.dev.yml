@@ -1,0 +1,41 @@
+# Local development services. Start: docker compose -f infra/compose.dev.yml up -d
+# Passwords are DEV ONLY (see infra/postgres/init/01-roles.sql).
+name: bm-dev
+services:
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bm_owner
+      POSTGRES_PASSWORD: bm_owner_dev
+      POSTGRES_DB: basamanager_dev
+    ports: ['5432:5432']
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U bm_owner -d basamanager_dev']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    command: ['redis-server', '--requirepass', 'redis_dev']
+    ports: ['6379:6379']
+    healthcheck:
+      test: ['CMD-SHELL', 'redis-cli -a redis_dev --no-auth-warning ping | grep -q PONG']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  mailpit:
+    image: axllent/mailpit
+    restart: unless-stopped
+    ports: ['1025:1025', '8025:8025']
+    healthcheck:
+      test: ['CMD', '/mailpit', 'readyz']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+volumes:
+  pgdata:

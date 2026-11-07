@@ -1,0 +1,32 @@
+/*
+ * Diagram palette (the visual-diagram skill). SVG diagrams carry their own white background, so they stay
+ * readable in dark mode; these rules only frame them and give Mermaid a light card in dark mode.
+ */
+:root {
+  --bm-pink: #fec8c3;
+  --bm-blue: #bfe3fd;
+  --bm-purple: #e3ccfd;
+  --bm-yellow: #fff1b8;
+  --bm-green: #c9f2d6;
+}
+
+.vp-doc img[src$='.svg'] {
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.dark .vp-doc .mermaid {
+  background: #fff;
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.vp-doc details {
+  margin: 8px 0;
+}
+
+.vp-doc details > summary {
+  cursor: pointer;
+  font-weight: 600;
+}

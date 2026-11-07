@@ -4,9 +4,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vitepress dev ../../docs --port 5174",
-    "build": "vitepress build ../../docs",
+    "dev": "vitepress dev . --port 5174",
+    "build": "vitepress build .",
+    "preview": "vitepress preview . --port 5175",
     "typecheck": "echo docs: no typecheck"
   },
-  "devDependencies": { "mermaid": "12.3.0", "vitepress": "1.6.4", "vitepress-plugin-mermaid": "2.0.17" }
+  "devDependencies": {
+    "mermaid": "12.3.0",
+    "vitepress": "1.6.4",
+    "vitepress-plugin-mermaid": "2.0.17"
+  }
 }
