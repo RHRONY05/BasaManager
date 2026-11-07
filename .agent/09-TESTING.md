@@ -23,7 +23,7 @@ Coverage thresholds (CI fails below): `packages/domain` **95%** lines and branch
 - `tests/helpers/auth.ts`: `loginAs(role, org)` returns a Supertest agent with cookies + CSRF.
 - E2E seed: `pnpm e2e:seed` creates two orgs (A and B) with users `landlord.a@e2e.test`, `caretaker.a@e2e.test`,
   `tenant.a1@e2e.test`, `tenant.a2@e2e.test`, `landlord.b@e2e.test`, `admin@e2e.test`, password from
-  `E2E_PASSWORD` (`.env.test`). Playwright setup project logs each role in once and saves storage state.
+  `E2E_PASSWORD` (`.env.test`). Playwright setup project logs each role in once and saves storage state. (Added in V5 with auth; decided 2026-11-08.)
 - **Clock:** all code reads time via `clock.now()`. Tests set `CLOCK_OVERRIDE` (api/worker) or call
   `clock.set()`; e2e sets it through `POST /api/test/clock` (route exists only when `APP_ENV=test`).
 - **Mocks:** SSLCommerz via `msw` (init, validation, transaction query; scenarios: valid, invalid, amount
@@ -78,7 +78,7 @@ Coverage thresholds (CI fails below): `packages/domain` **95%** lines and branch
 | `visual.spec.ts` | screenshot main screens per role, compared once by the designer with `design/`, then baselines |
 
 ## Speed checks in CI
-- **Query count:** `tests/helpers/queryCounter.ts` counts Prisma queries per request (Prisma `$on('query')`); every
+- **Query count:** `tests/helpers/queryCounter.ts` counts Prisma queries per request (added in V4 with the first models; decided 2026-11-08) (Prisma `$on('query')`); every
   list endpoint has a test asserting a fixed count for 5 vs 50 items (no N+1). Integration runs log any request > 200 ms.
 - **Bundle size:** `size-limit` (dev dep) in `lint`: initial JS ≤ 200 KB gzip, each route chunk ≤ 100 KB gzip.
 

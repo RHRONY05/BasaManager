@@ -98,6 +98,9 @@ Agents append one line per choice the docs didn't cover (newest last). If it cha
 - 2026-11-08 — Lead (V1): `auditLayout()` counts lines of text nodes only; the reference version counted an icon above a label (bottom nav) as a wrapped label. Updated `.claude/skills/mobile-layout-qa/SKILL.md`.
 - 2026-11-08 — Debugger (V1): pages are `React.lazy` components inside a `Suspense` keyed by pathname, not React Router route `lazy` (route lazy kept the old page on screen during chunk loads). Updated `ui-states` skill + 02.
 - 2026-11-08 — Lead (V1): coverage excludes process bootstraps (`apps/api/src/server.ts`, `apps/worker/src/index.ts`; booted by integration/e2e), generated code and the `packages/domain` stub; thresholds unchanged (api 80% lines, domain 95%). New error code `PAYLOAD_TOO_LARGE` (413) for bodies over the limit (04 updated).
+- 2026-11-08 — Lead (V1 review): Playwright `setup` project (log each role in once) moves to **V5** (no auth before then); `tests/helpers/queryCounter.ts` moves to **V4** (no Prisma models before then). Both noted in 09-TESTING.
+- 2026-11-08 — Debugger (V1 review): client-caused errors with a numeric 4xx status (bad `%` path, unsupported charset/encoding, verify failures, 431) map to 400 `VALIDATION_FAILED` with a fixed message; no new 415 code (keeps `errorStatus` consistent). e2e builds the web app with `--mode test` so `en-XA` stays available to the layout audit while production builds ignore it.
+- 2026-11-08 — Lead: V2 (design), V3 (infra) and the V1 follow-up run in parallel worktrees because their files do not overlap (design only `.agent/design/**`; infra `infra/**`, `.github/**`, deploy glue). Feature tasks from V4 on still go in order.
 
 ## Session log
 Newest at the bottom. One entry per task. Keep entries short.
@@ -160,3 +163,10 @@ Next: owner clears the ❌ items in Human steps, then pastes GOAL.md.
 Did: preflight table all ✅; skills/agents verified; agy loop proved in edit-only mode (permission modes probed; `--dangerously-skip-permissions` refused by the lead's environment); Azure region chosen (indiasouthcentral, policy-limited); package versions pinned.
 Docs changed: 11-AGENT-TEAM.md (dispatch = edit-only, lead runs commands), 02 (region, Prisma adapter).
 Next: V1.
+
+### 2026-11-08 — Claude (lead) — V1 Monorepo, tooling, CI, docs skeleton
+Did: 6 parts (architect contracts, devops ci+repo, agy tooling/api/web, docs agent) + 2 debugger passes; PR #1 merged (reviewer APPROVE, 0 blockers; CI 7/7). Follow-up PR fixes the 5 shoulds + 4 nits.
+Tests: typecheck ✅ lint ✅ unit ✅ (144, coverage thresholds met) int ✅ (6) e2e ✅ (1026 passed, 4 skipped = ui-states checks 5/6 for V5/V6) docs ✅
+Commits / PR: #1 (squash dc2ebaa), follow-up fix/V1-review
+Problems / surprises: agy edit-only rounds are slow (12–43 min each); web needed 3 rounds + debugger (route lazy froze the old page). Docs agent found real defects (body-parser 500s, redaction gaps, coverage not running). pnpm release-age policy rejected fresh packages. Windows: `timeout` leaves grandchild node processes.
+Next: V2 design + V3 infra (parallel), then V4.

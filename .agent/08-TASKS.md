@@ -25,7 +25,7 @@ V0 Preflight ─▶ V1 Monorepo + CI ─▶ V2 Design ─▶ V3 Infra walking sk
   - Check Azure B2s availability in Southeast Asia / Central India / East Asia; record the region.
   - **AC:** Preflight table in PROGRESS.md all ✅ (or ❌ with a Human step); agy loop proof recorded in METRICS.md.
 
-- [ ] **V1 Monorepo, tooling, CI, docs skeleton**
+- [x] **V1 Monorepo, tooling, CI, docs skeleton** — 2026-11-08: PR #1 + review follow-up; all layers green in CI.
   - pnpm workspace per the folder tree in 02; TS configs; ESLint (flat) + Prettier; token-lint script from `frontend-implementation`; Vitest configs (unit + `vitest.int.config.ts`), Playwright config (`desktop`, `mobile`, setup project), `infra/compose.dev.yml` + `compose.test.yml`.
   - `apps/api` minimal: env.ts (Zod), logger with redaction, error handler + shared error format, `/health`, `/ready`, graceful shutdown. `apps/web` minimal Vite app + `/api/public-config` fetch. `apps/worker` boots and logs. `apps/docs` VitePress with the site structure from `10-LEARNING.md` (stub pages) and the mermaid plugin.
   - Private repo `RHRONY05/BasaManager`, branch protection on `main` (CI + 1 review), `ci.yml` from 09-TESTING, PR template with the evidence checklist.
@@ -138,6 +138,7 @@ V0 Preflight ─▶ V1 Monorepo + CI ─▶ V2 Design ─▶ V3 Infra walking sk
 
 ## Changes outside tasks
 Fixes and changes made outside a task above. One line each, newest last: date · what changed · which docs were updated, or "no doc change: <why>".
+- 2026-11-08 · V1 review follow-up (fix/V1-review): logging self-check, client-4xx error mapping, CLOCK_OVERRIDE ISO, `?lng=` gate, all routes in layout/states specs, worker imports `@bm/api` exports + Redis fail-fast, dev script `--wait`/`--raw` · docs: 02, 04, 09, ADR-001, repo-map, logging, request-lifecycle, testing-strategy, error-codes
 
 ## Questions for the human
 (The build never waits on these; the lead decides and logs. The owner may answer later.)
