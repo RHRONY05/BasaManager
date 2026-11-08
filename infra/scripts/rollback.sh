@@ -13,21 +13,27 @@ set -euo pipefail
 SCRIPT_NAME=rollback
 . "$(dirname "${BASH_SOURCE[0]}")/_lib.sh"
 
-TARGET="${1:?usage: rollback.sh <staging|prod> <failed-sha>}"
-FAILED="${2:?usage: rollback.sh <staging|prod> <failed-sha>}"
-case "$TARGET" in staging|prod) ;; *) die "target must be staging or prod" ;; esac
+# Everything is inside a function and ends in `exit`: bash reads a script while it runs, and the script file can be
+# replaced by deploy.sh (it installs bin/) before this one has finished.
+main() {
+  TARGET="${1:?usage: rollback.sh <staging|prod> <failed-sha>}"
+  FAILED="${2:?usage: rollback.sh <staging|prod> <failed-sha>}"
+  case "$TARGET" in staging|prod) ;; *) die "target must be staging or prod" ;; esac
 
-CUR="$(cat "$STATE/$TARGET.current" 2>/dev/null || true)"
-PREV="$(cat "$STATE/$TARGET.previous" 2>/dev/null || true)"
-if [ -n "$CUR" ] && [ "$CUR" != "$FAILED" ]; then GOTO="$CUR"; else GOTO="$PREV"; fi
-[ -n "$GOTO" ] || die "nothing to roll back to for $TARGET (this was its first deploy). To go to a specific commit: $BASE/releases/<sha>/infra/scripts/deploy.sh $TARGET <sha> --rollback"
-[ -x "$BASE/releases/$GOTO/infra/scripts/deploy.sh" ] || die "release folder for $GOTO is gone ($BASE/releases/$GOTO)"
+  CUR="$(cat "$STATE/$TARGET.current" 2>/dev/null || true)"
+  PREV="$(cat "$STATE/$TARGET.previous" 2>/dev/null || true)"
+  if [ -n "$CUR" ] && [ "$CUR" != "$FAILED" ]; then GOTO="$CUR"; else GOTO="$PREV"; fi
+  [ -n "$GOTO" ] || die "nothing to roll back to for $TARGET (this was its first deploy). To go to a specific commit: $BASE/releases/<sha>/infra/scripts/deploy.sh $TARGET <sha> --rollback"
+  [ -x "$BASE/releases/$GOTO/infra/scripts/deploy.sh" ] || die "release folder for $GOTO is gone ($BASE/releases/$GOTO)"
 
-log "$TARGET: rolling back (failed $FAILED, current $CUR) -> $GOTO"
-TARGET_DEPLOY="$BASE/releases/$GOTO/infra/scripts/deploy.sh"
-# Releases made before the --failed flag existed do not know it: for those, record the failed SHA here.
-if grep -q -- '--failed' "$TARGET_DEPLOY"; then
-  exec "$TARGET_DEPLOY" "$TARGET" "$GOTO" --rollback --failed "$FAILED"
-fi
-"$TARGET_DEPLOY" "$TARGET" "$GOTO" --rollback
-echo "$FAILED" > "$STATE/$TARGET.bad"
+  log "$TARGET: rolling back (failed $FAILED, current $CUR) -> $GOTO"
+  TARGET_DEPLOY="$BASE/releases/$GOTO/infra/scripts/deploy.sh"
+  # Releases made before the --failed flag existed do not know it: for those, record the failed SHA here.
+  if grep -q -- '--failed' "$TARGET_DEPLOY"; then
+    exec "$TARGET_DEPLOY" "$TARGET" "$GOTO" --rollback --failed "$FAILED"
+  fi
+  "$TARGET_DEPLOY" "$TARGET" "$GOTO" --rollback
+  echo "$FAILED" > "$STATE/$TARGET.bad"
+}
+main "$@"
+exit $?
