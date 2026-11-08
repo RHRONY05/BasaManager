@@ -228,4 +228,6 @@ and every CLI login. Fix the ❌ items, run it again, then paste the goal comman
 - [ ] Cloudinary: delete the `basamanager/` folder (Media Library) and revoke the `basamanager-agents` API key.
 - [ ] Revoke: Resend API key, Sentry org token (and delete the 3 `basamanager-*` projects if you won't reuse them), Google OAuth client (or keep it in Testing), UptimeRobot monitors.
 - [ ] `gh auth refresh` to drop the `delete_repo` scope if you added it.
+- [ ] GitHub: delete the Environment secrets (`staging`, `production`) and the GHCR packages `basamanager-*` if you archive the repo; remove the deploy public key line from nothing else (the VM is deleted with the resource group).
+- [ ] Azure: the backup storage account `bmbackupsf1f2c5bb` is inside `rg-basamanager`, so deleting the resource group removes it and the SAS token with it.
 - [ ] Delete `BasaManager.env` or move it to an encrypted archive.

@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 800" width="1500" height="800" font-family="'Segoe UI', Inter, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1f1f1f"/>
+    </marker>
+  </defs>
+  <rect width="1500" height="800" fill="#ffffff"/>
+
+  <text x="40" y="50" font-size="28" font-weight="700" fill="#1f1f1f">BasaManager, level 1: what runs where</text>
+  <text x="40" y="80" font-size="16" fill="#3a3a3a">One Azure VM, two copies of the app (staging, prod), one shared front door (Caddy). Arrows show who calls whom.</text>
+  <g font-size="14" fill="#3a3a3a">
+    <rect x="1010" y="30" width="22" height="16" rx="3" fill="#FEC8C3"/><text x="1040" y="43">outside world</text>
+    <rect x="1150" y="30" width="22" height="16" rx="7" fill="#BFE3FD"/><text x="1180" y="43">our containers</text>
+    <circle cx="1021" cy="66" r="8" fill="#E3CCFD"/><text x="1040" y="71">data stores</text>
+    <rect x="1150" y="58" width="22" height="16" rx="3" fill="#C9F2D6"/><text x="1180" y="71">static files</text>
+  </g>
+
+  <!-- people -->
+  <rect x="40" y="140" width="200" height="70" rx="6" fill="#FEC8C3" stroke="#1f1f1f" stroke-width="2"/>
+  <text x="140" y="170" text-anchor="middle" font-size="18" font-weight="600" fill="#1f1f1f">Browser / phone (PWA)</text>
+  <text x="140" y="192" text-anchor="middle" font-size="13" fill="#3a3a3a">landlord, caretaker, tenant</text>
+
+  <rect x="290" y="140" width="190" height="70" rx="6" fill="#FEC8C3" stroke="#1f1f1f" stroke-width="2"/>
+  <text x="385" y="170" text-anchor="middle" font-size="18" font-weight="600" fill="#1f1f1f">Cloudflare DNS</text>
+  <text x="385" y="192" text-anchor="middle" font-size="13" fill="#3a3a3a">prod proxied, others DNS-only</text>
+
+  <line x1="240" y1="175" x2="288" y2="175" stroke="#1f1f1f" stroke-width="2.4" marker-end="url(#arrow)"/>
+
+  <!-- VM -->
+  <rect x="40" y="260" width="1000" height="510" rx="14" fill="#f7f7fb" stroke="#6b6880" stroke-width="2.4" stroke-dasharray="10 6"/>
+  <text x="450" y="252" font-size="15" font-weight="700" fill="#1f1f1f">Azure VM (Ubuntu 24.04, Standard_B2s, indiasouthcentral), Docker</text>
+
+  <rect x="70" y="310" width="210" height="70" rx="7" fill="#BFE3FD" stroke="#1f1f1f" stroke-width="2"/>
+  <text x="175" y="340" text-anchor="middle" font-size="18" font-weight="600" fill="#1f1f1f">Caddy</text>
+  <text x="175" y="362" text-anchor="middle" font-size="13" fill="#3a3a3a">HTTPS, routing, headers (80/443)</text>
+  <line x1="385" y1="210" x2="200" y2="308" stroke="#1f1f1f" stroke-width="2.4" marker-end="url(#arrow)"/>
+
+  <!-- docs -->
+  <rect x="70" y="440" width="210" height="64" rx="3" fill="#C9F2D6" stroke="#1f1f1f" stroke-width="2"/>
+  <text x="175" y="468" text-anchor="middle" font-size="16" font-weight="600" fill="#1f1f1f">docs (VitePress)</text>
+  <text x="175" y="488" text-anchor="middle" font-size="13" fill="#3a3a3a">docs.basamanager…</text>
+  <line x1="175" y1="380" x2="175" y2="438" stroke="#1f1f1f" stroke-width="2.4" marker-end="url(#arrow)"/>
+
+  <!-- staging stack -->
+  <rect x="330" y="300" width="330" height="450" rx="10" fill="#ffffff" stroke="#1f1f1f" stroke-width="1.8"/>
+  <text x="345" y="326" font-size="16" font-weight="700" fill="#1f1f1f">bm-staging</text>
+  <rect x="350" y="340" width="130" height="50" rx="3" fill="#C9F2D6" stroke="#1f1f1f" stroke-width="1.8"/><text x="415" y="370" text-anchor="middle" font-size="15" fill="#1f1f1f">web (static)</text>
+  <rect x="510" y="340" width="130" height="50" rx="7" fill="#BFE3FD" stroke="#1f1f1f" stroke-width="1.8"/><text x="575" y="370" text-anchor="middle" font-size="15" fill="#1f1f1f">api</text>
+  <rect x="510" y="470" width="130" height="50" rx="7" fill="#BFE3FD" stroke="#1f1f1f" stroke-width="1.8"/><text x="575" y="500" text-anchor="middle" font-size="15" fill="#1f1f1f">worker</text>
+  <ellipse cx="415" cy="630" rx="62" ry="30" fill="#E3CCFD" stroke="#1f1f1f" stroke-width="1.8"/><text x="415" y="635" text-anchor="middle" font-size="15" fill="#1f1f1f">Postgres 17</text>
+  <ellipse cx="575" cy="630" rx="55" ry="30" fill="#E3CCFD" stroke="#1f1f1f" stroke-width="1.8"/><text x="575" y="635" text-anchor="middle" font-size="15" fill="#1f1f1f">Redis 7</text>
+  <line x1="565" y1="392" x2="440" y2="600" stroke="#1f1f1f" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="575" y1="392" x2="575" y2="598" stroke="#1f1f1f" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="565" y1="522" x2="440" y2="600" stroke="#1f1f1f" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="575" y1="522" x2="575" y2="598" stroke="#1f1f1f" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="345" y="700" font-size="12" fill="#3a3a3a">Postgres and Redis publish no ports.</text>
+  <text x="345" y="718" font-size="12" fill="#3a3a3a">Only api and web are on the shared edge network.</text>
+
+  <!-- prod stack -->
+  <rect x="690" y="300" width="330" height="450" rx="10" fill="#ffffff" stroke="#1f1f1f" stroke-width="1.8"/>
+  <text x="705" y="326" font-size="16" font-weight="700" fill="#1f1f1f">bm-prod (same shape)</text>
+  <rect x="710" y="340" width="130" height="50" rx="3" fill="#C9F2D6" stroke="#1f1f1f" stroke-width="1.8"/><text x="775" y="370" text-anchor="middle" font-size="15" fill="#1f1f1f">web (static)</text>
+  <rect x="870" y="340" width="130" height="50" rx="7" fill="#BFE3FD" stroke="#1f1f1f" stroke-width="1.8"/><text x="935" y="370" text-anchor="middle" font-size="15" fill="#1f1f1f">api</text>
+  <rect x="870" y="470" width="130" height="50" rx="7" fill="#BFE3FD" stroke="#1f1f1f" stroke-width="1.8"/><text x="935" y="500" text-anchor="middle" font-size="15" fill="#1f1f1f">worker</text>
+  <ellipse cx="775" cy="630" rx="62" ry="30" fill="#E3CCFD" stroke="#1f1f1f" stroke-width="1.8"/><text x="775" y="635" text-anchor="middle" font-size="15" fill="#1f1f1f">Postgres 17</text>
+  <ellipse cx="935" cy="630" rx="55" ry="30" fill="#E3CCFD" stroke="#1f1f1f" stroke-width="1.8"/><text x="935" y="635" text-anchor="middle" font-size="15" fill="#1f1f1f">Redis 7</text>
+  <line x1="925" y1="392" x2="800" y2="600" stroke="#1f1f1f" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="935" y1="392" x2="935" y2="598" stroke="#1f1f1f" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="925" y1="522" x2="800" y2="600" stroke="#1f1f1f" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="935" y1="522" x2="935" y2="598" stroke="#1f1f1f" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Caddy to stacks -->
+  <line x1="282" y1="335" x2="348" y2="355" stroke="#1f1f1f" stroke-width="2.4" marker-end="url(#arrow)"/>
+  <path d="M175,310 C175,275 850,275 850,298" fill="none" stroke="#1f1f1f" stroke-width="2.4" marker-end="url(#arrow)"/>
+  <text x="70" y="545" font-size="12" fill="#3a3a3a">Caddy routes / to web, and</text><text x="70" y="562" font-size="12" fill="#3a3a3a">/api and /socket.io to api.</text>
+
+  <!-- external services -->
+  <rect x="1130" y="150" width="330" height="40" rx="3" fill="#FEC8C3" stroke="#1f1f1f" stroke-width="1.8"/><text x="1295" y="176" text-anchor="middle" font-size="15" fill="#1f1f1f">Cloudinary (authenticated files)</text>
+  <rect x="1130" y="206" width="330" height="40" rx="3" fill="#FEC8C3" stroke="#1f1f1f" stroke-width="1.8"/><text x="1295" y="232" text-anchor="middle" font-size="15" fill="#1f1f1f">Resend SMTP (email)</text>
+  <rect x="1130" y="262" width="330" height="40" rx="3" fill="#FEC8C3" stroke="#1f1f1f" stroke-width="1.8"/><text x="1295" y="288" text-anchor="middle" font-size="15" fill="#1f1f1f">SSLCommerz sandbox (payments)</text>
+  <rect x="1130" y="318" width="330" height="40" rx="3" fill="#FEC8C3" stroke="#1f1f1f" stroke-width="1.8"/><text x="1295" y="344" text-anchor="middle" font-size="15" fill="#1f1f1f">Web Push services</text>
+  <rect x="1130" y="374" width="330" height="40" rx="3" fill="#FEC8C3" stroke="#1f1f1f" stroke-width="1.8"/><text x="1295" y="400" text-anchor="middle" font-size="15" fill="#1f1f1f">Sentry (errors, releases)</text>
+  <rect x="1130" y="430" width="330" height="40" rx="3" fill="#FEC8C3" stroke="#1f1f1f" stroke-width="1.8"/><text x="1295" y="456" text-anchor="middle" font-size="15" fill="#1f1f1f">Azure Blob "backups" (nightly dumps)</text>
+  <line x1="1002" y1="360" x2="1128" y2="170" stroke="#1f1f1f" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <line x1="1002" y1="365" x2="1128" y2="226" stroke="#1f1f1f" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <line x1="1002" y1="370" x2="1128" y2="282" stroke="#1f1f1f" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <line x1="1002" y1="375" x2="1128" y2="338" stroke="#1f1f1f" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <line x1="1002" y1="385" x2="1128" y2="394" stroke="#1f1f1f" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <path d="M650,665 C700,740 1100,740 1128,455" fill="none" stroke="#1f1f1f" stroke-width="1.6" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+  <text x="700" y="792" font-size="12" fill="#3a3a3a">cron 03:00 Dhaka: pg_dump, upload</text>
+
+  <!-- CI -->
+  <rect x="1130" y="560" width="330" height="90" rx="3" fill="#FEC8C3" stroke="#1f1f1f" stroke-width="2"/>
+  <text x="1295" y="590" text-anchor="middle" font-size="17" font-weight="600" fill="#1f1f1f">GitHub Actions + GHCR</text>
+  <text x="1295" y="612" text-anchor="middle" font-size="13" fill="#3a3a3a">build images, push, ssh deploy,</text>
+  <text x="1295" y="630" text-anchor="middle" font-size="13" fill="#3a3a3a">smoke test, rollback on failure</text>
+  <path d="M1128,610 C1090,610 1090,520 1042,520" fill="none" stroke="#1f1f1f" stroke-width="2" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+  <text x="1070" y="660" font-size="12" fill="#3a3a3a">ssh as "deploy"</text>
+</svg>

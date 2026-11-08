@@ -2,6 +2,7 @@ import type { ErrorRequestHandler, Request } from 'express';
 import { z } from 'zod';
 import { ErrorCode, errorStatus, toErrorDetails, type ErrorBody } from '@bm/shared/errors';
 import { ApiError } from '../lib/ApiError';
+import { captureError } from '../config/sentry';
 
 /** Returns the numeric 4xx `status`/`statusCode` an error carries, or undefined. */
 function getClientErrorStatus(err: unknown): number | undefined {
@@ -100,6 +101,8 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   if (customReq.log?.error) {
     customReq.log.error({ err, requestId }, 'Unhandled internal server error');
   }
+
+  captureError(err);
 
   const body: ErrorBody = {
     error: {

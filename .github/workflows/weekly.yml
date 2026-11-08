@@ -1,0 +1,36 @@
+name: weekly
+# Every Monday 04:00 Dhaka (Sunday 22:00 UTC): prove the newest staging backup can be restored into a throwaway
+# Postgres container, and re-run the dependency audit. Can also be started by hand.
+on:
+  schedule:
+    - cron: '0 22 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  restore-drill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: staging
+    env:
+      AZURE_BACKUP_ACCOUNT: ${{ secrets.AZURE_BACKUP_ACCOUNT }}
+      AZURE_BACKUP_SAS: ${{ secrets.AZURE_BACKUP_SAS }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore the latest staging backup into a throwaway container
+        run: bash infra/scripts/restore.sh staging latest
+
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm audit --audit-level high

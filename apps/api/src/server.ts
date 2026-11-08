@@ -3,6 +3,7 @@ import { createPrisma, pingDb } from './config/db';
 import { createRedis, pingRedis } from './config/redis';
 import { createLogger } from './lib/logger';
 import { createApp } from './app';
+import { initSentry } from './config/sentry';
 
 async function bootstrap() {
   let env;
@@ -16,6 +17,7 @@ async function bootstrap() {
 
   const logger = createLogger({ level: env.LOG_LEVEL });
 
+  initSentry({ dsn: env.SENTRY_DSN_API, release: env.SENTRY_RELEASE, environment: env.APP_ENV });
   logger.info({ appEnv: env.APP_ENV }, 'Starting BasaManager API...');
 
   // Create infrastructure clients
