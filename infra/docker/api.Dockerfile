@@ -4,6 +4,8 @@
 FROM node:22.23.4-bookworm-slim@sha256:5ec23b7c622b00547753bc6ffd78085dd868a68aeb41c8e0a1418f033e13d96d AS base
 ENV PNPM_HOME=/pnpm CI=true
 ENV PATH=$PNPM_HOME:$PATH
+# OpenSSL in the shared base too, so pnpm install / prisma generate fetch the openssl-3.0.x engines the runtime detects.
+RUN apt-get update && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/*
 RUN corepack enable
 WORKDIR /repo
 

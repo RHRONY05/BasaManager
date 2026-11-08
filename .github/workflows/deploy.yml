@@ -158,12 +158,15 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: Production gate - this commit must be on main and already deployed to staging
-        if: needs.meta.outputs.target == 'prod' && !inputs.env_only
+        if: needs.meta.outputs.target == 'prod'
         env:
           GH_TOKEN: ${{ github.token }}
+          ENV_ONLY: ${{ inputs.env_only && '1' || '0' }}
         run: |
           git fetch --no-tags origin main
           git merge-base --is-ancestor "$SHA" origin/main || { echo "::error::Tag $SHA is not on main. Production only gets commits that were reviewed and merged."; exit 1; }
+          # An env-only run changes no code, so the staging-deploy checks do not apply; the on-main check above does.
+          if [ "$ENV_ONLY" = "1" ]; then exit 0; fi
           OK="$(gh run list -w deploy.yml -b main -c "$SHA" -s success -L 1 --json databaseId -q length)"
           [ "$OK" = "1" ] || { echo "::error::No successful staging deploy of $SHA on main. Merge it, let the staging deploy and smoke test pass, then tag."; exit 1; }
           RELEASE="$(curl -fsS https://staging.basamanager.rhrony05.me/api/health | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).release))')"
@@ -242,7 +245,8 @@ jobs:
         if: failure() && (steps.deploy.outcome == 'failure' || steps.smoke.outcome == 'failure')
         run: |
           echo "::warning::Deploy or smoke test failed - rolling back $TARGET"
-          ssh vm "/opt/basamanager/bin/rollback.sh $TARGET $SHA"
+          STEP=deploy; [ "${{ steps.smoke.outcome }}" = "failure" ] && STEP=smoke
+          ssh vm "/opt/basamanager/bin/rollback.sh $TARGET $SHA $STEP"
 
       - name: Smoke test the rolled-back version
         if: failure() && steps.rollback.outcome == 'success'

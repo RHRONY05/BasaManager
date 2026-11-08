@@ -23,7 +23,8 @@ ROTATE="${ROTATE:-}"
 while IFS='=' read -r k v; do
   case "$k" in '' | \#*) continue ;; esac
   [[ "$k" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || continue
-  v="${v#\"}"; v="${v%\"}"; v="${v#\'}"; v="${v%\'}"
+  # Strip one matching pair of quotes only (a lone quote belongs to the value).
+  if [[ ${#v} -ge 2 && $v == \"*\" ]]; then v="${v:1:-1}"; elif [[ ${#v} -ge 2 && $v == \'*\' ]]; then v="${v:1:-1}"; fi
   printf -v "$k" '%s' "$v"
 done < <(tr -d '\r' < "$CREDS")
 

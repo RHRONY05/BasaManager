@@ -116,6 +116,39 @@ jobs:
         if: always()
         run: docker compose -f infra/compose.test.yml down -v
 
+  images:
+    name: images (build + migrate)
+    # Builds the api and worker images exactly as the deploy does and runs `prisma migrate deploy` inside the api
+    # image as the unprivileged `node` user, so image problems (missing OpenSSL, root-owned /app) fail here and not on staging.
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: bm_owner
+          POSTGRES_PASSWORD: bm_owner_dev
+          POSTGRES_DB: basamanager_test
+        ports: ['5433:5432']
+        options: >-
+          --health-cmd "pg_isready -U bm_owner -d basamanager_test"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build the api image
+        run: docker build -f infra/docker/api.Dockerfile -t bm-api:ci . 2>&1 | tee build-api.log
+      - name: Build the worker image
+        run: docker build -f infra/docker/worker.Dockerfile -t bm-worker:ci .
+      - name: Prisma must have found OpenSSL while building
+        run: "! grep -q 'failed to detect the libssl/openssl version' build-api.log"
+      - name: Create DB roles (same script as the local compose)
+        run: psql "postgresql://bm_owner:bm_owner_dev@localhost:5433/basamanager_test" -v ON_ERROR_STOP=1 -f infra/postgres/init/01-roles.sql
+      - name: prisma migrate deploy inside the api image, as the node user
+        run: |
+          test "$(docker run --rm bm-api:ci id -un)" = node
+          docker run --rm --network host -e DATABASE_OWNER_URL=postgres://bm_owner:bm_owner_dev@localhost:5433/basamanager_test bm-api:ci node_modules/.bin/prisma migrate deploy
+
   docs:
     name: docs
     runs-on: ubuntu-latest
