@@ -101,9 +101,9 @@ function withTenantExtension(base: PrismaClient) {
       },
     },
     client: {
-      $tx<T>(ctx: TenantCtx, fn: (tx: Tx) => Promise<T>, options?: TxOptions): Promise<T> {
+      async $tx<T>(ctx: TenantCtx, fn: (tx: Tx) => Promise<T>, options?: TxOptions): Promise<T> {
         assertCtx(ctx);
-        return base.$transaction(async (tx) => {
+        return await base.$transaction(async (tx) => {
           await tx.$executeRaw`select set_config('app.org_id', ${ctx.orgId ?? ''}, true),
                                       set_config('app.user_id', ${ctx.userId}, true),
                                       set_config('app.role', ${ctx.role ?? ''}, true),

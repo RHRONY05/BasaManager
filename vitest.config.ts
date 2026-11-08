@@ -39,6 +39,14 @@ export default defineConfig({
       },
       {
         test: {
+          name: 'tests/helpers',
+          environment: 'node',
+          include: ['tests/helpers/**/*.test.ts'],
+          passWithNoTests: true,
+        },
+      },
+      {
+        test: {
           name: 'apps/web',
           environment: 'jsdom',
           setupFiles: ['apps/web/src/test/setup.ts'],
