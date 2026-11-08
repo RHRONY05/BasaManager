@@ -1,0 +1,20 @@
+<!--meta {"title": "M02 · Login — error", "shell": "plain"} -->
+<style>
+  .m-nav { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4); }
+  .m-auth { display: grid; gap: var(--space-6); padding: var(--space-4) var(--space-4) var(--space-10); }
+</style>
+<div class="frame-m">
+<header class="m-nav"><a class="brand" href="#/">{{MARK}}BasaManager</a></header>
+<main class="m-auth">
+      <div class="stack-sm"><h1 class="t-title">Sign in</h1><p class="secondary">Landlords, caretakers and tenants all sign in here.</p></div>
+<div class="banner banner--danger" role="alert"><i data-lucide="circle-alert"></i><div class="banner__body"><span class="banner__title">Email or password is incorrect</span><span>Check both and try again. After 5 more tries, sign-in pauses for 15 minutes.</span></div></div>
+      <button class="btn btn--secondary btn--block" type="button">{{GOOGLE}}Continue with Google</button>
+      <div class="divider-text">or with email</div>
+      <form class="form">
+        <div class="field"><label class="label" for="em">Email</label><input class="input" id="em" type="email" autocomplete="email" value="farhana.chowdury@gmail.com" aria-invalid="true"></div>
+        <div class="field"><div class="row-between"><label class="label" for="pw">Password</label><a class="btn btn--link" href="#/forgot-password" data-button>Forgot password?</a></div><input class="input" id="pw" type="password" autocomplete="current-password" value="dhaka-road-14" aria-invalid="true"></div>
+        <button class="btn btn--primary btn--block btn--lg" type="submit">Sign in</button>
+      </form>
+      <p class="t-sm secondary">New landlord? <a href="#/signup">Create an account</a></p>
+</main>
+</div>

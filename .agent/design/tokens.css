@@ -84,6 +84,11 @@
   --scrim: rgba(16, 22, 20, 0.48);
   --chart-collected: #0b5a61;
   --shadow-color: 23 32 30;
+  /* Google sign-in mark (brand colours, required by Google's branding rules; used only in .google-g) */
+  --google-blue: #4285f4;
+  --google-green: #34a853;
+  --google-yellow: #fbbc05;
+  --google-red: #ea4335;
 
   /* ---- Typography ------------------------------------------------------- */
   --font-body: 'Atkinson Hyperlegible Next', 'Noto Sans Bengali', system-ui, sans-serif;

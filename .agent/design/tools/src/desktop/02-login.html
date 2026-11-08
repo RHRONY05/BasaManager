@@ -1,0 +1,32 @@
+<!--meta {"title": "D02 · Login", "shell": "plain"} -->
+<div class="frame-d auth">
+  <aside class="auth__aside" aria-label="About BasaManager">
+    <a class="brand" href="#/">{{MARK}}BasaManager <span class="brand__bn" lang="bn">বাসা ম্যানেজার</span></a>
+    <div class="stack-lg">
+      <p class="t-title">Your buildings, bills and receipts in one calm place.</p>
+      <div class="card card--tight">
+        <div class="ledger ledger--sm">
+          <div class="ledger__row"><span class="ledger__label">Rent · Flat 4A</span><span class="ledger__leader"></span><span class="ledger__amount">৳12,000</span></div>
+          <div class="ledger__row"><span class="ledger__label">Electricity</span><span class="ledger__leader"></span><span class="ledger__amount">৳1,395</span><span class="ledger__explain">1,240 → 1,395 = 155 units × ৳9.00</span></div>
+          <div class="ledger__row"><span class="ledger__label">Service, gas, water</span><span class="ledger__leader"></span><span class="ledger__amount">৳3,080</span></div>
+          <div class="ledger__total"><span class="ledger__total-label">November</span><span class="ledger__total-amount">৳16,475</span></div>
+        </div>
+      </div>
+    </div>
+    <p class="t-sm muted">Made in Chattogram · payments in SSLCommerz sandbox mode</p>
+  </aside>
+  <main class="auth__main">
+    <div class="auth-card">
+      <div class="stack-sm"><h1 class="t-title">Sign in</h1><p class="secondary">Landlords, caretakers and tenants all sign in here.</p></div>
+
+      <button class="btn btn--secondary btn--block" type="button">{{GOOGLE}}Continue with Google</button>
+      <div class="divider-text">or with email</div>
+      <form class="form">
+        <div class="field"><label class="label" for="em">Email</label><input class="input" id="em" type="email" autocomplete="email" value="farhana.chowdhury@gmail.com"></div>
+        <div class="field"><div class="row-between"><label class="label" for="pw">Password</label><a class="btn btn--link" href="#/forgot-password" data-button>Forgot password?</a></div><input class="input" id="pw" type="password" autocomplete="current-password" value="dhaka-road-14"></div>
+        <button class="btn btn--primary btn--block btn--lg" type="submit">Sign in</button>
+      </form>
+      <p class="t-sm secondary">New landlord? <a href="#/signup">Create an account</a></p>
+    </div>
+  </main>
+</div>

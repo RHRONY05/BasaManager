@@ -1,0 +1,21 @@
+<!--meta {"title": "M03 · Signup", "shell": "plain"} -->
+<style>
+  .m-nav { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4); }
+  .m-auth { display: grid; gap: var(--space-6); padding: var(--space-4) var(--space-4) var(--space-10); }
+</style>
+<div class="frame-m">
+<header class="m-nav"><a class="brand" href="#/">{{MARK}}BasaManager</a><a class="btn btn--ghost" href="#/login" data-button>Sign in</a></header>
+<main class="m-auth">
+      <div class="stack-sm"><h1 class="t-title">Create your landlord account</h1><p class="secondary">Free. Takes about two minutes. Tenants join later by your invite.</p></div>
+      <button class="btn btn--secondary btn--block" type="button">{{GOOGLE}}Sign up with Google</button>
+      <div class="divider-text">or with email</div>
+      <form class="form">
+        <div class="field"><label class="label" for="fn">Your full name</label><input class="input" id="fn" autocomplete="name" value="Farhana Chowdhury"></div>
+        <div class="field"><label class="label" for="em">Email</label><input class="input" id="em" type="email" autocomplete="email" value="farhana.chowdhury@gmail.com"><span class="hint">We'll send a link to confirm it.</span></div>
+        <div class="field"><label class="label" for="pw">Password</label><input class="input" id="pw" type="password" autocomplete="new-password" value="nasirabad-road-3"><div class="pw-meter" aria-hidden="true"><span class="on"></span><span class="on"></span><span class="on"></span><span></span></div><span class="hint">Good. At least 10 characters; a short sentence works well.</span></div>
+        <div class="field"><label class="label" for="on">Organisation name</label><input class="input" id="on" value="Chowdhury Properties"><span class="hint">Tenants see this on bills and receipts.</span></div>
+        <button class="btn btn--primary btn--block btn--lg" type="submit">Create account</button>
+      </form>
+      <p class="t-sm secondary">Already have an account? <a href="#/login">Sign in</a></p>
+</main>
+</div>
