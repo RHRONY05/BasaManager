@@ -27,8 +27,9 @@ const pdf = Buffer.from(
 function upload(buffer, publicId, resourceType) {
   return new Promise((resolve, reject) => {
     cloudinary.uploader
-      .upload_stream({ public_id: publicId, type: 'authenticated', resource_type: resourceType, overwrite: true }, (err, res) =>
-        err ? reject(err) : resolve(res),
+      .upload_stream(
+        { public_id: publicId, type: 'authenticated', resource_type: resourceType, overwrite: true },
+        (err, res) => (err ? reject(err) : resolve(res)),
       )
       .end(buffer);
   });
@@ -45,7 +46,9 @@ async function check(label, buffer, resourceType, format) {
     expires_at: expiresAt,
     attachment: true,
   });
-  const direct = await fetch(`https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/${resourceType}/authenticated/${up.public_id}${resourceType === 'image' ? '.' + format : ''}`);
+  const direct = await fetch(
+    `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/${resourceType}/authenticated/${up.public_id}${resourceType === 'image' ? '.' + format : ''}`,
+  );
   const before = await fetch(url);
   await new Promise((r) => setTimeout(r, 25_000));
   const after = await fetch(url);
@@ -54,7 +57,11 @@ async function check(label, buffer, resourceType, format) {
   console.log(
     `${label}: upload type=${up.type} | unsigned delivery ${direct.status} (must not be 200) | signed URL before expiry ${before.status} (must be 200) | after expiry ${after.status} (must not be 200) => ${ok ? 'PASS' : 'FAIL'}`,
   );
-  await cloudinary.uploader.destroy(up.public_id, { type: 'authenticated', resource_type: resourceType, invalidate: true });
+  await cloudinary.uploader.destroy(up.public_id, {
+    type: 'authenticated',
+    resource_type: resourceType,
+    invalidate: true,
+  });
 }
 
 await Promise.all([check('image', png, 'image', 'png'), check('raw pdf', pdf, 'raw', 'pdf')]);
