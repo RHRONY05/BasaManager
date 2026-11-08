@@ -9,7 +9,7 @@
 | | |
 |---|---|
 | **Phase** | **PAUSED by the owner on 2026-11-08** (weekly Claude limit). Setup is done; the owner starts the relay later. V0 ✅, V1 ✅. V2, V3, V4 built, not merged |
-| **Next task** | #3 V3 is **MERGED** (squash feddf21, 2026-11-09, CI 8/8 on bb93001). Staging deploy run 42515537657 on feddf21 is GREEN and V3 is ticked. **v0.1.0 tagged on 38ebb32 (2026-11-09); prod deploy run 42516300840 GREEN; https://basamanager.rhrony05.me/api/health = 200.** `weekly` run once 2026-11-09 (run 42516601364): restore-drill **RESTORE OK** (backups/staging/2026-11-08.dump); `audit` job RED (see below). Remaining for V3: METRICS rows, remove worktree `D:/Projects/bm-wt/V3-infra`, then a small follow-up PR for the 3 nits. After that: #4 V2 review, #5 V4 (merge main first), then V5 |
+| **Next task** | #3 V3 is **MERGED** (squash feddf21, 2026-11-09, CI 8/8 on bb93001). Staging deploy run 42515537657 on feddf21 is GREEN and V3 is ticked. **v0.1.0 tagged on 38ebb32 (2026-11-09); prod deploy run 42516300840 GREEN; https://basamanager.rhrony05.me/api/health = 200.** `weekly` run once 2026-11-09 (run 42516601364): restore-drill **RESTORE OK** (backups/staging/2026-11-08.dump); `audit` job RED (see below). V3 METRICS row added and worktree `V3-infra` removed (2026-11-09). Remaining for V3: a small follow-up PR (branch `fix/V3-followup`) for the 3 nits + make the weekly `audit` green. After that: #4 V2 review, #5 V4 (merge main first), then V5 |
 | **Blocked on** | — |
 | **Production URL** | — (will be https://basamanager.rhrony05.me) |
 | **Last updated** | 2026-11-09 by Claude (lead): devops fixed all re-review items on PR #3 (openssl blocker, 2 rollback drills passed, new `images` CI job, nits, environment branch policies set); CI 8/8 |
@@ -224,3 +224,7 @@ Next: run `weekly` once (expect RESTORE OK), METRICS rows for V3, remove worktre
 ### 2026-11-09 — Claude (lead) — V3 weekly run
 Did: ran `weekly` by hand (run 42516601364). restore-drill GREEN: `RESTORE OK: backups/staging/2026-11-08.dump restored (11 objects, 1 table in public)`. `audit` job RED: `pnpm audit --audit-level high` reports 17 vulns (8 high), among them vite <=6.4.3 via vitepress (apps/docs), zod <4.6.6 via size-limit>estimo>puppeteer-core>chromium-bidi (dev-only), basic-ftp via size-limit. Not caused by V3; the PR `security` job evidently passes with a different scope, so check how it differs.
 Next: METRICS rows for V3, remove worktree D:/Projects/bm-wt/V3-infra, then the follow-up PR: 3 V3 nits + make the weekly audit green (pnpm overrides / bump vitepress / size-limit, or align with the PR audit scope). After that: #4 V2 review, #5 V4.
+
+### 2026-11-09 — Claude (lead) — V3 cleanup
+Did: added the V3 row to METRICS.md; removed worktree D:/Projects/bm-wt/V3-infra and deleted local branch feat/V3-infra.
+Next: follow-up PR `fix/V3-followup` (devops): the 3 nits (ci.yml image build `shell: bash`; deploy.sh:129-147 non-fatal cleanup after state is written; rollback.md:15 / rollback.sh:20-21 usage strings + unknown-argument error) and make the weekly `audit` job green (compare with the PR `security` job scope; pnpm overrides / bump vitepress / size-limit). Then #4 V2 review, #5 V4.
