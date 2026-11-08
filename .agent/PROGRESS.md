@@ -394,3 +394,7 @@ Next: when e2e is green, `gh pr merge 5 --squash` right away (merge main first o
 ### 2026-11-09 — Claude (lead) — V4 CI wait 13 (head 489e14e)
 Did: rechecked PR #5 at 489e14e: 7 of 8 checks green; only e2e still in progress. No code change.
 Next: when e2e is green, `gh pr merge 5 --squash` right away (merge main first only if GitHub refuses), check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
+
+### 2026-11-09 — Claude (lead) — V4 CI wait 14 (head 489e14e)
+Did: rechecked PR #5 at 489e14e: 7 of 8 checks green; only e2e still in progress. No code change.
+Next: when e2e is green, `gh pr merge 5 --squash` right away (merge main first only if GitHub refuses), check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
