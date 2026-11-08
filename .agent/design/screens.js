@@ -66,12 +66,12 @@ window.CANVAS = {
       { file: 'mobile/24-admin-orgs.html', title: 'M24 · Admin — organisations', w: 390, h: 1024, route: '/a' },
     ] },
     { id: 'stress', title: 'Stress variants (en-XA, longest content)', screens: [
-      { file: 'mobile/05-dashboard--stress.html', title: 'S05 · Dashboard — stress', w: 390, h: 844, route: '/l' },
-      { file: 'mobile/07-building-units--stress.html', title: 'S07 · Building units — stress', w: 390, h: 844, route: '/l/buildings/:id' },
-      { file: 'mobile/13-payments-claims--stress.html', title: 'S13 · Pending claims — stress', w: 390, h: 844, route: '/l/payments' },
-      { file: 'mobile/15-tenant-home-due--stress.html', title: 'S15 · Tenant home — stress', w: 390, h: 844, route: '/t' },
-      { file: 'mobile/18-tenant-bill--stress.html', title: 'S18 · Tenant bill — stress', w: 390, h: 844, route: '/t/bills/:id' },
-      { file: 'desktop/05-dashboard--stress.html', title: 'S05d · Dashboard — stress', w: 1440, h: 900, route: '/l' },
+      { file: 'mobile/05-dashboard--stress.html', title: 'S05 · Dashboard — stress', w: 390, h: 1470, route: '/l' },
+      { file: 'mobile/07-building-units--stress.html', title: 'S07 · Building units — stress', w: 390, h: 1348, route: '/l/buildings/:id' },
+      { file: 'mobile/13-payments-claims--stress.html', title: 'S13 · Pending claims — stress', w: 390, h: 1387, route: '/l/payments' },
+      { file: 'mobile/15-tenant-home-due--stress.html', title: 'S15 · Tenant home — stress', w: 390, h: 1397, route: '/t' },
+      { file: 'mobile/18-tenant-bill--stress.html', title: 'S18 · Tenant bill — stress', w: 390, h: 1384, route: '/t/bills/:id' },
+      { file: 'desktop/05-dashboard--stress.html', title: 'S05d · Dashboard — stress', w: 1440, h: 1307, route: '/l' },
     ] },
   ],
 };

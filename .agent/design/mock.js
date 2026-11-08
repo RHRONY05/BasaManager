@@ -27,7 +27,7 @@
     nodes.forEach(function (node) {
       var p = node.parentElement;
       if (!p || !node.textContent.trim()) return;
-      if (p.closest('script, style, [data-user], .sr-only, [data-no-pseudo]')) return;
+      if (p.closest('script, style, [data-user], .avatar, .ph, .sr-only, [data-no-pseudo]')) return;
       if (/[0-9৳]/.test(node.textContent)) return;
       node.textContent = pseudo(node.textContent);
     });

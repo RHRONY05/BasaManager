@@ -129,7 +129,7 @@ def bottom_nav(tabs, active, dots=()):
         cur = ' aria-current="page"' if k == active else ''
         dot = '<span class="bottom-nav__dot"></span>' if k in dots else ''
         aria = f' aria-label="{label}, new updates"' if k in dots else ''
-        out.append(f'  <a class="bottom-nav__item" href="#{k}"{cur}{aria}><span class="bottom-nav__icon"><i data-lucide="{icon}"></i>{dot}</span><span class="bottom-nav__label">{label}</span></a>')
+        out.append(f'  <a class="bottom-nav__item" href="#{k}"{cur}{aria}><span class="bottom-nav__icon"><i data-lucide="{icon}"></i>{dot}</span><span class="bottom-nav__label" title="{label}">{label}</span></a>')
     return '<nav class="bottom-nav" data-bottom-nav aria-label="Main">\n' + '\n'.join(out) + '\n</nav>'
 
 def m_topbar(m):

@@ -1,0 +1,69 @@
+<!--meta {"title": "S13 · Pending claims — stress (en-XA)", "shell": "staff-m", "active": "payments", "topbar": "Payments", "bell": "99+", "avatar": true, "initials": "FC", "pseudo": "en-XA"} -->
+<style>
+  .tabs-m { margin: 0 calc(var(--space-4) * -1); padding: 0 var(--space-4); }
+  .claim { display: grid; gap: var(--space-3); padding: var(--space-4); background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-lg); min-width: 0; }
+  .claim__top { display: flex; gap: var(--space-3); align-items: flex-start; }
+  .claim__proof { width: var(--space-16); aspect-ratio: 3 / 4; flex-shrink: 0; }
+</style>
+<div class="tabs tabs-m" role="tablist" aria-label="Payments" data-scroll-x data-proto="tabs">
+  <button class="tab" role="tab" aria-selected="true" type="button">Pending claims <span class="tab__count">3</span></button>
+  <button class="tab" role="tab" aria-selected="false" type="button">All payments</button>
+</div>
+
+<article class="claim" aria-labelledby="c1">
+  <div class="claim__top">
+    <a class="ph claim__proof" href="#proof-1" aria-label="Open bKash screenshot">Proof · 3:4</a>
+    <div class="stack-sm grow">
+      <h2 class="t-strong wrap" id="c1"><span data-user>Mohammad Abdur Rahman Chowdhury</span></h2>
+      <span class="t-sm secondary">Shanti Neer 2A</span>
+      <span class="amount amount--xl">৳1,25,00,000</span>
+    </div>
+  </div>
+  <dl class="dl">
+    <div class="dl__row"><dt>bKash TrxID</dt><dd class="mono">ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCD</dd></div>
+    <div class="dl__row"><dt>Paid on</dt><dd class="num">7 Nov 2026</dd></div>
+    <div class="dl__row"><dt>His dues</dt><dd class="num">৳1,25,00,000</dd></div>
+  </dl>
+  <div class="btn-stack">
+    <button class="btn btn--primary btn--block" type="button"><i data-lucide="check"></i>Confirm ৳1,25,00,000</button>
+    <button class="btn btn--danger-ghost btn--block" type="button">Reject</button>
+  </div>
+</article>
+
+<article class="claim" aria-labelledby="c2">
+  <div class="claim__top">
+    <a class="ph claim__proof" href="#proof-2" aria-label="Open Nagad screenshot">Proof · 3:4</a>
+    <div class="stack-sm grow">
+      <h2 class="t-strong wrap" id="c2"><span data-user>মোহাম্মদ আব্দুর রহমান চৌধুরী</span></h2>
+      <span class="t-sm secondary">Shanti Neer 3B · part payment</span>
+      <span class="amount amount--xl">৳8,000</span>
+    </div>
+  </div>
+  <dl class="dl">
+    <div class="dl__row"><dt>Nagad TrxID</dt><dd class="mono">73KD9PLW2M</dd></div>
+    <div class="dl__row"><dt>Paid on</dt><dd class="num">6 Nov 2026</dd></div>
+    <div class="dl__row"><dt>Still due after</dt><dd class="num">৳7,664</dd></div>
+  </dl>
+  <div class="btn-stack">
+    <button class="btn btn--primary btn--block" type="button"><i data-lucide="check"></i>Confirm ৳8,000</button>
+    <button class="btn btn--danger-ghost btn--block" type="button">Reject</button>
+  </div>
+</article>
+
+<article class="claim" aria-labelledby="c3">
+  <div class="claim__top">
+    <span class="ph claim__proof">Cash · no photo</span>
+    <div class="stack-sm grow">
+      <h2 class="t-strong wrap" id="c3"><span data-user>Nusrat Jahan Binte Kamal</span></h2>
+      <span class="t-sm secondary">Al-Madina Tower, House 12/B, Road 5, Block C, Nasirabad Housing Society 3B · cash</span>
+      <span class="amount amount--xl">৳0</span>
+    </div>
+  </div>
+  <p class="t-sm secondary">Note: “Given to Jamal bhai on 5 Nov.”</p>
+  <div class="btn-stack">
+    <button class="btn btn--primary btn--block" type="button"><i data-lucide="check"></i>Confirm ৳0</button>
+    <button class="btn btn--danger-ghost btn--block" type="button">Reject</button>
+  </div>
+</article>
+
+<button class="btn btn--secondary btn--block" type="button"><i data-lucide="plus"></i>Record a payment</button>

@@ -518,7 +518,7 @@ a.list-row:hover { background: var(--bg-surface-hover); }
 .tl-item.is-new .tl-comment { background: var(--highlight); }
 
 /* ---- Photo thumbnails + labelled placeholder → <PhotoThumb>, <Dropzone> ---------- */
-.ph { display: grid; place-items: center; background: var(--bg-muted); color: var(--fg-muted); border: 1px dashed var(--border-strong); border-radius: var(--radius-md); font-size: var(--text-xs); line-height: var(--leading-xs); font-weight: var(--weight-semibold); text-align: center; padding: var(--space-2); min-width: 0; }
+.ph { display: grid; place-items: center; background: var(--bg-muted); color: var(--fg-muted); border: 1px dashed var(--border-strong); border-radius: var(--radius-md); font-size: var(--text-xs); line-height: var(--leading-xs); font-weight: var(--weight-semibold); text-align: center; padding: var(--space-2); min-width: 0; overflow-wrap: anywhere; }
 .thumbs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
 .thumb { position: relative; aspect-ratio: 1 / 1; text-decoration: none; }
 .thumb .icon-btn { position: absolute; top: var(--space-1); right: var(--space-1); background: var(--bg-surface); box-shadow: var(--shadow-sm); }
