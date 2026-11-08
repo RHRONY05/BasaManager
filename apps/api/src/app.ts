@@ -44,11 +44,6 @@ export function createApp(deps: AppDeps): Express {
   // 5. Cookie parsing
   app.use(cookieParser());
 
-  // TEMPORARY (V3): proves Sentry captures API errors; removed right after verification.
-  app.get('/api/_sentry-test', () => {
-    throw new Error('BasaManager api Sentry test error (V3)');
-  });
-
   // 6. Routes mounted under /api
   app.use(
     '/api',

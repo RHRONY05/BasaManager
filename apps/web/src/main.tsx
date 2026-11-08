@@ -5,7 +5,7 @@ import { Providers } from './app/providers';
 import { router } from './app/router';
 import { queryClient } from './lib/api/queryClient';
 import { publicConfigQuery } from './lib/api/publicConfig';
-import { initSentry, captureError } from './lib/sentry';
+import { initSentry } from './lib/sentry';
 import './styles/globals.css';
 
 const rootEl = document.getElementById('root');
@@ -22,11 +22,5 @@ if (rootEl) {
 // Start Sentry once the public config (DSN, environment) is known. Never blocks rendering.
 void queryClient
   .fetchQuery(publicConfigQuery)
-  .then((config) => {
-    const on = initSentry(config);
-    // TEMPORARY (V3): one test error to prove Sentry works; removed right after verification.
-    if (on && new URLSearchParams(window.location.search).has('sentry-test')) {
-      captureError(new Error('BasaManager web Sentry test error (V3)'));
-    }
-  })
+  .then((config) => initSentry(config))
   .catch(() => undefined);
