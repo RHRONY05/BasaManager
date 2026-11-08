@@ -9,7 +9,7 @@
 | | |
 |---|---|
 | **Phase** | **PAUSED by the owner on 2026-11-08** (weekly Claude limit). Setup is done; the owner starts the relay later. V0 ✅, V1 ✅. V2, V3, V4 built, not merged |
-| **Next task** | #3 V3 is **MERGED** (squash feddf21, 2026-11-09, CI 8/8 on bb93001). Staging deploy run 42515537657 on feddf21 is GREEN and V3 is ticked. **v0.1.0 tagged on 38ebb32 (2026-11-09); prod deploy run 42516300840 GREEN; https://basamanager.rhrony05.me/api/health = 200.** `weekly` run once 2026-11-09 (run 42516601364): restore-drill **RESTORE OK** (backups/staging/2026-11-08.dump); `audit` job RED (see below). V3 METRICS row added and worktree `V3-infra` removed (2026-11-09). Remaining for V3: a small follow-up PR (branch `fix/V3-followup`) for the 3 nits + make the weekly `audit` green. After that: #4 V2 review, #5 V4 (merge main first), then V5 |
+| **Next task** | #3 V3 is **MERGED** (squash feddf21, 2026-11-09, CI 8/8 on bb93001). Staging deploy run 42515537657 on feddf21 is GREEN and V3 is ticked. **v0.1.0 tagged on 38ebb32 (2026-11-09); prod deploy run 42516300840 GREEN; https://basamanager.rhrony05.me/api/health = 200.** `weekly` run once 2026-11-09 (run 42516601364): restore-drill **RESTORE OK** (backups/staging/2026-11-08.dump); `audit` job RED (see below). V3 METRICS row added and worktree `V3-infra` removed (2026-11-09). Follow-up PR #7 (`fix/V3-followup`, worktree `D:/Projects/bm-wt/V3-followup`) is open with CI 8/8, not merged: 3 nits + weekly `audit` green. Reviewer (Sonnet) APPROVED #7 at f57e08b (2026-11-09, 0 blockers, CI 8/8, mergeState CLEAN). **#7 MERGED (squash a2f17a7, 2026-11-09); staging deploy run 42518261355 + ci 42518261300 running.** Next: confirm staging deploy green, re-run `weekly` once (expect audit green), remove worktree D:/Projects/bm-wt/V3-followup, fix gzip/brotli wording (09-TESTING.md, docs/overview/repo-map.md). After that: #4 V2 review, #5 V4 (merge main first), then V5 |
 | **Blocked on** | — |
 | **Production URL** | — (will be https://basamanager.rhrony05.me) |
 | **Last updated** | 2026-11-09 by Claude (lead): devops fixed all re-review items on PR #3 (openssl blocker, 2 rollback drills passed, new `images` CI job, nits, environment branch policies set); CI 8/8 |
@@ -229,6 +229,16 @@ Next: METRICS rows for V3, remove worktree D:/Projects/bm-wt/V3-infra, then the 
 Did: added the V3 row to METRICS.md; removed worktree D:/Projects/bm-wt/V3-infra and deleted local branch feat/V3-infra.
 Next: follow-up PR `fix/V3-followup` (devops): the 3 nits (ci.yml image build `shell: bash`; deploy.sh:129-147 non-fatal cleanup after state is written; rollback.md:15 / rollback.sh:20-21 usage strings + unknown-argument error) and make the weekly `audit` job green (compare with the PR `security` job scope; pnpm overrides / bump vitepress / size-limit). Then #4 V2 review, #5 V4.
 
-### 2026-11-09 — Claude (devops) — V3 follow-up PR
-Did: fix/V3-followup: 3 Opus nits (ci `shell: bash`; deploy.sh housekeeping runs in a subshell and only warns; rollback.sh usage + `die` on unknown step; rollback.md). Weekly audit: swapped `@size-limit/preset-app` for `@size-limit/file` (same size check, drops estimo>puppeteer-core/nanoid/extract-zip(unpatched)/basic-ftp/zod) and overrode `vitepress>vite` to 6.4.5 (pnpm-workspace.yaml). `pnpm audit --audit-level high` now passes (1 moderate left: minimatch via eslint). Audit level not weakened.
-Next: CI green, lead squash-merges, then #4 V2 review, #5 V4.
+### 2026-11-09 — Claude (lead) — V3 follow-up PR
+Did: devops opened PR #7 (`fix/V3-followup`): ci.yml `shell: bash` on image build; deploy.sh cleanup non-fatal after state is written; rollback usage strings + unknown-argument error; weekly audit fixed by swapping `@size-limit/preset-app` for `@size-limit/file` 14.3.0 and overriding `vitepress>vite` to 6.4.5 (`pnpm audit --audit-level high` exits 0, one moderate left). CI 8/8. Not merged. Details: ../bm-runs/V3-followup.md.
+Tokens: devops 62k.
+Next: reviewer (Sonnet) checks #7, squash merge, staging deploy green, run `weekly` once (expect audit green), remove worktree D:/Projects/bm-wt/V3-followup. Then #4 V2 review, #5 V4.
+
+### 2026-11-09 — Claude (lead) — V3 follow-up review
+Did: Sonnet reviewer APPROVED PR #7 at f57e08b (posted as a PR comment; details ../bm-runs/V3-followup-review.md). All 4 nits and the weekly audit fix verified (size-limit 118 kB of 200, frozen install OK, `pnpm audit --audit-level high` exits 0). 2 non-blocking nits: 09-TESTING.md and docs/overview/repo-map.md say gzip but size-limit reports brotli; a failed `install_bin` in deploy housekeeping is only a WARN.
+Tokens: reviewer 56k.
+Next: squash merge #7 (merge main first if behind), check the staging deploy runs the new deploy.sh cleanup, run `weekly` once (expect audit green), remove worktree D:/Projects/bm-wt/V3-followup, fix the gzip/brotli wording. Then #4 V2 review, #5 V4.
+
+### 2026-11-09 — Claude (lead) — V3 follow-up merged
+Did: `gh pr merge 7 --squash` -> a2f17a7 on main (CI 8/8 on f57e08b, CLEAN). Local main had diverged on PROGRESS-only commits; reset to origin/main and re-applied PROGRESS.md.
+Next: check staging deploy 42518261355 green, run `weekly` once (expect audit green), remove worktree D:/Projects/bm-wt/V3-followup, gzip/brotli wording fix. Then #4 V2 review, #5 V4.
