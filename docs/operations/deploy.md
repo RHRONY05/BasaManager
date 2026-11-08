@@ -85,7 +85,7 @@ Details that trip people up:
 1. Make the pipeline key first: `ssh-keygen -t ed25519 -N "" -f ~/.ssh/basamanager_deploy_ed25519`. It is a different key from the admin key.
 2. Run bootstrap with the **public** half of that key: `ssh -i ~/.ssh/basamanager_ed25519 azureuser@<ip> "sudo bash /tmp/bootstrap.sh '$(cat ~/.ssh/basamanager_deploy_ed25519.pub)'"`.
 3. `provision-secrets.sh` connects with strict host-key checking, so the VM must already be in your `known_hosts`. Run `ssh -i ~/.ssh/basamanager_deploy_ed25519 deploy@<ip>` once and compare the fingerprint it shows with the VM's own: `az vm run-command invoke -g rg-basamanager -n vm-basamanager --command-id RunShellScript --scripts "ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub"`. Only then type `yes`.
-4. Once, in GitHub (Settings, Environments), restrict deployment branches: `staging` to branch `main` only, `production` to tags `v*` only. Without this, any branch's workflow could read the production secrets.
+4. Check that GitHub (Settings, Environments) restricts deployment branches: `staging` to branch `main` only, `production` to tags `v*` only (already set on 2026-11-09 with `gh api repos/<owner>/<repo>/environments/<env>/deployment-branch-policies`). Without this, any branch's workflow could read the production secrets.
 
 ## Smoke test and auth
 

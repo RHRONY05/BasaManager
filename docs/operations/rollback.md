@@ -25,14 +25,17 @@ Which version does it go back to? That depends on how far the failed deploy got 
 | `deploy.sh` itself (pull error, failed migration, api never healthy) | the last good SHA (not the failed one) | `current` (the last good version) |
 | the smoke test (the deploy finished, state already updated)          | the failed SHA                         | `previous`                        |
 
-`rollback.sh` compares `current` with the failed SHA it was given, so it never jumps two releases back. The failed
-SHA is written to `state/<env>.bad`.
+The pipeline tells `rollback.sh` which step failed (`rollback.sh <env> <sha> deploy|smoke`), so it never jumps two
+releases back. If you run it by hand without the third argument it guesses from the state files. If a re-deploy of
+the release that is already running fails (for example "Redeploy staging without a code change" failing at the
+pull), the target is that same release and it is not marked bad. The failed SHA is otherwise written to
+`state/<env>.bad`.
 
-**Proof (V3):**
+**Proof (V3, staging, 2026-11-09):**
 
-- Smoke path (2026-11-08): staging was deployed with a deliberately failing smoke test; the log shows
-  `rolling back 5001aedb... -> ac8642aa...`, then `SMOKE PASSED` for the old SHA (run 42442524711).
-- Deploy-step path: see the V3 entry in `.agent/PROGRESS.md` (run IDs and log lines).
+- Deploy-step path: run 42513127173. `deploy.sh` was made to fail on purpose (`--fail-before-up`) after the migration; the log shows `rolling back (failed 5c7b1e19, current 14483f15) -> 14483f15`, then `SMOKE PASSED`. State afterwards: `current` unchanged, `previous` unchanged, `bad=5c7b1e19`.
+- Smoke path: run 42513431008. The smoke test was made to fail on purpose; `rolling back (failed eae730b9, current eae730b9) -> 14483f15`, then `SMOKE PASSED`. State afterwards: `current=14483f15`, no `previous`, `bad=eae730b9`.
+- Both used temporary branch triggers that were removed afterwards. (Earlier runs 42507019561 and 42507429890 only looked like drills: they failed in the migrate step on a real image bug, since fixed.)
 
 To repeat the drills: Actions, **deploy**, Run workflow (branch `main`), tick **force smoke fail** (smoke path) or
 **fail deploy step** (deploy.sh path). Both work for staging only and roll staging back, so use them sparingly.
