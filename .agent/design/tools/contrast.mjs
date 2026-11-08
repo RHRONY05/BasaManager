@@ -59,7 +59,7 @@ for (const bg of ['--bg-surface', '--bg-app']) {
   pairs.push(['--accent-primary', bg, 3, 'accent indicator (non-text)']);
 }
 pairs.push(['--chart-collected', '--bg-surface', 3, 'chart bar (non-text)']);
-pairs.push(['--chart-billed', '--chart-collected', 1.5, 'bars distinguishable (lightness step)']);
+pairs.push(['--chart-collected', '--bg-muted', 3, 'collected fill vs billed track (non-text)']);
 
 let fails = 0;
 const rows = [];

@@ -82,7 +82,6 @@
   --skeleton-base: #e8e4dc;
   --skeleton-shine: #f3f0ea;
   --scrim: rgba(16, 22, 20, 0.48);
-  --chart-billed: #8fb0b1;      /* bar fill; always paired with legend + values */
   --chart-collected: #0b5a61;
   --shadow-color: 23 32 30;
 
@@ -247,7 +246,6 @@
     --skeleton-base: #212a28;
     --skeleton-shine: #2a3432;
     --scrim: rgba(0, 0, 0, 0.6);
-    --chart-billed: #3f6264;
     --chart-collected: #4db5b7;
     --shadow-color: 0 0 0;
   }
@@ -301,7 +299,6 @@
   --skeleton-base: #212a28;
   --skeleton-shine: #2a3432;
   --scrim: rgba(0, 0, 0, 0.6);
-  --chart-billed: #3f6264;
   --chart-collected: #4db5b7;
   --shadow-color: 0 0 0;
 }

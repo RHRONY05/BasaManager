@@ -58,11 +58,11 @@ STAFF_NAV = {
     ],
 }
 
-def staff_sidebar(role, active, org, user):
+def staff_sidebar(role, active, org, user, nocounts=False):
     main, extra = STAFF_NAV[role]
     def item(k, href, icon, label, count):
         cur = ' aria-current="page"' if k == active else ''
-        c = f'<span class="nav__count" aria-label="{count} waiting">{count}</span>' if count else ''
+        c = f'<span class="nav__count" aria-label="{count} waiting">{count}</span>' if count and not nocounts else ''
         return f'      <a class="nav__item" href="#{href}"{cur}><i data-lucide="{icon}"></i><span class="nav__label">{label}</span>{c}</a>'
     items = '\n'.join(item(*x) for x in main)
     ext = ''
@@ -98,7 +98,7 @@ def staff_d(m, body):
     user = tuple(m.get('user', ['FC', 'Farhana Chowdhury']))
     return f'''<body>
 <div class="frame-d app">
-{staff_sidebar(role, m.get('active'), org, user)}
+{staff_sidebar(role, m.get('active'), org, user, m.get('nocounts', False))}
   <div class="main">
     <header class="topbar">
       <nav class="topbar__crumbs" aria-label="Breadcrumb">{''.join(cr)}</nav>

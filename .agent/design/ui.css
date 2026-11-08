@@ -109,7 +109,9 @@ svg.lucide { width: var(--size-icon); height: var(--size-icon); flex-shrink: 0; 
 .bell .bell__count { pointer-events: none; }
 .icon-btn { position: relative; display: inline-grid; place-items: center; width: var(--size-tap); height: var(--size-tap); border: 0; border-radius: var(--radius-md); background: transparent; color: var(--fg-secondary); cursor: pointer; transition: background var(--dur-fast) var(--ease-default), color var(--dur-fast) var(--ease-default); text-decoration: none; }
 .icon-btn:hover { background: var(--bg-muted); color: var(--fg-default); }
-.icon-btn:active { transform: scale(0.96); }
+.icon-btn:active:not([disabled]) { transform: scale(0.96); }
+.icon-btn[disabled] { opacity: 0.4; cursor: not-allowed; }
+.icon-btn[disabled]:hover { background: transparent; }
 .icon-btn--outline { border: 1px solid var(--border-default); background: var(--bg-surface); }
 .bell__count { position: absolute; top: var(--space-1); right: var(--space-0-5); min-width: var(--space-5); height: var(--space-5); padding: 0 var(--space-1); border-radius: var(--radius-full); border: 2px solid var(--bg-app); background: var(--danger-primary); color: var(--danger-fg); font-size: var(--text-xs); line-height: var(--space-4); font-weight: var(--weight-bold); font-variant-numeric: tabular-nums; text-align: center; white-space: nowrap; }
 
@@ -156,7 +158,7 @@ svg.lucide { width: var(--size-icon); height: var(--size-icon); flex-shrink: 0; 
    variants: primary | secondary | ghost | danger | danger-ghost | link
    sizes: default (44) | sm (36, desktop tables only) | lg (52, hero CTA) | block
    loading: aria-busy="true" + disabled; spinner replaces the icon, label stays (width unchanged) */
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); min-height: var(--size-control); padding: 0 var(--space-4); border: 1px solid transparent; border-radius: var(--radius-md); font-weight: var(--weight-semibold); font-size: var(--text-base); line-height: var(--leading-base); text-align: center; white-space: nowrap; text-decoration: none; cursor: pointer; user-select: none; transition: background var(--dur-fast) var(--ease-default), border-color var(--dur-fast) var(--ease-default), color var(--dur-fast) var(--ease-default), transform var(--dur-instant) var(--ease-default); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); min-height: var(--size-control); min-width: var(--size-tap); padding: 0 var(--space-4); border: 1px solid transparent; border-radius: var(--radius-md); font-weight: var(--weight-semibold); font-size: var(--text-base); line-height: var(--leading-base); text-align: center; white-space: nowrap; text-decoration: none; cursor: pointer; user-select: none; transition: background var(--dur-fast) var(--ease-default), border-color var(--dur-fast) var(--ease-default), color var(--dur-fast) var(--ease-default), transform var(--dur-instant) var(--ease-default); }
 .btn:active:not([disabled]) { transform: scale(0.98); }
 .btn[disabled], .btn[aria-disabled='true'] { cursor: not-allowed; opacity: 0.5; }
 .btn[aria-busy='true'] { cursor: progress; opacity: 0.85; }
@@ -398,18 +400,26 @@ a.list-row:hover { background: var(--bg-surface-hover); }
 .section-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-width: 0; }
 .section-head h2 { font-size: var(--text-lg); line-height: var(--leading-lg); font-weight: var(--weight-bold); min-width: 0; }
 
-/* ---- Bar chart (6 months billed vs collected) → <BilledCollectedChart> ---------- */
+/* ---- Billed vs collected chart → <CollectionChart> -------------------------------
+   One column per month: the column (track, outlined) is what was billed, the teal fill
+   inside it is what was collected, the label above is the collection rate. One measure
+   (share collected) → no categorical palette needed; values are direct-labelled and the
+   same numbers are one click away as a table ("Show as table"). Hover: tooltip with
+   "October 2026 · billed ৳3,82,900 · collected ৳3,57,900 (93%)"; keyboard: columns are focusable. */
 .chart { display: grid; gap: var(--space-3); }
-.chart__legend { display: flex; gap: var(--space-4); flex-wrap: wrap; font-size: var(--text-sm); color: var(--fg-secondary); }
+.chart__legend { display: flex; gap: var(--space-4); flex-wrap: wrap; font-size: var(--text-sm); line-height: var(--leading-sm); color: var(--fg-secondary); }
 .chart__key { display: inline-flex; align-items: center; gap: var(--space-2); }
-.chart__swatch { width: var(--space-3); height: var(--space-3); border-radius: var(--radius-xs); background: var(--chart-billed); }
-.chart__swatch--collected { background: var(--chart-collected); }
-.chart__plot { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--space-4); align-items: end; height: 200px; padding: 0 var(--space-2); border-bottom: 1px solid var(--border-default); background-image: linear-gradient(var(--border-muted) 1px, transparent 1px); background-size: 100% 25%; }
-.chart__group { display: flex; align-items: flex-end; justify-content: center; gap: var(--space-1); height: 100%; }
-.chart__bar { width: var(--space-5); border-radius: var(--radius-xs) var(--radius-xs) 0 0; background: var(--chart-billed); }
-.chart__bar--collected { background: var(--chart-collected); }
-.chart__bar--partial { background: repeating-linear-gradient(135deg, var(--chart-collected) 0 4px, var(--accent-soft) 4px 7px); }
-.chart__axis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--space-4); padding: 0 var(--space-2); font-size: var(--text-xs); color: var(--fg-muted); text-align: center; }
+.chart__swatch { width: var(--space-3); height: var(--space-3); border-radius: var(--radius-xs); background: var(--bg-muted); box-shadow: inset 0 0 0 1px var(--border-strong); }
+.chart__swatch--collected { background: var(--chart-collected); box-shadow: none; }
+.chart__body { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-2); }
+.chart__y { display: grid; grid-template-rows: repeat(5, 1fr); height: 200px; font-size: var(--text-xs); line-height: var(--leading-xs); color: var(--fg-muted); text-align: right; white-space: nowrap; margin-top: calc(var(--leading-xs) / -2); }
+.chart__plot { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--space-2); align-items: end; height: 200px; border-bottom: 1px solid var(--border-strong); background-image: linear-gradient(var(--border-muted) 1px, transparent 1px); background-size: 100% 20%; }
+.chart__group { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: var(--space-1); height: 100%; min-width: 0; }
+.chart__rate { position: absolute; bottom: calc(100% + var(--space-1)); left: 50%; transform: translateX(-50%); font-size: var(--text-xs); line-height: var(--leading-xs); font-weight: var(--weight-bold); color: var(--fg-secondary); font-variant-numeric: tabular-nums; }
+.chart__col { position: relative; display: flex; align-items: flex-end; width: min(100%, var(--space-10)); border-radius: var(--radius-xs) var(--radius-xs) 0 0; background: var(--bg-muted); box-shadow: inset 0 0 0 1px var(--border-strong); }
+.chart__fill { width: 100%; border-radius: var(--radius-xs) var(--radius-xs) 0 0; border-top: 2px solid var(--bg-surface); background: var(--chart-collected); }
+.chart__group--current .chart__fill { background: repeating-linear-gradient(135deg, var(--chart-collected) 0 6px, var(--accent-hover) 6px 9px); }
+.chart__axis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--space-2); font-size: var(--text-xs); line-height: var(--leading-xs); color: var(--fg-muted); text-align: center; }
 
 /* ---- Banner → <Banner tone> (inline, page-level) ------------------------------- */
 .banner { display: flex; align-items: flex-start; gap: var(--space-3); padding: var(--space-3) var(--space-4); border: 1px solid; border-radius: var(--radius-md); font-size: var(--text-sm); line-height: var(--leading-sm); min-width: 0; }

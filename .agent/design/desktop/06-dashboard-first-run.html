@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>D06 · Landlord dashboard — first run — BasaManager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../ui.css">
+<script src="https://unpkg.com/lucide@1.70.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+<style>
+  /* layout only — tokens only */
+  .first { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: var(--space-8); align-items: start; }
+  .preview { display: grid; gap: var(--space-3); }
+  .preview .due-card { box-shadow: var(--shadow-sm); }
+</style>
+</head>
+<body>
+<div class="frame-d app">
+  <aside class="sidebar" aria-label="Sidebar">
+    <div class="sidebar__brand"><a class="brand" href="#/"><svg class="brand__mark" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15 16 6l10 9"/><path d="M9 13v9h14v-9"/><path d="M13.5 22v-5h5v5"/><path d="M5 26h22M5 29.5h22" stroke-width="1.6"/></svg>BasaManager</a><button class="icon-btn" type="button" aria-label="Collapse sidebar"><i data-lucide="panel-left-close"></i></button></div>
+    <button class="org-switch" type="button" data-allow-wrap title="Chowdhury Properties · Landlord" aria-label="Switch organisation, current Chowdhury Properties">
+      <span class="org-switch__text"><span class="org-switch__name">Chowdhury Properties</span><span class="org-switch__role">Landlord</span></span><i data-lucide="chevrons-up-down" class="i-sm"></i>
+    </button>
+    <nav class="nav" aria-label="Main">
+      <a class="nav__item" href="#/l" aria-current="page"><i data-lucide="layout-dashboard"></i><span class="nav__label">Dashboard</span></a>
+      <a class="nav__item" href="#/l/buildings"><i data-lucide="building-2"></i><span class="nav__label">Buildings</span></a>
+      <a class="nav__item" href="#/l/tenants"><i data-lucide="users"></i><span class="nav__label">Tenants</span></a>
+      <a class="nav__item" href="#/l/billing"><i data-lucide="receipt-text"></i><span class="nav__label">Billing</span></a>
+      <a class="nav__item" href="#/l/payments"><i data-lucide="wallet"></i><span class="nav__label">Payments</span></a>
+      <a class="nav__item" href="#/l/maintenance"><i data-lucide="wrench"></i><span class="nav__label">Maintenance</span></a>
+      <a class="nav__item" href="#/l/notices"><i data-lucide="megaphone"></i><span class="nav__label">Notices</span></a>
+      <span class="eyebrow nav__group">Organisation</span>
+      <a class="nav__item" href="#/l/team"><i data-lucide="user-cog"></i><span class="nav__label">Team</span></a>
+      <a class="nav__item" href="#/l/reports"><i data-lucide="file-chart-column"></i><span class="nav__label">Reports</span></a>
+      <a class="nav__item" href="#/l/settings"><i data-lucide="settings"></i><span class="nav__label">Settings</span></a>
+    </nav>
+    <div class="sidebar__foot">
+      <a class="nav__item" href="#/account"><span class="avatar avatar--sm">FC</span><span class="nav__label">Farhana Chowdhury</span></a>
+      <a class="nav__item" href="#shortcuts"><i data-lucide="keyboard"></i><span class="nav__label">Shortcuts</span><span class="kbd">?</span></a>
+    </div>
+  </aside>
+  <div class="main">
+    <header class="topbar">
+      <nav class="topbar__crumbs" aria-label="Breadcrumb"><span aria-current="page">Dashboard</span></nav>
+      <div class="topbar__actions"><label class="search"><i data-lucide="search" class="i-sm"></i><span class="grow">Search tenants, units, TrxID</span><span class="kbd">/</span></label><span class="bell"><a class="icon-btn" href="#notifications" aria-label="Notifications"><i data-lucide="bell"></i></a></span></div>
+    </header>
+<div class="page">
+  <section class="page-head">
+    <div class="page-head__text">
+      <p class="eyebrow">Welcome</p>
+      <h1 class="t-title">Let's set up Chowdhury Properties</h1>
+      <p class="secondary">Four steps, about 10 minutes. After that, bills are worked out for you every month.</p>
+    </div>
+  </section>
+
+  <div class="first">
+    <section class="stack" aria-labelledby="steps-h">
+      <div class="row-between"><h2 class="t-section" id="steps-h">Getting started</h2><span class="t-sm muted">1 of 5 done</span></div>
+      <div class="meter" role="img" aria-label="1 of 5 steps done"><span style="width:20%"></span></div>
+      <ol class="checklist">
+        <li class="check-step check-step--done"><span class="check-step__n"><i data-lucide="check" class="i-sm"></i></span><div class="check-step__body"><span class="t-strong">Verify your email</span><span class="t-sm secondary">farhana.chowdhury@gmail.com · verified 8 Nov</span></div></li>
+        <li class="check-step check-step--current"><span class="check-step__n">2</span><div class="check-step__body"><span class="t-strong">Add your first building</span><span class="t-sm secondary">Name, address and a map pin so tenants can find it. Example: Shanti Neer, House 14, Road 3, Nasirabad.</span></div><a class="btn btn--primary" href="#/l/buildings/new"><i data-lucide="plus"></i>Add building</a></li>
+        <li class="check-step"><span class="check-step__n">3</span><div class="check-step__body"><span class="t-strong">Add units with rent and charges</span><span class="t-sm secondary">Flat, room or shop · monthly rent · service, gas, water · electricity by sub-meter or prepaid.</span></div></li>
+        <li class="check-step"><span class="check-step__n">4</span><div class="check-step__body"><span class="t-strong">Set the bill day and late fee</span><span class="t-sm secondary">Defaults: bills on the 1st, due by the 10th, no late fee. Change them any time.</span></div></li>
+        <li class="check-step"><span class="check-step__n">5</span><div class="check-step__body"><span class="t-strong">Invite your first tenant</span><span class="t-sm secondary">They get an email link, set a password, and see their bills on their phone.</span></div></li>
+      </ol>
+    </section>
+
+    <aside class="preview" aria-labelledby="prev-h">
+      <h2 class="t-section" id="prev-h">What your tenants will see</h2>
+      <p class="t-sm secondary">Every bill shows each line and how it was worked out, so there's nothing to argue about.</p>
+      <div class="due-card">
+        <div class="due-card__top"><span class="t-card">November 2026</span><span class="badge badge--info"><i data-lucide="send"></i>Issued</span></div>
+        <div class="ledger ledger--sm">
+          <div class="ledger__row"><span class="ledger__label">Rent</span><span class="ledger__leader"></span><span class="ledger__amount">৳12,000</span></div>
+          <div class="ledger__row"><span class="ledger__label">Service, gas, water</span><span class="ledger__leader"></span><span class="ledger__amount">৳3,080</span></div>
+          <div class="ledger__row"><span class="ledger__label">Electricity</span><span class="ledger__leader"></span><span class="ledger__amount">৳1,395</span><span class="ledger__explain">1,240 → 1,395 = 155 units × ৳9.00</span></div>
+          <div class="ledger__total"><span class="ledger__total-label">Total</span><span class="ledger__total-amount">৳16,475</span></div>
+        </div>
+      </div>
+      <p class="t-xs muted">Example only. Your numbers appear once you add a unit.</p>
+    </aside>
+  </div>
+</div>
+
+  </div>
+</div>
+</body>
+</html>

@@ -19,10 +19,10 @@ window.CANVAS = {
       { file: 'mobile/04-invite.html', title: 'M04 · Invite accept', w: 390, h: 844, route: '/invite/:token' },
     ] },
     { id: 'landlord', title: 'Landlord', screens: [
-      { file: 'desktop/05-dashboard.html', title: 'D05 · Dashboard', w: 1440, h: 900, route: '/l' },
-      { file: 'mobile/05-dashboard.html', title: 'M05 · Dashboard', w: 390, h: 844, route: '/l' },
+      { file: 'desktop/05-dashboard.html', title: 'D05 · Dashboard', w: 1440, h: 1239, route: '/l' },
+      { file: 'mobile/05-dashboard.html', title: 'M05 · Dashboard', w: 390, h: 1404, route: '/l' },
       { file: 'desktop/06-dashboard-first-run.html', title: 'D06 · Dashboard — first run', w: 1440, h: 900, route: '/l' },
-      { file: 'mobile/06-dashboard-first-run.html', title: 'M06 · Dashboard — first run', w: 390, h: 844, route: '/l' },
+      { file: 'mobile/06-dashboard-first-run.html', title: 'M06 · Dashboard — first run', w: 390, h: 1250, route: '/l' },
       { file: 'desktop/07-building-units.html', title: 'D07 · Building — units', w: 1440, h: 900, route: '/l/buildings/:id' },
       { file: 'mobile/07-building-units.html', title: 'M07 · Building — units', w: 390, h: 844, route: '/l/buildings/:id' },
       { file: 'desktop/08-lease-new.html', title: 'D08 · Lease new — review', w: 1440, h: 900, route: '/l/leases/new' },
