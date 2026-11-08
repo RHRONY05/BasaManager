@@ -25,7 +25,7 @@ needs http.
 | `index.html` | Gallery |
 | `screens.js` | Artboard manifest (title, size, route); read by the gallery and by `tools/check.mjs` |
 | `kit.html` | Component kit: every component in every state (idle, hover, focus-visible, active, disabled, loading, error) |
-| `states.html` | Pending / refreshing / error / empty for **22 data regions**, plus pay-result, auth, navigation, mutation, offline and live-update states. Responsive: also audited as a phone sheet |
+| `states.html` | Pending / refreshing / error / empty for **22 data regions**, plus pay-result, auth, navigation, mutation, offline, cursor "Load more", iOS push opt-in ("Add to Home Screen") and live-update states. Responsive: also audited as a phone sheet |
 | `desktop/NN-name.html` | 1440-wide artboards (generated, see below) |
 | `mobile/NN-name.html` | 390-wide artboards, fluid from 320 (generated) |
 | `mobile/*--stress.html`, `desktop/05-dashboard--stress.html` | Stress variants: longest names, ৳1,25,00,000, 99+, 40-char IDs, `en-XA` |

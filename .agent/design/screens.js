@@ -6,8 +6,8 @@ window.CANVAS = {
   groups: [
     { id: 'kit', title: 'Kit and states', screens: [
       { file: 'kit.html', title: 'K01 · Component kit', w: 1440, h: 5603 },
-      { file: 'states.html', title: 'K02 · Data-region states', w: 1440, h: 8518 },
-      { file: 'states.html', title: 'K02m · Data-region states (phone)', w: 390, h: 25734 },
+      { file: 'states.html', title: 'K02 · Data-region states', w: 1440, h: 8860 },
+      { file: 'states.html', title: 'K02m · Data-region states (phone)', w: 390, h: 26314 },
     ] },
     { id: 'public', title: 'Public and auth', screens: [
       { file: 'desktop/01-landing.html', title: 'D01 · Landing', w: 1440, h: 1583, route: '/' },
