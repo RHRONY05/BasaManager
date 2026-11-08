@@ -9,7 +9,7 @@
 | | |
 |---|---|
 | **Phase** | **PAUSED by the owner on 2026-11-08** (weekly Claude limit). Setup is done; the owner starts the relay later. V0 ✅, V1 ✅. V2, V3, V4 built, not merged |
-| **Next task** | #3 V3 is **MERGED** (squash feddf21, 2026-11-09, CI 8/8 on bb93001). Staging deploy run 42515537657 on feddf21 is GREEN and V3 is ticked. Remaining for V3: tag v0.1.0, check prod /api/health, run `weekly` once (expect RESTORE OK), METRICS rows, remove worktree `D:/Projects/bm-wt/V3-infra`, then a small follow-up PR for the 3 nits. After that: #4 V2 review, #5 V4 (merge main first), then V5 |
+| **Next task** | #3 V3 is **MERGED** (squash feddf21, 2026-11-09, CI 8/8 on bb93001). Staging deploy run 42515537657 on feddf21 is GREEN and V3 is ticked. **v0.1.0 tagged on 38ebb32 (2026-11-09); prod deploy run 42516300840 GREEN; https://basamanager.rhrony05.me/api/health = 200.** Remaining for V3: run `weekly` once (expect RESTORE OK), METRICS rows, remove worktree `D:/Projects/bm-wt/V3-infra`, then a small follow-up PR for the 3 nits. After that: #4 V2 review, #5 V4 (merge main first), then V5 |
 | **Blocked on** | — |
 | **Production URL** | — (will be https://basamanager.rhrony05.me) |
 | **Last updated** | 2026-11-09 by Claude (lead): devops fixed all re-review items on PR #3 (openssl blocker, 2 rollback drills passed, new `images` CI job, nits, environment branch policies set); CI 8/8 |
@@ -216,3 +216,7 @@ Next: check the staging deploy run for feddf21; if green tick V3, tag v0.1.0, ch
 ### 2026-11-09 — Claude (lead) — V3 staging verified
 Did: staging deploy run 42515537657 (feddf21) all jobs green (meta, 4 image builds, sentry-release, deploy). V3 ticked in 08-TASKS. Local main had 8 PROGRESS-only commits that conflicted with the squash merge; reset to origin/main and re-applied the latest PROGRESS.md.
 Next: tag v0.1.0 (prod deploy), check prod /api/health, run `weekly` once (expect RESTORE OK), METRICS rows for V3, remove worktree D:/Projects/bm-wt/V3-infra, then the 3-nit follow-up PR.
+
+### 2026-11-09 — Claude (lead) — V3 prod release
+Did: staging green on 38ebb32, tagged v0.1.0, prod deploy run 42516300840 all jobs green, prod /api/health 200 (release 38ebb32).
+Next: run `weekly` once (expect RESTORE OK), METRICS rows for V3, remove worktree D:/Projects/bm-wt/V3-infra, then the 3-nit follow-up PR. After that: #4 V2 review, #5 V4.
