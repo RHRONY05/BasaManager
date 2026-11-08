@@ -25,6 +25,9 @@ Things only the human can do. Agents add to this list; the human ticks them.
 - [x] (2026-11-08, re-checked: free) **Free ports 5432 and 6379:** containers `shopmate_postgres` and `shopmate_redis` (another project) hold them, and BasaManager's dev Postgres/Redis need them. Run `docker stop shopmate_postgres shopmate_redis` before the build (restart them later with `docker start …`).
 - [x] (2026-11-08, re-checked: 2.1.319, `claude mcp list` works) **Repair the global `claude` CLI.**
 - [ ] **Rotate two non-BasaManager secrets:** `claude mcp list` printed the StitchMCP API key and the Supabase access token into the 2026-11-08 session transcript. (Done 2026-11-08: both moved out of `~/.claude.json` into `D:\Projects\Project_credentials\Mcp\mcp.env`, which `Mcp\mcp-launch.mjs` loads only into those two servers' own processes.) Rony: create new keys in Stitch and Supabase, replace the two values in `mcp.env`, revoke the old ones, restart Claude Code, then delete the backup `Mcp\claude.json.bak-2026-11-08` (it still holds the old keys). Also confirm one real Stitch/Supabase tool call works from another project (only startup + connection were verified).
+- [ ] (V3) In Sentry, confirm one test issue each in `basamanager-api`, `-worker`, `-web` (environment `staging`, messages "...Sentry test error (V3)"); the CI token cannot read events, so agents cannot check. Then resolve them.
+- [ ] (V3) Renew the backup SAS token before **2027-01-06** (docs/operations/backup-and-restore.md).
+- [ ] (V3) Optional: UptimeRobot monitors for `/api/health` of staging and prod (not created yet).
 - [ ] Paste the goal command into the lead session.
 - [ ] When the build is done: open the production URL, try each role, then start the learning path at `docs.basamanager.rhrony05.me`.
 
