@@ -248,7 +248,7 @@ client polls/listens for `file:ready`. Receipt numbers are allocated in the paym
   (the subscription's policy allows only uaenorth, indonesiacentral, eastasia, indiasouthcentral, koreacentral; it is the
   closest to Bangladesh that offers Standard_B2s, checked in V0), Standard_B2s, Ubuntu 24.04,
   static public IP, NSG: 22 open but **SSH key-only** (password and root login disabled, fail2ban), because GitHub-hosted runners deploy from changing IPs, 80/443 open (restricted to Cloudflare IP ranges only when records are proxied)).
-  `bootstrap.sh`: deploy user, SSH key-only, ufw, fail2ban, unattended-upgrades, Docker, 2 GB swap.
+  `bootstrap.sh`: deploy user, SSH key-only, ufw, fail2ban, unattended-upgrades, Docker, 2 GB swap. The pipeline uses its **own** key (`~/.ssh/basamanager_deploy_ed25519`, only in the `deploy` user's `authorized_keys`); the admin key (`basamanager_ed25519`, `azureuser` with sudo) is never uploaded. `deploy` is in the `docker` group, which is root-equivalent: the protections are the separate key, GitHub environment branch/tag policies (`staging` = branch `main`, `production` = tags `v*`) and fail2ban/NSG.
 - **TLS (never touch zone settings):** the zone's SSL mode is shared with the owner's other sites, so agents
   only **read** it. If it is already *Full* or *Full (strict)*, records are **proxied** (orange cloud). Otherwise
   they're **DNS-only** (grey cloud). Either way Caddy gets its own Let's Encrypt certificates (HTTP-01), which is
@@ -264,8 +264,9 @@ client polls/listens for `file:ready`. Receipt numbers are allocated in the paym
   read) → on failure redeploy the previous SHA and fail the job.
 - **Migrations are expand → contract:** a release may only add (columns nullable/with defaults, new tables);
   removals happen in a later release. That's what makes "roll back the image" safe.
+- **Pinned images:** Postgres, Redis, Caddy and the Node base image are pinned by version **and digest** in `infra/compose.*.yml`, `infra/docker/*.Dockerfile` and `restore.sh`; bump them deliberately (PROGRESS lists the versions).
 - **Backups:** `backup.sh` nightly 03:00 Dhaka from the VM's cron: `pg_dump -Fc` → `az storage blob upload` with the SAS to
-  `backups/<env>/YYYY-MM-DD.dump`; the container's lifecycle rule deletes blobs after 30 days. `weekly.yml` restores the
+  `backups/<env>/YYYY-MM-DD.dump`; the container's lifecycle rule deletes blobs after 30 days and blob soft delete (7 days) allows undeleting an overwritten dump. `weekly.yml` restores the
   latest staging dump into a throwaway container and runs row-count checks.
 
 ## Observability

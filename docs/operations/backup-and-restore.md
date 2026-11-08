@@ -11,7 +11,7 @@ Pre-deploy dumps are on the VM in `/opt/basamanager/state/pre-deploy/` (last 5 p
 ## Take a backup right now
 
 ```bash
-ssh -i ~/.ssh/basamanager_ed25519 deploy@<ip>
+ssh -i ~/.ssh/basamanager_deploy_ed25519 deploy@<ip>
 /opt/basamanager/bin/backup.sh staging before-experiment     # label is optional
 ```
 
@@ -46,4 +46,9 @@ GitHub (`weekly` workflow, job `restore-drill`); a red run means the backups are
 The upload permission expires about every 60 days (the first one: 2027-01-06). To renew:
 `bash infra/azure/create-backup-storage.sh .secrets/backup-sas`, then
 `AZURE_BACKUP_ACCOUNT=bmbackupsf1f2c5bb DEPLOY_HOST=<ip> bash infra/scripts/provision-secrets.sh staging` and
-`... production`, then redeploy (staging redeploy refreshes the env file). Put a calendar reminder at day 50.
+`... production`, then push the new value to the VM **without deploying code**: Actions, **deploy**, Run workflow,
+branch `main`, tick **env only** (staging); run it again with the current `v*` tag selected instead of a branch
+(production). Put a calendar reminder at day 50.
+
+Soft delete is on for the storage account (7 days): a dump that was overwritten or deleted (the SAS can write) can
+be undeleted in the Azure portal under the container, "Show deleted blobs".

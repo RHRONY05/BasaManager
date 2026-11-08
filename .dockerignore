@@ -7,9 +7,9 @@
 **/dist
 **/coverage
 **/.data
-.env
-.env.*
-!.env.example
+**/.env
+**/.env.*
+!**/.env.example
 playwright-report
 test-results
 apps/docs/.vitepress/cache

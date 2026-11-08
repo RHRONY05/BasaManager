@@ -2,14 +2,16 @@
 # Prepares a fresh Ubuntu 24.04 VM for BasaManager. Run as root (sudo) on the VM; safe to run again.
 #
 #   scp -i ~/.ssh/basamanager_ed25519 infra/server/bootstrap.sh azureuser@<ip>:/tmp/
-#   ssh -i ~/.ssh/basamanager_ed25519 azureuser@<ip> 'sudo bash /tmp/bootstrap.sh "$(cat ~/.ssh/authorized_keys)"'
+#   ssh -i ~/.ssh/basamanager_ed25519 azureuser@<ip> "sudo bash /tmp/bootstrap.sh '$(cat ~/.ssh/basamanager_deploy_ed25519.pub)'"
+# The argument is the PUBLIC key of the separate deploy key (the one GitHub Actions uses). The admin key
+# (basamanager_ed25519, for azureuser, who has sudo) is never given to the deploy user.
 #
 # What it does: updates packages, 2 GB swap, ufw (22/80/443), fail2ban, SSH hardening (keys only, no root),
 # unattended security upgrades, Docker Engine + Compose plugin, the `deploy` user and /opt/basamanager.
 set -euo pipefail
 [ "$(id -u)" -eq 0 ] || { echo "run with sudo" >&2; exit 1; }
 
-DEPLOY_KEYS="${1:-}"   # authorized_keys content for the deploy user (public keys only)
+DEPLOY_KEYS="${1:-}"   # public key(s) for the deploy user ONLY (replaces its authorized_keys)
 export DEBIAN_FRONTEND=noninteractive
 
 echo "== packages"
@@ -67,7 +69,9 @@ install -d -m 755 -o deploy -g deploy /opt/basamanager /opt/basamanager/releases
 install -d -m 700 -o deploy -g deploy /opt/basamanager/env /opt/basamanager/state
 
 echo "== ssh hardening"
-cat > /etc/ssh/sshd_config.d/99-basamanager.conf <<'CONF'
+# sshd keeps the FIRST value it reads for a setting and reads drop-ins in file-name order, so ours is named 00-.
+rm -f /etc/ssh/sshd_config.d/99-basamanager.conf
+cat > /etc/ssh/sshd_config.d/00-basamanager.conf <<'CONF'
 PasswordAuthentication no
 KbdInteractiveAuthentication no
 PermitRootLogin no
@@ -76,6 +80,9 @@ MaxAuthTries 3
 AllowUsers azureuser deploy
 CONF
 sshd -t
+SSHD_EFFECTIVE="$(sshd -T)"   # (not piped into grep -q: with pipefail an early grep exit would fail the pipeline)
+grep -qx 'passwordauthentication no' <<<"$SSHD_EFFECTIVE" || { echo "sshd still allows passwords" >&2; exit 1; }
+grep -qx 'permitrootlogin no' <<<"$SSHD_EFFECTIVE" || { echo "sshd still allows root login" >&2; exit 1; }
 systemctl reload ssh
 
 echo "== firewall (ufw)"

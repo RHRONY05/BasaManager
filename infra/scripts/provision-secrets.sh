@@ -14,14 +14,18 @@ TARGET="${1:?usage: provision-secrets.sh staging|production}"
 case "$TARGET" in staging|production) ;; *) echo "target must be staging or production" >&2; exit 1 ;; esac
 REPO="${REPO:-RHRONY05/BasaManager}"
 CREDS="${CREDS_FILE:-/d/Projects/Project_credentials/BasaManager.env}"
-SSH_KEY_FILE="${DEPLOY_KEY_FILE:-$HOME/.ssh/basamanager_ed25519}"
+# The pipeline uses its OWN key (deploy user only); the admin key basamanager_ed25519 (azureuser, sudo) is never uploaded.
+SSH_KEY_FILE="${DEPLOY_KEY_FILE:-$HOME/.ssh/basamanager_deploy_ed25519}"
 ROTATE="${ROTATE:-}"
 
 [ -f "$CREDS" ] || { echo "credentials file not found: $CREDS" >&2; exit 1; }
-set -a
-# shellcheck disable=SC1090
-. <(tr -d '\r' < "$CREDS")
-set +a
+# Read the file as DATA (KEY=value per line), never as shell code, and do not export anything.
+while IFS='=' read -r k v; do
+  case "$k" in '' | \#*) continue ;; esac
+  [[ "$k" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || continue
+  v="${v#\"}"; v="${v%\"}"; v="${v#\'}"; v="${v%\'}"
+  printf -v "$k" '%s' "$v"
+done < <(tr -d '\r' < "$CREDS")
 
 EXISTING="$(gh secret list --env "$TARGET" --repo "$REPO" --json name -q '.[].name')"
 has() { printf '%s\n' "$EXISTING" | grep -qx "$1"; }

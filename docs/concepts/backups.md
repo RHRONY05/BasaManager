@@ -17,7 +17,8 @@ can read it.
    private container `backups`, blob `<env>/YYYY-MM-DD.dump`. One HTTPS `PUT` with a **SAS token** (a URL
    signature that allows only create/write/read/list on that one container, for 60 days). The script then reads
    the size back and compares it.
-3. **Retention.** A lifecycle rule on the storage account deletes blobs older than 30 days. Cost is cents.
+3. **Retention.** A lifecycle rule on the storage account deletes blobs older than 30 days. **Soft delete** (7 days)
+   is on, so a dump that is overwritten or deleted by mistake (the SAS can write) can be undeleted for a week. Cost is cents.
 4. **Before every deploy**, `deploy.sh` also writes a local dump to `/opt/basamanager/state/pre-deploy/` (last 5
    kept): the quick undo for a bad migration.
 5. **Weekly restore drill.** `weekly.yml` (Monday 04:00 Dhaka) downloads the newest staging dump, starts a

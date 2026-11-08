@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 # Creates the backup storage in rg-basamanager: Standard_LRS account, private container "backups", a lifecycle rule
 # that deletes blobs older than 30 days, and a container-scoped SAS token valid for 60 days.
-# Idempotent. The SAS is written to the file given as $1 (default: ./.backup-sas, git-ignored) and NEVER printed;
+# Idempotent. The SAS is written to the file given as $1 (default: ./.secrets/backup-sas, git-ignored) and NEVER printed;
 # put it into the GitHub environment secrets and the VM env files with infra/scripts/provision-secrets.sh.
 # Cost: cents per month (a few hundred MB of dumps).
 set -euo pipefail
 RG="${RG:-rg-basamanager}"
 LOCATION="${LOCATION:-indiasouthcentral}"
 CONTAINER="backups"
-OUT="${1:-.backup-sas}"
+OUT="${1:-.secrets/backup-sas}"
+mkdir -p "$(dirname "$OUT")"
 SUB_ID="$(az account show --query id -o tsv)"
 ACCOUNT="${AZURE_BACKUP_ACCOUNT:-bmbackups$(printf '%s' "$SUB_ID" | tr -d '-' | cut -c1-8)}"  # globally unique, 3-24 lowercase
 
@@ -38,6 +39,10 @@ cat > "$POLICY" <<'JSON'
 JSON
 az storage account management-policy create -g "$RG" --account-name "$ACCOUNT" --policy "@$POLICY" -o none
 rm -f "$POLICY"
+echo "   ok"
+
+echo "== blob soft delete (7 days): an overwritten or deleted dump can be undeleted"
+az storage account blob-service-properties update -g "$RG" -n "$ACCOUNT" --enable-delete-retention true --delete-retention-days 7 -o none
 echo "   ok"
 
 echo "== container SAS (create/write/read/list, 60 days) -> $OUT"

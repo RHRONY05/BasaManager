@@ -23,30 +23,37 @@ List names (never values): `gh secret list --env staging`.
 ROTATE=JWT_SECRET DEPLOY_HOST=<ip> bash infra/scripts/provision-secrets.sh staging
 ```
 
-Then deploy (Actions → deploy → Run workflow). Effects:
+Then deploy (Actions → deploy → Run workflow). To refresh only the env files without deploying code (for example after renewing the backup SAS), tick **env only** in that form; for production run it with the `v*` tag selected. Effects:
 
-| Secret               | What happens when it changes                                                     |
-| -------------------- | -------------------------------------------------------------------------------- |
-| `JWT_SECRET`         | Everyone is signed out (access tokens stop verifying); they log in again         |
-| `BM_*_PASSWORD`      | `deploy.sh` runs `ALTER ROLE` with the new value, then starts the apps with it   |
-| `POSTGRES_PASSWORD`  | Same, but the owner role used by migrations; the container re-reads it at deploy |
-| `REDIS_PASSWORD`     | Redis restarts with the new password; sessions kept in Redis are lost            |
-| `STORAGE_URL_SECRET` | Signed local-driver URLs stop working (not used on staging/prod: Cloudinary)     |
-| `VAPID_*`            | Existing push subscriptions stop working; users must re-subscribe. Avoid.        |
+| Secret               | What happens when it changes                                                                                                              |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `JWT_SECRET`         | Everyone is signed out (access tokens stop verifying); they log in again                                                                  |
+| `BM_*_PASSWORD`      | `deploy.sh` runs `ALTER ROLE` with the new value, then starts the apps with it                                                            |
+| `POSTGRES_PASSWORD`  | `deploy.sh` runs `ALTER ROLE bm_owner` (the image reads it only when it first creates the data folder); migrations then use the new value |
+| `REDIS_PASSWORD`     | Redis restarts with the new password; sessions kept in Redis are lost                                                                     |
+| `STORAGE_URL_SECRET` | Signed local-driver URLs stop working (not used on staging/prod: Cloudinary)                                                              |
+| `VAPID_*`            | Existing push subscriptions stop working; users must re-subscribe. Avoid.                                                                 |
 
 Rotate production the same way with `production` and a tag deploy.
 
 ## Rotate a third-party secret
 
-1. Create the new key in the provider's website (Cloudinary, Resend, Sentry, ...). 2. Put it in
-   `D:\Projects\Project_credentials\BasaManager.env`. 3. `DEPLOY_HOST=<ip> bash infra/scripts/provision-secrets.sh staging` (it copies the file's values). 4. Deploy. 5. **Revoke the old key** in the provider.
+1. Create the new key in the provider's website (Cloudinary, Resend, Sentry, ...).
+2. Put it in `D:\Projects\Project_credentials\BasaManager.env`.
+3. `DEPLOY_HOST=<ip> bash infra/scripts/provision-secrets.sh staging` (it copies the file's values).
+4. Deploy.
+5. **Revoke the old key** in the provider.
 
 ## Rotate the deploy SSH key
 
-1. `ssh-keygen -t ed25519 -f ~/.ssh/basamanager_ed25519_new`. 2. Add the new `.pub` line to
-   `/home/deploy/.ssh/authorized_keys` on the VM (via the `azureuser` account), keeping the old one for now.
-2. Point `DEPLOY_KEY_FILE` at the new key and run `provision-secrets.sh` for both environments. 4. Deploy, then
-   remove the old line from `authorized_keys`.
+The pipeline has its own key, `~/.ssh/basamanager_deploy_ed25519`, that opens only the `deploy` user. The admin key
+`~/.ssh/basamanager_ed25519` (for `azureuser`) is never uploaded to GitHub.
+
+1. `ssh-keygen -t ed25519 -N "" -f ~/.ssh/basamanager_deploy_ed25519_new`
+2. Add the new `.pub` line to `/home/deploy/.ssh/authorized_keys` on the VM (log in as `azureuser`, use `sudo`), keeping the old line for now.
+3. `DEPLOY_KEY_FILE=~/.ssh/basamanager_deploy_ed25519_new DEPLOY_HOST=<ip> bash infra/scripts/provision-secrets.sh staging`, then the same with `production`.
+4. Run a deploy to prove the new key works.
+5. Remove the old line from `authorized_keys`.
 
 ## If a secret leaked
 

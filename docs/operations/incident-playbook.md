@@ -17,7 +17,7 @@ GitHub → Actions → **deploy**. If the last green deploy is minutes old and t
 ## 2. Look at the containers
 
 ```bash
-ssh -i ~/.ssh/basamanager_ed25519 deploy@<ip>
+ssh -i ~/.ssh/basamanager_deploy_ed25519 deploy@<ip>
 docker ps --format '{{.Names}}  {{.Status}}'
 ```
 

@@ -8,7 +8,7 @@ grouped, with context). Use Sentry to find _that_ something broke, logs to see _
 Every container writes JSON lines to its standard output; Docker keeps the last 5 files of 20 MB.
 
 ```bash
-ssh -i ~/.ssh/basamanager_ed25519 deploy@<ip>
+ssh -i ~/.ssh/basamanager_deploy_ed25519 deploy@<ip>
 docker logs --tail 100 bm-staging-api-1            # last 100 lines of the staging API
 docker logs -f bm-staging-api-1                    # follow live (Ctrl+C to stop)
 docker logs --since 30m bm-prod-worker-1           # last 30 minutes

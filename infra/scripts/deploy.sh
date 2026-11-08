@@ -2,7 +2,9 @@
 # Deploys one commit to one environment on the VM. Run it ON THE VM as the deploy user, from the release folder
 # the pipeline uploaded:  /opt/basamanager/releases/<sha>/infra/scripts/deploy.sh <staging|prod|edge> <sha> [flags]
 #   edge   = Caddy (HTTPS front door) + the docs site
-# Flags: --skip-backup (no pre-deploy dump)  --no-migrate  --rollback (used by rollback.sh)
+# Flags: --skip-backup (no pre-deploy dump)  --no-migrate  --rollback (used by rollback.sh)  --failed <sha> (with
+#        --rollback: the release that failed, recorded in state/<env>.bad)  --fail-before-up (DRILL HOOK: exit 1 right
+#        before the containers are started; used to prove the rollback of a failed deploy step)
 # Steps: lock -> pull images -> start postgres+redis -> (re)apply DB roles -> pre-deploy dump -> migrate -> start
 #        api/worker/web and wait until healthy -> record state. Any failure exits non-zero; the pipeline then calls rollback.sh.
 set -euo pipefail
@@ -13,14 +15,17 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"   # .../releases/<sha>/i
 TARGET="${1:?usage: deploy.sh <staging|prod|edge> <sha> [flags]}"
 SHA="${2:?usage: deploy.sh <staging|prod|edge> <sha> [flags]}"
 shift 2
-SKIP_BACKUP=0; NO_MIGRATE=0; ROLLBACK=0
-for f in "$@"; do
-  case "$f" in
+SKIP_BACKUP=0; NO_MIGRATE=0; ROLLBACK=0; FAILED=""; FAIL_BEFORE_UP=0
+while [ $# -gt 0 ]; do
+  case "$1" in
     --skip-backup) SKIP_BACKUP=1 ;;
     --no-migrate) NO_MIGRATE=1 ;;
     --rollback) ROLLBACK=1 ;;
-    *) die "unknown flag $f" ;;
+    --failed) shift; FAILED="${1:-}" ;;
+    --fail-before-up) FAIL_BEFORE_UP=1 ;;
+    *) die "unknown flag $1" ;;
   esac
+  shift
 done
 case "$TARGET" in staging|prod|edge) ;; *) die "target must be staging, prod or edge" ;; esac
 
@@ -54,7 +59,14 @@ if [ "$TARGET" = edge ]; then
   log "edge: Caddy + docs @ $SHA"
   compose() { IMAGE_TAG="$SHA" docker compose -p bm-edge --env-file "$ENVFILE" -f "$HERE/compose.edge.yml" "$@"; }
   CADDY_WAS_UP="$(compose ps -q caddy 2>/dev/null | head -1 || true)"
-  cat "$HERE/caddy/Caddyfile" > "$BASE/edge/Caddyfile"   # same inode: the bind mount sees the change
+  # Validate the NEW Caddyfile with the pinned Caddy image BEFORE it replaces the live one, so a broken file can
+  # never sit on disk waiting for the next restart.
+  CADDY_IMAGE="$(grep -m1 'image: caddy' "$HERE/compose.edge.yml" | awk '{print $2}')"
+  cp "$HERE/caddy/Caddyfile" "$BASE/edge/Caddyfile.new"
+  docker run --rm -e ACME_EMAIL="$(getv ACME_EMAIL)" -v "$BASE/edge/Caddyfile.new:/c:ro" "$CADDY_IMAGE" \
+    caddy validate --config /c --adapter caddyfile >/dev/null 2>&1 || { rm -f "$BASE/edge/Caddyfile.new"; die "the new Caddyfile is invalid; nothing was changed"; }
+  cat "$BASE/edge/Caddyfile.new" > "$BASE/edge/Caddyfile"   # same inode: the bind mount sees the change
+  rm -f "$BASE/edge/Caddyfile.new"
   compose pull docs
   compose up -d --remove-orphans --wait --wait-timeout 120
   if [ -n "$CADDY_WAS_UP" ]; then
@@ -74,7 +86,8 @@ POSTGRES_DB="$(getv POSTGRES_DB)"
 log "$TARGET: deploying $SHA"
 PREVIOUS="$(cat "$STATE/$TARGET.current" 2>/dev/null || true)"
 
-compose pull api worker web
+# A rollback uses the images already on the disk: it must work even when the registry is unreachable.
+[ "$ROLLBACK" -eq 1 ] || compose pull api worker web
 compose up -d --wait --wait-timeout 120 postgres redis
 
 log "applying database roles"
@@ -82,6 +95,7 @@ log "applying database roles"
   printf "\\\\set app_pw '%s'\n" "$(getv BM_APP_PASSWORD)"
   printf "\\\\set worker_pw '%s'\n" "$(getv BM_WORKER_PASSWORD)"
   printf "\\\\set readonly_pw '%s'\n" "$(getv BM_READONLY_PASSWORD)"
+  printf "\\\\set owner_pw '%s'\n" "$(getv POSTGRES_PASSWORD)"
   cat "$HERE/postgres/server-roles.sql"
 } | compose exec -T postgres psql -q -U bm_owner -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 >/dev/null
 
@@ -98,13 +112,19 @@ if [ "$NO_MIGRATE" -eq 0 ] && [ "$ROLLBACK" -eq 0 ]; then
   compose run --rm -T migrate
 fi
 
+if [ "$FAIL_BEFORE_UP" -eq 1 ]; then die "--fail-before-up: deliberate failure (rollback drill)"; fi
+
 log "starting api, worker, web"
 compose up -d --remove-orphans --wait --wait-timeout 180 api worker web
 
 if [ "$ROLLBACK" -eq 1 ]; then
-  echo "$SHA" > "$STATE/$TARGET.current"
-  if [ -n "$PREVIOUS" ]; then echo "$PREVIOUS" > "$STATE/$TARGET.bad"; fi
-  rm -f "$STATE/$TARGET.previous"
+  if [ -n "$FAILED" ]; then echo "$FAILED" > "$STATE/$TARGET.bad"; fi
+  # Went back to the version that was already current (the failed deploy never got to update the state): keep
+  # "previous" as it was. Otherwise the failed release had been recorded as current: the old one becomes current.
+  if [ "$PREVIOUS" != "$SHA" ]; then
+    echo "$SHA" > "$STATE/$TARGET.current"
+    rm -f "$STATE/$TARGET.previous"
+  fi
 else
   if [ -n "$PREVIOUS" ] && [ "$PREVIOUS" != "$SHA" ]; then echo "$PREVIOUS" > "$STATE/$TARGET.previous"; fi
   echo "$SHA" > "$STATE/$TARGET.current"

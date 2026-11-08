@@ -56,14 +56,14 @@ fi
 
 # Throwaway container with the same major version and the same roles as the server (dev passwords: it is deleted at the end).
 docker rm -f bm-restore-drill >/dev/null 2>&1 || true
-docker run -d --name bm-restore-drill -e POSTGRES_USER=bm_owner -e POSTGRES_PASSWORD=drill -e POSTGRES_DB=drill postgres:17 >/dev/null
+docker run -d --name bm-restore-drill -e POSTGRES_USER=bm_owner -e POSTGRES_PASSWORD=drill -e POSTGRES_DB=drill postgres:17.11@sha256:ff87138949ad9a46f32ff23bd6852b52ce024a13dffe9b4087be98292cdd3b4f >/dev/null
 for _ in $(seq 1 40); do docker exec bm-restore-drill pg_isready -U bm_owner -d drill >/dev/null 2>&1 && break; sleep 1; done
 SQL_ROLES="$HERE/../postgres/init/01-roles.sql"
 [ -f "$SQL_ROLES" ] || SQL_ROLES="$HERE/server-roles.sql"
 if [ "$(basename "$SQL_ROLES")" = "01-roles.sql" ]; then
   docker exec -i bm-restore-drill psql -q -U bm_owner -d drill -v ON_ERROR_STOP=1 < "$SQL_ROLES" >/dev/null
 else
-  { printf "\\\\set app_pw 'x'\n\\\\set worker_pw 'x'\n\\\\set readonly_pw 'x'\n"; cat "$SQL_ROLES"; } \
+  { printf "\\\\set app_pw 'x'\n\\\\set worker_pw 'x'\n\\\\set readonly_pw 'x'\n\\\\set owner_pw 'drill'\n"; cat "$SQL_ROLES"; } \
     | docker exec -i bm-restore-drill psql -q -U bm_owner -d drill -v ON_ERROR_STOP=1 >/dev/null
 fi
 log "restoring into the throwaway container"

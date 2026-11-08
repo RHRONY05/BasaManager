@@ -25,8 +25,13 @@ thing up before creating it.
 
 `infra/server/bootstrap.sh` then prepares the empty machine once: package updates, 2 GB swap, the `ufw`
 firewall, `fail2ban` (bans IPs that guess SSH logins), SSH keys only (no passwords, no root login), automatic
-security updates, Docker, and a `deploy` user. The `deploy` user can run Docker but has **no sudo**: if the
-pipeline's key ever leaks, the attacker gets the containers, not the machine.
+security updates, Docker, and a `deploy` user. The `deploy` user has **no sudo**, but it is in the `docker`
+group, and **membership of the docker group is root-equivalent** on this VM (`docker run -v /:/host ...` gives a
+root shell on the whole disk). So "no sudo" is not a real wall. What actually limits a leaked pipeline key:
+(1) it is a **separate key** (`basamanager_deploy_ed25519`) that opens only the `deploy` user; the admin key
+(`basamanager_ed25519`, for `azureuser`) is never uploaded to GitHub; (2) GitHub **environment** rules decide
+which branches and tags can read the key at all; (3) the Azure firewall and `fail2ban` limit who can even try to
+log in. Treat a leaked deploy key as a leaked server: rotate it and rebuild if in doubt.
 
 ### Images
 
@@ -94,7 +99,7 @@ Cloudflare address, so the API sees the real visitor IP either way.
 ## Self-check
 
 1. What is the difference between an image and a container?
-2. Why does the `deploy` user have no `sudo`?
+2. The `deploy` user has no `sudo`. Why is that still not a security boundary, and what three things really limit a leaked pipeline key?
 3. Why are `staging.` and `docs.` not proxied by Cloudflare while production is?
 4. Postgres is "private". What makes it so, and what single mistake in the Compose file would undo it?
 5. Where does the HTTPS certificate for `staging.basamanager.rhrony05.me` come from, and who renews it?

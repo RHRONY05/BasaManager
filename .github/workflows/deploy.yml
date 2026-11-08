@@ -12,9 +12,18 @@ on:
         description: 'Make the smoke test fail on purpose (proves the automatic rollback)'
         type: boolean
         default: false
+      fail_deploy_step:
+        description: 'Staging only: make deploy.sh itself fail on purpose (proves the rollback of a failed deploy step)'
+        type: boolean
+        default: false
+      env_only:
+        description: 'Only re-render and upload the env files for this environment (e.g. after renewing a secret). Starts no containers. For production run it on the v* tag.'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
+  actions: read
 
 env:
   REGISTRY: ghcr.io
@@ -33,6 +42,10 @@ jobs:
     steps:
       - id: m
         run: |
+          # Only main (staging) and v* tags (production) may deploy. Other branches never reach the secrets.
+          if [[ "${GITHUB_REF}" != "refs/heads/main" && "${GITHUB_REF}" != refs/tags/v* ]]; then
+            echo "::error::Deploys run only from main or a v* tag (this is ${GITHUB_REF})."; exit 1
+          fi
           echo "sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
           if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
             echo "gh_env=production" >> "$GITHUB_OUTPUT"
@@ -48,6 +61,7 @@ jobs:
 
   build:
     needs: meta
+    if: ${{ !inputs.env_only }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -91,6 +105,7 @@ jobs:
     # Creates the Sentry release (name = git SHA) and uploads the web source maps. The maps come from the SAME
     # Dockerfile stage the image is built from (same cache, same hashes) and are never served to browsers.
     needs: [meta, build]
+    if: ${{ !inputs.env_only }}
     runs-on: ubuntu-latest
     environment: ${{ needs.meta.outputs.gh_env }}
     steps:
@@ -122,6 +137,8 @@ jobs:
 
   deploy:
     needs: [meta, build, sentry-release]
+    # env_only skips the build jobs, so this job must run even though its needs were skipped.
+    if: ${{ always() && needs.meta.result == 'success' && (inputs.env_only || (needs.build.result == 'success' && needs.sentry-release.result == 'success')) }}
     runs-on: ubuntu-latest
     environment: ${{ needs.meta.outputs.gh_env }}
     concurrency:
@@ -134,16 +151,24 @@ jobs:
       APP_ENV: ${{ needs.meta.outputs.app_env }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Production gate - staging must already run this commit
-        if: needs.meta.outputs.target == 'prod'
+      - name: Production gate - this commit must be on main and already deployed to staging
+        if: needs.meta.outputs.target == 'prod' && !inputs.env_only
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor "$SHA" origin/main || { echo "::error::Tag $SHA is not on main. Production only gets commits that were reviewed and merged."; exit 1; }
+          OK="$(gh run list -w deploy.yml -b main -c "$SHA" -s success -L 1 --json databaseId -q length)"
+          [ "$OK" = "1" ] || { echo "::error::No successful staging deploy of $SHA on main. Merge it, let the staging deploy and smoke test pass, then tag."; exit 1; }
           RELEASE="$(curl -fsS https://staging.basamanager.rhrony05.me/api/health | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).release))')"
           echo "staging runs: ${RELEASE:0:8}   tag points to: ${SHA:0:8}"
-          [ "$RELEASE" = "$SHA" ] || { echo "::error::Staging does not run this commit. Deploy it to staging (merge to main) and let the smoke test pass, then tag."; exit 1; }
+          [ "$RELEASE" = "$SHA" ] || { echo "::error::Staging does not run this commit (it may have rolled back). Fix staging first, then tag."; exit 1; }
 
       - name: SSH setup
         env:
@@ -187,24 +212,25 @@ jobs:
           bash infra/scripts/render-env.sh "$TARGET" | ssh vm "umask 077; cat > /opt/basamanager/env/$TARGET.env.new && mv /opt/basamanager/env/$TARGET.env.new /opt/basamanager/env/$TARGET.env"
           bash infra/scripts/render-env.sh edge | ssh vm "umask 077; cat > /opt/basamanager/env/edge.env"
 
-      - name: Let the VM pull private images from GHCR
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | ssh vm "docker login ghcr.io -u '${{ github.actor }}' --password-stdin"
-
       - name: Deploy edge (Caddy + docs) - staging runs only
-        if: needs.meta.outputs.target == 'staging'
+        if: needs.meta.outputs.target == 'staging' && !inputs.env_only
         run: ssh vm "/opt/basamanager/releases/$SHA/infra/scripts/deploy.sh edge $SHA"
 
       - name: Deploy ${{ needs.meta.outputs.target }}
         id: deploy
-        run: ssh vm "/opt/basamanager/releases/$SHA/infra/scripts/deploy.sh $TARGET $SHA"
+        if: ${{ !inputs.env_only }}
+        env:
+          FAIL_DEPLOY: ${{ needs.meta.outputs.target == 'staging' && inputs.fail_deploy_step && '--fail-before-up' || '' }}
+        run: ssh vm "/opt/basamanager/releases/$SHA/infra/scripts/deploy.sh $TARGET $SHA $FAIL_DEPLOY"
 
       - name: Smoke test
         id: smoke
+        if: ${{ !inputs.env_only }}
         env:
           SMOKE_EXPECT_SHA: ${{ needs.meta.outputs.sha }}
           SMOKE_EXPECT_ENV: ${{ needs.meta.outputs.app_env }}
           SMOKE_DOCS_URL: ${{ needs.meta.outputs.target == 'staging' && 'https://docs.basamanager.rhrony05.me' || '' }}
-          SMOKE_FORCE_FAIL: ${{ (inputs.force_smoke_fail || contains(github.event.head_commit.message, '[force-smoke-fail]')) && '1' || '0' }}
+          SMOKE_FORCE_FAIL: ${{ needs.meta.outputs.target == 'staging' && inputs.force_smoke_fail && '1' || '0' }}
         run: node tests/smoke.ts "$URL"
 
       - name: Roll back to the previous version
@@ -212,7 +238,7 @@ jobs:
         if: failure() && (steps.deploy.outcome == 'failure' || steps.smoke.outcome == 'failure')
         run: |
           echo "::warning::Deploy or smoke test failed - rolling back $TARGET"
-          ssh vm "/opt/basamanager/bin/rollback.sh $TARGET"
+          ssh vm "/opt/basamanager/bin/rollback.sh $TARGET $SHA"
 
       - name: Smoke test the rolled-back version
         if: failure() && steps.rollback.outcome == 'success'

@@ -12,33 +12,65 @@ smoke test fails. You can also do it by hand.
 
 ## Automatic
 
-In the `deploy` job: if `deploy.sh` or the smoke test fails, the next step runs `rollback.sh <env>`, then a
-second smoke test proves the old version answers with the old SHA. The job stays **red** on purpose, with the
-message "Release X FAILED and was rolled back to Y". The first-ever deploy of an environment has nothing to roll
-back to and just fails.
+In the `deploy` job: if `deploy.sh` or the smoke test fails, the next step runs `rollback.sh <env> <failed-sha>`,
+then a second smoke test proves the working version answers with its own SHA. The job stays **red** on purpose,
+with the message "Release X FAILED and was rolled back to Y". The first-ever deploy of an environment has nothing
+to roll back to and just fails.
 
-**Proof (V3, 2026-11-08):** staging was deployed with a deliberately failing smoke test; the log shows
-`rolling back 5001aedb... -> ac8642aa...`, then `SMOKE PASSED` for the old SHA, and `/api/health` reported the
-old release again (run 42442524711). To repeat the drill: run the workflow by hand with "force smoke fail"
-ticked, or push a commit to `main` whose message contains `[force-smoke-fail]` (use sparingly: it rolls staging back).
+Which version does it go back to? That depends on how far the failed deploy got (`deploy.sh` writes
+`state/<env>.current` and `.previous` only when it **succeeds**):
+
+| Where it failed                                                      | `current` still says                   | Rollback goes to                  |
+| -------------------------------------------------------------------- | -------------------------------------- | --------------------------------- |
+| `deploy.sh` itself (pull error, failed migration, api never healthy) | the last good SHA (not the failed one) | `current` (the last good version) |
+| the smoke test (the deploy finished, state already updated)          | the failed SHA                         | `previous`                        |
+
+`rollback.sh` compares `current` with the failed SHA it was given, so it never jumps two releases back. The failed
+SHA is written to `state/<env>.bad`.
+
+**Proof (V3):**
+
+- Smoke path (2026-11-08): staging was deployed with a deliberately failing smoke test; the log shows
+  `rolling back 5001aedb... -> ac8642aa...`, then `SMOKE PASSED` for the old SHA (run 42442524711).
+- Deploy-step path: see the V3 entry in `.agent/PROGRESS.md` (run IDs and log lines).
+
+To repeat the drills: Actions, **deploy**, Run workflow (branch `main`), tick **force smoke fail** (smoke path) or
+**fail deploy step** (deploy.sh path). Both work for staging only and roll staging back, so use them sparingly.
 
 ## By hand
 
 ```bash
-ssh -i ~/.ssh/basamanager_ed25519 deploy@<ip>
+ssh -i ~/.ssh/basamanager_deploy_ed25519 deploy@<ip>
 cat /opt/basamanager/state/staging.current /opt/basamanager/state/staging.previous   # what runs, what is next
-/opt/basamanager/bin/rollback.sh staging    # or: prod
-curl -s https://staging.basamanager.rhrony05.me/api/health      # release must now be the previous SHA
+# <bad-sha> = the release that is broken right now (usually the same as "current")
+/opt/basamanager/bin/rollback.sh staging <bad-sha>    # or: prod
+curl -s https://staging.basamanager.rhrony05.me/api/health      # release must now be the good SHA
 ```
 
-To go to an older version than "previous":
+To go to a specific older version:
 `/opt/basamanager/releases/<sha>/infra/scripts/deploy.sh staging <sha> --rollback` (needs that folder; the last 5
 releases are kept).
 
 After a rollback the bad SHA is saved in `state/<env>.bad`. Fix forward: merge a fix to `main`; it deploys as a
 normal release.
 
+## A migration failed
+
+`prisma migrate deploy` runs before the new containers start, so a failed migration stops the deploy (and the
+pipeline rolls back the containers). The database may be left half-changed, and Prisma refuses every later
+`migrate deploy` with error **P3009** until you resolve it. Steps, on the VM as `deploy`:
+
+1. Read the error: `cd /opt/basamanager/releases/<failed-sha>/infra && IMAGE_TAG=<failed-sha> docker compose -p bm-staging --env-file /opt/basamanager/env/staging.env -f compose.server.yml run --rm migrate` (it prints the failing migration name and the SQL error).
+2. If the migration was **partly applied**, restore the pre-deploy dump in `/opt/basamanager/state/pre-deploy/` (newest file for that environment) with `restore.sh` ([Backup & restore](/operations/backup-and-restore)). If nothing was applied, skip this.
+3. Tell Prisma the migration is not applied: run the same `compose run --rm migrate` command with the command replaced by `node_modules/.bin/prisma migrate resolve --rolled-back <migration-name>`.
+4. Fix forward: correct the migration in a new commit (never edit an applied migration), merge, deploy.
+
+**Review gate for every migration from V4 on (expand then contract):** a migration may only _add_ (new tables,
+nullable or defaulted columns, new indexes). Dropping or renaming something happens in a **later** release, after
+no running version uses it. A reviewer rejects any migration that removes or renames in the same release as the
+code that stops using it. This is what makes "roll back the image" safe.
+
 ## Check it worked
 
-`/api/health` shows the older `release`, `docker ps` shows all containers `healthy`, and the Actions run says
+`/api/health` shows the good `release`, `docker ps` shows all containers `healthy`, and the Actions run says
 which SHA it returned to.
