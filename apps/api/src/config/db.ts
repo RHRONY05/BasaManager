@@ -1,5 +1,5 @@
 import { PrismaPg } from '@prisma/adapter-pg';
-import { Prisma, PrismaClient, type MembershipRole } from '../generated/prisma/client';
+import { Prisma, PrismaClient, type InvitationRole, type MembershipRole } from '../generated/prisma/client';
 
 /**
  * Database client factory. Owner: architect (03-DATABASE.md).
@@ -70,7 +70,7 @@ export class TenantContextMissing extends Error {
 
 /**
  * Models protected by RLS, derived from the generated client so the list can't drift from the schema:
- * every model with an `orgId` field, plus `Organization` (RLS by `id`, policy org_self).
+ * every model with an `orgId` field, plus `Organization` (RLS by `id`, policies org_self_*).
  */
 export const TENANT_MODELS: ReadonlySet<string> = new Set(
   Object.values(Prisma.ModelName).filter((model) => {
@@ -123,6 +123,61 @@ function assertCtx(ctx: TenantCtx): void {
   if (ctx.orgId !== null && !UUID.test(ctx.orgId))
     throw new TypeError('TenantCtx.orgId must be a uuid or null');
   if (!UUID.test(ctx.userId)) throw new TypeError('TenantCtx.userId must be a uuid');
+}
+
+// ── Lookups that run without an org context (03-DATABASE.md "RLS": user-scoped access) ──────────────
+
+/** What `app_find_invitation` returns: one invitation, never its token hash. */
+export type InvitationLookup = {
+  id: string;
+  orgId: string;
+  email: string;
+  role: InvitationRole;
+  buildingIds: string[];
+  leaseId: string | null;
+  expiresAt: Date;
+  acceptedAt: Date | null;
+  revokedAt: Date | null;
+  invitedBy: string;
+};
+
+/**
+ * The invitation whose `token_hash` equals `tokenHash` (sha-256 of the token from the link), or null.
+ * Works without an org context through the SECURITY DEFINER function `app_find_invitation`; the caller
+ * checks expiry / acceptance / revocation and then accepts inside `db.$tx({ orgId: result.orgId, … })`.
+ * Accepts the base client or a `$tx` client.
+ */
+export async function findInvitationByTokenHash(
+  db: Pick<Db, '$queryRaw'> | Tx,
+  tokenHash: Uint8Array,
+): Promise<InvitationLookup | null> {
+  type Row = {
+    id: string;
+    org_id: string;
+    email: string;
+    role: InvitationRole;
+    building_ids: string[];
+    lease_id: string | null;
+    expires_at: Date;
+    accepted_at: Date | null;
+    revoked_at: Date | null;
+    invited_by: string;
+  };
+  const rows = await db.$queryRaw<Row[]>`select * from app_find_invitation(${tokenHash})`;
+  const r = rows[0];
+  if (!r) return null;
+  return {
+    id: r.id,
+    orgId: r.org_id,
+    email: r.email,
+    role: r.role,
+    buildingIds: r.building_ids,
+    leaseId: r.lease_id,
+    expiresAt: r.expires_at,
+    acceptedAt: r.accepted_at,
+    revokedAt: r.revoked_at,
+    invitedBy: r.invited_by,
+  };
 }
 
 /**

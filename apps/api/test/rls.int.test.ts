@@ -56,7 +56,7 @@ describe('RLS coverage (rls.int.test.ts)', () => {
     expect(offenders, `tables lacking RLS + FORCE + policy: ${offenders.join(', ')}`).toEqual([]);
   });
 
-  it('organizations (keyed by id, no org_id column) also has RLS enabled and forced, with policy org_self', async () => {
+  it('organizations (keyed by id, no org_id column) also has RLS enabled and forced, with the org_self_* and member_orgs policies', async () => {
     const rows = await q<{ relrowsecurity: boolean; relforcerowsecurity: boolean }>(
       `select relrowsecurity, relforcerowsecurity from pg_class
         where oid = 'public.organizations'::regclass`,
@@ -65,7 +65,13 @@ describe('RLS coverage (rls.int.test.ts)', () => {
     const pol = await q<{ policyname: string }>(
       `select policyname from pg_policies where schemaname = 'public' and tablename = 'organizations'`,
     );
-    expect(pol.map((p) => p.policyname)).toContain('org_self');
+    // org_self was split per command in 20261108000400_user_scoped_access (no DELETE policy: never deleted).
+    expect(pol.map((p) => p.policyname).sort()).toEqual([
+      'member_orgs',
+      'org_self_insert',
+      'org_self_select',
+      'org_self_update',
+    ]);
   });
 
   it('documents has the RESTRICTIVE no_caretaker policy', async () => {

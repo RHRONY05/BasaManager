@@ -146,7 +146,7 @@ async function main(): Promise<void> {
       return;
     }
 
-    // The new org's id must be the transaction's app.org_id, or the org_self policy refuses the insert.
+    // The new org's id must be the transaction's app.org_id, or the org_self_insert policy refuses the insert.
     const orgId = newId();
     await db.$tx({ orgId, userId: landlordId, role: 'landlord' }, async (tx) => {
       await createOrg(tx, { id: orgId, name: 'Rahman Properties', slug: DEMO_ORG_SLUG, isDemo: true, createdBy: landlordId });

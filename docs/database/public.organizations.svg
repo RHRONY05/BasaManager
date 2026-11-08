@@ -12,37 +12,37 @@
 <!-- public.organizations -->
 <g id="node1" class="node">
 <title>public.organizations</title>
-<polygon fill="#efefef" stroke="none" points="5847.3,-830.6 5847.3,-876.6 6281.08,-876.6 6281.08,-830.6 5847.3,-830.6"/>
-<polygon fill="none" stroke="black" points="5847.3,-830.6 5847.3,-876.6 6281.08,-876.6 6281.08,-830.6 5847.3,-830.6"/>
+<polygon fill="#efefef" stroke="none" points="5675.7,-830.6 5675.7,-876.6 6452.68,-876.6 6452.68,-830.6 5675.7,-830.6"/>
+<polygon fill="none" stroke="black" points="5675.7,-830.6 5675.7,-876.6 6452.68,-876.6 6452.68,-830.6 5675.7,-830.6"/>
 <text text-anchor="start" x="5928.72" y="-854.4" font-family="Arial Bold" font-size="18.00">public.organizations</text>
 <text text-anchor="start" x="6075.18" y="-854.4" font-family="Arial" font-size="14.00">    </text>
 <text text-anchor="start" x="6106.29" y="-854.4" font-family="Arial" font-size="14.00" fill="#666666">[BASE TABLE]</text>
-<text text-anchor="start" x="5854.3" y="-840" font-family="Arial" font-size="14.00" fill="#333333">A landlord&#39;s organisation. RLS org_self (own org, or admin context).</text>
-<polygon fill="none" stroke="black" points="5847.3,-799.8 5847.3,-830.6 6281.08,-830.6 6281.08,-799.8 5847.3,-799.8"/>
-<text text-anchor="start" x="5854.3" y="-812" font-family="Arial" font-size="14.00">id </text>
-<text text-anchor="start" x="5869.09" y="-812" font-family="Arial" font-size="14.00" fill="#666666">[uuid]</text>
-<polygon fill="none" stroke="black" points="5847.3,-769 5847.3,-799.8 6281.08,-799.8 6281.08,-769 5847.3,-769"/>
-<text text-anchor="start" x="5854.3" y="-781.2" font-family="Arial" font-size="14.00">name </text>
-<text text-anchor="start" x="5893.21" y="-781.2" font-family="Arial" font-size="14.00" fill="#666666">[text]</text>
-<polygon fill="none" stroke="black" points="5847.3,-738.2 5847.3,-769 6281.08,-769 6281.08,-738.2 5847.3,-738.2"/>
-<text text-anchor="start" x="5854.3" y="-750.4" font-family="Arial" font-size="14.00">slug </text>
-<text text-anchor="start" x="5883.88" y="-750.4" font-family="Arial" font-size="14.00" fill="#666666">[text]</text>
-<polygon fill="none" stroke="black" points="5847.3,-707.4 5847.3,-738.2 6281.08,-738.2 6281.08,-707.4 5847.3,-707.4"/>
-<text text-anchor="start" x="5854.3" y="-719.6" font-family="Arial" font-size="14.00">status </text>
-<text text-anchor="start" x="5895.54" y="-719.6" font-family="Arial" font-size="14.00" fill="#666666">[org_status]</text>
-<polygon fill="none" stroke="black" points="5847.3,-676.6 5847.3,-707.4 6281.08,-707.4 6281.08,-676.6 5847.3,-676.6"/>
-<text text-anchor="start" x="5854.3" y="-688.8" font-family="Arial" font-size="14.00">is_demo </text>
-<text text-anchor="start" x="5911.11" y="-688.8" font-family="Arial" font-size="14.00" fill="#666666">[boolean]</text>
-<polygon fill="none" stroke="black" points="5847.3,-645.8 5847.3,-676.6 6281.08,-676.6 6281.08,-645.8 5847.3,-645.8"/>
-<text text-anchor="start" x="5854.3" y="-658" font-family="Arial" font-size="14.00">created_by </text>
-<text text-anchor="start" x="5927.46" y="-658" font-family="Arial" font-size="14.00" fill="#666666">[uuid]</text>
-<polygon fill="none" stroke="black" points="5847.3,-615 5847.3,-645.8 6281.08,-645.8 6281.08,-615 5847.3,-615"/>
-<text text-anchor="start" x="5854.3" y="-627.2" font-family="Arial" font-size="14.00">created_at </text>
-<text text-anchor="start" x="5924.35" y="-627.2" font-family="Arial" font-size="14.00" fill="#666666">[timestamp(6) with time zone]</text>
-<polygon fill="none" stroke="black" points="5847.3,-584.2 5847.3,-615 6281.08,-615 6281.08,-584.2 5847.3,-584.2"/>
-<text text-anchor="start" x="5854.3" y="-596.4" font-family="Arial" font-size="14.00">updated_at </text>
-<text text-anchor="start" x="5928.26" y="-596.4" font-family="Arial" font-size="14.00" fill="#666666">[timestamp(6) with time zone]</text>
-<polygon fill="none" stroke="black" stroke-width="3" points="5845.8,-582.7 5845.8,-878.1 6282.58,-878.1 6282.58,-582.7 5845.8,-582.7"/>
+<text text-anchor="start" x="5682.7" y="-840" font-family="Arial" font-size="14.00" fill="#333333">A landlord&#39;s organisation. Readable in its own context, by its members and by admin; updated only by its landlord or admin.</text>
+<polygon fill="none" stroke="black" points="5675.7,-799.8 5675.7,-830.6 6452.68,-830.6 6452.68,-799.8 5675.7,-799.8"/>
+<text text-anchor="start" x="5682.7" y="-812" font-family="Arial" font-size="14.00">id </text>
+<text text-anchor="start" x="5697.49" y="-812" font-family="Arial" font-size="14.00" fill="#666666">[uuid]</text>
+<polygon fill="none" stroke="black" points="5675.7,-769 5675.7,-799.8 6452.68,-799.8 6452.68,-769 5675.7,-769"/>
+<text text-anchor="start" x="5682.7" y="-781.2" font-family="Arial" font-size="14.00">name </text>
+<text text-anchor="start" x="5721.61" y="-781.2" font-family="Arial" font-size="14.00" fill="#666666">[text]</text>
+<polygon fill="none" stroke="black" points="5675.7,-738.2 5675.7,-769 6452.68,-769 6452.68,-738.2 5675.7,-738.2"/>
+<text text-anchor="start" x="5682.7" y="-750.4" font-family="Arial" font-size="14.00">slug </text>
+<text text-anchor="start" x="5712.27" y="-750.4" font-family="Arial" font-size="14.00" fill="#666666">[text]</text>
+<polygon fill="none" stroke="black" points="5675.7,-707.4 5675.7,-738.2 6452.68,-738.2 6452.68,-707.4 5675.7,-707.4"/>
+<text text-anchor="start" x="5682.7" y="-719.6" font-family="Arial" font-size="14.00">status </text>
+<text text-anchor="start" x="5723.94" y="-719.6" font-family="Arial" font-size="14.00" fill="#666666">[org_status]</text>
+<polygon fill="none" stroke="black" points="5675.7,-676.6 5675.7,-707.4 6452.68,-707.4 6452.68,-676.6 5675.7,-676.6"/>
+<text text-anchor="start" x="5682.7" y="-688.8" font-family="Arial" font-size="14.00">is_demo </text>
+<text text-anchor="start" x="5739.51" y="-688.8" font-family="Arial" font-size="14.00" fill="#666666">[boolean]</text>
+<polygon fill="none" stroke="black" points="5675.7,-645.8 5675.7,-676.6 6452.68,-676.6 6452.68,-645.8 5675.7,-645.8"/>
+<text text-anchor="start" x="5682.7" y="-658" font-family="Arial" font-size="14.00">created_by </text>
+<text text-anchor="start" x="5755.86" y="-658" font-family="Arial" font-size="14.00" fill="#666666">[uuid]</text>
+<polygon fill="none" stroke="black" points="5675.7,-615 5675.7,-645.8 6452.68,-645.8 6452.68,-615 5675.7,-615"/>
+<text text-anchor="start" x="5682.7" y="-627.2" font-family="Arial" font-size="14.00">created_at </text>
+<text text-anchor="start" x="5752.75" y="-627.2" font-family="Arial" font-size="14.00" fill="#666666">[timestamp(6) with time zone]</text>
+<polygon fill="none" stroke="black" points="5675.7,-584.2 5675.7,-615 6452.68,-615 6452.68,-584.2 5675.7,-584.2"/>
+<text text-anchor="start" x="5682.7" y="-596.4" font-family="Arial" font-size="14.00">updated_at </text>
+<text text-anchor="start" x="5756.66" y="-596.4" font-family="Arial" font-size="14.00" fill="#666666">[timestamp(6) with time zone]</text>
+<polygon fill="none" stroke="black" stroke-width="3" points="5674.2,-582.7 5674.2,-878.1 6454.18,-878.1 6454.18,-582.7 5674.2,-582.7"/>
 </g>
 <!-- public.users -->
 <g id="node28" class="node">
@@ -93,8 +93,8 @@
 <!-- public.organizations&#45;&gt;public.users -->
 <g id="edge27" class="edge">
 <title>public.organizations:created_by&#45;&gt;public.users:id</title>
-<path fill="none" stroke="black" d="M6292.37,-660.53C6403.93,-645.97 6445.87,-397.4 6330.18,-397.4"/>
-<polygon fill="black" stroke="black" points="6292.39,-660.53 6282.12,-656.69 6287.07,-660.88 6282.75,-661.16 6282.75,-661.16 6282.75,-661.16 6287.07,-660.88 6282.7,-665.67 6292.39,-660.53"/>
+<path fill="none" stroke="black" d="M6464.08,-660.58C6576.14,-646.47 6455.97,-397.4 6330.18,-397.4"/>
+<polygon fill="black" stroke="black" points="6464,-660.58 6453.75,-656.69 6458.67,-660.9 6454.35,-661.16 6454.35,-661.16 6454.35,-661.16 6458.67,-660.9 6454.28,-665.67 6464,-660.58"/>
 </g>
 <!-- public.memberships -->
 <g id="node2" class="node">
@@ -133,7 +133,7 @@
 <!-- public.memberships&#45;&gt;public.organizations -->
 <g id="edge1" class="edge">
 <title>public.memberships:org_id&#45;&gt;public.organizations:id</title>
-<path fill="none" stroke="black" d="M438.23,-1339.05C505.67,-1313.39 418.25,-1013.6 479.19,-958.8 590.09,-859.08 5697.16,-815.2 5846.3,-815.2"/>
+<path fill="none" stroke="black" d="M438.23,-1339.05C505.68,-1313.39 418.27,-1013.63 479.19,-958.8 586.5,-862.22 5530.33,-815.2 5674.7,-815.2"/>
 <polygon fill="black" stroke="black" points="438.36,-1339.03 427.74,-1336.31 433.11,-1339.94 428.84,-1340.69 428.84,-1340.69 428.84,-1340.69 433.11,-1339.94 429.28,-1345.18 438.36,-1339.03"/>
 </g>
 <!-- public.caretaker_buildings -->
@@ -164,7 +164,7 @@
 <!-- public.caretaker_buildings&#45;&gt;public.organizations -->
 <g id="edge2" class="edge">
 <title>public.caretaker_buildings:org_id&#45;&gt;public.organizations:id</title>
-<path fill="none" stroke="black" d="M885.81,-1323.56C949.95,-1297.92 867.75,-1011.27 926.19,-958.8 1027.93,-867.45 5709.58,-815.2 5846.3,-815.2"/>
+<path fill="none" stroke="black" d="M885.81,-1323.56C949.95,-1297.92 867.78,-1011.3 926.19,-958.8 1024.34,-870.58 5542.74,-815.2 5674.7,-815.2"/>
 <polygon fill="black" stroke="black" points="885.93,-1323.54 875.28,-1320.91 880.68,-1324.5 876.42,-1325.28 876.42,-1325.28 876.42,-1325.28 880.68,-1324.5 876.9,-1329.77 885.93,-1323.54"/>
 </g>
 <!-- public.invitations -->
@@ -219,7 +219,7 @@
 <!-- public.invitations&#45;&gt;public.organizations -->
 <g id="edge3" class="edge">
 <title>public.invitations:org_id&#45;&gt;public.organizations:id</title>
-<path fill="none" stroke="black" d="M1320.8,-1416.31C1404.33,-1390.08 1289.49,-1025.9 1362.19,-958.8 1453.77,-874.27 5721.68,-815.2 5846.3,-815.2"/>
+<path fill="none" stroke="black" d="M1320.81,-1416.31C1404.33,-1390.08 1289.53,-1025.95 1362.19,-958.8 1450.21,-877.45 5554.84,-815.2 5674.7,-815.2"/>
 <polygon fill="black" stroke="black" points="1320.78,-1416.31 1310.24,-1413.3 1315.5,-1417.08 1311.22,-1417.7 1311.22,-1417.7 1311.22,-1417.7 1315.5,-1417.08 1311.53,-1422.2 1320.78,-1416.31"/>
 </g>
 <!-- public.buildings -->
@@ -286,7 +286,7 @@
 <!-- public.buildings&#45;&gt;public.organizations -->
 <g id="edge4" class="edge">
 <title>public.buildings:org_id&#45;&gt;public.organizations:id</title>
-<path fill="none" stroke="black" d="M1753.53,-1478.13C1850.48,-1452.19 1712.14,-1035.92 1794.19,-958.8 1876.26,-881.66 5733.67,-815.2 5846.3,-815.2"/>
+<path fill="none" stroke="black" d="M1753.53,-1478.13C1850.48,-1452.2 1712.2,-1035.99 1794.19,-958.8 1872.73,-884.86 5566.84,-815.2 5674.7,-815.2"/>
 <polygon fill="black" stroke="black" points="1753.65,-1478.12 1743.17,-1474.89 1748.35,-1478.78 1744.06,-1479.32 1744.06,-1479.32 1744.06,-1479.32 1748.35,-1478.78 1744.28,-1483.82 1753.65,-1478.12"/>
 </g>
 <!-- public.units -->
@@ -335,7 +335,7 @@
 <!-- public.units&#45;&gt;public.organizations -->
 <g id="edge5" class="edge">
 <title>public.units:org_id&#45;&gt;public.organizations:id</title>
-<path fill="none" stroke="black" d="M2131.06,-1385.38C2207.92,-1359.08 2104.5,-1021.25 2172.19,-958.8 2322.33,-820.28 5642.03,-815.2 5846.3,-815.2"/>
+<path fill="none" stroke="black" d="M2131.06,-1385.38C2207.92,-1359.08 2104.56,-1021.31 2172.19,-958.8 2315.2,-826.61 5479.95,-815.2 5674.7,-815.2"/>
 <polygon fill="black" stroke="black" points="2130.97,-1385.39 2120.4,-1382.5 2125.7,-1386.22 2121.43,-1386.9 2121.43,-1386.9 2121.43,-1386.9 2125.7,-1386.22 2121.8,-1391.39 2130.97,-1385.39"/>
 </g>
 <!-- public.unit_charges -->
@@ -372,7 +372,7 @@
 <!-- public.unit_charges&#45;&gt;public.organizations -->
 <g id="edge6" class="edge">
 <title>public.unit_charges:org_id&#45;&gt;public.organizations:id</title>
-<path fill="none" stroke="black" d="M2589.26,-1323.57C2653.49,-1297.95 2572.11,-1011.69 2630.19,-958.8 2762.43,-838.39 5667.45,-815.2 5846.3,-815.2"/>
+<path fill="none" stroke="black" d="M2589.26,-1323.57C2653.5,-1297.96 2572.17,-1011.76 2630.19,-958.8 2755.25,-844.64 5505.37,-815.2 5674.7,-815.2"/>
 <polygon fill="black" stroke="black" points="2589.37,-1323.55 2578.73,-1320.91 2584.12,-1324.5 2579.86,-1325.28 2579.86,-1325.28 2579.86,-1325.28 2584.12,-1324.5 2580.34,-1329.77 2589.37,-1323.55"/>
 </g>
 <!-- public.leases -->
@@ -436,7 +436,7 @@
 <!-- public.leases&#45;&gt;public.organizations -->
 <g id="edge7" class="edge">
 <title>public.leases:org_id&#45;&gt;public.organizations:id</title>
-<path fill="none" stroke="black" d="M3134.95,-1462.69C3228.67,-1436.82 3097.15,-1034.16 3176.19,-958.8 3283.7,-856.29 5697.75,-815.2 5846.3,-815.2"/>
+<path fill="none" stroke="black" d="M3134.95,-1462.7C3228.68,-1436.83 3097.29,-1034.31 3176.19,-958.8 3276.64,-862.67 5535.67,-815.2 5674.7,-815.2"/>
 <polygon fill="black" stroke="black" points="3135.07,-1462.68 3124.58,-1459.49 3129.78,-1463.36 3125.48,-1463.91 3125.48,-1463.91 3125.48,-1463.91 3129.78,-1463.36 3125.73,-1468.42 3135.07,-1462.68"/>
 </g>
 <!-- public.lease_tenants -->
@@ -470,8 +470,8 @@
 <!-- public.lease_tenants&#45;&gt;public.organizations -->
 <g id="edge8" class="edge">
 <title>public.lease_tenants:org_id&#45;&gt;public.organizations:id</title>
-<path fill="none" stroke="black" d="M3539.04,-1339.05C3606.58,-1313.48 3520.24,-1014.7 3580.19,-958.8 3672.46,-872.77 5720.16,-815.2 5846.3,-815.2"/>
-<polygon fill="black" stroke="black" points="3539.17,-1339.03 3528.54,-1336.31 3533.91,-1339.94 3529.64,-1340.69 3529.64,-1340.69 3529.64,-1340.69 3533.91,-1339.94 3530.08,-1345.18 3539.17,-1339.03"/>
+<path fill="none" stroke="black" d="M3539.04,-1339.06C3606.6,-1313.49 3520.38,-1014.85 3580.19,-958.8 3665.29,-879.04 5558.07,-815.2 5674.7,-815.2"/>
+<polygon fill="black" stroke="black" points="3539.17,-1339.03 3528.54,-1336.31 3533.91,-1339.95 3529.64,-1340.69 3529.64,-1340.69 3529.64,-1340.69 3533.91,-1339.95 3530.08,-1345.18 3539.17,-1339.03"/>
 </g>
 <!-- public.lease_charges -->
 <g id="node10" class="node">
@@ -507,8 +507,8 @@
 <!-- public.lease_charges&#45;&gt;public.organizations -->
 <g id="edge9" class="edge">
 <title>public.lease_charges:org_id&#45;&gt;public.organizations:id</title>
-<path fill="none" stroke="black" d="M3960.62,-1323.57C4024.98,-1298.04 3944.93,-1012.61 4002.19,-958.8 4151.97,-818.07 5640.78,-815.2 5846.3,-815.2"/>
-<polygon fill="black" stroke="black" points="3960.71,-1323.55 3950.07,-1320.91 3955.46,-1324.51 3951.2,-1325.28 3951.2,-1325.28 3951.2,-1325.28 3955.46,-1324.51 3951.68,-1329.77 3960.71,-1323.55"/>
+<path fill="none" stroke="black" d="M3960.62,-1323.57C4025,-1298.06 3945.14,-1012.83 4002.19,-958.8 4137.61,-830.54 5488.18,-815.2 5674.7,-815.2"/>
+<polygon fill="black" stroke="black" points="3960.71,-1323.56 3950.07,-1320.91 3955.47,-1324.51 3951.2,-1325.28 3951.2,-1325.28 3951.2,-1325.28 3955.47,-1324.51 3951.68,-1329.77 3960.71,-1323.56"/>
 </g>
 <!-- public.deposit_entries -->
 <g id="node11" class="node">
@@ -550,8 +550,8 @@
 <!-- public.deposit_entries&#45;&gt;public.organizations -->
 <g id="edge10" class="edge">
 <title>public.deposit_entries:org_id&#45;&gt;public.organizations:id</title>
-<path fill="none" stroke="black" d="M4405.26,-1354.55C4476.29,-1329.15 4385.97,-1018.35 4447.19,-958.8 4559.21,-849.84 5690.03,-815.2 5846.3,-815.2"/>
-<polygon fill="black" stroke="black" points="4405.43,-1354.52 4394.83,-1351.71 4400.17,-1355.39 4395.89,-1356.09 4395.89,-1356.09 4395.89,-1356.09 4400.17,-1355.39 4396.3,-1360.59 4405.43,-1354.52"/>
+<path fill="none" stroke="black" d="M4405.26,-1354.55C4476.33,-1329.19 4386.39,-1018.78 4447.19,-958.8 4544.95,-862.36 5537.38,-815.2 5674.7,-815.2"/>
+<polygon fill="black" stroke="black" points="4405.43,-1354.52 4394.83,-1351.71 4400.17,-1355.39 4395.89,-1356.09 4395.89,-1356.09 4395.89,-1356.09 4400.17,-1355.39 4396.29,-1360.59 4405.43,-1354.52"/>
 </g>
 <!-- public.meter_readings -->
 <g id="node12" class="node">
@@ -596,8 +596,8 @@
 <!-- public.meter_readings&#45;&gt;public.organizations -->
 <g id="edge11" class="edge">
 <title>public.meter_readings:org_id&#45;&gt;public.organizations:id</title>
-<path fill="none" stroke="black" d="M4888.43,-1370.05C4962.98,-1344.96 4868.35,-1022.58 4930.19,-958.8 5001.91,-884.83 5743.27,-815.2 5846.3,-815.2"/>
-<polygon fill="black" stroke="black" points="4888.69,-1370.01 4878.12,-1367.1 4883.42,-1370.83 4879.14,-1371.5 4879.14,-1371.5 4879.14,-1371.5 4883.42,-1370.83 4879.5,-1376 4888.69,-1370.01"/>
+<path fill="none" stroke="black" d="M4888.43,-1370.06C4963.06,-1345.05 4869.48,-1023.65 4930.19,-958.8 5045.34,-835.79 5506.2,-815.2 5674.7,-815.2"/>
+<polygon fill="black" stroke="black" points="4888.69,-1370.02 4878.12,-1367.1 4883.42,-1370.83 4879.14,-1371.5 4879.14,-1371.5 4879.14,-1371.5 4883.42,-1370.83 4879.5,-1376 4888.69,-1370.02"/>
 </g>
 <!-- public.bills -->
 <g id="node13" class="node">
@@ -657,8 +657,8 @@
 <!-- public.bills&#45;&gt;public.organizations -->
 <g id="edge12" class="edge">
 <title>public.bills:org_id&#45;&gt;public.organizations:id</title>
-<path fill="none" stroke="black" d="M5477.36,-1447.3C5568.76,-1422.29 5456.72,-1044.22 5519.19,-958.8 5612.92,-830.64 5687.53,-815.2 5846.3,-815.2"/>
-<polygon fill="black" stroke="black" points="5477.46,-1447.29 5466.97,-1444.09 5472.17,-1447.96 5467.87,-1448.51 5467.87,-1448.51 5467.87,-1448.51 5472.17,-1447.96 5468.11,-1453.02 5477.46,-1447.29"/>
+<path fill="none" stroke="black" d="M5477.41,-1447.33C5569.76,-1422.89 5471.69,-1053.36 5519.19,-958.8 5561.42,-874.73 5580.63,-815.2 5674.7,-815.2"/>
+<polygon fill="black" stroke="black" points="5477.47,-1447.32 5466.99,-1444.09 5472.17,-1447.98 5467.87,-1448.52 5467.87,-1448.52 5467.87,-1448.52 5472.17,-1447.98 5468.1,-1453.02 5477.47,-1447.32"/>
 </g>
 <!-- public.bill_lines -->
 <g id="node14" class="node">
@@ -706,8 +706,8 @@
 <!-- public.bill_lines&#45;&gt;public.organizations -->
 <g id="edge13" class="edge">
 <title>public.bill_lines:org_id&#45;&gt;public.organizations:id</title>
-<path fill="none" stroke="black" d="M6018.55,-1385.13C6078.87,-1361.25 6038.26,-1115.14 6007.45,-1051.2 5967.85,-969.01 5887.16,-1004.86 5847.3,-922.8 5826.41,-879.78 5798.48,-815.2 5846.3,-815.2"/>
-<polygon fill="black" stroke="black" points="6018.61,-1385.12 6007.96,-1382.51 6013.37,-1386.09 6009.11,-1386.88 6009.11,-1386.88 6009.11,-1386.88 6013.37,-1386.09 6009.59,-1391.36 6018.61,-1385.12"/>
+<path fill="none" stroke="black" d="M6018.62,-1385.09C6079.79,-1360.72 6047.66,-1109.69 6007.45,-1051.2 5917.88,-920.91 5765.68,-1052.8 5675.7,-922.8 5648.48,-883.48 5626.88,-815.2 5674.7,-815.2"/>
+<polygon fill="black" stroke="black" points="6018.61,-1385.1 6007.95,-1382.52 6013.36,-1386.08 6009.11,-1386.88 6009.11,-1386.88 6009.11,-1386.88 6013.36,-1386.08 6009.61,-1391.36 6018.61,-1385.1"/>
 </g>
 <!-- public.payments -->
 <g id="node15" class="node">
@@ -773,8 +773,8 @@
 <!-- public.payments&#45;&gt;public.organizations -->
 <g id="edge14" class="edge">
 <title>public.payments:org_id&#45;&gt;public.organizations:id</title>
-<path fill="none" stroke="black" d="M6101.52,-1474.99C6055.33,-1426.9 6077.21,-1001.17 6111.59,-958.8 6160.12,-899 6232.33,-982.42 6281.08,-922.8 6311.35,-885.78 6329.9,-815.2 6282.08,-815.2"/>
-<polygon fill="black" stroke="black" points="6101.3,-1474.88 6108.32,-1483.3 6106.1,-1477.21 6109.99,-1479.11 6109.99,-1479.11 6109.99,-1479.11 6106.1,-1477.21 6112.26,-1475.21 6101.3,-1474.88"/>
+<path fill="none" stroke="black" d="M6101.5,-1474.97C6055.08,-1426.69 6075.05,-999.32 6111.59,-958.8 6162.63,-902.2 6401.43,-979.21 6452.68,-922.8 6484.84,-887.4 6501.5,-815.2 6453.68,-815.2"/>
+<polygon fill="black" stroke="black" points="6101.3,-1474.87 6108.32,-1483.3 6106.1,-1477.21 6109.99,-1479.11 6109.99,-1479.11 6109.99,-1479.11 6106.1,-1477.21 6112.26,-1475.21 6101.3,-1474.87"/>
 </g>
 <!-- public.payment_allocations -->
 <g id="node16" class="node">
@@ -810,8 +810,8 @@
 <!-- public.payment_allocations&#45;&gt;public.organizations -->
 <g id="edge15" class="edge">
 <title>public.payment_allocations:org_id&#45;&gt;public.organizations:id</title>
-<path fill="none" stroke="black" d="M6659.6,-1323.62C6594.55,-1298.81 6666.88,-1021.21 6619.19,-958.8 6520.3,-829.4 6444.93,-815.2 6282.08,-815.2"/>
-<polygon fill="black" stroke="black" points="6659.54,-1323.61 6668.61,-1329.77 6664.8,-1324.54 6669.06,-1325.28 6669.06,-1325.28 6669.06,-1325.28 6664.8,-1324.54 6670.17,-1320.91 6659.54,-1323.61"/>
+<path fill="none" stroke="black" d="M6659.54,-1323.67C6593.63,-1299.41 6656.61,-1027.86 6619.19,-958.8 6572.79,-873.17 6551.07,-815.2 6453.68,-815.2"/>
+<polygon fill="black" stroke="black" points="6659.53,-1323.66 6668.64,-1329.78 6664.79,-1324.56 6669.06,-1325.29 6669.06,-1325.29 6669.06,-1325.29 6664.79,-1324.56 6670.15,-1320.91 6659.53,-1323.66"/>
 </g>
 <!-- public.credit_entries -->
 <g id="node17" class="node">
@@ -853,8 +853,8 @@
 <!-- public.credit_entries&#45;&gt;public.organizations -->
 <g id="edge16" class="edge">
 <title>public.credit_entries:org_id&#45;&gt;public.organizations:id</title>
-<path fill="none" stroke="black" d="M7101.19,-1354.56C7030.06,-1329.36 7118.89,-1020.81 7060.19,-958.8 6939.31,-831.11 6457.91,-815.2 6282.08,-815.2"/>
-<polygon fill="black" stroke="black" points="7101.02,-1354.53 7110.17,-1360.59 7106.29,-1355.39 7110.56,-1356.09 7110.56,-1356.09 7110.56,-1356.09 7106.29,-1355.39 7111.62,-1351.7 7101.02,-1354.53"/>
+<path fill="none" stroke="black" d="M7101.19,-1354.57C7029.93,-1329.47 7117.32,-1022.25 7060.19,-958.8 6967.51,-855.87 6592.19,-815.2 6453.68,-815.2"/>
+<polygon fill="black" stroke="black" points="7101.02,-1354.54 7110.17,-1360.59 7106.29,-1355.4 7110.56,-1356.09 7110.56,-1356.09 7110.56,-1356.09 7106.29,-1355.4 7111.61,-1351.7 7101.02,-1354.54"/>
 </g>
 <!-- public.payment_intents -->
 <g id="node18" class="node">
@@ -908,7 +908,7 @@
 <!-- public.payment_intents&#45;&gt;public.organizations -->
 <g id="edge17" class="edge">
 <title>public.payment_intents:org_id&#45;&gt;public.organizations:id</title>
-<path fill="none" stroke="black" d="M7491.42,-1416.32C7407.7,-1390.31 7519.77,-1029.12 7450.19,-958.8 7358.22,-865.84 6412.85,-815.2 6282.08,-815.2"/>
+<path fill="none" stroke="black" d="M7491.42,-1416.32C7407.65,-1390.36 7519.04,-1029.84 7450.19,-958.8 7372.34,-878.47 6565.55,-815.2 6453.68,-815.2"/>
 <polygon fill="black" stroke="black" points="7491.45,-1416.33 7500.71,-1422.21 7496.73,-1417.09 7501.02,-1417.7 7501.02,-1417.7 7501.02,-1417.7 7496.73,-1417.09 7501.99,-1413.3 7491.45,-1416.33"/>
 </g>
 <!-- public.receipt_counters -->
@@ -939,8 +939,8 @@
 <!-- public.receipt_counters&#45;&gt;public.organizations -->
 <g id="edge18" class="edge">
 <title>public.receipt_counters:org_id&#45;&gt;public.organizations:id</title>
-<path fill="none" stroke="black" d="M8114.67,-1323.57C8050.41,-1298.05 8131.29,-1012.73 8074.19,-958.8 7928.97,-821.63 6481.84,-815.2 6282.08,-815.2"/>
-<polygon fill="black" stroke="black" points="8114.56,-1323.55 8123.6,-1329.77 8119.81,-1324.51 8124.07,-1325.28 8124.07,-1325.28 8124.07,-1325.28 8119.81,-1324.51 8125.2,-1320.91 8114.56,-1323.55"/>
+<path fill="none" stroke="black" d="M8114.67,-1323.58C8050.39,-1298.07 8131.06,-1012.97 8074.19,-958.8 7943.3,-834.13 6634.44,-815.2 6453.68,-815.2"/>
+<polygon fill="black" stroke="black" points="8114.56,-1323.56 8123.6,-1329.77 8119.81,-1324.51 8124.07,-1325.28 8124.07,-1325.28 8124.07,-1325.28 8119.81,-1324.51 8125.2,-1320.91 8114.56,-1323.56"/>
 </g>
 <!-- public.receipts -->
 <g id="node20" class="node">
@@ -979,8 +979,8 @@
 <!-- public.receipts&#45;&gt;public.organizations -->
 <g id="edge19" class="edge">
 <title>public.receipts:org_id&#45;&gt;public.organizations:id</title>
-<path fill="none" stroke="black" d="M8525.96,-1339.05C8458.45,-1313.49 8545.06,-1014.77 8485.19,-958.8 8395.6,-875.03 6404.73,-815.2 6282.08,-815.2"/>
-<polygon fill="black" stroke="black" points="8525.83,-1339.03 8534.91,-1345.18 8531.09,-1339.94 8535.35,-1340.69 8535.35,-1340.69 8535.35,-1340.69 8531.09,-1339.94 8536.45,-1336.31 8525.83,-1339.03"/>
+<path fill="none" stroke="black" d="M8525.96,-1339.06C8458.43,-1313.5 8544.9,-1014.94 8485.19,-958.8 8402.76,-881.3 6566.82,-815.2 6453.68,-815.2"/>
+<polygon fill="black" stroke="black" points="8525.83,-1339.03 8534.91,-1345.18 8531.09,-1339.95 8535.35,-1340.69 8535.35,-1340.69 8535.35,-1340.69 8531.09,-1339.95 8536.45,-1336.31 8525.83,-1339.03"/>
 </g>
 <!-- public.maintenance_requests -->
 <g id="node21" class="node">
@@ -1046,7 +1046,7 @@
 <!-- public.maintenance_requests&#45;&gt;public.organizations -->
 <g id="edge20" class="edge">
 <title>public.maintenance_requests:org_id&#45;&gt;public.organizations:id</title>
-<path fill="none" stroke="black" d="M9056.6,-1478.13C8959.55,-1452.23 9096.64,-1036.58 9015.19,-958.8 8905.22,-853.8 6434.13,-815.2 6282.08,-815.2"/>
+<path fill="none" stroke="black" d="M9056.6,-1478.13C8959.54,-1452.24 9096.51,-1036.72 9015.19,-958.8 8912.28,-860.19 6596.21,-815.2 6453.68,-815.2"/>
 <polygon fill="black" stroke="black" points="9056.48,-1478.12 9065.84,-1483.82 9061.77,-1478.78 9066.07,-1479.32 9066.07,-1479.32 9066.07,-1479.32 9061.77,-1478.78 9066.96,-1474.89 9056.48,-1478.12"/>
 </g>
 <!-- public.maintenance_events -->
@@ -1095,7 +1095,7 @@
 <!-- public.maintenance_events&#45;&gt;public.organizations -->
 <g id="edge21" class="edge">
 <title>public.maintenance_events:org_id&#45;&gt;public.organizations:id</title>
-<path fill="none" stroke="black" d="M9507.95,-1385.38C9431.11,-1359.1 9534.66,-1021.48 9467.19,-958.8 9337.42,-838.24 6459.21,-815.2 6282.08,-815.2"/>
+<path fill="none" stroke="black" d="M9507.94,-1385.38C9431.1,-1359.1 9534.58,-1021.56 9467.19,-958.8 9344.54,-844.57 6621.29,-815.2 6453.68,-815.2"/>
 <polygon fill="black" stroke="black" points="9508.03,-1385.39 9517.2,-1391.39 9513.29,-1386.22 9517.57,-1386.9 9517.57,-1386.9 9517.57,-1386.9 9513.29,-1386.22 9518.6,-1382.5 9508.03,-1385.39"/>
 </g>
 <!-- public.notices -->
@@ -1144,7 +1144,7 @@
 <!-- public.notices&#45;&gt;public.organizations -->
 <g id="edge22" class="edge">
 <title>public.notices:org_id&#45;&gt;public.organizations:id</title>
-<path fill="none" stroke="black" d="M9946.5,-1385.38C9869.63,-1359.08 9972.88,-1021.26 9905.19,-958.8 9757.15,-822.19 6483.52,-815.2 6282.08,-815.2"/>
+<path fill="none" stroke="black" d="M9946.5,-1385.38C9869.62,-1359.08 9972.82,-1021.32 9905.19,-958.8 9764.27,-828.51 6645.6,-815.2 6453.68,-815.2"/>
 <polygon fill="black" stroke="black" points="9946.59,-1385.39 9955.76,-1391.39 9951.86,-1386.22 9956.13,-1386.9 9956.13,-1386.9 9956.13,-1386.9 9951.86,-1386.22 9957.17,-1382.5 9946.59,-1385.39"/>
 </g>
 <!-- public.files -->
@@ -1208,7 +1208,7 @@
 <!-- public.files&#45;&gt;public.organizations -->
 <g id="edge23" class="edge">
 <title>public.files:org_id&#45;&gt;public.organizations:id</title>
-<path fill="none" stroke="black" d="M10322.08,-1462.69C10228.43,-1436.78 10360.87,-1033.48 10281.19,-958.8 10200.09,-882.78 6393.24,-815.2 6282.08,-815.2"/>
+<path fill="none" stroke="black" d="M10322.08,-1462.69C10228.42,-1436.78 10360.81,-1033.54 10281.19,-958.8 10203.62,-885.98 6560.07,-815.2 6453.68,-815.2"/>
 <polygon fill="black" stroke="black" points="10321.96,-1462.68 10331.3,-1468.42 10327.25,-1463.36 10331.55,-1463.91 10331.55,-1463.91 10331.55,-1463.91 10327.25,-1463.36 10332.45,-1459.49 10321.96,-1462.68"/>
 </g>
 <!-- public.documents -->
@@ -1248,7 +1248,7 @@
 <!-- public.documents&#45;&gt;public.organizations -->
 <g id="edge24" class="edge">
 <title>public.documents:org_id&#45;&gt;public.organizations:id</title>
-<path fill="none" stroke="black" d="M10826.62,-1339.05C10759.12,-1313.4 10846.04,-1013.73 10785.19,-958.8 10692.3,-874.94 6407.23,-815.2 6282.08,-815.2"/>
+<path fill="none" stroke="black" d="M10826.62,-1339.05C10759.12,-1313.4 10846,-1013.77 10785.19,-958.8 10695.88,-878.07 6574.07,-815.2 6453.68,-815.2"/>
 <polygon fill="black" stroke="black" points="10826.49,-1339.03 10835.57,-1345.18 10831.75,-1339.94 10836.02,-1340.69 10836.02,-1340.69 10836.02,-1340.69 10831.75,-1339.94 10837.12,-1336.31 10826.49,-1339.03"/>
 </g>
 <!-- public.notifications -->
@@ -1294,7 +1294,7 @@
 <!-- public.notifications&#45;&gt;public.organizations -->
 <g id="edge25" class="edge">
 <title>public.notifications:org_id&#45;&gt;public.organizations:id</title>
-<path fill="none" stroke="black" d="M11222.07,-1370.03C11147.89,-1344.65 11246.85,-1018.61 11181.19,-958.8 11080.54,-867.12 6418.22,-815.2 6282.08,-815.2"/>
+<path fill="none" stroke="black" d="M11222.07,-1370.03C11147.88,-1344.66 11246.82,-1018.64 11181.19,-958.8 11084.11,-870.27 6585.06,-815.2 6453.68,-815.2"/>
 <polygon fill="black" stroke="black" points="11221.79,-1369.99 11230.96,-1375.99 11227.06,-1370.82 11231.33,-1371.5 11231.33,-1371.5 11231.33,-1371.5 11227.06,-1370.82 11232.37,-1367.1 11221.79,-1369.99"/>
 </g>
 <!-- public.outbox -->
@@ -1343,7 +1343,7 @@
 <!-- public.outbox&#45;&gt;public.organizations -->
 <g id="edge26" class="edge">
 <title>public.outbox:org_id&#45;&gt;public.organizations:id</title>
-<path fill="none" stroke="black" d="M11668.02,-1385.37C11591.22,-1359.05 11695.23,-1020.85 11627.19,-958.8 11517.45,-858.71 6430.61,-815.2 6282.08,-815.2"/>
+<path fill="none" stroke="black" d="M11668.02,-1385.38C11591.21,-1359.05 11695.2,-1020.88 11627.19,-958.8 11521.01,-861.88 6597.44,-815.2 6453.68,-815.2"/>
 <polygon fill="black" stroke="black" points="11668.1,-1385.39 11677.27,-1391.39 11673.37,-1386.22 11677.64,-1386.9 11677.64,-1386.9 11677.64,-1386.9 11673.37,-1386.22 11678.68,-1382.5 11668.1,-1385.39"/>
 </g>
 </g>

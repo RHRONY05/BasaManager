@@ -51,13 +51,13 @@ CREATE VIEW admin_org_overview AS (
 
 ## Referenced Tables
 
-| Name                                            | Columns | Comment                                                                 | Type       |
-| ----------------------------------------------- | ------- | ----------------------------------------------------------------------- | ---------- |
-| [public.buildings](public.buildings.md)         | 17      | A building with its billing calendar and late-fee rule.                 | BASE TABLE |
-| [public.units](public.units.md)                 | 11      | A rentable flat, room or shop in a building.                            | BASE TABLE |
-| [public.leases](public.leases.md)               | 16      | A tenancy of one unit. One live (pending/active/notice) lease per unit. | BASE TABLE |
-| [public.memberships](public.memberships.md)     | 8       | A user's role in one org. Exactly one active landlord per org.          | BASE TABLE |
-| [public.organizations](public.organizations.md) | 8       | A landlord's organisation. RLS org_self (own org, or admin context).    | BASE TABLE |
+| Name                                            | Columns | Comment                                                                                                                     | Type       |
+| ----------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| [public.buildings](public.buildings.md)         | 17      | A building with its billing calendar and late-fee rule.                                                                     | BASE TABLE |
+| [public.units](public.units.md)                 | 11      | A rentable flat, room or shop in a building.                                                                                | BASE TABLE |
+| [public.leases](public.leases.md)               | 16      | A tenancy of one unit. One live (pending/active/notice) lease per unit.                                                     | BASE TABLE |
+| [public.memberships](public.memberships.md)     | 8       | A user's role in one org. Exactly one active landlord per org.                                                              | BASE TABLE |
+| [public.organizations](public.organizations.md) | 8       | A landlord's organisation. Readable in its own context, by its members and by admin; updated only by its landlord or admin. | BASE TABLE |
 
 ## Relations
 

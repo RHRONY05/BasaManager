@@ -2,7 +2,7 @@
 
 ## Description
 
-A landlord's organisation. RLS org_self (own org, or admin context).
+A landlord's organisation. Readable in its own context, by its members and by admin; updated only by its landlord or admin.
 
 ## Columns
 

@@ -34,7 +34,7 @@ comments:
   - table: public.users
     tableComment: People who can sign in. Not org-owned (no RLS); anonymised on account deletion.
   - table: public.organizations
-    tableComment: A landlord's organisation. RLS org_self (own org, or admin context).
+    tableComment: A landlord's organisation. Readable in its own context, by its members and by admin; updated only by its landlord or admin.
   - table: public.memberships
     tableComment: A user's role in one org. Exactly one active landlord per org.
   - table: public.caretaker_buildings

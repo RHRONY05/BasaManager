@@ -21,7 +21,7 @@ export function uuidListSchema(max: number) {
 
 /**
  * A new v4 id, for the rare case the id is needed before the insert (e.g. a new organisation: its id must be
- * the transaction's `app.org_id` for the `org_self` policy to accept the row). Uses Web Crypto (browser + Node).
+ * the transaction's `app.org_id` for the `org_self_insert` policy to accept the row). Uses Web Crypto (browser + Node).
  */
 export function newId(): string {
   return globalThis.crypto.randomUUID();

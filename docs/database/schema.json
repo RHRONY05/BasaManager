@@ -425,7 +425,7 @@
     {
       "name": "public.organizations",
       "type": "BASE TABLE",
-      "comment": "A landlord's organisation. RLS org_self (own org, or admin context).",
+      "comment": "A landlord's organisation. Readable in its own context, by its members and by admin; updated only by its landlord or admin.",
       "columns": [
         {
           "name": "id",
@@ -6631,6 +6631,12 @@
       "name": "public.pgp_armor_headers",
       "return_type": "record",
       "arguments": "text, OUT key text, OUT value text",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.app_find_invitation",
+      "return_type": "record",
+      "arguments": "p_token_hash bytea",
       "type": "FUNCTION"
     }
   ],

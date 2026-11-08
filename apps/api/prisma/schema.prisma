@@ -371,7 +371,7 @@ model AuthToken {
   @@map("auth_tokens")
 }
 
-/// RLS by `id` (policy org_self): members see their own org; admin context may read all.
+/// RLS by `id` (org_self_select/insert/update, member_orgs): own org, orgs the user belongs to, admin context.
 model Organization {
   id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name      String
