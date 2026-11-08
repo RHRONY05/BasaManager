@@ -27,7 +27,9 @@ describe('web sentry privacy', () => {
   });
 
   it('passes every collection switch off and the scrubber to Sentry.init when a DSN is given', () => {
-    expect(initSentry({ appEnv: 'test', sentryDsn: 'https://k@example.ingest.sentry.io/1' } as never)).toBe(true);
+    expect(initSentry({ appEnv: 'test', sentryDsn: 'https://k@example.ingest.sentry.io/1' } as never)).toBe(
+      true,
+    );
     const opts = vi.mocked(Sentry.init).mock.calls[0]![0]!;
     expect(opts.dataCollection).toEqual(SENTRY_DATA_COLLECTION);
     expect(opts.beforeSend).toBe(scrubEvent);
