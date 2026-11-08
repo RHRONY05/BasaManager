@@ -206,6 +206,9 @@ def build():
         if sm:
             style = sm.group(1).strip('\n')
             body = body[:sm.start()] + body[sm.end():]
+        if '<!--overlay-->' in body:
+            body, ov = body.split('<!--overlay-->', 1)
+            m['overlay'] = ov.strip() + '\n'
         shell = m['shell']
         if shell == 'staff-d': page = staff_d(m, body)
         elif shell == 'staff-m': page = mobile(m, body, STAFF_TABS)

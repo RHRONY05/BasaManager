@@ -1,0 +1,43 @@
+<!--meta {"title": "M07 · Building detail — units", "shell": "staff-m", "active": "more", "topbar": "Shanti Neer", "back": true, "bell": "3"} -->
+<style>
+  .bld-sum { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
+  .bld-sum > div { display: grid; gap: var(--space-0-5); padding: var(--space-3); border-radius: var(--radius-md); background: var(--bg-surface); border: 1px solid var(--border-default); min-width: 0; }
+  .bld-sum strong { font-size: var(--text-lg); line-height: var(--leading-lg); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .unit-tag { display: grid; place-items: center; min-width: var(--size-tap); height: var(--size-tap); padding: 0 var(--space-1); border-radius: var(--radius-md); background: var(--bg-muted); font-weight: var(--weight-bold); flex-shrink: 0; }
+  .tabs-m { margin: 0 calc(var(--space-4) * -1); padding: 0 var(--space-4); }
+</style>
+<section class="stack-sm" aria-label="Building">
+  <p class="t-sm secondary row"><i data-lucide="map-pin" class="i-sm"></i><span class="wrap" data-user>House 14, Road 3, Nasirabad Housing Society, Chattogram</span></p>
+  <div class="bld-sum">
+    <div><span class="t-xs muted">Occupied</span><strong>10 / 12</strong></div>
+    <div><span class="t-xs muted">Vacant</span><strong>2</strong></div>
+    <div><span class="t-xs muted">Dues</span><strong class="t-neg">৳40,339</strong></div>
+  </div>
+</section>
+
+<div class="tabs tabs-m" role="tablist" aria-label="Building sections" data-scroll-x data-proto="tabs">
+  <button class="tab" role="tab" aria-selected="true" type="button">Units <span class="tab__count">12</span></button>
+  <button class="tab" role="tab" aria-selected="false" type="button">Billing settings</button>
+  <button class="tab" role="tab" aria-selected="false" type="button">Notices</button>
+  <button class="tab" role="tab" aria-selected="false" type="button">Map</button>
+</div>
+
+<div class="chips" role="group" aria-label="Filter units" data-scroll-x>
+  <button class="chip chip--tap" type="button" aria-pressed="true">All 12</button>
+  <button class="chip chip--tap" type="button" aria-pressed="false">With dues 4</button>
+  <button class="chip chip--tap" type="button" aria-pressed="false">Vacant 2</button>
+  <button class="chip chip--tap" type="button" aria-pressed="false">Notice 1</button>
+</div>
+
+<div class="list">
+  <a class="list-row" href="#unit-1B"><span class="unit-tag">1B</span><span class="list-row__main"><span class="list-row__title">Rumana Akter</span><span class="list-row__meta">Family flat · ৳11,500</span></span><span class="list-row__end"><span class="num t-neg t-strong">৳3,000</span><span class="badge badge--danger"><i data-lucide="alarm-clock"></i>Overdue</span></span></a>
+  <a class="list-row" href="#unit-2A"><span class="unit-tag">2A</span><span class="list-row__main"><span class="list-row__title">Md. Rezaul Karim</span><span class="list-row__meta">Family flat · ৳12,000</span></span><span class="list-row__end"><span class="num t-strong">৳14,200</span><span class="badge badge--warning"><i data-lucide="hourglass"></i>Claim</span></span></a>
+  <a class="list-row" href="#unit-2B"><span class="unit-tag">2B</span><span class="list-row__main"><span class="list-row__title muted">No tenant</span><span class="list-row__meta">Family flat · ৳12,000</span></span><span class="list-row__end"><span class="badge badge--neutral"><i data-lucide="door-open"></i>Vacant</span></span></a>
+  <a class="list-row" href="#unit-3A"><span class="unit-tag">3A</span><span class="list-row__main"><span class="list-row__title">Sabrina Haque</span><span class="list-row__meta">Leaving 30 Nov · ৳12,000</span></span><span class="list-row__end"><span class="badge badge--warning"><i data-lucide="calendar-clock"></i>Notice</span></span></a>
+  <a class="list-row" href="#unit-3B"><span class="unit-tag">3B</span><span class="list-row__main"><span class="list-row__title">Imran Hossain</span><span class="list-row__meta">Family flat · ৳12,000</span></span><span class="list-row__end"><span class="num t-strong">৳15,664</span><span class="badge badge--info"><i data-lucide="send"></i>Issued</span></span></a>
+  <a class="list-row" href="#unit-4A"><span class="unit-tag">4A</span><span class="list-row__main"><span class="list-row__title">Nusrat Jahan</span><span class="list-row__meta">Family flat · ৳12,000</span></span><span class="list-row__end"><span class="num t-strong">৳7,475</span><span class="badge badge--warning"><i data-lucide="circle-dashed"></i>Part paid</span></span></a>
+  <a class="list-row" href="#unit-4B"><span class="unit-tag">4B</span><span class="list-row__main"><span class="list-row__title">Tanvir Ahmed</span><span class="list-row__meta">Family flat · ৳12,500</span></span><span class="list-row__end"><span class="badge badge--success"><i data-lucide="circle-check"></i>Paid</span></span></a>
+  <a class="list-row" href="#unit-G1"><span class="unit-tag">G1</span><span class="list-row__main"><span class="list-row__title">Rahman Pharmacy</span><span class="list-row__meta">Shop · ৳18,000</span></span><span class="list-row__end"><span class="badge badge--success"><i data-lucide="circle-check"></i>Paid</span></span></a>
+</div>
+<button class="btn btn--secondary btn--block" type="button">Show 4 more units</button>
+<a class="btn btn--primary btn--block" href="#add-unit" data-button><i data-lucide="plus"></i>Add unit</a>
