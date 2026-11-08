@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>M14 · Maintenance list — BasaManager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../ui.css">
+<script src="https://unpkg.com/lucide@1.70.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+<style>
+  /* layout only — tokens only */
+  .req-row { display: grid; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border-muted); color: inherit; text-decoration: none; }
+  .req-row:last-child { border-bottom: 0; }
+  .req-row__top { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-3); }
+  .req-row__meta { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); }
+</style>
+</head>
+<body>
+<div class="frame-m">
+<header class="m-topbar"><a class="brand" href="#home" aria-label="BasaManager home"><svg class="brand__mark" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15 16 6l10 9"/><path d="M9 13v9h14v-9"/><path d="M13.5 22v-5h5v5"/><path d="M5 26h22M5 29.5h22" stroke-width="1.6"/></svg></a><h1 class="m-topbar__title" title="Requests">Requests</h1><span class="bell"><a class="icon-btn" href="#notifications" aria-label="Notifications, 3 unread"><i data-lucide="bell"></i></a><span class="bell__count" aria-hidden="true">3</span></span><a class="icon-btn" href="#account" aria-label="Account"><span class="avatar avatar--sm">FC</span></a></header>
+<main class="m-main">
+<div class="chips" role="group" aria-label="Status" data-scroll-x>
+  <button class="chip chip--tap" type="button" aria-pressed="true">Active 7</button>
+  <button class="chip chip--tap" type="button" aria-pressed="false">Open 3</button>
+  <button class="chip chip--tap" type="button" aria-pressed="false">Assigned 2</button>
+  <button class="chip chip--tap" type="button" aria-pressed="false">In progress 2</button>
+  <button class="chip chip--tap" type="button" aria-pressed="false">Resolved 1</button>
+</div>
+<div class="row"><div class="select-wrap grow"><select class="select" aria-label="Building"><option>All buildings</option></select><i data-lucide="chevron-down"></i></div><button class="btn btn--secondary" type="button"><i data-lucide="sliders-horizontal"></i>Filter</button></div>
+
+<div class="list">
+  <a class="req-row" href="#r-1051"><span class="req-row__top"><span class="list-row__title">Lift stops between 3rd and 4th floor</span><span class="badge badge--info"><i data-lucide="circle-dot"></i>Open</span></span><span class="req-row__meta"><span class="list-row__meta">Shanti Neer · Lift</span><span class="row"><span class="prio prio--urgent"><i data-lucide="siren"></i>Urgent</span><span class="age"><i data-lucide="clock" class="i-sm"></i>6 h</span></span></span></a>
+  <a class="req-row" href="#r-1049"><span class="req-row__top"><span class="list-row__title">Gas burner flame very low</span><span class="badge badge--warning"><i data-lucide="wrench"></i>In progress</span></span><span class="req-row__meta"><span class="list-row__meta">Karnaphuli View 3A · Jamal</span><span class="row"><span class="prio prio--urgent"><i data-lucide="siren"></i>Urgent</span><span class="age"><i data-lucide="clock" class="i-sm"></i>1 d</span></span></span></a>
+  <a class="req-row" href="#r-1042"><span class="req-row__top"><span class="list-row__title">Kitchen sink leaking under the cabinet</span><span class="badge badge--info"><i data-lucide="user-check"></i>Assigned</span></span><span class="req-row__meta"><span class="list-row__meta">Shanti Neer 4A · Jamal</span><span class="age"><i data-lucide="clock" class="i-sm"></i>2 d</span></span></a>
+  <a class="req-row" href="#r-1040"><span class="req-row__top"><span class="list-row__title">Main gate lock broken</span><span class="badge badge--warning"><i data-lucide="wrench"></i>In progress</span></span><span class="req-row__meta"><span class="list-row__meta">Hill Crest · Monir</span><span class="age age--old"><i data-lucide="clock" class="i-sm"></i>3 d</span></span></a>
+  <a class="req-row" href="#r-1037"><span class="req-row__top"><span class="list-row__title">Stair light not working on 2nd floor</span><span class="badge badge--info"><i data-lucide="circle-dot"></i>Open</span></span><span class="req-row__meta"><span class="list-row__meta">Hill Crest · not assigned</span><span class="age age--old"><i data-lucide="clock" class="i-sm"></i>4 d</span></span></a>
+  <a class="req-row" href="#r-1046"><span class="req-row__top"><span class="list-row__title">Bathroom tap won't close fully</span><span class="badge badge--info"><i data-lucide="user-check"></i>Assigned</span></span><span class="req-row__meta"><span class="list-row__meta">Hill Crest 2B · Monir</span><span class="age"><i data-lucide="clock" class="i-sm"></i>1 d</span></span></a>
+  <a class="req-row" href="#r-1053"><span class="req-row__top"><span class="list-row__title">Water leaking from roof tank overflow</span><span class="badge badge--info"><i data-lucide="circle-dot"></i>Open</span></span><span class="req-row__meta"><span class="list-row__meta">Karnaphuli View · Plumbing</span><span class="age"><i data-lucide="clock" class="i-sm"></i>2 h</span></span></a>
+</div>
+
+</main>
+<nav class="bottom-nav" data-bottom-nav aria-label="Main">
+  <a class="bottom-nav__item" href="#home"><span class="bottom-nav__icon"><i data-lucide="house"></i></span><span class="bottom-nav__label">Home</span></a>
+  <a class="bottom-nav__item" href="#billing"><span class="bottom-nav__icon"><i data-lucide="receipt-text"></i></span><span class="bottom-nav__label">Billing</span></a>
+  <a class="bottom-nav__item" href="#payments"><span class="bottom-nav__icon"><i data-lucide="wallet"></i></span><span class="bottom-nav__label">Payments</span></a>
+  <a class="bottom-nav__item" href="#requests" aria-current="page"><span class="bottom-nav__icon"><i data-lucide="wrench"></i></span><span class="bottom-nav__label">Requests</span></a>
+  <a class="bottom-nav__item" href="#more"><span class="bottom-nav__icon"><i data-lucide="menu"></i></span><span class="bottom-nav__label">More</span></a>
+</nav>
+</div>
+</body>
+</html>

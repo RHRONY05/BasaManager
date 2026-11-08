@@ -1,0 +1,39 @@
+<!--meta {"title": "M14b · Maintenance detail (staff)", "shell": "staff-m", "active": "requests", "topbar": "Request #1042", "back": true, "bell": "3"} -->
+<style>
+  .tags { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+  .comment { display: grid; gap: var(--space-2); }
+</style>
+<section class="stack-sm" aria-labelledby="rq-h">
+  <p class="eyebrow">Shanti Neer 4A · Plumbing</p>
+  <h2 class="t-title" id="rq-h">Kitchen sink leaking under the cabinet</h2>
+  <div class="tags"><span class="badge badge--info"><i data-lucide="user-check"></i>Assigned</span><span class="prio prio--normal"><i data-lucide="flag"></i>Normal</span><span class="age"><i data-lucide="clock" class="i-sm"></i>2 days old</span></div>
+</section>
+
+<section class="card card--tight" aria-label="Move this request">
+  <div class="field"><label class="label" for="as">Assigned to</label><div class="select-wrap"><select class="select" id="as"><option>Jamal Uddin</option><option>Monir Hossain</option></select><i data-lucide="chevron-down"></i></div></div>
+  <div class="btn-stack">
+    <button class="btn btn--primary btn--block" type="button"><i data-lucide="wrench"></i>Start work</button>
+    <button class="btn btn--secondary btn--block" type="button"><i data-lucide="circle-check"></i>Mark resolved</button>
+  </div>
+</section>
+
+<section class="stack-sm" aria-labelledby="ds-h">
+  <h3 class="t-strong" id="ds-h">From Nusrat Jahan</h3>
+  <p class="t-sm secondary">Water drips from the pipe joint under the sink whenever the tap is on. The cabinet floor is wet and the wood is getting soft.</p>
+  <div class="thumbs"><a class="thumb" href="#p1" aria-label="Open photo 1"><span class="ph" style="aspect-ratio:1/1">Photo 1 · 1:1</span></a><a class="thumb" href="#p2" aria-label="Open photo 2"><span class="ph" style="aspect-ratio:1/1">Photo 2 · 1:1</span></a></div>
+</section>
+
+<section class="stack" aria-labelledby="tl-h">
+  <h3 class="t-strong" id="tl-h">Timeline</h3>
+  <div class="timeline">
+    <div class="tl-item"><span class="tl-dot tl-dot--accent"><i data-lucide="plus"></i></span><div class="tl-body"><span class="tl-title">Opened by Nusrat Jahan</span><span class="tl-meta">6 Nov, 9:12 PM · 2 photos</span></div></div>
+    <div class="tl-item"><span class="tl-dot"><i data-lucide="user-check"></i></span><div class="tl-body"><span class="tl-title">Assigned to Jamal Uddin</span><span class="tl-meta">7 Nov, 10:05 AM · Farhana</span></div></div>
+    <div class="tl-item is-new"><span class="tl-dot"><i data-lucide="message-square"></i></span><div class="tl-body"><span class="tl-title">Jamal Uddin</span><p class="tl-comment">Plumber Shafiq will come tomorrow at 11 AM. Please keep the cabinet empty.</p><span class="tl-meta">7 Nov, 10:20 AM · new</span></div></div>
+  </div>
+</section>
+
+<form class="comment" aria-label="Add a comment">
+  <label class="label" for="c">Comment</label>
+  <textarea class="textarea" id="c" placeholder="Visible to Nusrat and staff"></textarea>
+  <button class="btn btn--secondary btn--block" type="submit"><i data-lucide="send-horizontal"></i>Send comment</button>
+</form>
