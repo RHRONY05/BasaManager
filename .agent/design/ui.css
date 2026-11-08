@@ -47,6 +47,7 @@ svg.lucide { width: var(--size-icon); height: var(--size-icon); flex-shrink: 0; 
 .t-body { font-size: var(--text-base); line-height: var(--leading-base); }
 .t-sm { font-size: var(--text-sm); line-height: var(--leading-sm); }
 .t-xs { font-size: var(--text-xs); line-height: var(--leading-xs); }
+.t-lg { font-size: var(--text-lg); line-height: var(--leading-lg); }
 .t-strong { font-weight: var(--weight-semibold); }
 .t-pos { color: var(--success-text); }
 .t-neg { color: var(--danger-text); }
@@ -91,7 +92,7 @@ svg.lucide { width: var(--size-icon); height: var(--size-icon); flex-shrink: 0; 
 .main { min-width: 0; display: flex; flex-direction: column; }
 .topbar { position: sticky; top: 0; z-index: var(--z-sticky); display: flex; align-items: center; gap: var(--space-3); height: var(--size-topbar-desktop); padding: 0 var(--space-8); background: var(--bg-app); border-bottom: 1px solid var(--border-muted); }
 .topbar__crumbs { display: flex; align-items: center; gap: var(--space-2); min-width: 0; color: var(--fg-muted); font-size: var(--text-sm); }
-.topbar__crumbs a { color: var(--fg-muted); text-decoration: none; white-space: nowrap; }
+.topbar__crumbs a { display: inline-flex; align-items: center; justify-content: center; min-height: var(--size-tap); min-width: var(--space-6); color: var(--fg-muted); text-decoration: none; white-space: nowrap; }
 .topbar__crumbs a:hover { color: var(--fg-default); text-decoration: underline; }
 .topbar__crumbs [aria-current='page'] { color: var(--fg-default); font-weight: var(--weight-semibold); }
 .topbar__actions { margin-left: auto; display: flex; align-items: center; gap: var(--space-2); }
@@ -393,6 +394,7 @@ a.list-row:hover { background: var(--bg-surface-hover); }
 .list-row__title { font-weight: var(--weight-semibold); overflow-wrap: break-word; min-width: 0; }
 .list-row__meta { font-size: var(--text-sm); line-height: var(--leading-sm); color: var(--fg-muted); overflow-wrap: break-word; }
 .list-row__end { display: grid; justify-items: end; gap: var(--space-1); flex-shrink: 0; text-align: right; }
+.list-row__end > .badge { justify-self: end; }
 .list-row__chev { color: var(--fg-muted); flex-shrink: 0; }
 .list-row--unread { background: var(--accent-soft); }
 

@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>D08 · New lease — review step — BasaManager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../ui.css">
+<script src="https://unpkg.com/lucide@1.70.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+<style>
+  /* layout only — tokens only */
+  .wizard { max-width: 1040px; display: grid; gap: var(--space-6); }
+  .review { display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: var(--space-6); align-items: start; }
+  .review__actions { display: flex; justify-content: space-between; gap: var(--space-3); padding-top: var(--space-5); border-top: 1px solid var(--border-default); }
+</style>
+</head>
+<body>
+<div class="frame-d app">
+  <aside class="sidebar" aria-label="Sidebar">
+    <div class="sidebar__brand"><a class="brand" href="#/"><svg class="brand__mark" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15 16 6l10 9"/><path d="M9 13v9h14v-9"/><path d="M13.5 22v-5h5v5"/><path d="M5 26h22M5 29.5h22" stroke-width="1.6"/></svg>BasaManager</a><button class="icon-btn" type="button" aria-label="Collapse sidebar"><i data-lucide="panel-left-close"></i></button></div>
+    <button class="org-switch" type="button" data-allow-wrap title="Chowdhury Properties · Landlord" aria-label="Switch organisation, current Chowdhury Properties">
+      <span class="org-switch__text"><span class="org-switch__name">Chowdhury Properties</span><span class="org-switch__role">Landlord</span></span><i data-lucide="chevrons-up-down" class="i-sm"></i>
+    </button>
+    <nav class="nav" aria-label="Main">
+      <a class="nav__item" href="#/l"><i data-lucide="layout-dashboard"></i><span class="nav__label">Dashboard</span></a>
+      <a class="nav__item" href="#/l/buildings"><i data-lucide="building-2"></i><span class="nav__label">Buildings</span></a>
+      <a class="nav__item" href="#/l/tenants" aria-current="page"><i data-lucide="users"></i><span class="nav__label">Tenants</span></a>
+      <a class="nav__item" href="#/l/billing"><i data-lucide="receipt-text"></i><span class="nav__label">Billing</span><span class="nav__count" aria-label="7 waiting">7</span></a>
+      <a class="nav__item" href="#/l/payments"><i data-lucide="wallet"></i><span class="nav__label">Payments</span><span class="nav__count" aria-label="3 waiting">3</span></a>
+      <a class="nav__item" href="#/l/maintenance"><i data-lucide="wrench"></i><span class="nav__label">Maintenance</span><span class="nav__count" aria-label="5 waiting">5</span></a>
+      <a class="nav__item" href="#/l/notices"><i data-lucide="megaphone"></i><span class="nav__label">Notices</span></a>
+      <span class="eyebrow nav__group">Organisation</span>
+      <a class="nav__item" href="#/l/team"><i data-lucide="user-cog"></i><span class="nav__label">Team</span></a>
+      <a class="nav__item" href="#/l/reports"><i data-lucide="file-chart-column"></i><span class="nav__label">Reports</span></a>
+      <a class="nav__item" href="#/l/settings"><i data-lucide="settings"></i><span class="nav__label">Settings</span></a>
+    </nav>
+    <div class="sidebar__foot">
+      <a class="nav__item" href="#/account"><span class="avatar avatar--sm">FC</span><span class="nav__label">Farhana Chowdhury</span></a>
+      <a class="nav__item" href="#shortcuts"><i data-lucide="keyboard"></i><span class="nav__label">Shortcuts</span><span class="kbd">?</span></a>
+    </div>
+  </aside>
+  <div class="main">
+    <header class="topbar">
+      <nav class="topbar__crumbs" aria-label="Breadcrumb"><a href="#">Buildings</a><i data-lucide="chevron-right" class="i-sm"></i><a href="#">Shanti Neer</a><i data-lucide="chevron-right" class="i-sm"></i><a href="#">2B</a><i data-lucide="chevron-right" class="i-sm"></i><span aria-current="page">New lease</span></nav>
+      <div class="topbar__actions"><label class="search"><i data-lucide="search" class="i-sm"></i><span class="grow">Search tenants, units, TrxID</span><span class="kbd">/</span></label><span class="bell"><a class="icon-btn" href="#notifications" aria-label="Notifications, 3 unread"><i data-lucide="bell"></i></a><span class="bell__count" aria-hidden="true">3</span></span></div>
+    </header>
+<div class="page">
+  <div class="wizard">
+    <section class="page-head">
+      <div class="page-head__text">
+        <p class="eyebrow">New lease · Shanti Neer, unit 2B</p>
+        <h1 class="t-title">Check everything, then send the invite</h1>
+      </div>
+    </section>
+
+    <ol class="stepper" aria-label="Steps">
+      <li class="stepper__step" data-state="done"><span class="stepper__bar"></span><span class="stepper__label"><i data-lucide="circle-check" class="i-sm"></i>1 · Tenant</span></li>
+      <li class="stepper__step" data-state="done"><span class="stepper__bar"></span><span class="stepper__label"><i data-lucide="circle-check" class="i-sm"></i>2 · Terms</span></li>
+      <li class="stepper__step" data-state="current" aria-current="step"><span class="stepper__bar"></span><span class="stepper__label">3 · Review and invite</span></li>
+    </ol>
+
+    <div class="review">
+      <div class="stack">
+        <section class="card" aria-labelledby="t-h">
+          <div class="card__head"><h2 class="card__title" id="t-h">Tenant</h2><a class="btn btn--ghost" href="#step-1"><i data-lucide="pencil"></i>Edit</a></div>
+          <dl class="dl">
+            <div class="dl__row"><dt>Name</dt><dd>Sadia Islam</dd></div>
+            <div class="dl__row"><dt>Email</dt><dd>sadia.islam@gmail.com</dd></div>
+            <div class="dl__row"><dt>Household</dt><dd class="num">3 people</dd></div>
+          </dl>
+        </section>
+        <section class="card" aria-labelledby="tm-h">
+          <div class="card__head"><h2 class="card__title" id="tm-h">Terms</h2><a class="btn btn--ghost" href="#step-2"><i data-lucide="pencil"></i>Edit</a></div>
+          <dl class="dl">
+            <div class="dl__row"><dt>Moves in</dt><dd class="num">18 Nov 2026</dd></div>
+            <div class="dl__row"><dt>Monthly rent</dt><dd class="num">৳12,000</dd></div>
+            <div class="dl__row"><dt>Charges</dt><dd class="num">Service ৳1,500 · Gas ৳1,080 · Water ৳500</dd></div>
+            <div class="dl__row"><dt>Electricity</dt><dd>Sub-meter · ৳9.00 / unit · move-in reading <span class="mono">2,416</span></dd></div>
+            <div class="dl__row"><dt>Deposit</dt><dd class="num">৳24,000 · record it when received</dd></div>
+          </dl>
+        </section>
+        <div class="banner banner--info" role="note"><i data-lucide="mail"></i><div class="banner__body"><span class="banner__title">Sadia gets an email invite, valid for 7 days</span><span>The lease shows "Invite pending" until she accepts. Unit 2B is held for her; nobody else can be added.</span></div></div>
+      </div>
+
+      <section class="card" aria-labelledby="fb-h">
+        <div class="card__head"><h2 class="card__title" id="fb-h">First bill preview</h2><span class="badge badge--neutral"><i data-lucide="pencil-line"></i>Draft</span></div>
+        <p class="t-sm secondary">November 2026 · 18–30 Nov = <b>13 of 30 days</b>. Created on 18 Nov when the lease starts.</p>
+        <div class="ledger">
+          <div class="ledger__row"><span class="ledger__label">Rent</span><span class="ledger__leader"></span><span class="ledger__amount">৳5,200</span><span class="ledger__explain">৳12,000 × 13/30</span></div>
+          <div class="ledger__row"><span class="ledger__label">Service charge</span><span class="ledger__leader"></span><span class="ledger__amount">৳650</span><span class="ledger__explain">৳1,500 × 13/30</span></div>
+          <div class="ledger__row"><span class="ledger__label">Gas (double burner)</span><span class="ledger__leader"></span><span class="ledger__amount">৳468</span><span class="ledger__explain">৳1,080 × 13/30</span></div>
+          <div class="ledger__row"><span class="ledger__label">Water</span><span class="ledger__leader"></span><span class="ledger__amount">৳217</span><span class="ledger__explain">৳500 × 13/30 = ৳216.67, rounded to the nearest taka</span></div>
+          <div class="ledger__row"><span class="ledger__label">Electricity</span><span class="ledger__leader"></span><span class="ledger__amount muted">—</span><span class="ledger__explain">Starts on the December bill, from reading 2,416</span></div>
+          <div class="ledger__total"><span class="ledger__total-label">First bill</span><span class="ledger__total-amount">৳6,535</span></div>
+        </div>
+        <p class="t-sm muted">From December: ৳15,080 a month plus electricity.</p>
+      </section>
+    </div>
+
+    <div class="review__actions">
+      <a class="btn btn--secondary" href="#step-2"><i data-lucide="arrow-left"></i>Back to terms</a>
+      <button class="btn btn--primary btn--lg" type="submit"><i data-lucide="send"></i>Create lease and invite Sadia</button>
+    </div>
+  </div>
+</div>
+
+  </div>
+</div>
+</body>
+</html>

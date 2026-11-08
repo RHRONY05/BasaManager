@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>M09 · Lease detail — overview — BasaManager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../ui.css">
+<script src="https://unpkg.com/lucide@1.70.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+<style>
+  /* layout only — tokens only */
+  .tabs-m { margin: 0 calc(var(--space-4) * -1); padding: 0 var(--space-4); }
+  .doc { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
+  .doc__icon { display: grid; place-items: center; width: var(--size-tap); height: var(--size-tap); border-radius: var(--radius-md); background: var(--bg-muted); color: var(--fg-secondary); flex-shrink: 0; }
+</style>
+</head>
+<body>
+<div class="frame-m">
+<header class="m-topbar m-topbar--back"><a class="icon-btn" href="#back" aria-label="Back"><i data-lucide="arrow-left"></i></a><h1 class="m-topbar__title" title="Nusrat Jahan · 4A">Nusrat Jahan · 4A</h1><span class="bell"><a class="icon-btn" href="#notifications" aria-label="Notifications, 3 unread"><i data-lucide="bell"></i></a><span class="bell__count" aria-hidden="true">3</span></span></header>
+<main class="m-main">
+<section class="stack-sm" aria-label="Lease">
+  <div class="row"><span class="badge badge--success"><i data-lucide="house"></i>Active</span><span class="t-sm secondary">since 1 Mar 2025</span></div>
+  <p class="t-sm secondary">Shanti Neer 4A · <span class="wrap" data-user>nusrat.jahan@gmail.com</span></p>
+</section>
+<div class="btn-stack">
+  <button class="btn btn--primary btn--block" type="button"><i data-lucide="plus"></i>Record payment</button>
+  <div class="btn-row"><button class="btn btn--secondary grow" type="button">Give notice</button><button class="btn btn--danger-ghost grow" type="button">End lease</button></div>
+</div>
+
+<div class="tabs tabs-m" role="tablist" aria-label="Lease sections" data-scroll-x data-proto="tabs">
+  <button class="tab" role="tab" aria-selected="true" type="button">Overview</button>
+  <button class="tab" role="tab" aria-selected="false" type="button">Bills</button>
+  <button class="tab" role="tab" aria-selected="false" type="button">Payments</button>
+  <button class="tab" role="tab" aria-selected="false" type="button">Documents</button>
+  <button class="tab" role="tab" aria-selected="false" type="button">Requests</button>
+  <button class="tab" role="tab" aria-selected="false" type="button">History</button>
+</div>
+
+<section class="list" aria-label="Money on this lease">
+  <div class="list-row"><span class="list-row__main"><span class="list-row__title">Dues</span><span class="list-row__meta">November bill · due 10 Nov</span></span><span class="amount t-lg">৳7,475</span></div>
+  <div class="list-row"><span class="list-row__main"><span class="list-row__title">Deposit held</span><span class="list-row__meta">Received 1 Mar 2025 · cash</span></span><span class="amount t-lg">৳24,000</span></div>
+  <div class="list-row"><span class="list-row__main"><span class="list-row__title">Credit</span><span class="list-row__meta">Used on the next bill</span></span><span class="amount t-lg">৳0</span></div>
+</section>
+
+<section class="stack-sm" aria-labelledby="b-h">
+  <div class="section-head"><h2 id="b-h">Recent bills</h2><a class="btn btn--link" href="#bills" data-button>All 21</a></div>
+  <div class="list">
+    <a class="list-row" href="#/l/bills/nov"><span class="list-row__main"><span class="list-row__title">November 2026</span><span class="list-row__meta num">৳16,475 · paid ৳9,000</span></span><span class="list-row__end"><span class="num t-strong">৳7,475</span><span class="badge badge--warning"><i data-lucide="circle-dashed"></i>Part paid</span></span></a>
+    <a class="list-row" href="#/l/bills/oct"><span class="list-row__main"><span class="list-row__title">October 2026</span><span class="list-row__meta num">৳16,250</span></span><span class="list-row__end"><span class="badge badge--success"><i data-lucide="circle-check"></i>Paid</span></span></a>
+  </div>
+</section>
+
+<section class="card card--tight" aria-labelledby="d-h">
+  <div class="card__head"><h2 class="t-strong" id="d-h">Documents</h2><button class="btn btn--secondary" type="button"><i data-lucide="upload"></i>Upload</button></div>
+  <p class="t-xs muted row"><i data-lucide="lock" class="i-sm"></i>Private · links work for 5 minutes</p>
+  <div class="doc"><span class="doc__icon"><i data-lucide="id-card"></i></span><div class="grow stack-sm"><span class="t-strong">NID — front and back</span><span class="t-xs muted">2 photos · 1 Mar 2025</span></div><button class="icon-btn" type="button" aria-label="View NID"><i data-lucide="eye"></i></button></div>
+  <div class="doc"><span class="doc__icon"><i data-lucide="file-text"></i></span><div class="grow stack-sm"><span class="t-strong">Rental agreement</span><span class="t-xs muted">PDF · 1.2 MB</span></div><button class="icon-btn" type="button" aria-label="Download rental agreement"><i data-lucide="download"></i></button></div>
+</section>
+
+</main>
+<nav class="bottom-nav" data-bottom-nav aria-label="Main">
+  <a class="bottom-nav__item" href="#home"><span class="bottom-nav__icon"><i data-lucide="house"></i></span><span class="bottom-nav__label">Home</span></a>
+  <a class="bottom-nav__item" href="#billing"><span class="bottom-nav__icon"><i data-lucide="receipt-text"></i></span><span class="bottom-nav__label">Billing</span></a>
+  <a class="bottom-nav__item" href="#payments"><span class="bottom-nav__icon"><i data-lucide="wallet"></i></span><span class="bottom-nav__label">Payments</span></a>
+  <a class="bottom-nav__item" href="#requests"><span class="bottom-nav__icon"><i data-lucide="wrench"></i></span><span class="bottom-nav__label">Requests</span></a>
+  <a class="bottom-nav__item" href="#more" aria-current="page"><span class="bottom-nav__icon"><i data-lucide="menu"></i></span><span class="bottom-nav__label">More</span></a>
+</nav>
+</div>
+</body>
+</html>
