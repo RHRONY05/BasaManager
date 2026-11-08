@@ -4,7 +4,7 @@ name: deploy
 # (used once to prove the automatic rollback).
 on:
   push:
-    branches: [main, feat/V3-infra] # TEMPORARY (drill)
+    branches: [main]
     tags: ['v*']
   workflow_dispatch:
     inputs:
@@ -43,7 +43,7 @@ jobs:
       - id: m
         run: |
           # Only main (staging) and v* tags (production) may deploy. Other branches never reach the secrets.
-          if [[ "${GITHUB_REF}" != "refs/heads/feat/V3-infra" && "${GITHUB_REF}" != "refs/heads/main" && "${GITHUB_REF}" != refs/tags/v* ]]; then
+          if [[ "${GITHUB_REF}" != "refs/heads/main" && "${GITHUB_REF}" != refs/tags/v* ]]; then
             echo "::error::Deploys run only from main or a v* tag (this is ${GITHUB_REF})."; exit 1
           fi
           echo "sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
@@ -227,7 +227,7 @@ jobs:
         id: deploy
         if: ${{ !inputs.env_only }}
         env:
-          FAIL_DEPLOY: ${{ contains(github.event.head_commit.message, '[drill-fail-deploy]') && '--fail-before-up' || '' }}
+          FAIL_DEPLOY: ${{ needs.meta.outputs.target == 'staging' && inputs.fail_deploy_step && '--fail-before-up' || '' }}
         run: ssh vm "/opt/basamanager/releases/$SHA/infra/scripts/deploy.sh $TARGET $SHA $FAIL_DEPLOY"
 
       - name: Smoke test
@@ -237,7 +237,7 @@ jobs:
           SMOKE_EXPECT_SHA: ${{ needs.meta.outputs.sha }}
           SMOKE_EXPECT_ENV: ${{ needs.meta.outputs.app_env }}
           SMOKE_DOCS_URL: ${{ needs.meta.outputs.target == 'staging' && 'https://docs.basamanager.rhrony05.me' || '' }}
-          SMOKE_FORCE_FAIL: ${{ contains(github.event.head_commit.message, '[force-smoke-fail]') && '1' || '0' }}
+          SMOKE_FORCE_FAIL: ${{ needs.meta.outputs.target == 'staging' && inputs.force_smoke_fail && '1' || '0' }}
         run: node tests/smoke.ts "$URL"
 
       - name: Roll back to the previous version
