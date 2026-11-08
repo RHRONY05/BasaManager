@@ -81,6 +81,9 @@ if (!args.includes('--no-audit')) {
         const full = await page.evaluate(() => document.documentElement.scrollHeight);
         if (full > 844) { await page.setViewportSize({ width: w, height: full }); await page.waitForTimeout(100); }
         const v = await auditLayout(page);
+        // icons the Lucide UMD build could not render (unknown name) stay as empty <i data-lucide>
+        for (const n of await page.evaluate(() => [...document.querySelectorAll('i[data-lucide]')].map((i) => i.getAttribute('data-lucide'))))
+          v.push({ rule: 'icon-not-rendered', selector: `i[data-lucide=${n}]`, detail: 'unknown in lucide UMD' });
         const base = `${path.basename(s.file, '.html')}.${w}.${theme}`;
         if (theme === 'light' && w !== 390) await page.screenshot({ path: path.join(auditDir, base + '.png'), fullPage: true });
         auditRows.push({ file: s.file, w, theme, violations: v, height: full });
@@ -95,6 +98,8 @@ if (!args.includes('--no-audit')) {
     await page.goto(pathToFileURL(path.join(designDir, s.file)).href + '?theme=light', { waitUntil: 'networkidle' }).catch(() => {});
     await page.evaluate(() => document.fonts.ready);
     const v = await auditLayout(page);
+    for (const n of await page.evaluate(() => [...document.querySelectorAll('i[data-lucide]')].map((i) => i.getAttribute('data-lucide'))))
+      v.push({ rule: 'icon-not-rendered', selector: `i[data-lucide=${n}]`, detail: 'unknown in lucide UMD' });
     const full = await page.evaluate(() => document.documentElement.scrollHeight);
     auditRows.push({ file: s.file, w: s.w, theme: 'light', violations: v, height: full });
     await ctx.close();

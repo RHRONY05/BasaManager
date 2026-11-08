@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>D12 · Bill detail (landlord) — BasaManager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../ui.css">
+<script src="https://unpkg.com/lucide@1.70.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+<style>
+  /* layout only — tokens only */
+  .bill { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: var(--space-6); align-items: start; }
+  .adj { display: grid; gap: var(--space-1); }
+  .claim-note { display: flex; gap: var(--space-3); align-items: flex-start; }
+</style>
+</head>
+<body>
+<div class="frame-d app">
+  <aside class="sidebar" aria-label="Sidebar">
+    <div class="sidebar__brand"><a class="brand" href="#/"><svg class="brand__mark" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15 16 6l10 9"/><path d="M9 13v9h14v-9"/><path d="M13.5 22v-5h5v5"/><path d="M5 26h22M5 29.5h22" stroke-width="1.6"/></svg>BasaManager</a><button class="icon-btn" type="button" aria-label="Collapse sidebar"><i data-lucide="panel-left-close"></i></button></div>
+    <button class="org-switch" type="button" data-allow-wrap title="Chowdhury Properties · Landlord" aria-label="Switch organisation, current Chowdhury Properties">
+      <span class="org-switch__text"><span class="org-switch__name">Chowdhury Properties</span><span class="org-switch__role">Landlord</span></span><i data-lucide="chevrons-up-down" class="i-sm"></i>
+    </button>
+    <nav class="nav" aria-label="Main">
+      <a class="nav__item" href="#/l"><i data-lucide="layout-dashboard"></i><span class="nav__label">Dashboard</span></a>
+      <a class="nav__item" href="#/l/buildings"><i data-lucide="building-2"></i><span class="nav__label">Buildings</span></a>
+      <a class="nav__item" href="#/l/tenants"><i data-lucide="users"></i><span class="nav__label">Tenants</span></a>
+      <a class="nav__item" href="#/l/billing" aria-current="page"><i data-lucide="receipt-text"></i><span class="nav__label">Billing</span><span class="nav__count" aria-label="7 waiting">7</span></a>
+      <a class="nav__item" href="#/l/payments"><i data-lucide="wallet"></i><span class="nav__label">Payments</span><span class="nav__count" aria-label="3 waiting">3</span></a>
+      <a class="nav__item" href="#/l/maintenance"><i data-lucide="wrench"></i><span class="nav__label">Maintenance</span><span class="nav__count" aria-label="5 waiting">5</span></a>
+      <a class="nav__item" href="#/l/notices"><i data-lucide="megaphone"></i><span class="nav__label">Notices</span></a>
+      <span class="eyebrow nav__group">Organisation</span>
+      <a class="nav__item" href="#/l/team"><i data-lucide="user-cog"></i><span class="nav__label">Team</span></a>
+      <a class="nav__item" href="#/l/reports"><i data-lucide="file-chart-column"></i><span class="nav__label">Reports</span></a>
+      <a class="nav__item" href="#/l/settings"><i data-lucide="settings"></i><span class="nav__label">Settings</span></a>
+    </nav>
+    <div class="sidebar__foot">
+      <a class="nav__item" href="#/account"><span class="avatar avatar--sm">FC</span><span class="nav__label">Farhana Chowdhury</span></a>
+      <a class="nav__item" href="#shortcuts"><i data-lucide="keyboard"></i><span class="nav__label">Shortcuts</span><span class="kbd">?</span></a>
+    </div>
+  </aside>
+  <div class="main">
+    <header class="topbar">
+      <nav class="topbar__crumbs" aria-label="Breadcrumb"><a href="#">Billing</a><i data-lucide="chevron-right" class="i-sm"></i><a href="#">Shanti Neer 3B</a><i data-lucide="chevron-right" class="i-sm"></i><span aria-current="page">November 2026</span></nav>
+      <div class="topbar__actions"><label class="search"><i data-lucide="search" class="i-sm"></i><span class="grow">Search tenants, units, TrxID</span><span class="kbd">/</span></label><span class="bell"><a class="icon-btn" href="#notifications" aria-label="Notifications, 3 unread"><i data-lucide="bell"></i></a><span class="bell__count" aria-hidden="true">3</span></span></div>
+    </header>
+<div class="page">
+  <section class="page-head">
+    <div class="page-head__text">
+      <p class="eyebrow">Bill · Shanti Neer 3B · Imran Hossain</p>
+      <h1 class="t-title">November 2026</h1>
+      <div class="row"><span class="badge badge--info"><i data-lucide="send"></i>Issued</span><span class="t-sm secondary">Issued 1 Nov · due 10 Nov 2026 · lines are locked</span></div>
+    </div>
+    <div class="page-head__actions">
+      <button class="btn btn--danger-ghost" type="button"><i data-lucide="ban"></i>Void bill</button>
+      <button class="btn btn--secondary" type="button"><i data-lucide="diff"></i>Add adjustment</button>
+      <button class="btn btn--primary" type="button"><i data-lucide="plus"></i>Record payment</button>
+    </div>
+  </section>
+
+  <div class="bill">
+    <div class="stack-lg">
+      <section class="card" aria-labelledby="l-h">
+        <div class="card__head"><h2 class="card__title" id="l-h">Lines</h2><span class="t-xs muted">What Imran sees, line for line</span></div>
+        <div class="ledger">
+          <div class="ledger__row"><span class="ledger__label">Rent</span><span class="ledger__leader"></span><span class="ledger__amount">৳12,000</span><span class="ledger__explain">Unit 3B, 1–30 Nov</span></div>
+          <div class="ledger__row"><span class="ledger__label">Service charge</span><span class="ledger__leader"></span><span class="ledger__amount">৳1,500</span></div>
+          <div class="ledger__row"><span class="ledger__label">Gas (double burner)</span><span class="ledger__leader"></span><span class="ledger__amount">৳1,080</span></div>
+          <div class="ledger__row"><span class="ledger__label">Water</span><span class="ledger__leader"></span><span class="ledger__amount">৳500</span></div>
+          <div class="ledger__row"><span class="ledger__label">Electricity</span><span class="ledger__leader"></span><span class="ledger__amount">৳1,584</span><span class="ledger__explain">2,851 → 3,027 = 176 units × ৳9.00 · read 1 Nov by Jamal Uddin</span></div>
+          <div class="ledger__row"><span class="ledger__label">Discount</span><span class="ledger__leader"></span><span class="ledger__amount ledger__amount--neg">−৳1,000</span><span class="ledger__explain">“Tenant repaired the bathroom door himself, receipt seen” · Farhana Chowdhury, 1 Nov</span></div>
+          <div class="ledger__total"><span class="ledger__total-label">Total</span><span class="ledger__total-amount">৳15,664</span></div>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="tl-h">
+        <h2 class="card__title" id="tl-h">What happened</h2>
+        <div class="timeline">
+          <div class="tl-item"><span class="tl-dot"><i data-lucide="pencil-line"></i></span><div class="tl-body"><span class="tl-title">Draft created by the monthly job</span><span class="tl-meta">1 Nov, 12:05 AM · needed a reading</span></div></div>
+          <div class="tl-item"><span class="tl-dot"><i data-lucide="gauge"></i></span><div class="tl-body"><span class="tl-title">Reading 3,027 entered</span><span class="tl-meta">1 Nov, 9:40 AM · Jamal Uddin</span></div></div>
+          <div class="tl-item"><span class="tl-dot"><i data-lucide="diff"></i></span><div class="tl-body"><span class="tl-title">Discount −৳1,000 added</span><span class="tl-meta">1 Nov, 10:05 AM · Farhana Chowdhury</span></div></div>
+          <div class="tl-item"><span class="tl-dot tl-dot--accent"><i data-lucide="send"></i></span><div class="tl-body"><span class="tl-title">Issued and sent to Imran (in-app, email, push)</span><span class="tl-meta">1 Nov, 10:12 AM · Farhana Chowdhury</span></div></div>
+          <div class="tl-item"><span class="tl-dot tl-dot--warning"><i data-lucide="hourglass"></i></span><div class="tl-body"><span class="tl-title">Payment claim ৳8,000 by Nagad</span><span class="tl-meta">6 Nov, 8:31 PM · Imran Hossain · waiting for you</span></div></div>
+        </div>
+      </section>
+    </div>
+
+    <aside class="stack" aria-label="Payment status">
+      <section class="card" aria-labelledby="s-h">
+        <h2 class="card__title" id="s-h">Balance</h2>
+        <div class="ledger ledger--sm">
+          <div class="ledger__row"><span class="ledger__label">Total</span><span class="ledger__leader"></span><span class="ledger__amount">৳15,664</span></div>
+          <div class="ledger__row"><span class="ledger__label">Confirmed payments</span><span class="ledger__leader"></span><span class="ledger__amount">৳0</span></div>
+          <div class="ledger__total"><span class="ledger__total-label">Balance</span><span class="ledger__total-amount">৳15,664</span></div>
+        </div>
+      </section>
+      <section class="card card--tight" aria-labelledby="c-h">
+        <div class="claim-note"><span class="badge badge--warning"><i data-lucide="hourglass"></i>Pending</span><div class="stack-sm grow"><h2 class="t-strong" id="c-h">Claim ৳8,000 · Nagad</h2><span class="t-sm secondary">TrxID <span class="mono">73KD9PLW2M</span> · paid 6 Nov. Not counted until you confirm it.</span></div></div>
+        <a class="btn btn--secondary" href="#/l/payments?claim=2">Review claim</a>
+      </section>
+      <section class="card card--tight" aria-labelledby="f-h">
+        <h2 class="t-strong" id="f-h">Late fee</h2>
+        <p class="t-sm secondary">If anything is unpaid after <b>12 Nov</b> (due date + 2 grace days), 5% of the unpaid amount is added once. Today that would be <span class="num t-strong">৳783</span>.</p>
+        <p class="t-xs muted">You can waive it later with a reason.</p>
+      </section>
+    </aside>
+  </div>
+</div>
+
+  </div>
+</div>
+</body>
+</html>

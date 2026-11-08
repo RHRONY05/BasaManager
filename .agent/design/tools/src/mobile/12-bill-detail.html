@@ -1,0 +1,33 @@
+<!--meta {"title": "M12 · Bill detail (landlord)", "shell": "staff-m", "active": "billing", "topbar": "3B · November 2026", "back": true, "bell": "3"} -->
+<section class="stack-sm" aria-label="Bill">
+  <p class="eyebrow">Shanti Neer 3B · Imran Hossain</p>
+  <div class="row-between"><span class="amount amount--xl">৳15,664</span><span class="badge badge--info"><i data-lucide="send"></i>Issued</span></div>
+  <p class="t-sm secondary">Issued 1 Nov · due 10 Nov · nothing confirmed yet</p>
+</section>
+
+<section class="card card--tight claim" aria-labelledby="c-h">
+  <div class="row"><span class="badge badge--warning"><i data-lucide="hourglass"></i>Claim</span><h2 class="t-strong" id="c-h">৳8,000 by Nagad</h2></div>
+  <p class="t-sm secondary">TrxID <span class="mono">73KD9PLW2M</span> · 6 Nov. Not counted until confirmed.</p>
+  <a class="btn btn--secondary btn--block" href="#/l/payments?claim=2" data-button>Review claim</a>
+</section>
+
+<section class="card" aria-labelledby="l-h">
+  <h2 class="card__title" id="l-h">Lines</h2>
+  <div class="ledger ledger--sm">
+    <div class="ledger__row"><span class="ledger__label">Rent</span><span class="ledger__leader"></span><span class="ledger__amount">৳12,000</span></div>
+    <div class="ledger__row"><span class="ledger__label">Service charge</span><span class="ledger__leader"></span><span class="ledger__amount">৳1,500</span></div>
+    <div class="ledger__row"><span class="ledger__label">Gas</span><span class="ledger__leader"></span><span class="ledger__amount">৳1,080</span></div>
+    <div class="ledger__row"><span class="ledger__label">Water</span><span class="ledger__leader"></span><span class="ledger__amount">৳500</span></div>
+    <div class="ledger__row"><span class="ledger__label">Electricity</span><span class="ledger__leader"></span><span class="ledger__amount">৳1,584</span><span class="ledger__explain">2,851 → 3,027 = 176 units × ৳9.00</span></div>
+    <div class="ledger__row"><span class="ledger__label">Discount</span><span class="ledger__leader"></span><span class="ledger__amount ledger__amount--neg">−৳1,000</span><span class="ledger__explain">“Tenant repaired the bathroom door himself” · Farhana, 1 Nov</span></div>
+    <div class="ledger__total"><span class="ledger__total-label">Total</span><span class="ledger__total-amount">৳15,664</span></div>
+  </div>
+</section>
+
+<p class="t-sm secondary">5% late fee is added once if anything is unpaid after 12 Nov (today: ৳783).</p>
+
+<div class="btn-stack">
+  <button class="btn btn--primary btn--block" type="button"><i data-lucide="plus"></i>Record payment</button>
+  <button class="btn btn--secondary btn--block" type="button"><i data-lucide="diff"></i>Add adjustment</button>
+  <button class="btn btn--danger-ghost btn--block" type="button"><i data-lucide="ban"></i>Void bill</button>
+</div>
