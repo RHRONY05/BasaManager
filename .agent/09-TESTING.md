@@ -80,7 +80,7 @@ Coverage thresholds (CI fails below): `packages/domain` **95%** lines and branch
 ## Speed checks in CI
 - **Query count:** `tests/helpers/queryCounter.ts` counts Prisma queries per request (added in V4 with the first models; decided 2026-11-08) (Prisma `$on('query')`); every
   list endpoint has a test asserting a fixed count for 5 vs 50 items (no N+1). Integration runs log any request > 200 ms.
-- **Bundle size:** `size-limit` (dev dep) in `lint`: initial JS ≤ 200 KB gzip, each route chunk ≤ 100 KB gzip.
+- **Bundle size:** `size-limit` (dev dep) in `lint`: initial JS ≤ 200 KB brotli (size-limit default), each route chunk ≤ 100 KB brotli (size-limit default).
 
 ## Load (k6, against staging, V16)
 50 virtual users for 5 min mixing tenant home, bill detail, landlord dashboard, list pages; 5 rps payment-claim
