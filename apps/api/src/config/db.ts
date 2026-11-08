@@ -56,15 +56,25 @@ export type TxOptions = {
   isolationLevel?: Prisma.TransactionIsolationLevel;
 };
 
-/** Thrown when an org-owned model is queried outside `db.$tx` (a bug: there is no tenant context). */
+/**
+ * Thrown when an org-owned model is queried outside `db.$tx` (a bug: there is no tenant context), either
+ * directly or through a nested `include` / `select` / `where` / `data` of a non-tenant model
+ * (`relation` names the path, e.g. `memberships` in `db.user.findMany({ include: { memberships: true } })`).
+ */
 export class TenantContextMissing extends Error {
   readonly model: string;
   readonly operation: string;
-  constructor(model: string, operation: string) {
-    super(`${model}.${operation} needs a tenant context: run it inside db.$tx(ctx, fn)`);
+  readonly relation: string | undefined;
+  constructor(model: string, operation: string, relation?: string) {
+    super(
+      relation
+        ? `${model}.${operation} reaches the tenant relation ${relation}: run it inside db.$tx(ctx, fn)`
+        : `${model}.${operation} needs a tenant context: run it inside db.$tx(ctx, fn)`,
+    );
     this.name = 'TenantContextMissing';
     this.model = model;
     this.operation = operation;
+    this.relation = relation;
   }
 }
 
@@ -84,22 +94,101 @@ export const TENANT_MODELS: ReadonlySet<string> = new Set(
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/** Per model: relation field name → target model, and the set of scalar/enum field names. */
+type ModelShape = { relations: ReadonlyMap<string, string>; scalars: ReadonlySet<string> };
+type DataModel = {
+  models: Record<string, { fields: readonly { name: string; kind: string; type: string }[] }>;
+};
+
+/**
+ * The relation map, read from the generated client's runtime data model. Prisma 7's `prisma-client`
+ * generator exports no `Prisma.dmmf`; the same data lives on the client as `_runtimeDataModel` (declared in
+ * `@prisma/client/runtime`, not on the `PrismaClient` interface, hence the cast). Fails fast if Prisma ever
+ * drops it, rather than silently guarding nothing.
+ */
+function modelShapes(base: PrismaClient): ReadonlyMap<string, ModelShape> {
+  const dm = (base as unknown as { _runtimeDataModel?: DataModel })._runtimeDataModel;
+  if (!dm?.models || Object.keys(dm.models).length === 0)
+    throw new Error('Prisma runtime data model not found: the nested tenant guard cannot be built');
+  const shapes = new Map<string, ModelShape>();
+  for (const [name, m] of Object.entries(dm.models)) {
+    const relations = new Map<string, string>();
+    const scalars = new Set<string>();
+    for (const f of m.fields) {
+      if (f.kind === 'object') relations.set(f.name, f.type);
+      else scalars.add(f.name);
+    }
+    shapes.set(name, { relations, scalars });
+  }
+  return shapes;
+}
+
+const isPlainObject = (v: unknown): v is Record<string, unknown> => {
+  if (v === null || typeof v !== 'object') return false;
+  const proto = Object.getPrototypeOf(v) as unknown;
+  return proto === Object.prototype || proto === null;
+};
+
+/**
+ * The first tenant relation that `args` of `model` reaches (as a dotted path), or undefined. Walks every
+ * nested `include` / `select` / `_count` / `where` (relation filters) / `orderBy` / `data` (nested writes):
+ * a key that is a relation field switches to its target model (tenant target → found); a scalar field's
+ * value is skipped (so JSON values can't be mistaken for relations); any other key is an operator
+ * (`select`, `some`, `AND`, `create`, …) and is walked with the same model.
+ */
+function tenantRelationIn(
+  shapes: ReadonlyMap<string, ModelShape>,
+  model: string,
+  args: unknown,
+  path = '',
+): string | undefined {
+  if (Array.isArray(args)) {
+    for (const item of args) {
+      const hit = tenantRelationIn(shapes, model, item, path);
+      if (hit) return hit;
+    }
+    return undefined;
+  }
+  if (!isPlainObject(args)) return undefined;
+  const shape = shapes.get(model);
+  if (!shape) return undefined;
+  for (const [key, value] of Object.entries(args)) {
+    if (value === undefined || value === false) continue;
+    const target = shape.relations.get(key);
+    if (target) {
+      const here = path ? `${path}.${key}` : key;
+      if (TENANT_MODELS.has(target)) return here;
+      const hit = tenantRelationIn(shapes, target, value, here);
+      if (hit) return hit;
+    } else if (!shape.scalars.has(key)) {
+      const hit = tenantRelationIn(shapes, model, value, path);
+      if (hit) return hit;
+    }
+  }
+  return undefined;
+}
+
 /**
  * Adds `db.$tx(ctx, fn)` and makes tenant models unusable outside it.
  *
  * `$tx` opens an interactive transaction on the *base* client whose first statement sets the four
  * `app.*` settings with `is_local = true` (they end with the transaction, so nothing leaks to the next
  * user of the pooled connection), then runs `fn(tx)`. The guarded client (`db.building…`, also
- * `db.$transaction`) throws `TenantContextMissing` for every tenant model; non-tenant models (users,
- * sessions, …) and raw queries work outside `$tx` (raw SQL on org tables then simply sees no rows).
+ * `db.$transaction`) throws `TenantContextMissing` for every tenant model, and for a non-tenant model
+ * whose arguments reach a tenant relation (`db.user.findMany({ include: { memberships: true } })` would
+ * otherwise silently return `memberships: []` under RLS). Non-tenant models (users, sessions, …) and raw
+ * queries work outside `$tx` (raw SQL on org tables then simply sees no rows).
  */
 function withTenantExtension(base: PrismaClient) {
+  const shapes = modelShapes(base);
   return base.$extends({
     name: 'tenant',
     query: {
       $allModels: {
         async $allOperations({ model, operation, args, query }) {
           if (TENANT_MODELS.has(model)) throw new TenantContextMissing(model, operation);
+          const relation = tenantRelationIn(shapes, model, args);
+          if (relation) throw new TenantContextMissing(model, operation, relation);
           return query(args);
         },
       },

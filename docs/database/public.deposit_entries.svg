@@ -147,9 +147,9 @@
 </g>
 <!-- public.deposit_entries&#45;&gt;public.leases -->
 <g id="edge2" class="edge">
-<title>public.deposit_entries:lease_id&#45;&gt;public.leases:id</title>
-<path fill="none" stroke="black" d="M1326.73,-905.87C1407.21,-877.96 1450.66,-520.6 1367.32,-520.6"/>
-<polygon fill="black" stroke="black" points="1326.92,-905.84 1316.3,-903.11 1321.66,-906.75 1317.39,-907.49 1317.39,-907.49 1317.39,-907.49 1321.66,-906.75 1317.83,-911.98 1326.92,-905.84"/>
+<title>public.deposit_entries:org_id&#45;&gt;public.leases:org_id</title>
+<path fill="none" stroke="black" d="M1325.83,-933.67C1372.65,-885.72 1414.44,-489.8 1367.32,-489.8"/>
+<polygon fill="black" stroke="black" points="1325.9,-933.63 1314.95,-934.25 1321.17,-936.09 1317.33,-938.09 1317.33,-938.09 1317.33,-938.09 1321.17,-936.09 1319.11,-942.24 1325.9,-933.63"/>
 </g>
 <!-- public.users -->
 <g id="node4" class="node">

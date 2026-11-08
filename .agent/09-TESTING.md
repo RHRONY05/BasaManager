@@ -39,9 +39,10 @@ Coverage thresholds (CI fails below): `packages/domain` **95%** lines and branch
 - `env.ts` refuses `PAYMENTS_MOCK=true`, `CLOCK_OVERRIDE` or test routes when `APP_ENV` is staging/prod.
 
 ## Integration tests (minimum, beyond each route's happy path)
-- **RLS:** `rls.int.test.ts` (every org table has RLS + force + policy); for each module, landlord B reading/
-  updating org A ids → 404; a raw query with org A context can't see org B rows.
-- **Roles:** caretaker can't see documents (API 404 and SQL returns 0 rows), can't act on unassigned
+- **RLS:** `rls.int.test.ts` (every org table has RLS + force + policy; every org → org FK is composite on
+  `org_id`); for each module, landlord B reading/updating org A ids → 404; a raw query with org A context can't
+  see org B rows; an org A row pointing at an org B row fails with 23503.
+- **Roles:** caretaker can't see documents nor their `files` rows (API 404 and SQL returns 0 rows), can't act on unassigned
   buildings, can't issue/void/waive; tenant can't read another tenant's bill/lease/request in the same org.
 - **Auth:** signup → verify → login; wrong password ×5 → locked; refresh rotation; reusing an old refresh
   token revokes the family and the new one stops working; reset password revokes other sessions; invite

@@ -61,6 +61,12 @@ REVOKE DELETE ON payments, bill_lines, payment_allocations, receipts, maintenanc
 -- The API only writes the outbox (see policy app_insert); the worker reads and updates it.
 REVOKE SELECT, UPDATE, DELETE ON outbox FROM bm_app;
 
+-- Prisma's migration ledger: `prisma migrate deploy` creates it as bm_owner before the first migration, so
+-- where the default privileges already existed (dev/test init script) bm_app/bm_worker got write grants on it.
+-- Only bm_owner touches it; bm_readonly may read it (db-docs, backup verification).
+REVOKE ALL ON _prisma_migrations FROM bm_app, bm_worker;
+GRANT SELECT ON _prisma_migrations TO bm_readonly;
+
 -- ── Admin views ────────────────────────────────────────────────────────────────────────────────
 -- Read by the admin endpoints in a `$tx({ orgId: null, isAdmin: true, … })` context. They run with the
 -- view owner's rights (bm_owner, the database superuser, so RLS does not hide other orgs' rows) and

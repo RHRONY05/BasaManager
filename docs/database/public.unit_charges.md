@@ -6,24 +6,24 @@ Fixed monthly charges of a unit (service, water, gas...).
 
 ## Columns
 
-| Name          | Type                        | Default           | Nullable | Children | Parents                                         | Comment |
-| ------------- | --------------------------- | ----------------- | -------- | -------- | ----------------------------------------------- | ------- |
-| id            | uuid                        | gen_random_uuid() | false    |          |                                                 |         |
-| org_id        | uuid                        |                   | false    |          | [public.organizations](public.organizations.md) |         |
-| unit_id       | uuid                        |                   | false    |          | [public.units](public.units.md)                 |         |
-| name          | text                        |                   | false    |          |                                                 |         |
-| amount_poisha | bigint                      |                   | false    |          |                                                 |         |
-| created_at    | timestamp(6) with time zone | CURRENT_TIMESTAMP | false    |          |                                                 |         |
-| updated_at    | timestamp(6) with time zone | CURRENT_TIMESTAMP | false    |          |                                                 |         |
+| Name          | Type                        | Default           | Nullable | Children | Parents                                                                         | Comment |
+| ------------- | --------------------------- | ----------------- | -------- | -------- | ------------------------------------------------------------------------------- | ------- |
+| id            | uuid                        | gen_random_uuid() | false    |          |                                                                                 |         |
+| org_id        | uuid                        |                   | false    |          | [public.organizations](public.organizations.md) [public.units](public.units.md) |         |
+| unit_id       | uuid                        |                   | false    |          | [public.units](public.units.md)                                                 |         |
+| name          | text                        |                   | false    |          |                                                                                 |         |
+| amount_poisha | bigint                      |                   | false    |          |                                                                                 |         |
+| created_at    | timestamp(6) with time zone | CURRENT_TIMESTAMP | false    |          |                                                                                 |         |
+| updated_at    | timestamp(6) with time zone | CURRENT_TIMESTAMP | false    |          |                                                                                 |         |
 
 ## Constraints
 
-| Name                      | Type        | Definition                                                                             |
-| ------------------------- | ----------- | -------------------------------------------------------------------------------------- |
-| unit_charges_amount_check | CHECK       | CHECK ((amount_poisha >= 0))                                                           |
-| unit_charges_org_id_fkey  | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT |
-| unit_charges_unit_id_fkey | FOREIGN KEY | FOREIGN KEY (unit_id) REFERENCES units(id) ON UPDATE CASCADE ON DELETE CASCADE         |
-| unit_charges_pkey         | PRIMARY KEY | PRIMARY KEY (id)                                                                       |
+| Name                             | Type        | Definition                                                                                     |
+| -------------------------------- | ----------- | ---------------------------------------------------------------------------------------------- |
+| unit_charges_amount_check        | CHECK       | CHECK ((amount_poisha >= 0))                                                                   |
+| unit_charges_org_id_fkey         | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT         |
+| unit_charges_pkey                | PRIMARY KEY | PRIMARY KEY (id)                                                                               |
+| unit_charges_org_id_unit_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, unit_id) REFERENCES units(org_id, id) ON UPDATE CASCADE ON DELETE CASCADE |
 
 ## Indexes
 

@@ -104,12 +104,12 @@ select set_config('app.org_id',   <orgId or ''>,      true),
 
 then runs your function with the transaction client, then commits (or rolls back if your function throws).
 
-| Setting        | Value                                      | Read by                                                                          |
-| -------------- | ------------------------------------------ | -------------------------------------------------------------------------------- |
-| `app.org_id`   | the current organisation (or empty)        | `org_isolation` on every org table; the `org_self_*` policies; the outbox policy |
-| `app.user_id`  | the signed-in user                         | `own_rows` on `notifications`; `own_memberships`; `member_orgs`                  |
-| `app.role`     | `landlord`, `caretaker`, `tenant` or empty | `no_caretaker` on `documents`; `org_self_update` (landlord only)                 |
-| `app.is_admin` | `'true'` only on `/api/admin` routes       | `org_self_select`, `org_self_update` and the two admin views                     |
+| Setting        | Value                                      | Read by                                                                                               |
+| -------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| `app.org_id`   | the current organisation (or empty)        | `org_isolation` on every org table; the `org_self_*` policies; the outbox policy                      |
+| `app.user_id`  | the signed-in user                         | `own_rows` on `notifications`; `own_memberships`; `member_orgs`                                       |
+| `app.role`     | `landlord`, `caretaker`, `tenant` or empty | `no_caretaker` on `documents`, `no_caretaker_documents` on `files`; `org_self_update` (landlord only) |
+| `app.is_admin` | `'true'` only on `/api/admin` routes       | `org_self_select`, `org_self_update` and the two admin views                                          |
 
 `ctx` (type `TenantCtx`) must be built from the **authenticated session only**, never from request input.
 `assertCtx` rejects any id that is not a uuid with a `TypeError` before a connection is used.
@@ -164,19 +164,20 @@ In `apps/api/prisma/migrations/20261108000200_rls/migration.sql`, plus the user-
 `20261108000400_user_scoped_access/migration.sql` (`own_memberships`, the split `organizations` policies and
 the `app_find_invitation` function).
 
-| Where                                           | Policy                         | Rule                                                                               |
-| ----------------------------------------------- | ------------------------------ | ---------------------------------------------------------------------------------- |
-| 24 org-owned tables (`buildings`, `bills`, ...) | `org_isolation`                | `org_id` equals `app.org_id`, for reading **and** writing (`using` + `with check`) |
-| `documents` (extra)                             | `no_caretaker` (restrictive)   | invisible when `app.role = 'caretaker'`                                            |
-| `notifications`                                 | `own_rows`                     | `user_id` equals `app.user_id` (no org rule at all)                                |
-| `memberships` (extra)                           | `own_memberships` (select)     | the user can **read** their own memberships in every org                           |
-| `organizations`                                 | `org_self_select`              | read: `id` equals `app.org_id`, **or** `app.is_admin = 'true'`                     |
-| `organizations`                                 | `member_orgs` (select)         | read: any org the user (`app.user_id`) has a membership in                         |
-| `organizations`                                 | `org_self_insert`              | insert: the new row's `id` equals `app.org_id`                                     |
-| `organizations`                                 | `org_self_update`              | update: own org **and** `app.role = 'landlord'`, or the admin context              |
-| `organizations`                                 | no delete policy               | organisations are never deleted (suspended instead)                                |
-| `outbox`                                        | `app_insert` (insert only)     | `bm_app` may insert rows with its own org or no org; nothing else                  |
-| `invitations` (lookup)                          | function `app_find_invitation` | one row by token hash, with no org context (see below)                             |
+| Where                                           | Policy                                 | Rule                                                                               |
+| ----------------------------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------- |
+| 24 org-owned tables (`buildings`, `bills`, ...) | `org_isolation`                        | `org_id` equals `app.org_id`, for reading **and** writing (`using` + `with check`) |
+| `documents` (extra)                             | `no_caretaker` (restrictive)           | invisible when `app.role = 'caretaker'`                                            |
+| `files` (extra)                                 | `no_caretaker_documents` (restrictive) | `kind = 'document'` rows invisible when `app.role = 'caretaker'`                   |
+| `notifications`                                 | `own_rows`                             | `user_id` equals `app.user_id`; writes also need `org_id` null or `app.org_id`     |
+| `memberships` (extra)                           | `own_memberships` (select)             | **only with no org context**: the user can read their own memberships in every org |
+| `organizations`                                 | `org_self_select`                      | read: `id` equals `app.org_id`, **or** `app.is_admin = 'true'`                     |
+| `organizations`                                 | `member_orgs` (select)                 | read, **only with no org context**: any org the user has a membership in           |
+| `organizations`                                 | `org_self_insert`                      | insert: the new row's `id` equals `app.org_id`                                     |
+| `organizations`                                 | `org_self_update`                      | update: own org **and** `app.role = 'landlord'`, or the admin context              |
+| `organizations`                                 | no delete policy                       | organisations are never deleted (suspended instead)                                |
+| `outbox`                                        | `app_insert` (insert only)             | `bm_app` may insert rows with its own org or no org; nothing else                  |
+| `invitations` (lookup)                          | function `app_find_invitation`         | one row by token hash, with no org context (see below)                             |
 
 #### `org_isolation`: the normal case
 
@@ -189,6 +190,27 @@ What the isolation tests prove (`apps/api/test/tenant-isolation.int.test.ts`): r
 returns `null`; updating or deleting it touches 0 rows; creating a row with another org's `orgId` is rejected
 by the `with check`; a raw `$queryRaw` cannot see other orgs either.
 
+#### Foreign keys carry `org_id` too
+
+RLS filters the rows a query reads and writes, but **foreign-key checks ignore RLS**. With a plain
+`units.building_id → buildings.id`, a transaction in org A could insert a unit whose `building_id` is org B's
+building: the `with check` only looks at the new row's own `org_id` (A, fine), and the FK only asks "does that
+building id exist?" (yes, in B). Worse, org A could create a live lease on org B's unit, and org B could then
+never lease its own unit (`leases_one_live_per_unit`), with no way to see why. The FK error would also tell a
+curious caller whether some other org's id exists.
+
+So every link from one org-owned table to another is **composite**: `(org_id, building_id) → buildings(org_id,
+id)`. The parent has a unique key on `(org_id, id)` for it to point at. Now the database itself refuses a row
+that mixes two orgs (error `23503`), even for the owner login that skips RLS. In Prisma it reads
+`@relation(fields: [orgId, buildingId], references: [orgId, id])`. Optional links (`payments.proof_file_id`,
+`maintenance_requests.assigned_to`, ...) use `on delete restrict` instead of `set null`, because `set null` on
+a composite key would also try to blank `org_id`, and those parents are never deleted anyway (soft-deleted or
+`removed`).
+
+Guarded by `every foreign key from an org_id table to an org_id table is composite and pairs org_id with
+org_id` in `apps/api/test/rls.int.test.ts` (it reads every FK from `pg_constraint`), and proved by `a row in org
+A cannot point at a row of org B` in `tenant-isolation.int.test.ts`.
+
 #### `documents`: a restrictive policy
 
 Caretakers must never see tenants' ID documents. Policies normally **add up**: Postgres OR-s together all
@@ -200,6 +222,13 @@ A missing role setting is not treated as "caretaker" (`coalesce(nullif(...), '')
 background work with no role still works. Proved by `apps/api/test/documents-caretaker.int.test.ts` (`caretaker
 cannot read via a raw query, count, or by id; a missing role setting is not treated as caretaker`).
 
+The stored object behind a document is a row in `files` with `kind = 'document'` (public id, type, size, hash).
+Hiding only `documents` would leave a hole: a later download service that checks just the `files` row could hand
+an NID scan to a caretaker. So `files` has a second restrictive policy, `no_caretaker_documents`: rows of kind
+`document` are invisible to (and cannot be inserted by) a caretaker context; maintenance photos, payment proofs
+and PDFs stay visible. Proved by `the files row behind a document is hidden from caretakers; other file kinds
+are not`.
+
 > **Consequence.** At the database level a `tenant` context can read **every** document of the org. RLS draws
 > the line between organisations (and hides documents from caretakers); "a tenant sees only their own lease's
 > documents" must be enforced by the **service** (task V13). RLS is a safety net under the service, not a
@@ -210,7 +239,8 @@ cannot read via a raw query, count, or by id; a missing role setting is not trea
 A notification belongs to a person, and `org_id` may be empty (platform messages). If it also had
 `org_isolation`, the two permissive policies would be OR-ed, and every member of an org could read each other's
 notifications. So it has **only** `own_rows`, keyed on `app.user_id`. That is why `$tx` needs a `userId` even
-for work that has no organisation.
+for work that has no organisation. Its `with check` adds one org rule for writes: the new row's `org_id` must be
+empty or the transaction's `app.org_id`, so a user in org A cannot file a notification under org B.
 
 #### `organizations`: keyed by `id`, one policy per command, and why the id is generated first
 
@@ -218,8 +248,10 @@ for work that has no organisation.
 of access is spelled out:
 
 - **Read** (`org_self_select`): "this row is mine if its `id` is my `app.org_id`, or I am in the admin context".
-- **Read** (`member_orgs`): "or I (`app.user_id`) have a membership in it". This is what lets the login page,
-  `GET /api/me` and the org switcher list a user's organisations **before** any org is chosen.
+- **Read** (`member_orgs`): "or, when no org is chosen (`app.org_id` empty), I (`app.user_id`) have a
+  membership in it". This is what lets the login page, `GET /api/me` and the org switcher list a user's
+  organisations **before** any org is chosen. Inside org A's context it is off, so `organization.findMany()`
+  returns org A only.
 - **Update** (`org_self_update`): only the org's **landlord** context (or the admin context, which suspends and
   reactivates orgs). A caretaker or tenant context updates 0 rows, even in its own org.
 - **Insert** (`org_self_insert`): the new row's `id` must equal `app.org_id`.
@@ -247,9 +279,12 @@ that context may look across organisations.)
 Some work happens **before** an organisation is chosen, with `ctx = { orgId: null, userId }`:
 
 - **"Which organisations am I in?"** `memberships` has an extra _permissive_ policy `own_memberships`, for
-  `select` only: `user_id = app.user_id`. Permissive policies are OR-ed with `org_isolation`, so a signed-in
-  user can read **their own** membership rows in every org, and nothing else: other people's memberships stay
-  hidden, and writing a membership still needs the org context. `member_orgs` on `organizations` then lets them
+  `select` only: `app.org_id` is empty **and** `user_id = app.user_id`. Permissive policies are OR-ed with
+  `org_isolation`, so with no org chosen a signed-in user can read **their own** membership rows in every org,
+  and nothing else: other people's memberships stay hidden, and writing a membership still needs the org
+  context. The "no org" condition matters: without it, inside org A a team page's
+  `membership.findMany({ where: { status: 'active' } })` would also return the caller's own memberships in
+  orgs B and C. `member_orgs` on `organizations` then lets them
   read those orgs. Its `exists (select 1 from memberships ...)` subquery runs under the memberships policies
   (so it sees exactly the user's own rows) and cannot loop, because no memberships policy refers back to
   organizations. A membership does **not** open the org's other tables: buildings, bills and so on still need
@@ -264,7 +299,8 @@ Some work happens **before** an organisation is chosen, with `ctx = { orgId: nul
   function reveals nothing to someone without the link.
 
 Proved in `apps/api/test/cross-org-user.int.test.ts`: a user who is a tenant in org A and landlord in org B sees
-exactly those 2 memberships and those 2 orgs (not org C); another user sees none; the function finds the right
+exactly those 2 memberships and those 2 orgs (not org C); inside org A's context the same user sees only A's
+memberships and org A; another user sees none; the function finds the right
 hash, nothing for a wrong one, works without org context, while `select * from invitations` still returns 0
 rows; a caretaker or tenant context cannot update the organization row; the landlord and admin contexts can;
 nobody can delete it.
@@ -302,7 +338,17 @@ today, asserted in `apps/api/test/schema-extras.int.test.ts`). Models that are n
 `Session`, `AuthToken`, `OauthAccount`, `NotificationPreference`, `PushSubscription`, `JobRun`) work on `db`
 directly. Raw SQL outside `$tx` is **not** blocked by the guard, but RLS makes it return no org rows.
 
-The guard has unit tests that need no database: `apps/api/src/config/db.test.ts`.
+The guard also looks **inside** the arguments of those non-tenant models. `db.user.findMany({ include: {
+memberships: true } })` would otherwise run, and RLS would silently answer `memberships: []`. So the extension
+walks `include`, `select` (also `_count`), `where` (relation filters like `memberships: { some: ... }`),
+`orderBy` and `data` (nested writes like `memberships: { create: ... }`), and throws `TenantContextMissing` with
+`relation` set to the path (`memberships`, or `user.memberships` from `db.session`) as soon as it reaches a
+tenant model. The map "relation field → target model" comes from the generated client's runtime data model
+(Prisma 7's `prisma-client` generator has no `Prisma.dmmf`), so it cannot drift from the schema. Inside `$tx`
+the same query is fine: RLS decides what it returns.
+
+The guard has unit tests that need no database: `apps/api/src/config/db.test.ts`; the nested cases are in
+`apps/api/test/tenant-extension.int.test.ts`.
 
 ### Admin views
 
@@ -319,7 +365,12 @@ Admin endpoints use `db.$tx({ orgId: null, userId, role: null, isAdmin: true }, 
 filter functions cannot run ahead of the view's check) and read-only (`bm_app` has `select` only). A normal
 view runs with its _owner's_ rights; the owner is `bm_owner`, a superuser, so RLS does not hide other orgs'
 rows inside the view. That is deliberate, and the reason `bm_owner` must stay the superuser. Tests: the
-`admin views` block in `apps/api/test/schema-extras.int.test.ts`.
+`admin views` block in `apps/api/test/schema-extras.int.test.ts`; `role-grants.int.test.ts` asserts that
+`bm_owner` **is** a superuser, so a future non-superuser owner fails a test instead of the admin screens quietly
+showing 0 counts.
+
+Prisma's own ledger, `_prisma_migrations`, is created by `bm_owner` during the first `migrate deploy`. Only the
+owner touches it: `bm_app` and `bm_worker` have no rights on it, `bm_readonly` may read it.
 
 ### The worker
 
@@ -373,7 +424,8 @@ sequenceDiagram
   services (authorization, from V5).
 - **Reads of other orgs look like "not found", not "forbidden".** `findUnique` on another org's id returns
   `null`; `update` throws; `updateMany` returns `count: 0`. Services should answer 404.
-- **Inserts with a foreign `orgId` fail loudly** (`with check`).
+- **Inserts with a foreign `orgId` fail loudly** (`with check`), and so do links to another org's row
+  (composite foreign keys, `23503`; Prisma `P2003`).
 - **Never run the app as `bm_owner` or any superuser.** Every policy would be silently ignored. Test fixtures
   use the owner on purpose; the app must not.
 - **Creating an organisation needs the id first** (see `org_self_insert`). Forgetting this gives a "violates row-level

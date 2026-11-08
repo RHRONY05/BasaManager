@@ -6,30 +6,30 @@ Caretaker/tenant invites (hashed single-use token).
 
 ## Columns
 
-| Name         | Type                        | Default           | Nullable | Children | Parents                                         | Comment |
-| ------------ | --------------------------- | ----------------- | -------- | -------- | ----------------------------------------------- | ------- |
-| id           | uuid                        | gen_random_uuid() | false    |          |                                                 |         |
-| org_id       | uuid                        |                   | false    |          | [public.organizations](public.organizations.md) |         |
-| email        | citext                      |                   | false    |          |                                                 |         |
-| role         | invitation_role             |                   | false    |          |                                                 |         |
-| building_ids | uuid[]                      | ARRAY[]::uuid[]   | true     |          |                                                 |         |
-| lease_id     | uuid                        |                   | true     |          | [public.leases](public.leases.md)               |         |
-| token_hash   | bytea                       |                   | false    |          |                                                 |         |
-| expires_at   | timestamp(6) with time zone |                   | false    |          |                                                 |         |
-| accepted_at  | timestamp(6) with time zone |                   | true     |          |                                                 |         |
-| revoked_at   | timestamp(6) with time zone |                   | true     |          |                                                 |         |
-| invited_by   | uuid                        |                   | false    |          | [public.users](public.users.md)                 |         |
-| created_at   | timestamp(6) with time zone | CURRENT_TIMESTAMP | false    |          |                                                 |         |
-| updated_at   | timestamp(6) with time zone | CURRENT_TIMESTAMP | false    |          |                                                 |         |
+| Name         | Type                        | Default           | Nullable | Children | Parents                                                                           | Comment |
+| ------------ | --------------------------- | ----------------- | -------- | -------- | --------------------------------------------------------------------------------- | ------- |
+| id           | uuid                        | gen_random_uuid() | false    |          |                                                                                   |         |
+| org_id       | uuid                        |                   | false    |          | [public.organizations](public.organizations.md) [public.leases](public.leases.md) |         |
+| email        | citext                      |                   | false    |          |                                                                                   |         |
+| role         | invitation_role             |                   | false    |          |                                                                                   |         |
+| building_ids | uuid[]                      | ARRAY[]::uuid[]   | true     |          |                                                                                   |         |
+| lease_id     | uuid                        |                   | true     |          | [public.leases](public.leases.md)                                                 |         |
+| token_hash   | bytea                       |                   | false    |          |                                                                                   |         |
+| expires_at   | timestamp(6) with time zone |                   | false    |          |                                                                                   |         |
+| accepted_at  | timestamp(6) with time zone |                   | true     |          |                                                                                   |         |
+| revoked_at   | timestamp(6) with time zone |                   | true     |          |                                                                                   |         |
+| invited_by   | uuid                        |                   | false    |          | [public.users](public.users.md)                                                   |         |
+| created_at   | timestamp(6) with time zone | CURRENT_TIMESTAMP | false    |          |                                                                                   |         |
+| updated_at   | timestamp(6) with time zone | CURRENT_TIMESTAMP | false    |          |                                                                                   |         |
 
 ## Constraints
 
-| Name                        | Type        | Definition                                                                             |
-| --------------------------- | ----------- | -------------------------------------------------------------------------------------- |
-| invitations_invited_by_fkey | FOREIGN KEY | FOREIGN KEY (invited_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE RESTRICT     |
-| invitations_org_id_fkey     | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT |
-| invitations_pkey            | PRIMARY KEY | PRIMARY KEY (id)                                                                       |
-| invitations_lease_id_fkey   | FOREIGN KEY | FOREIGN KEY (lease_id) REFERENCES leases(id) ON UPDATE CASCADE ON DELETE SET NULL      |
+| Name                             | Type        | Definition                                                                                        |
+| -------------------------------- | ----------- | ------------------------------------------------------------------------------------------------- |
+| invitations_invited_by_fkey      | FOREIGN KEY | FOREIGN KEY (invited_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE RESTRICT                |
+| invitations_org_id_fkey          | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT            |
+| invitations_pkey                 | PRIMARY KEY | PRIMARY KEY (id)                                                                                  |
+| invitations_org_id_lease_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT |
 
 ## Indexes
 

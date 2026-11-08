@@ -38,6 +38,12 @@ $$;
 CREATE POLICY no_caretaker ON documents AS RESTRICTIVE
   USING (coalesce(nullif(current_setting('app.role', true), ''), '') <> 'caretaker');
 
+-- files: the stored object behind a document (kind = 'document': NID scans, agreements) is hidden from
+-- caretakers too, so a download service that only checks the files row can't hand one out. Other kinds
+-- (maintenance photos, payment proofs, PDFs) stay visible. Also blocks a caretaker inserting a 'document' file.
+CREATE POLICY no_caretaker_documents ON files AS RESTRICTIVE
+  USING (kind <> 'document' OR coalesce(nullif(current_setting('app.role', true), ''), '') <> 'caretaker');
+
 -- organizations: keyed by id. Members see their own org; the platform-admin context may read all
 -- (admin screens read only through the admin_* views, see migration 20261108000300).
 ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
@@ -50,9 +56,11 @@ CREATE POLICY org_self ON organizations
 -- because permissive policies are OR-ed and it would show every member's notifications to the org.
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications FORCE ROW LEVEL SECURITY;
+-- Writes must also not tag a notification with another org than the transaction's (null = platform message).
 CREATE POLICY own_rows ON notifications
   USING (user_id = nullif(current_setting('app.user_id', true), '')::uuid)
-  WITH CHECK (user_id = nullif(current_setting('app.user_id', true), '')::uuid);
+  WITH CHECK (user_id = nullif(current_setting('app.user_id', true), '')::uuid
+              AND (org_id IS NULL OR org_id = nullif(current_setting('app.org_id', true), '')::uuid));
 
 -- outbox: a delivery queue, not tenant data. bm_app only INSERTs rows (in the same transaction as the
 -- domain change) for its own org or with no org; it has no SELECT/UPDATE/DELETE grant on the table

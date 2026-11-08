@@ -54,6 +54,70 @@ describe('tenant extension (tenant-extension.int.test.ts)', () => {
     await expect(db.notificationPreference.findMany()).resolves.toEqual([]);
   });
 
+  it('a non-tenant model whose include/select/where/data reaches a tenant relation throws outside $tx', async () => {
+    const org = await makeOrg();
+    const reaches = async (p: Promise<unknown>, relation: string) => {
+      const err = await p.then(
+        () => undefined,
+        (e: unknown) => e,
+      );
+      expect(err).toBeInstanceOf(dbModule.TenantContextMissing);
+      expect((err as dbModule.TenantContextMissing).relation).toBe(relation);
+    };
+    await reaches(db.user.findMany({ include: { memberships: true } }), 'memberships');
+    await reaches(
+      db.user.findMany({ select: { id: true, orgsCreated: { select: { id: true } } } }),
+      'orgsCreated',
+    );
+    await reaches(db.user.findMany({ select: { _count: { select: { memberships: true } } } }), 'memberships');
+    await reaches(db.user.findMany({ where: { memberships: { some: { orgId: org.id } } } }), 'memberships');
+    await reaches(
+      db.user.findMany({ where: { AND: [{ fullName: 'x' }, { notifications: { none: {} } }] } }),
+      'notifications',
+    );
+    // nested through a non-tenant relation: session → user → memberships
+    await reaches(
+      db.session.findMany({ include: { user: { include: { memberships: true } } } }),
+      'user.memberships',
+    );
+    // nested write: creating a user together with a membership
+    await reaches(
+      db.user.create({
+        data: {
+          email: 'nested@test.local',
+          fullName: 'Nested',
+          memberships: { create: { orgId: org.id, role: 'tenant' } },
+        },
+      }),
+      'memberships',
+    );
+    // nothing was written by the rejected nested create
+    expect(await db.user.count({ where: { email: 'nested@test.local' } })).toBe(0);
+  });
+
+  it('non-tenant relations, false flags and scalar values still work outside $tx', async () => {
+    const org = await makeOrg();
+    const users = await db.user.findMany({
+      where: { id: org.landlordUserId, sessions: { none: {} } },
+      include: { sessions: true, oauthAccounts: { select: { id: true } }, memberships: false },
+    });
+    expect(users).toHaveLength(1);
+    expect(users[0]!.sessions).toEqual([]);
+    // a JSON value whose keys look like relation names is data, not a relation
+    const run = await db.jobRun.create({
+      data: { job: 'x', details: { memberships: true, org: { id: 1 } } },
+    });
+    expect(run.details).toEqual({ memberships: true, org: { id: 1 } });
+  });
+
+  it('the same nested include works inside $tx (RLS decides what it returns)', async () => {
+    const org = await makeOrg();
+    const users = await db.$tx({ orgId: org.id, userId: org.landlordUserId, role: 'landlord' }, (tx) =>
+      tx.user.findMany({ where: { id: org.landlordUserId }, include: { memberships: true } }),
+    );
+    expect(users[0]!.memberships.map((m) => m.orgId)).toEqual([org.id]);
+  });
+
   it('$tx sets app.org_id, app.user_id, app.role and app.is_admin for the transaction', async () => {
     const org = await makeOrg();
     const [s] = await db.$tx({ orgId: org.id, userId: org.landlordUserId, role: 'landlord' }, (tx) =>

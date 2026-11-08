@@ -126,9 +126,9 @@
 </g>
 <!-- public.unit_charges&#45;&gt;public.units -->
 <g id="edge2" class="edge">
-<title>public.unit_charges:unit_id&#45;&gt;public.units:id</title>
-<path fill="none" stroke="black" d="M925.7,-681.9C929.11,-626.98 915.03,-366.6 923.11,-366.6"/>
-<polygon fill="black" stroke="black" points="925.71,-681.86 919.35,-690.8 924.67,-687.1 923.83,-691.34 923.83,-691.34 923.83,-691.34 924.67,-687.1 928.18,-692.55 925.71,-681.86"/>
+<title>public.unit_charges:org_id&#45;&gt;public.units:org_id</title>
+<path fill="none" stroke="black" d="M925.94,-712.84C930.53,-652.27 913.39,-335.8 923.11,-335.8"/>
+<polygon fill="black" stroke="black" points="925.97,-712.72 919.39,-721.49 924.8,-717.92 923.85,-722.15 923.85,-722.15 923.85,-722.15 924.8,-717.92 928.17,-723.46 925.97,-712.72"/>
 </g>
 </g>
 </svg>

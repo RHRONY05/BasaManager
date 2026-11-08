@@ -6,8 +6,11 @@
 
 -- 1. memberships: a signed-in user may READ their own memberships in every org (and nothing else).
 --    Permissive, so OR-ed with org_isolation; SELECT only (writes still need the org context).
+--    Only in a context WITHOUT an org: inside org A, `membership.findMany()` must return A's rows only,
+--    not also the caller's memberships in B and C.
 CREATE POLICY own_memberships ON memberships FOR SELECT
-  USING (user_id = nullif(current_setting('app.user_id', true), '')::uuid);
+  USING (nullif(current_setting('app.org_id', true), '') IS NULL
+         AND user_id = nullif(current_setting('app.user_id', true), '')::uuid);
 
 -- 2. organizations: split org_self (which covered ALL commands) per command.
 --    No DELETE policy: organisations are never deleted (suspended instead), so DELETE matches no rows.
@@ -19,10 +22,11 @@ CREATE POLICY org_self_select ON organizations FOR SELECT
          OR current_setting('app.is_admin', true) = 'true');
 
 -- Read: every org the signed-in user has a membership in (any status: removed tenants keep read-only
--- history). The subquery runs under the memberships policies; own_memberships makes the user's rows visible.
+-- history), again only without an org context (in org A the caller sees org A only). The subquery runs
+-- under the memberships policies; own_memberships makes the user's rows visible.
 -- No recursion: no memberships policy refers to organizations.
 CREATE POLICY member_orgs ON organizations FOR SELECT
-  USING (EXISTS (
+  USING (nullif(current_setting('app.org_id', true), '') IS NULL AND EXISTS (
     SELECT 1 FROM memberships m
      WHERE m.org_id = organizations.id
        AND m.user_id = nullif(current_setting('app.user_id', true), '')::uuid));

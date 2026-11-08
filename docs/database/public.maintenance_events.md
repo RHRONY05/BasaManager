@@ -6,29 +6,29 @@ History. Append-only request timeline.
 
 ## Columns
 
-| Name        | Type                        | Default           | Nullable | Children | Parents                                                       | Comment |
-| ----------- | --------------------------- | ----------------- | -------- | -------- | ------------------------------------------------------------- | ------- |
-| id          | uuid                        | gen_random_uuid() | false    |          |                                                               |         |
-| org_id      | uuid                        |                   | false    |          | [public.organizations](public.organizations.md)               |         |
-| request_id  | uuid                        |                   | false    |          | [public.maintenance_requests](public.maintenance_requests.md) |         |
-| actor_id    | uuid                        |                   | false    |          | [public.users](public.users.md)                               |         |
-| kind        | maintenance_event_kind      |                   | false    |          |                                                               |         |
-| from_status | maintenance_status          |                   | true     |          |                                                               |         |
-| to_status   | maintenance_status          |                   | true     |          |                                                               |         |
-| body        | text                        |                   | true     |          |                                                               |         |
-| file_id     | uuid                        |                   | true     |          | [public.files](public.files.md)                               |         |
-| created_at  | timestamp(6) with time zone | CURRENT_TIMESTAMP | false    |          |                                                               |         |
-| updated_at  | timestamp(6) with time zone | CURRENT_TIMESTAMP | false    |          |                                                               |         |
+| Name        | Type                        | Default           | Nullable | Children | Parents                                                                                                                                       | Comment |
+| ----------- | --------------------------- | ----------------- | -------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| id          | uuid                        | gen_random_uuid() | false    |          |                                                                                                                                               |         |
+| org_id      | uuid                        |                   | false    |          | [public.organizations](public.organizations.md) [public.maintenance_requests](public.maintenance_requests.md) [public.files](public.files.md) |         |
+| request_id  | uuid                        |                   | false    |          | [public.maintenance_requests](public.maintenance_requests.md)                                                                                 |         |
+| actor_id    | uuid                        |                   | false    |          | [public.users](public.users.md)                                                                                                               |         |
+| kind        | maintenance_event_kind      |                   | false    |          |                                                                                                                                               |         |
+| from_status | maintenance_status          |                   | true     |          |                                                                                                                                               |         |
+| to_status   | maintenance_status          |                   | true     |          |                                                                                                                                               |         |
+| body        | text                        |                   | true     |          |                                                                                                                                               |         |
+| file_id     | uuid                        |                   | true     |          | [public.files](public.files.md)                                                                                                               |         |
+| created_at  | timestamp(6) with time zone | CURRENT_TIMESTAMP | false    |          |                                                                                                                                               |         |
+| updated_at  | timestamp(6) with time zone | CURRENT_TIMESTAMP | false    |          |                                                                                                                                               |         |
 
 ## Constraints
 
-| Name                               | Type        | Definition                                                                                        |
-| ---------------------------------- | ----------- | ------------------------------------------------------------------------------------------------- |
-| maintenance_events_actor_id_fkey   | FOREIGN KEY | FOREIGN KEY (actor_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE RESTRICT                  |
-| maintenance_events_org_id_fkey     | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT            |
-| maintenance_events_request_id_fkey | FOREIGN KEY | FOREIGN KEY (request_id) REFERENCES maintenance_requests(id) ON UPDATE CASCADE ON DELETE RESTRICT |
-| maintenance_events_pkey            | PRIMARY KEY | PRIMARY KEY (id)                                                                                  |
-| maintenance_events_file_id_fkey    | FOREIGN KEY | FOREIGN KEY (file_id) REFERENCES files(id) ON UPDATE CASCADE ON DELETE SET NULL                   |
+| Name                                      | Type        | Definition                                                                                                        |
+| ----------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------- |
+| maintenance_events_actor_id_fkey          | FOREIGN KEY | FOREIGN KEY (actor_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE RESTRICT                                  |
+| maintenance_events_org_id_fkey            | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT                            |
+| maintenance_events_pkey                   | PRIMARY KEY | PRIMARY KEY (id)                                                                                                  |
+| maintenance_events_org_id_request_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, request_id) REFERENCES maintenance_requests(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT |
+| maintenance_events_org_id_file_id_fkey    | FOREIGN KEY | FOREIGN KEY (org_id, file_id) REFERENCES files(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT                   |
 
 ## Indexes
 

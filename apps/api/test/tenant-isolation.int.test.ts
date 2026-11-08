@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import { createPrisma, type Db } from '../src/config/db';
 import { appUrl } from './helpers/env';
 import { resetData, closeOwner, asApp, connectAs, pgErrorCode, q } from './helpers/pg';
-import { makeOrg, makeBuilding, type Org } from './helpers/factories';
+import { makeOrg, makeBuilding, makeUnit, makeLease, type Org } from './helpers/factories';
 
 let db: Db;
 let A: Org;
@@ -93,6 +93,77 @@ describe('tenant isolation via db.$tx as bm_app (tenant-isolation.int.test.ts)',
     const rows = await db.$tx(ctxA(), (tx) => tx.building.findMany());
     expect(rows.map((r) => r.id)).toContain(created.id);
     expect(rows).toHaveLength(2);
+  });
+
+  it('a row in org A cannot point at a row of org B (composite (org_id, x_id) foreign keys → 23503)', async () => {
+    // Without the composite FK this insert succeeded: FK checks ignore RLS.
+    const unitCode = await asApp(ctxA(), (c) =>
+      pgErrorCode(
+        c.query(
+          `insert into units (org_id, building_id, label, floor, type, default_rent_poisha, electricity_mode)
+           values ($1, $2, 'X-1', 1, 'family_flat', 100, 'none')`,
+          [A.id, bldB],
+        ),
+      ),
+    );
+    expect(unitCode).toBe('23503');
+
+    // The reviewer's case: org A "leases" org B's unit, which would block B from ever leasing it.
+    const unitB = await makeUnit(B.id, bldB);
+    const leaseCode = await asApp(ctxA(), (c) =>
+      pgErrorCode(
+        c.query(
+          `insert into leases (org_id, unit_id, start_date, monthly_rent_poisha, status, created_by)
+           values ($1, $2, '2026-01-01', 100, 'active', $3)`,
+          [A.id, unitB, A.landlordUserId],
+        ),
+      ),
+    );
+    expect(leaseCode).toBe('23503');
+    await expect(makeLease(B.id, unitB, B.landlordUserId)).resolves.toBeTruthy();
+
+    // Same through Prisma inside $tx.
+    await expect(
+      db.$tx(ctxA(), (tx) =>
+        tx.unit.create({
+          data: {
+            orgId: A.id,
+            buildingId: bldB,
+            label: 'X-2',
+            floor: 1,
+            type: 'family_flat',
+            defaultRentPoisha: 100n,
+            electricityMode: 'none',
+          },
+        }),
+      ),
+    ).rejects.toMatchObject({ code: 'P2003' });
+
+    // Even the owner (no RLS at all) can't mix orgs: the constraint itself forbids it.
+    expect(
+      await pgErrorCode(
+        q(
+          `insert into units (org_id, building_id, label, floor, type, default_rent_poisha, electricity_mode)
+           values ($1, $2, 'X-3', 1, 'family_flat', 100, 'none')`,
+          [A.id, bldB],
+        ),
+      ),
+    ).toBe('23503');
+  });
+
+  it('notifications: in org A a user may write their own notification for org A or no org, never tagged org B', async () => {
+    const insert = (orgId: string | null) =>
+      asApp(ctxA(), (c) =>
+        pgErrorCode(
+          c.query(`insert into notifications (org_id, user_id, type, title) values ($1, $2, 'x', 'x')`, [
+            orgId,
+            A.landlordUserId,
+          ]),
+        ),
+      );
+    expect(await insert(B.id)).toBe('42501');
+    expect(await insert(A.id)).toBeUndefined();
+    expect(await insert(null)).toBeUndefined();
   });
 
   it('a raw $queryRaw with org A context cannot see org B rows', async () => {

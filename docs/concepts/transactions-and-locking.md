@@ -133,7 +133,8 @@ sequence diagram in [Multi-tenancy & RLS](/concepts/multi-tenancy-and-rls).
 - **`tx` has no `$transaction`.** Transactions do not nest; pass the same `tx` down to helper functions
   (services take `tx: Tx`).
 - **Use `db.$tx` for everything with an org.** Queries on `db` directly throw `TenantContextMissing` for
-  organisation models.
+  organisation models, and for user/session queries whose `include`, `select`, `where` or `data` reaches one
+  (`db.user.findMany({ include: { memberships: true } })`).
 - **Wrong test expectation:** the `asApp` helper in `apps/api/test/helpers/pg.ts` always rolls back at the end;
   a test that expects data to persist must use the owner connection or commit explicitly.
 

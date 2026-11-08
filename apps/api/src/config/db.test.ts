@@ -19,6 +19,14 @@ describe('tenant extension (unit)', () => {
     expect(TENANT_MODELS.has('User')).toBe(false);
   });
 
+  it('rejects a non-tenant model whose include reaches a tenant relation, without touching the database', async () => {
+    await expect(db.user.findMany({ include: { memberships: true } })).rejects.toMatchObject({
+      name: 'TenantContextMissing',
+      model: 'User',
+      relation: 'memberships',
+    });
+  });
+
   it('$tx validates the context ids before opening a transaction', async () => {
     await expect(
       db.$tx({ orgId: 'x', userId: crypto.randomUUID(), role: null }, async () => 1),

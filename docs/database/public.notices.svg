@@ -156,9 +156,9 @@
 </g>
 <!-- public.notices&#45;&gt;public.buildings -->
 <g id="edge2" class="edge">
-<title>public.notices:building_id&#45;&gt;public.buildings:id</title>
-<path fill="none" stroke="black" d="M1234.19,-994.96C1278.33,-945.68 1300.72,-551.4 1253.89,-551.4"/>
-<polygon fill="black" stroke="black" points="1234.13,-995 1223.2,-995.9 1229.46,-997.58 1225.67,-999.68 1225.67,-999.68 1225.67,-999.68 1229.46,-997.58 1227.56,-1003.78 1234.13,-995"/>
+<title>public.notices:org_id&#45;&gt;public.buildings:org_id</title>
+<path fill="none" stroke="black" d="M1234.14,-1026.39C1284.76,-976.52 1307.57,-520.6 1253.89,-520.6"/>
+<polygon fill="black" stroke="black" points="1234.38,-1026.27 1223.42,-1026.61 1229.58,-1028.61 1225.69,-1030.51 1225.69,-1030.51 1225.69,-1030.51 1229.58,-1028.61 1227.36,-1034.7 1234.38,-1026.27"/>
 </g>
 <!-- public.users -->
 <g id="node4" class="node">

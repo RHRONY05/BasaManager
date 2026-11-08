@@ -101,11 +101,15 @@ describe('database role grants (role-grants.int.test.ts)', () => {
     });
   });
 
-  it('bm_app is NOBYPASSRLS, bm_worker is BYPASSRLS, bm_owner owns the tables', async () => {
+  it('bm_app is NOBYPASSRLS, bm_worker is BYPASSRLS, bm_owner owns the tables and is superuser', async () => {
     const roles = await q<{ rolname: string; rolbypassrls: boolean; rolsuper: boolean }>(
-      `select rolname, rolbypassrls, rolsuper from pg_roles where rolname in ('bm_app','bm_worker','bm_readonly')`,
+      `select rolname, rolbypassrls, rolsuper from pg_roles
+        where rolname in ('bm_owner','bm_app','bm_worker','bm_readonly')`,
     );
     const by = Object.fromEntries(roles.map((r) => [r.rolname, r]));
+    // The admin views run with their owner's rights; a non-superuser owner would make them return 0 counts
+    // silently (03 "Database roles"), so this must fail loudly instead.
+    expect(by['bm_owner'], 'bm_owner must be superuser').toMatchObject({ rolsuper: true });
     expect(by['bm_app']).toMatchObject({ rolbypassrls: false, rolsuper: false });
     expect(by['bm_worker']).toMatchObject({ rolbypassrls: true, rolsuper: false });
     expect(by['bm_readonly']).toMatchObject({ rolbypassrls: false, rolsuper: false });
@@ -113,6 +117,17 @@ describe('database role grants (role-grants.int.test.ts)', () => {
       `select distinct tableowner from pg_tables where schemaname = 'public' and tablename in ('buildings','payments','users')`,
     );
     expect(owners.map((r) => r.tableowner)).toEqual(['bm_owner']);
+  });
+
+  it('only bm_owner writes _prisma_migrations; bm_app/bm_worker have no access, bm_readonly may read', async () => {
+    const [p] = await q<Record<string, boolean>>(
+      `select has_table_privilege('bm_app', '_prisma_migrations', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE') as app,
+              has_table_privilege('bm_worker', '_prisma_migrations', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE') as worker,
+              has_table_privilege('bm_readonly', '_prisma_migrations', 'SELECT') as ro_select,
+              has_table_privilege('bm_readonly', '_prisma_migrations', 'INSERT,UPDATE,DELETE') as ro_write`,
+    );
+    expect(p).toEqual({ app: false, worker: false, ro_select: true, ro_write: false });
+    expect(await asApp(null, (c) => pgErrorCode(c.query('delete from _prisma_migrations')))).toBe('42501');
   });
 
   it('bm_worker sees both orgs buildings without any context', async () => {

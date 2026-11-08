@@ -9,7 +9,7 @@ Private stored objects (Cloudinary authenticated / local driver).
 | Name              | Type                        | Default           | Nullable | Children                                                                                                                                                                      | Parents                                         | Comment |
 | ----------------- | --------------------------- | ----------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ------- |
 | id                | uuid                        | gen_random_uuid() | false    | [public.payments](public.payments.md) [public.receipts](public.receipts.md) [public.maintenance_events](public.maintenance_events.md) [public.documents](public.documents.md) |                                                 |         |
-| org_id            | uuid                        |                   | false    |                                                                                                                                                                               | [public.organizations](public.organizations.md) |         |
+| org_id            | uuid                        |                   | false    | [public.payments](public.payments.md) [public.receipts](public.receipts.md) [public.maintenance_events](public.maintenance_events.md) [public.documents](public.documents.md) | [public.organizations](public.organizations.md) |         |
 | provider          | file_provider               |                   | false    |                                                                                                                                                                               |                                                 |         |
 | public_id         | text                        |                   | false    |                                                                                                                                                                               |                                                 |         |
 | resource_type     | file_resource_type          |                   | false    |                                                                                                                                                                               |                                                 |         |
@@ -36,12 +36,13 @@ Private stored objects (Cloudinary authenticated / local driver).
 
 ## Indexes
 
-| Name                  | Definition                                                                      |
-| --------------------- | ------------------------------------------------------------------------------- |
-| files_pkey            | CREATE UNIQUE INDEX files_pkey ON public.files USING btree (id)                 |
-| files_public_id_key   | CREATE UNIQUE INDEX files_public_id_key ON public.files USING btree (public_id) |
-| files_org_id_idx      | CREATE INDEX files_org_id_idx ON public.files USING btree (org_id)              |
-| files_uploaded_by_idx | CREATE INDEX files_uploaded_by_idx ON public.files USING btree (uploaded_by)    |
+| Name                  | Definition                                                                       |
+| --------------------- | -------------------------------------------------------------------------------- |
+| files_pkey            | CREATE UNIQUE INDEX files_pkey ON public.files USING btree (id)                  |
+| files_public_id_key   | CREATE UNIQUE INDEX files_public_id_key ON public.files USING btree (public_id)  |
+| files_org_id_idx      | CREATE INDEX files_org_id_idx ON public.files USING btree (org_id)               |
+| files_uploaded_by_idx | CREATE INDEX files_uploaded_by_idx ON public.files USING btree (uploaded_by)     |
+| files_org_id_id_key   | CREATE UNIQUE INDEX files_org_id_id_key ON public.files USING btree (org_id, id) |
 
 ## Relations
 

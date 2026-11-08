@@ -56,6 +56,40 @@ describe('RLS coverage (rls.int.test.ts)', () => {
     expect(offenders, `tables lacking RLS + FORCE + policy: ${offenders.join(', ')}`).toEqual([]);
   });
 
+  it('every foreign key from an org_id table to an org_id table is composite and pairs org_id with org_id', async () => {
+    // FK checks ignore RLS, so a single-column FK lets org A's row point at org B's row (03 "Conventions").
+    const fks = await q<{ conname: string; child: string; parent: string; pairs: string[] }>(
+      `select c.conname, cl.relname as child, pl.relname as parent,
+              array(select ca.attname || '=' || pa.attname
+                      from unnest(c.conkey, c.confkey) as k(ck, pk)
+                      join pg_attribute ca on ca.attrelid = c.conrelid and ca.attnum = k.ck
+                      join pg_attribute pa on pa.attrelid = c.confrelid and pa.attnum = k.pk) as pairs
+         from pg_constraint c
+         join pg_class cl on cl.oid = c.conrelid
+         join pg_class pl on pl.oid = c.confrelid
+         join pg_namespace n on n.oid = cl.relnamespace
+        where c.contype = 'f' and n.nspname = 'public'
+          and exists (select 1 from pg_attribute a where a.attrelid = c.conrelid and a.attname = 'org_id' and not a.attisdropped)
+          and exists (select 1 from pg_attribute a where a.attrelid = c.confrelid and a.attname = 'org_id' and not a.attisdropped)
+        order by 1`,
+    );
+    // Not vacuous: 03 has dozens of child → parent links inside an org.
+    expect(fks.length).toBeGreaterThan(30);
+    const offenders = fks.filter((f) => !f.pairs.includes('org_id=org_id')).map((f) => f.conname);
+    expect(offenders, `single-org FKs missing org_id: ${offenders.join(', ')}`).toEqual([]);
+  });
+
+  it('no composite org FK uses ON DELETE SET NULL / SET DEFAULT (it would null org_id too)', async () => {
+    const rows = await q<{ conname: string }>(
+      `select c.conname from pg_constraint c
+         join pg_attribute a on a.attrelid = c.conrelid and a.attnum = any (c.conkey) and a.attname = 'org_id'
+        where c.contype = 'f' and c.confdeltype in ('n', 'd')
+          and c.connamespace = 'public'::regnamespace
+          and exists (select 1 from pg_attribute p where p.attrelid = c.confrelid and p.attname = 'org_id')`,
+    );
+    expect(rows.map((r) => r.conname)).toEqual([]);
+  });
+
   it('organizations (keyed by id, no org_id column) also has RLS enabled and forced, with the org_self_* and member_orgs policies', async () => {
     const rows = await q<{ relrowsecurity: boolean; relforcerowsecurity: boolean }>(
       `select relrowsecurity, relforcerowsecurity from pg_class
@@ -82,6 +116,14 @@ describe('RLS coverage (rls.int.test.ts)', () => {
     const noCaretaker = pol.find((p) => p.policyname === 'no_caretaker');
     expect(noCaretaker, 'policy no_caretaker on documents').toBeDefined();
     expect(noCaretaker!.permissive).toBe('RESTRICTIVE');
+  });
+
+  it('files has the RESTRICTIVE no_caretaker_documents policy', async () => {
+    const pol = await q<{ policyname: string; permissive: string }>(
+      `select policyname, permissive from pg_policies
+        where schemaname = 'public' and tablename = 'files' and policyname = 'no_caretaker_documents'`,
+    );
+    expect(pol).toEqual([{ policyname: 'no_caretaker_documents', permissive: 'RESTRICTIVE' }]);
   });
 
   it('notifications has the own_rows policy', async () => {

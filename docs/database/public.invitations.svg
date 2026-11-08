@@ -159,9 +159,9 @@
 </g>
 <!-- public.invitations&#45;&gt;public.leases -->
 <g id="edge2" class="edge">
-<title>public.invitations:lease_id&#45;&gt;public.leases:id</title>
-<path fill="none" stroke="black" d="M1322.32,-936.72C1409.6,-907.97 1457.5,-520.6 1367.32,-520.6"/>
-<polygon fill="black" stroke="black" points="1322.25,-936.73 1311.66,-933.91 1316.99,-937.59 1312.71,-938.29 1312.71,-938.29 1312.71,-938.29 1316.99,-937.59 1313.11,-942.79 1322.25,-936.73"/>
+<title>public.invitations:org_id&#45;&gt;public.leases:org_id</title>
+<path fill="none" stroke="black" d="M1321.33,-1057.64C1381,-1007.12 1428.03,-489.8 1367.32,-489.8"/>
+<polygon fill="black" stroke="black" points="1321.56,-1057.55 1310.6,-1057.33 1316.65,-1059.64 1312.67,-1061.34 1312.67,-1061.34 1312.67,-1061.34 1316.65,-1059.64 1314.13,-1065.61 1321.56,-1057.55"/>
 </g>
 <!-- public.users -->
 <g id="node4" class="node">

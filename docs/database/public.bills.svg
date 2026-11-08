@@ -165,9 +165,9 @@
 </g>
 <!-- public.bills&#45;&gt;public.leases -->
 <g id="edge5" class="edge">
-<title>public.bills:lease_id&#45;&gt;public.leases:id</title>
-<path fill="none" stroke="black" d="M1398.06,-1087.8C1449.91,-1033.68 1427.54,-520.6 1367.32,-520.6"/>
-<polygon fill="black" stroke="black" points="1397.98,-1087.84 1387.02,-1088.21 1393.2,-1090.19 1389.31,-1092.1 1389.31,-1092.1 1389.31,-1092.1 1393.2,-1090.19 1391,-1096.29 1397.98,-1087.84"/>
+<title>public.bills:org_id&#45;&gt;public.leases:org_id</title>
+<path fill="none" stroke="black" d="M1398.01,-1119.16C1457.01,-1065.21 1434.44,-489.8 1367.32,-489.8"/>
+<polygon fill="black" stroke="black" points="1398.19,-1119.08 1387.22,-1118.94 1393.29,-1121.21 1389.32,-1122.93 1389.32,-1122.93 1389.32,-1122.93 1393.29,-1121.21 1390.81,-1127.19 1398.19,-1119.08"/>
 </g>
 <!-- public.users -->
 <g id="node7" class="node">
@@ -266,9 +266,9 @@
 </g>
 <!-- public.bill_lines&#45;&gt;public.bills -->
 <g id="edge1" class="edge">
-<title>public.bill_lines:bill_id&#45;&gt;public.bills:id</title>
-<path fill="none" stroke="black" d="M883.98,-1600.79C961.52,-1569.92 806.48,-1154 902.67,-1154"/>
-<polygon fill="black" stroke="black" points="884.12,-1600.77 873.48,-1598.11 878.87,-1601.71 874.61,-1602.48 874.61,-1602.48 874.61,-1602.48 878.87,-1601.71 875.07,-1606.97 884.12,-1600.77"/>
+<title>public.bill_lines:org_id&#45;&gt;public.bills:org_id</title>
+<path fill="none" stroke="black" d="M884.25,-1631.75C974.67,-1600.08 792.88,-1123.2 902.67,-1123.2"/>
+<polygon fill="black" stroke="black" points="884.15,-1631.77 873.57,-1628.9 878.88,-1632.61 874.61,-1633.29 874.61,-1633.29 874.61,-1633.29 878.88,-1632.61 874.99,-1637.79 884.15,-1631.77"/>
 </g>
 <!-- public.payment_allocations -->
 <g id="node3" class="node">
@@ -303,9 +303,9 @@
 </g>
 <!-- public.payment_allocations&#45;&gt;public.bills -->
 <g id="edge2" class="edge">
-<title>public.payment_allocations:bill_id&#45;&gt;public.bills:id</title>
-<path fill="none" stroke="black" d="M1325.26,-1509.7C1406.46,-1501.16 1331.69,-1384.43 1366.69,-1297.6 1373.62,-1280.42 1382.79,-1279.46 1387.71,-1261.6 1400.41,-1215.49 1436.53,-1154 1388.71,-1154"/>
-<polygon fill="black" stroke="black" points="1325.48,-1509.69 1315.27,-1505.69 1320.15,-1509.95 1315.83,-1510.17 1315.83,-1510.17 1315.83,-1510.17 1320.15,-1509.95 1315.71,-1514.68 1325.48,-1509.69"/>
+<title>public.payment_allocations:org_id&#45;&gt;public.bills:org_id</title>
+<path fill="none" stroke="black" d="M1325.12,-1569.65C1373.58,-1547.02 1346.29,-1352.28 1366.69,-1297.6 1373.17,-1280.24 1382.81,-1279.47 1387.71,-1261.6 1403.99,-1202.28 1450.22,-1123.2 1388.71,-1123.2"/>
+<polygon fill="black" stroke="black" points="1325.26,-1569.62 1314.54,-1567.33 1320.05,-1570.74 1315.81,-1571.66 1315.81,-1571.66 1315.81,-1571.66 1320.05,-1570.74 1316.44,-1576.13 1325.26,-1569.62"/>
 </g>
 <!-- public.credit_entries -->
 <g id="node4" class="node">
@@ -346,9 +346,9 @@
 </g>
 <!-- public.credit_entries&#45;&gt;public.bills -->
 <g id="edge3" class="edge">
-<title>public.credit_entries:bill_id&#45;&gt;public.bills:id</title>
-<path fill="none" stroke="black" d="M1407.44,-1478.78C1285.54,-1463.09 1530.22,-1154 1388.71,-1154"/>
-<polygon fill="black" stroke="black" points="1407.41,-1478.78 1417.12,-1483.87 1412.73,-1479.1 1417.05,-1479.36 1417.05,-1479.36 1417.05,-1479.36 1412.73,-1479.1 1417.66,-1474.89 1407.41,-1478.78"/>
+<title>public.credit_entries:org_id&#45;&gt;public.bills:org_id</title>
+<path fill="none" stroke="black" d="M1407.52,-1600.86C1323.6,-1569.48 1491.69,-1123.2 1388.71,-1123.2"/>
+<polygon fill="black" stroke="black" points="1407.53,-1600.87 1416.64,-1606.98 1412.79,-1601.76 1417.06,-1602.49 1417.06,-1602.49 1417.06,-1602.49 1412.79,-1601.76 1418.15,-1598.11 1407.53,-1600.87"/>
 </g>
 </g>
 </svg>

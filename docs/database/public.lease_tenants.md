@@ -6,23 +6,23 @@ Tenant memberships on a lease; one primary.
 
 ## Columns
 
-| Name          | Type                        | Default           | Nullable | Children | Parents                                         | Comment |
-| ------------- | --------------------------- | ----------------- | -------- | -------- | ----------------------------------------------- | ------- |
-| org_id        | uuid                        |                   | false    |          | [public.organizations](public.organizations.md) |         |
-| lease_id      | uuid                        |                   | false    |          | [public.leases](public.leases.md)               |         |
-| membership_id | uuid                        |                   | false    |          | [public.memberships](public.memberships.md)     |         |
-| is_primary    | boolean                     | false             | false    |          |                                                 |         |
-| created_at    | timestamp(6) with time zone | CURRENT_TIMESTAMP | false    |          |                                                 |         |
-| updated_at    | timestamp(6) with time zone | CURRENT_TIMESTAMP | false    |          |                                                 |         |
+| Name          | Type                        | Default           | Nullable | Children | Parents                                                                                                                       | Comment |
+| ------------- | --------------------------- | ----------------- | -------- | -------- | ----------------------------------------------------------------------------------------------------------------------------- | ------- |
+| org_id        | uuid                        |                   | false    |          | [public.organizations](public.organizations.md) [public.memberships](public.memberships.md) [public.leases](public.leases.md) |         |
+| lease_id      | uuid                        |                   | false    |          | [public.leases](public.leases.md)                                                                                             |         |
+| membership_id | uuid                        |                   | false    |          | [public.memberships](public.memberships.md)                                                                                   |         |
+| is_primary    | boolean                     | false             | false    |          |                                                                                                                               |         |
+| created_at    | timestamp(6) with time zone | CURRENT_TIMESTAMP | false    |          |                                                                                                                               |         |
+| updated_at    | timestamp(6) with time zone | CURRENT_TIMESTAMP | false    |          |                                                                                                                               |         |
 
 ## Constraints
 
-| Name                             | Type        | Definition                                                                                  |
-| -------------------------------- | ----------- | ------------------------------------------------------------------------------------------- |
-| lease_tenants_org_id_fkey        | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT      |
-| lease_tenants_membership_id_fkey | FOREIGN KEY | FOREIGN KEY (membership_id) REFERENCES memberships(id) ON UPDATE CASCADE ON DELETE RESTRICT |
-| lease_tenants_lease_id_fkey      | FOREIGN KEY | FOREIGN KEY (lease_id) REFERENCES leases(id) ON UPDATE CASCADE ON DELETE CASCADE            |
-| lease_tenants_pkey               | PRIMARY KEY | PRIMARY KEY (lease_id, membership_id)                                                       |
+| Name                                    | Type        | Definition                                                                                                  |
+| --------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------- |
+| lease_tenants_org_id_fkey               | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT                      |
+| lease_tenants_pkey                      | PRIMARY KEY | PRIMARY KEY (lease_id, membership_id)                                                                       |
+| lease_tenants_org_id_membership_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, membership_id) REFERENCES memberships(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT |
+| lease_tenants_org_id_lease_id_fkey      | FOREIGN KEY | FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON UPDATE CASCADE ON DELETE CASCADE            |
 
 ## Indexes
 

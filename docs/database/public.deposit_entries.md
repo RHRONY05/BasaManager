@@ -6,27 +6,27 @@ Deposit ledger (received, refunded, applied to dues).
 
 ## Columns
 
-| Name          | Type                        | Default           | Nullable | Children | Parents                                         | Comment |
-| ------------- | --------------------------- | ----------------- | -------- | -------- | ----------------------------------------------- | ------- |
-| id            | uuid                        | gen_random_uuid() | false    |          |                                                 |         |
-| org_id        | uuid                        |                   | false    |          | [public.organizations](public.organizations.md) |         |
-| lease_id      | uuid                        |                   | false    |          | [public.leases](public.leases.md)               |         |
-| kind          | deposit_entry_kind          |                   | false    |          |                                                 |         |
-| amount_poisha | bigint                      |                   | false    |          |                                                 |         |
-| note          | text                        |                   | true     |          |                                                 |         |
-| recorded_by   | uuid                        |                   | false    |          | [public.users](public.users.md)                 |         |
-| created_at    | timestamp(6) with time zone | CURRENT_TIMESTAMP | false    |          |                                                 |         |
-| updated_at    | timestamp(6) with time zone | CURRENT_TIMESTAMP | false    |          |                                                 |         |
+| Name          | Type                        | Default           | Nullable | Children | Parents                                                                           | Comment |
+| ------------- | --------------------------- | ----------------- | -------- | -------- | --------------------------------------------------------------------------------- | ------- |
+| id            | uuid                        | gen_random_uuid() | false    |          |                                                                                   |         |
+| org_id        | uuid                        |                   | false    |          | [public.organizations](public.organizations.md) [public.leases](public.leases.md) |         |
+| lease_id      | uuid                        |                   | false    |          | [public.leases](public.leases.md)                                                 |         |
+| kind          | deposit_entry_kind          |                   | false    |          |                                                                                   |         |
+| amount_poisha | bigint                      |                   | false    |          |                                                                                   |         |
+| note          | text                        |                   | true     |          |                                                                                   |         |
+| recorded_by   | uuid                        |                   | false    |          | [public.users](public.users.md)                                                   |         |
+| created_at    | timestamp(6) with time zone | CURRENT_TIMESTAMP | false    |          |                                                                                   |         |
+| updated_at    | timestamp(6) with time zone | CURRENT_TIMESTAMP | false    |          |                                                                                   |         |
 
 ## Constraints
 
-| Name                             | Type        | Definition                                                                             |
-| -------------------------------- | ----------- | -------------------------------------------------------------------------------------- |
-| deposit_entries_amount_check     | CHECK       | CHECK ((amount_poisha >= 0))                                                           |
-| deposit_entries_recorded_by_fkey | FOREIGN KEY | FOREIGN KEY (recorded_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE RESTRICT    |
-| deposit_entries_org_id_fkey      | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT |
-| deposit_entries_lease_id_fkey    | FOREIGN KEY | FOREIGN KEY (lease_id) REFERENCES leases(id) ON UPDATE CASCADE ON DELETE RESTRICT      |
-| deposit_entries_pkey             | PRIMARY KEY | PRIMARY KEY (id)                                                                       |
+| Name                                 | Type        | Definition                                                                                        |
+| ------------------------------------ | ----------- | ------------------------------------------------------------------------------------------------- |
+| deposit_entries_amount_check         | CHECK       | CHECK ((amount_poisha >= 0))                                                                      |
+| deposit_entries_recorded_by_fkey     | FOREIGN KEY | FOREIGN KEY (recorded_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE RESTRICT               |
+| deposit_entries_org_id_fkey          | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT            |
+| deposit_entries_pkey                 | PRIMARY KEY | PRIMARY KEY (id)                                                                                  |
+| deposit_entries_org_id_lease_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT |
 
 ## Indexes
 

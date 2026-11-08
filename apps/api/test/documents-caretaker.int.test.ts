@@ -1,10 +1,11 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import { createPrisma, type Db } from '../src/config/db';
 import { appUrl } from './helpers/env';
-import { resetData, closeOwner, asApp } from './helpers/pg';
+import { resetData, closeOwner, asApp, pgErrorCode } from './helpers/pg';
 import {
   makeOrgWithLease,
   makeDocument,
+  makeFile,
   makeOrg,
   makeBuilding,
   makeUnit,
@@ -73,6 +74,35 @@ describe('documents are invisible to caretakers (documents-caretaker.int.test.ts
       return r.rowCount;
     });
     expect(res).toBe(0);
+  });
+
+  it('the files row behind a document is hidden from caretakers; other file kinds are not', async () => {
+    const o = await makeOrgWithLease();
+    await makeDocument(o.id, o.leaseId, o.landlordUserId);
+    const photoId = await makeFile(o.id, o.landlordUserId, 'maintenance_photo');
+    const caretaker = { orgId: o.id, userId: o.landlordUserId, role: 'caretaker' as const };
+
+    const asCaretaker = await db.$tx(caretaker, (tx) =>
+      tx.file.findMany({ select: { id: true, kind: true } }),
+    );
+    expect(asCaretaker).toEqual([{ id: photoId, kind: 'maintenance_photo' }]);
+    const asLandlord = await db.$tx({ ...caretaker, role: 'landlord' }, (tx) => tx.file.count());
+    expect(asLandlord).toBe(2);
+
+    // A caretaker can't create a 'document' file either (restrictive USING doubles as the insert check)…
+    const insert = (kind: string) =>
+      asApp(caretaker, (c) =>
+        pgErrorCode(
+          c.query(
+            `insert into files (org_id, provider, public_id, resource_type, format, mime, size_bytes, sha256, kind)
+             values ($1, 'local', $2, 'raw', 'pdf', 'application/pdf', 1, $3, $4)`,
+            [o.id, `basamanager/test/org/${o.id}/${kind}-${Math.random()}`, 'b'.repeat(64), kind],
+          ),
+        ),
+      );
+    expect(await insert('document')).toBe('42501');
+    // …but may upload a maintenance photo.
+    expect(await insert('maintenance_photo')).toBeUndefined();
   });
 
   it('org isolation still holds for documents (other org context sees none)', async () => {

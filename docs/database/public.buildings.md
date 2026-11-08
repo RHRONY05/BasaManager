@@ -9,7 +9,7 @@ A building with its billing calendar and late-fee rule.
 | Name                    | Type                        | Default               | Nullable | Children                                                                                                                                                                                      | Parents                                         | Comment |
 | ----------------------- | --------------------------- | --------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ------- |
 | id                      | uuid                        | gen_random_uuid()     | false    | [public.caretaker_buildings](public.caretaker_buildings.md) [public.units](public.units.md) [public.maintenance_requests](public.maintenance_requests.md) [public.notices](public.notices.md) |                                                 |         |
-| org_id                  | uuid                        |                       | false    |                                                                                                                                                                                               | [public.organizations](public.organizations.md) |         |
+| org_id                  | uuid                        |                       | false    | [public.caretaker_buildings](public.caretaker_buildings.md) [public.units](public.units.md) [public.maintenance_requests](public.maintenance_requests.md) [public.notices](public.notices.md) | [public.organizations](public.organizations.md) |         |
 | name                    | text                        |                       | false    |                                                                                                                                                                                               |                                                 |         |
 | address                 | text                        |                       | false    |                                                                                                                                                                                               |                                                 |         |
 | area                    | text                        |                       | false    |                                                                                                                                                                                               |                                                 |         |
@@ -40,10 +40,11 @@ A building with its billing calendar and late-fee rule.
 
 ## Indexes
 
-| Name                 | Definition                                                                 |
-| -------------------- | -------------------------------------------------------------------------- |
-| buildings_pkey       | CREATE UNIQUE INDEX buildings_pkey ON public.buildings USING btree (id)    |
-| buildings_org_id_idx | CREATE INDEX buildings_org_id_idx ON public.buildings USING btree (org_id) |
+| Name                    | Definition                                                                               |
+| ----------------------- | ---------------------------------------------------------------------------------------- |
+| buildings_pkey          | CREATE UNIQUE INDEX buildings_pkey ON public.buildings USING btree (id)                  |
+| buildings_org_id_idx    | CREATE INDEX buildings_org_id_idx ON public.buildings USING btree (org_id)               |
+| buildings_org_id_id_key | CREATE UNIQUE INDEX buildings_org_id_id_key ON public.buildings USING btree (org_id, id) |
 
 ## Relations
 

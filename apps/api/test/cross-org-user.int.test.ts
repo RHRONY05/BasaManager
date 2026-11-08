@@ -83,6 +83,23 @@ describe('a user without an org context (cross-org-user.int.test.ts)', () => {
     expect(res.count).toBe(0);
   });
 
+  it('inside an org context the user-only policies are off: org A shows only A’s memberships and org A', async () => {
+    // U is a member of A and B. A has its landlord + U.
+    const ctxA = { orgId: A.id, userId: U, role: 'tenant' as const };
+    const res = await db.$tx(ctxA, async (tx) => ({
+      count: await tx.membership.count(),
+      active: await tx.membership.findMany({ where: { status: 'active' }, select: { orgId: true } }),
+      orgs: await tx.organization.findMany({ select: { id: true } }),
+    }));
+    const [expected] = await q<{ n: number }>(
+      'select count(*)::int as n from memberships where org_id = $1',
+      [A.id],
+    );
+    expect(res.count).toBe(expected!.n);
+    expect(res.active.every((m) => m.orgId === A.id)).toBe(true);
+    expect(res.orgs.map((o) => o.id)).toEqual([A.id]);
+  });
+
   it('a membership in another org does not open that org’s other tables', async () => {
     await makeBuilding(A.id);
     const rows = await db.$tx(userOnly(U), (tx) => tx.building.findMany());

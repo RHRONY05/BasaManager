@@ -147,9 +147,9 @@
 </g>
 <!-- public.receipts&#45;&gt;public.payments -->
 <g id="edge2" class="edge">
-<title>public.receipts:payment_id&#45;&gt;public.payments:id</title>
-<path fill="none" stroke="black" d="M1375.72,-905.68C1446.16,-877.65 1456.11,-551.4 1380.29,-551.4"/>
-<polygon fill="black" stroke="black" points="1376.01,-905.63 1365.34,-903.12 1370.78,-906.65 1366.53,-907.47 1366.53,-907.47 1366.53,-907.47 1370.78,-906.65 1367.06,-911.95 1376.01,-905.63"/>
+<title>public.receipts:org_id&#45;&gt;public.payments:org_id</title>
+<path fill="none" stroke="black" d="M1374.69,-933.12C1413.97,-884.75 1423.65,-520.6 1380.29,-520.6"/>
+<polygon fill="black" stroke="black" points="1374.73,-933.09 1363.84,-934.37 1370.16,-935.83 1366.44,-938.06 1366.44,-938.06 1366.44,-938.06 1370.16,-935.83 1368.47,-942.09 1374.73,-933.09"/>
 </g>
 <!-- public.files -->
 <g id="node4" class="node">
@@ -211,9 +211,9 @@
 </g>
 <!-- public.receipts&#45;&gt;public.files -->
 <g id="edge3" class="edge">
-<title>public.receipts:file_id&#45;&gt;public.files:id</title>
-<path fill="none" stroke="black" d="M1371.37,-806.54C1394.36,-759.41 1475.19,-536 1482.71,-536"/>
-<polygon fill="black" stroke="black" points="1371.41,-806.48 1362.25,-812.5 1368.55,-810.98 1366.23,-814.64 1366.23,-814.64 1366.23,-814.64 1368.55,-810.98 1369.85,-817.33 1371.41,-806.48"/>
+<title>public.receipts:org_id&#45;&gt;public.files:org_id</title>
+<path fill="none" stroke="black" d="M1374.85,-933.53C1417.99,-885.94 1435.97,-505.2 1482.71,-505.2"/>
+<polygon fill="black" stroke="black" points="1374.96,-933.48 1364.02,-934.28 1370.26,-936.02 1366.46,-938.08 1366.46,-938.08 1366.46,-938.08 1370.26,-936.02 1368.31,-942.2 1374.96,-933.48"/>
 </g>
 </g>
 </svg>
