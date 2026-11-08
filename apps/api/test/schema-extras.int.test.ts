@@ -55,10 +55,12 @@ describe('admin views', () => {
     const o = await makeOrgWithLease();
     await makeOrg();
     const admin = { orgId: null, userId: o.landlordUserId, role: null, isAdmin: true };
-    const rows = await db.$tx(admin, (tx) =>
-      tx.$queryRaw<
-        { id: string; building_count: number; unit_count: number; active_lease_count: number }[]
-      >`select id, building_count, unit_count, active_lease_count from admin_org_overview`,
+    const rows = await db.$tx(
+      admin,
+      (tx) =>
+        tx.$queryRaw<
+          { id: string; building_count: number; unit_count: number; active_lease_count: number }[]
+        >`select id, building_count, unit_count, active_lease_count from admin_org_overview`,
     );
     expect(rows).toHaveLength(2);
     expect(rows.find((r) => r.id === o.id)).toMatchObject({
@@ -74,12 +76,14 @@ describe('admin views', () => {
   it('admin_health lists job runs and failed outbox rows in admin context; bm_app cannot write views', async () => {
     const o = await makeOrg();
     await q(`insert into job_runs (job, status) values ('generateBills', 'ok')`);
-    await q(`insert into outbox (org_id, type, payload, status, attempts) values ($1, 'x', '{}', 'failed', 5)`, [
-      o.id,
-    ]);
+    await q(
+      `insert into outbox (org_id, type, payload, status, attempts) values ($1, 'x', '{}', 'failed', 5)`,
+      [o.id],
+    );
     const admin = { orgId: null, userId: o.landlordUserId, role: null, isAdmin: true };
-    const rows = await db.$tx(admin, (tx) =>
-      tx.$queryRaw<{ kind: string }[]>`select kind from admin_health order by kind`,
+    const rows = await db.$tx(
+      admin,
+      (tx) => tx.$queryRaw<{ kind: string }[]>`select kind from admin_health order by kind`,
     );
     expect(rows.map((r) => r.kind)).toEqual(['job_run', 'outbox_failed']);
     const grants = await q<{ view: string; sel: boolean; ins: boolean; del: boolean }>(

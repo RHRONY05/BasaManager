@@ -73,7 +73,14 @@ export const creditEntryKindSchema = z.enum(['overpayment', 'applied', 'reversed
 export type CreditEntryKind = z.infer<typeof creditEntryKindSchema>;
 
 /** `payment_intent_status` */
-export const paymentIntentStatusSchema = z.enum(['initiated', 'confirmed', 'failed', 'cancelled', 'expired', 'flagged']);
+export const paymentIntentStatusSchema = z.enum([
+  'initiated',
+  'confirmed',
+  'failed',
+  'cancelled',
+  'expired',
+  'flagged',
+]);
 export type PaymentIntentStatus = z.infer<typeof paymentIntentStatusSchema>;
 
 /** `receipt_status` */
@@ -81,7 +88,15 @@ export const receiptStatusSchema = z.enum(['valid', 'void']);
 export type ReceiptStatus = z.infer<typeof receiptStatusSchema>;
 
 /** `maintenance_category` */
-export const maintenanceCategorySchema = z.enum(['plumbing', 'electrical', 'gas', 'lift', 'cleaning', 'security', 'other']);
+export const maintenanceCategorySchema = z.enum([
+  'plumbing',
+  'electrical',
+  'gas',
+  'lift',
+  'cleaning',
+  'security',
+  'other',
+]);
 export type MaintenanceCategory = z.infer<typeof maintenanceCategorySchema>;
 
 /** `maintenance_priority` */
@@ -105,7 +120,14 @@ export const fileResourceTypeSchema = z.enum(['image', 'raw']);
 export type FileResourceType = z.infer<typeof fileResourceTypeSchema>;
 
 /** `file_kind` */
-export const fileKindSchema = z.enum(['maintenance_photo', 'payment_proof', 'document', 'receipt_pdf', 'statement_pdf', 'settlement_pdf']);
+export const fileKindSchema = z.enum([
+  'maintenance_photo',
+  'payment_proof',
+  'document',
+  'receipt_pdf',
+  'statement_pdf',
+  'settlement_pdf',
+]);
 export type FileKind = z.infer<typeof fileKindSchema>;
 
 /** `document_kind` */

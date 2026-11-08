@@ -50,7 +50,11 @@ export type TenantCtx = {
   isAdmin?: boolean;
 };
 
-export type TxOptions = { maxWait?: number; timeout?: number; isolationLevel?: Prisma.TransactionIsolationLevel };
+export type TxOptions = {
+  maxWait?: number;
+  timeout?: number;
+  isolationLevel?: Prisma.TransactionIsolationLevel;
+};
 
 /** Thrown when an org-owned model is queried outside `db.$tx` (a bug: there is no tenant context). */
 export class TenantContextMissing extends Error {
@@ -116,7 +120,8 @@ function withTenantExtension(base: PrismaClient) {
 }
 
 function assertCtx(ctx: TenantCtx): void {
-  if (ctx.orgId !== null && !UUID.test(ctx.orgId)) throw new TypeError('TenantCtx.orgId must be a uuid or null');
+  if (ctx.orgId !== null && !UUID.test(ctx.orgId))
+    throw new TypeError('TenantCtx.orgId must be a uuid or null');
   if (!UUID.test(ctx.userId)) throw new TypeError('TenantCtx.userId must be a uuid');
 }
 

@@ -24,7 +24,8 @@ export type QueryCounter = {
   measure: <T>(fn: () => Promise<T>) => Promise<{ result: T; count: number; statements: string[] }>;
 };
 
-const PLUMBING = /^\s*(begin|commit|rollback|savepoint|release savepoint|set transaction)\b|set_config\('app\.org_id'/i;
+const PLUMBING =
+  /^\s*(begin|commit|rollback|savepoint|release savepoint|set transaction)\b|set_config\('app\.org_id'/i;
 
 export function isPlumbing(sql: string): boolean {
   return PLUMBING.test(sql);

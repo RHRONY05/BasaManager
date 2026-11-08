@@ -1,11 +1,6 @@
 import type { Tx } from '../src/config/db';
 import type { Db } from '../src/config/db';
-import type {
-  ElectricityMode,
-  LateFeeType,
-  MembershipRole,
-  UnitType,
-} from '../src/generated/prisma/client';
+import type { ElectricityMode, LateFeeType, MembershipRole, UnitType } from '../src/generated/prisma/client';
 
 /**
  * Thin repository functions the dev seed uses while the real services don't exist yet (V4).
@@ -45,7 +40,12 @@ export async function createOrg(
   await tx.organization.create({ data: o });
 }
 
-export async function addMember(tx: Tx, orgId: string, userId: string, role: MembershipRole): Promise<string> {
+export async function addMember(
+  tx: Tx,
+  orgId: string,
+  userId: string,
+  role: MembershipRole,
+): Promise<string> {
   const m = await tx.membership.create({ data: { orgId, userId, role }, select: { id: true } });
   return m.id;
 }

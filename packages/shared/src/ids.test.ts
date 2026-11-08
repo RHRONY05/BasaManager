@@ -10,7 +10,8 @@ describe('ids', () => {
   });
 
   it('isUuid rejects non-uuids', () => {
-    for (const v of ['', 'abc', 42, null, undefined, '123e4567-e89b-12d3-a456']) expect(isUuid(v)).toBe(false);
+    for (const v of ['', 'abc', 42, null, undefined, '123e4567-e89b-12d3-a456'])
+      expect(isUuid(v)).toBe(false);
   });
 
   it('uuidListSchema enforces max length and uniqueness', () => {

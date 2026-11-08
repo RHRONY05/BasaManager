@@ -39,6 +39,11 @@ if (seedEnv.APP_ENV === 'prod') {
   throw new Error('db:seed refuses to run with APP_ENV=prod (demo data is dev/staging only)');
 }
 
+const say = (line: string): void => {
+  process.stdout.write(`db:seed: ${line}
+`);
+};
+
 export const DEMO_ORG_SLUG = 'rahman-properties';
 const taka = (n: number): bigint => BigInt(Math.round(n * 100));
 
@@ -137,7 +142,7 @@ async function main(): Promise<void> {
       tx.organization.findUnique({ where: { slug: DEMO_ORG_SLUG }, select: { id: true } }),
     );
     if (existing) {
-      console.log(`db:seed: "${DEMO_ORG_SLUG}" already exists (${existing.id}); users upserted, nothing else.`);
+      say(`"${DEMO_ORG_SLUG}" already exists (${existing.id}); users upserted, nothing else.`);
       return;
     }
 
@@ -156,8 +161,8 @@ async function main(): Promise<void> {
       await assignCaretaker(tx, orgId, caretakerMembership, villaId);
     }, { timeout: 30_000 }); // prettier-ignore
 
-    console.log(
-      `db:seed: created "Rahman Properties" (${orgId}): ${userCount} users, 2 buildings, ${VILLA_UNITS.length + TOWER_UNITS.length} units.`,
+    say(
+      `created "Rahman Properties" (${orgId}): ${userCount} users, 2 buildings, ${VILLA_UNITS.length + TOWER_UNITS.length} units.`,
     );
   } finally {
     await db.$disconnect();

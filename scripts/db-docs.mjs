@@ -135,7 +135,9 @@ if (process.env.TBLS_DSN) {
   try {
     status = await withScratchDb(ownerUrl, (dsn) => runTbls(command, dsn, extraArgs));
   } catch (err) {
-    console.error(`db-docs: ${err.message} (is the test Postgres up? docker compose -f infra/compose.test.yml up -d)`);
+    console.error(
+      `db-docs: ${err.message} (is the test Postgres up? docker compose -f infra/compose.test.yml up -d)`,
+    );
     process.exit(1);
   }
 }
