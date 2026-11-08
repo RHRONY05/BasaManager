@@ -20,9 +20,18 @@ export async function closeOwner(): Promise<void> {
   ownerPool = undefined;
 }
 
-/** Wipe every fixture row. Cascades through all foreign keys to org-owned tables. */
+/**
+ * Wipe every fixture row in EVERY public table (except Prisma's migration ledger). Truncating only
+ * users/organizations misses tables with no foreign key to them (e.g. job_runs), which leaked rows
+ * from one test file into the next depending on file order.
+ */
 export async function resetData(): Promise<void> {
-  await owner().query('truncate table users, organizations restart identity cascade');
+  const { rows } = await owner().query<{ t: string }>(
+    `select format('%I.%I', schemaname, tablename) as t from pg_tables
+      where schemaname = 'public' and tablename <> '_prisma_migrations'`,
+  );
+  if (rows.length === 0) return;
+  await owner().query(`truncate table ${rows.map((r) => r.t).join(', ')} restart identity cascade`);
 }
 
 export async function q<T extends pg.QueryResultRow = Record<string, unknown>>(
