@@ -119,7 +119,7 @@ Agents append one line per choice the docs didn't cover (newest last). If it cha
 - 2026-11-08 — Debugger (V1 review): client-caused errors with a numeric 4xx status (bad `%` path, unsupported charset/encoding, verify failures, 431) map to 400 `VALIDATION_FAILED` with a fixed message; no new 415 code (keeps `errorStatus` consistent). e2e builds the web app with `--mode test` so `en-XA` stays available to the layout audit while production builds ignore it.
 - 2026-11-08 — Lead: V2 (design), V3 (infra) and the V1 follow-up run in parallel worktrees because their files do not overlap (design only `.agent/design/**`; infra `infra/**`, `.github/**`, deploy glue). Feature tasks from V4 on still go in order.
 
-- 2026-11-08 — Owner: the build must run with no human after the initial grant. agy runs in turbo (`--dangerously-skip-permissions`); leads run as fresh Sonnet sessions from `scripts/autonomous.sh` with permissions bypassed. Updated 11-AGENT-TEAM.md and next-task.
+- 2026-11-08 — Owner: the build must run with no human after the initial grant. agy runs in turbo (`--dangerously-skip-permissions`); leads run as fresh Opus 5.5 sessions at medium effort (owner decision; costs more than Sonnet) from `scripts/autonomous.sh` with permissions bypassed. Updated 11-AGENT-TEAM.md and next-task.
 
 ## Session log
 Newest at the bottom. One entry per task. Keep entries short.
