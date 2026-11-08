@@ -1,0 +1,87 @@
+<!--meta {"title": "D05 · Landlord dashboard", "shell": "staff-d", "active": "dashboard", "crumbs": ["Dashboard"], "bell": "3"} -->
+<style>
+  .dash { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: var(--space-6); align-items: start; }
+  .attn { display: grid; gap: var(--space-4); }
+  .attn-card { display: grid; gap: var(--space-3); }
+  .attn-card__top { display: flex; align-items: flex-start; gap: var(--space-3); }
+  .attn-card__icon { display: grid; place-items: center; width: var(--size-tap); height: var(--size-tap); border-radius: var(--radius-md); flex-shrink: 0; }
+  .attn-card__icon--warn { background: var(--warning-soft); color: var(--warning-text); }
+  .attn-card__icon--info { background: var(--accent-soft); color: var(--accent-primary); }
+  .attn-card__icon--danger { background: var(--danger-soft); color: var(--danger-text); }
+  .lists { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-6); align-items: start; }
+</style>
+<div class="page">
+  <section class="page-head">
+    <div class="page-head__text">
+      <h1 class="t-title">Dashboard</h1>
+      <p class="secondary">Chowdhury Properties · 3 buildings · 26 units</p>
+    </div>
+    <div class="month-picker"><button class="icon-btn" type="button" aria-label="Previous month, October 2026"><i data-lucide="chevron-left"></i></button><span class="month-picker__label">November 2026</span><button class="icon-btn" type="button" aria-label="Next month" disabled><i data-lucide="chevron-right"></i></button></div>
+  </section>
+
+  <section class="kpis" aria-label="This month">
+    <div class="kpi"><span class="kpi__label"><i data-lucide="receipt-text" class="i-sm"></i>Billed</span><span class="kpi__value">৳3,84,500</span><span class="kpi__meta">26 bills · 7 still drafts</span></div>
+    <div class="kpi"><span class="kpi__label"><i data-lucide="hand-coins" class="i-sm"></i>Collected</span><span class="kpi__value">৳2,61,200</span><div class="meter meter--success" role="img" aria-label="68% of billed"><span style="width:68%"></span></div><span class="kpi__meta">68% of billed · ৳40,700 waiting to confirm</span></div>
+    <div class="kpi"><span class="kpi__label"><i data-lucide="scale" class="i-sm"></i>Outstanding</span><span class="kpi__value">৳1,48,300</span><span class="kpi__meta"><span class="t-neg t-strong">4 leases overdue</span> · incl. October dues</span></div>
+    <div class="kpi"><span class="kpi__label"><i data-lucide="door-closed" class="i-sm"></i>Occupancy</span><span class="kpi__value">88%</span><span class="kpi__meta">23 of 26 units · 3 vacant</span></div>
+  </section>
+
+  <div class="dash">
+    <section class="card" aria-labelledby="chart-h">
+      <div class="card__head">
+        <h2 class="card__title" id="chart-h">Billed and collected, last 6 months</h2>
+        <button class="btn btn--ghost btn--sm" type="button"><i data-lucide="table-2" class="i-sm"></i>Show as table</button>
+      </div>
+      <div class="chart">
+        <div class="chart__legend"><span class="chart__key"><span class="chart__swatch"></span>Billed (column)</span><span class="chart__key"><span class="chart__swatch chart__swatch--collected"></span>Collected (fill) · % collected on top</span></div>
+        <div class="chart__body">
+          <div class="chart__y" aria-hidden="true"><span>৳5 lakh</span><span>৳4 lakh</span><span>৳3 lakh</span><span>৳2 lakh</span><span>৳1 lakh</span></div>
+          <div class="chart__plot" role="img" aria-label="Collection rate: June 98%, July 96%, August 98%, September 94%, October 93%, November 68% so far">
+            <div class="chart__group"><span class="chart__col" style="height:72%"><span class="chart__rate">98%</span><span class="chart__fill" style="height:98%"></span></span></div>
+            <div class="chart__group"><span class="chart__col" style="height:73%"><span class="chart__rate">96%</span><span class="chart__fill" style="height:96%"></span></span></div>
+            <div class="chart__group"><span class="chart__col" style="height:74%"><span class="chart__rate">98%</span><span class="chart__fill" style="height:98%"></span></span></div>
+            <div class="chart__group"><span class="chart__col" style="height:74%"><span class="chart__rate">94%</span><span class="chart__fill" style="height:94%"></span></span></div>
+            <div class="chart__group"><span class="chart__col" style="height:77%"><span class="chart__rate">93%</span><span class="chart__fill" style="height:93%"></span></span></div>
+            <div class="chart__group chart__group--current"><span class="chart__col" style="height:77%"><span class="chart__rate">68%</span><span class="chart__fill" style="height:68%"></span></span></div>
+          </div>
+        </div>
+        <div class="chart__body"><span></span><div class="chart__axis" aria-hidden="true"><span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span><span>Nov · so far</span></div></div>
+      </div>
+    </section>
+
+    <section class="attn" aria-labelledby="attn-h">
+      <h2 class="t-section" id="attn-h">Needs you</h2>
+      <div class="card card--tight attn-card">
+        <div class="attn-card__top"><span class="attn-card__icon attn-card__icon--info"><i data-lucide="file-pen-line"></i></span><div class="stack-sm grow"><span class="t-strong">7 draft bills at Karnaphuli View</span><span class="t-sm secondary">5 ready to issue · 2 need a meter reading (2A, 3B)</span></div></div>
+        <a class="btn btn--primary" href="#/l/billing">Review drafts</a>
+      </div>
+      <div class="card card--tight attn-card">
+        <div class="attn-card__top"><span class="attn-card__icon attn-card__icon--warn"><i data-lucide="hourglass"></i></span><div class="stack-sm grow"><span class="t-strong">3 payment claims · <span class="num">৳40,700</span></span><span class="t-sm secondary">Tenants say they paid by cash, bKash or Nagad</span></div></div>
+        <a class="btn btn--secondary" href="#/l/payments">Check claims</a>
+      </div>
+      <div class="card card--tight attn-card">
+        <div class="attn-card__top"><span class="attn-card__icon attn-card__icon--danger"><i data-lucide="siren"></i></span><div class="stack-sm grow"><span class="t-strong">2 urgent requests</span><span class="t-sm secondary">Lift stuck at Shanti Neer (6 h) · gas flame low at Karnaphuli View 3A (1 d)</span></div></div>
+        <a class="btn btn--secondary" href="#/l/maintenance">Open maintenance</a>
+      </div>
+    </section>
+  </div>
+
+  <div class="lists">
+    <section class="stack-sm" aria-labelledby="claims-h">
+      <div class="section-head"><h2 id="claims-h">Pending payment claims</h2><a class="btn btn--link" href="#/l/payments">All payments</a></div>
+      <div class="list">
+        <a class="list-row" href="#/l/payments?claim=1"><span class="avatar">RK</span><span class="list-row__main"><span class="list-row__title">Md. Rezaul Karim</span><span class="list-row__meta">Shanti Neer 2A · bKash · 7 Nov</span></span><span class="list-row__end"><span class="num t-strong">৳14,200</span><span class="badge badge--warning"><i data-lucide="hourglass"></i>Pending</span></span></a>
+        <a class="list-row" href="#/l/payments?claim=2"><span class="avatar">IH</span><span class="list-row__main"><span class="list-row__title">Imran Hossain</span><span class="list-row__meta">Shanti Neer 3B · Nagad · 6 Nov</span></span><span class="list-row__end"><span class="num t-strong">৳8,000</span><span class="badge badge--warning"><i data-lucide="hourglass"></i>Pending</span></span></a>
+        <a class="list-row" href="#/l/payments?claim=3"><span class="avatar">TB</span><span class="list-row__main"><span class="list-row__title">Tahmina Begum</span><span class="list-row__meta">Karnaphuli View 3B · Cash · 5 Nov</span></span><span class="list-row__end"><span class="num t-strong">৳18,500</span><span class="badge badge--warning"><i data-lucide="hourglass"></i>Pending</span></span></a>
+      </div>
+    </section>
+    <section class="stack-sm" aria-labelledby="reqs-h">
+      <div class="section-head"><h2 id="reqs-h">Urgent and oldest requests</h2><a class="btn btn--link" href="#/l/maintenance">Board</a></div>
+      <div class="list">
+        <a class="list-row" href="#/l/maintenance/r-1051"><span class="list-row__main"><span class="list-row__title">Lift stops between 3rd and 4th floor</span><span class="list-row__meta">Shanti Neer · Lift · reported by Tanvir Ahmed (4B)</span></span><span class="list-row__end"><span class="prio prio--urgent"><i data-lucide="siren"></i>Urgent</span><span class="age"><i data-lucide="clock" class="i-sm"></i>6 h</span></span></a>
+        <a class="list-row" href="#/l/maintenance/r-1049"><span class="list-row__main"><span class="list-row__title">Gas burner flame very low</span><span class="list-row__meta">Karnaphuli View 3A · Gas · Jamal Uddin</span></span><span class="list-row__end"><span class="prio prio--urgent"><i data-lucide="siren"></i>Urgent</span><span class="age"><i data-lucide="clock" class="i-sm"></i>1 d</span></span></a>
+        <a class="list-row" href="#/l/maintenance/r-1037"><span class="list-row__main"><span class="list-row__title">Stair light not working on 2nd floor</span><span class="list-row__meta">Hill Crest · Electrical · not assigned</span></span><span class="list-row__end"><span class="prio"><i data-lucide="arrow-down"></i>Low</span><span class="age age--old"><i data-lucide="clock" class="i-sm"></i>4 d</span></span></a>
+      </div>
+    </section>
+  </div>
+</div>

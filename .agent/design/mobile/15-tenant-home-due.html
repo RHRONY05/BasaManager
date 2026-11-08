@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>M15 · Tenant home — due — BasaManager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../ui.css">
+<script src="https://unpkg.com/lucide@1.70.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+<style>
+  /* layout only — tokens only */
+  .greet { display: grid; gap: var(--space-1); }
+</style>
+</head>
+<body>
+<div class="frame-m">
+<header class="m-topbar"><a class="brand" href="#home" aria-label="BasaManager home"><svg class="brand__mark" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15 16 6l10 9"/><path d="M9 13v9h14v-9"/><path d="M13.5 22v-5h5v5"/><path d="M5 26h22M5 29.5h22" stroke-width="1.6"/></svg></a><h1 class="m-topbar__title" title="Home">Home</h1><span class="bell"><a class="icon-btn" href="#notifications" aria-label="Notifications, 2 unread"><i data-lucide="bell"></i></a><span class="bell__count" aria-hidden="true">2</span></span></header>
+<main class="m-main">
+<section class="greet" aria-label="Your flat">
+  <p class="eyebrow">Shanti Neer · Flat 4A</p>
+  <h2 class="t-title">Good evening, <span data-user>Nusrat</span></h2>
+</section>
+
+<section class="due-card fade-in" aria-labelledby="due-h">
+  <div class="due-card__top">
+    <h2 class="t-card" id="due-h">November 2026</h2>
+    <span class="badge badge--warning"><i data-lucide="circle-dashed"></i>Partially paid</span>
+  </div>
+  <div class="ledger ledger--sm">
+    <div class="ledger__row"><span class="ledger__label">November bill</span><span class="ledger__leader"></span><span class="ledger__amount">৳16,475</span></div>
+    <div class="ledger__row"><span class="ledger__label">Paid by bKash</span><span class="ledger__leader"></span><span class="ledger__amount ledger__amount--neg">−৳9,000</span><span class="ledger__explain">5 Nov · receipt BM-2026-000203</span></div>
+  </div>
+  <div class="hero-total">
+    <span class="t-sm t-strong secondary">Left to pay</span>
+    <span class="amount amount--hero">৳7,475</span>
+    <span class="due-card__when"><i data-lucide="calendar-clock" class="i-sm"></i>Due 10 Nov · in 2 days</span>
+  </div>
+  <div class="due-card__actions">
+    <a class="btn btn--primary btn--lg btn--block" href="#/t/pay" data-button>Pay ৳7,475 now</a>
+    <a class="btn btn--secondary btn--block" href="#/t/claim" data-button>I paid another way</a>
+  </div>
+  <a class="btn btn--link" href="#/t/bills/nov-2026" data-button>See every line of this bill</a>
+</section>
+
+<section class="stack-sm" aria-labelledby="notice-h">
+  <div class="section-head"><h2 id="notice-h">Building notice</h2><a class="btn btn--link" href="#/t/notices" data-button>All notices</a></div>
+  <article class="notice notice--pinned">
+    <div class="notice__head"><h3 class="notice__title">Water supply off on Sunday, 10 AM – 2 PM</h3><span class="pin"><i data-lucide="pin" class="i-sm"></i>Pinned</span></div>
+    <p class="notice__body t-sm">WASA is repairing the main line on Road 3. Please store water on Saturday night. The lift will work as usual.</p>
+    <div class="notice__meta"><span>Farhana Chowdhury</span><span>7 Nov</span></div>
+  </article>
+</section>
+
+<section class="stack-sm" aria-labelledby="req-h">
+  <div class="section-head"><h2 id="req-h">Your requests</h2><a class="btn btn--link" href="#/t/requests/new" data-button>New request</a></div>
+  <div class="list">
+    <a class="list-row" href="#/t/requests/r-1042">
+      <span class="list-row__main"><span class="list-row__title">Kitchen sink leaking under the cabinet</span><span class="list-row__meta">Plumbing · Jamal Uddin · updated 11:10 AM</span></span>
+      <span class="list-row__end"><span class="badge badge--warning"><i data-lucide="wrench"></i>In progress</span></span>
+    </a>
+  </div>
+</section>
+
+<section class="card card--tight push-card" aria-labelledby="push-h">
+  <span class="push-card__icon"><i data-lucide="bell-ring"></i></span>
+  <div class="stack-sm grow">
+    <h2 class="t-strong" id="push-h">Get reminders on this phone</h2>
+    <p class="t-sm secondary">We'll tell you 3 days before the 10th, on the due date, and when a payment is confirmed. Nothing else unless you choose.</p>
+    <div class="btn-row"><button class="btn btn--secondary" type="button">Turn on</button><button class="btn btn--ghost" type="button">Not now</button></div>
+  </div>
+</section>
+
+</main>
+<nav class="bottom-nav" data-bottom-nav aria-label="Main">
+  <a class="bottom-nav__item" href="#home" aria-current="page"><span class="bottom-nav__icon"><i data-lucide="house"></i></span><span class="bottom-nav__label" title="Home">Home</span></a>
+  <a class="bottom-nav__item" href="#bills"><span class="bottom-nav__icon"><i data-lucide="receipt-text"></i></span><span class="bottom-nav__label" title="Bills">Bills</span></a>
+  <a class="bottom-nav__item" href="#requests" aria-label="Requests, new updates"><span class="bottom-nav__icon"><i data-lucide="wrench"></i><span class="bottom-nav__dot"></span></span><span class="bottom-nav__label" title="Requests">Requests</span></a>
+  <a class="bottom-nav__item" href="#notices"><span class="bottom-nav__icon"><i data-lucide="megaphone"></i></span><span class="bottom-nav__label" title="Notices">Notices</span></a>
+  <a class="bottom-nav__item" href="#account"><span class="bottom-nav__icon"><i data-lucide="circle-user-round"></i></span><span class="bottom-nav__label" title="Account">Account</span></a>
+</nav>
+</div>
+</body>
+</html>

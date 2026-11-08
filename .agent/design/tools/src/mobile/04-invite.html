@@ -1,0 +1,31 @@
+<!--meta {"title": "M04 · Invite accept", "shell": "plain"} -->
+<style>
+  .m-nav { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4); }
+  .m-auth { display: grid; gap: var(--space-6); padding: var(--space-4) var(--space-4) var(--space-10); }
+</style>
+<div class="frame-m">
+<header class="m-nav"><a class="brand" href="#/">{{MARK}}BasaManager</a></header>
+<main class="m-auth">
+      <div class="stack-sm">
+        <p class="eyebrow">Invitation</p>
+        <h1 class="t-title">Join Chowdhury Properties</h1>
+        <p class="secondary">Farhana Chowdhury invited you as the <b>tenant of Shanti Neer, flat 2B</b>. The invite works until 15 Nov 2026.</p>
+      </div>
+      <div class="card card--tight">
+        <dl class="dl">
+          <div class="dl__row"><dt>Building</dt><dd>Shanti Neer, Nasirabad</dd></div>
+          <div class="dl__row"><dt>Role</dt><dd>Tenant · flat 2B</dd></div>
+          <div class="dl__row"><dt>Moves in</dt><dd class="num">18 Nov 2026</dd></div>
+        </dl>
+      </div>
+      <button class="btn btn--secondary btn--block" type="button">{{GOOGLE}}Continue with Google</button>
+      <div class="divider-text">or set a password</div>
+      <form class="form">
+        <div class="field"><label class="label" for="em">Email</label><input class="input" id="em" type="email" value="sadia.islam@gmail.com" disabled><span class="hint">The invite is for this address only.</span></div>
+        <div class="field"><label class="label" for="fn">Your full name</label><input class="input" id="fn" autocomplete="name" value="Sadia Islam"></div>
+        <div class="field"><label class="label" for="pw">Password</label><input class="input" id="pw" type="password" autocomplete="new-password" value=""><div class="pw-meter" aria-hidden="true"><span></span><span></span><span></span><span></span></div><span class="hint">At least 10 characters.</span></div>
+        <button class="btn btn--primary btn--block btn--lg" type="submit">Accept and join</button>
+      </form>
+      <p class="t-sm secondary">Not Sadia? <a href="#/login">Sign in with another account</a> and we'll explain what to do.</p>
+</main>
+</div>

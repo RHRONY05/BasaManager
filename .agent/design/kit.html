@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>K01 · Component kit — BasaManager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="ui.css">
+<script src="https://unpkg.com/lucide@1.70.0/dist/umd/lucide.min.js"></script>
+<script src="mock.js"></script>
+<style>
+  /* layout + forced demo states only (tokens only) */
+  .sheet-page { max-width: 1376px; margin: 0 auto; padding: var(--space-10) var(--space-8) var(--space-16); display: grid; gap: var(--space-10); }
+  .k-sec { display: grid; gap: var(--space-4); }
+  .k-sec > h2 { font-size: var(--text-xl); line-height: var(--leading-xl); font-weight: var(--weight-bold); padding-bottom: var(--space-2); border-bottom: 1px solid var(--border-default); display: flex; align-items: baseline; gap: var(--space-3); }
+  .k-sec > h2 small { font-size: var(--text-sm); font-weight: var(--weight-regular); color: var(--fg-muted); font-family: var(--font-mono); }
+  .k-grid { display: grid; gap: var(--space-4); }
+  .k-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .k-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .k-grid--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .k-cell { display: grid; gap: var(--space-2); align-content: start; min-width: 0; }
+  .k-cap { font-size: var(--text-xs); line-height: var(--leading-xs); color: var(--fg-muted); font-family: var(--font-mono); }
+  .k-row { display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center; }
+  .k-states { display: grid; grid-template-columns: 140px repeat(6, minmax(0, 1fr)); gap: var(--space-3); align-items: center; }
+  .k-states > .k-cap:first-child { font-weight: var(--weight-bold); }
+  .swatch { display: grid; gap: var(--space-1); }
+  .swatch i { display: block; height: var(--space-12); border-radius: var(--radius-md); border: 1px solid var(--border-default); }
+  .sw-bg-app { background: var(--bg-app); } .sw-bg-surface { background: var(--bg-surface); } .sw-bg-muted { background: var(--bg-muted); } .sw-bg-inverse { background: var(--bg-inverse); }
+  .sw-fg-default { background: var(--fg-default); } .sw-fg-secondary { background: var(--fg-secondary); } .sw-fg-muted { background: var(--fg-muted); } .sw-border-strong { background: var(--border-strong); }
+  .sw-accent { background: var(--accent-primary); } .sw-accent-soft { background: var(--accent-soft); } .sw-success { background: var(--success-primary); } .sw-warning { background: var(--warning-primary); }
+  .sw-danger { background: var(--danger-primary); } .sw-info { background: var(--info-primary); } .sw-neutral { background: var(--neutral-soft); } .sw-highlight { background: var(--highlight); }
+  .type-row { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: var(--space-4); align-items: baseline; padding: var(--space-2) 0; border-bottom: 1px solid var(--border-muted); }
+  /* forced states for the sheet */
+  .btn--primary.f-hover { background: var(--accent-hover); }
+  .btn--primary.f-active { background: var(--accent-pressed); transform: scale(0.98); }
+  .btn--secondary.f-hover { background: var(--bg-surface-hover); border-color: var(--fg-muted); }
+  .btn--secondary.f-active { transform: scale(0.98); }
+  .btn--ghost.f-hover { background: var(--bg-muted); }
+  .btn--danger.f-hover { background: var(--danger-hover); }
+  .btn--danger-ghost.f-hover { background: var(--danger-soft); }
+  .f-focus { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: var(--focus-ring-offset); }
+  .input.f-hover { border-color: var(--fg-muted); }
+  .input.f-focus { outline: none; border-color: var(--accent-primary); box-shadow: 0 0 0 1px var(--accent-primary); }
+  .nav__item.f-hover { background: var(--bg-surface-hover); color: var(--fg-default); }
+  .demo-sidebar { width: var(--width-sidebar); padding: var(--space-3); border: 1px solid var(--border-default); border-radius: var(--radius-lg); background: var(--bg-surface); display: grid; gap: var(--space-0-5); }
+  .demo-phone { position: relative; width: 390px; border: 1px solid var(--border-default); border-radius: var(--radius-lg); overflow: hidden; background: var(--bg-app); }
+  .demo-phone .bottom-nav, .demo-phone .action-bar, .demo-phone .sheet { position: static; }
+  .demo-overlay { position: relative; display: grid; place-items: center; padding: var(--space-8); border-radius: var(--radius-lg); overflow: hidden; min-height: 320px; }
+  .demo-overlay .scrim { position: absolute; }
+  .demo-overlay .dialog { z-index: var(--z-modal); }
+  .demo-drawer { display: flex; justify-content: flex-end; height: 100%; }
+  .demo-drawer .drawer { height: 420px; }
+  .demo-progress { position: relative; height: var(--space-8); border: 1px solid var(--border-default); border-radius: var(--radius-md); overflow: hidden; background: var(--bg-surface); }
+  .demo-progress .progress-top { position: absolute; }
+  .demo-progress span.muted { position: absolute; left: var(--space-3); top: var(--space-1); font-size: var(--text-xs); }
+</style>
+</head>
+<body>
+<main class="sheet-page">
+  <header class="row-between">
+    <div class="stack-sm">
+      <span class="brand"><svg class="brand__mark" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15 16 6l10 9"/><path d="M9 13v9h14v-9"/><path d="M13.5 22v-5h5v5"/><path d="M5 26h22M5 29.5h22" stroke-width="1.6"/></svg>BasaManager <span class="brand__bn" lang="bn">বাসা ম্যানেজার</span></span>
+      <h1 class="t-title">Component kit</h1>
+      <p class="secondary">Every component in every state. Class names map to React components (README → Component map). Forced hover / focus / active states are shown side by side.</p>
+    </div>
+  </header>
+
+  <!-- ============ Foundations ============ -->
+  <section class="k-sec" aria-labelledby="k-color">
+    <h2 id="k-color">Colour <small>tokens.css</small></h2>
+    <div class="k-grid k-grid--4">
+      <div class="swatch"><i class="sw-bg-app"></i><span class="k-cap">--bg-app · canvas</span></div>
+      <div class="swatch"><i class="sw-bg-surface"></i><span class="k-cap">--bg-surface · cards</span></div>
+      <div class="swatch"><i class="sw-bg-muted"></i><span class="k-cap">--bg-muted · wells, headers</span></div>
+      <div class="swatch"><i class="sw-bg-inverse"></i><span class="k-cap">--bg-inverse · toast</span></div>
+      <div class="swatch"><i class="sw-fg-default"></i><span class="k-cap">--fg-default · ink</span></div>
+      <div class="swatch"><i class="sw-fg-secondary"></i><span class="k-cap">--fg-secondary</span></div>
+      <div class="swatch"><i class="sw-fg-muted"></i><span class="k-cap">--fg-muted · labels</span></div>
+      <div class="swatch"><i class="sw-border-strong"></i><span class="k-cap">--border-strong · inputs</span></div>
+      <div class="swatch"><i class="sw-accent"></i><span class="k-cap">--accent-primary · Karnaphuli teal</span></div>
+      <div class="swatch"><i class="sw-accent-soft"></i><span class="k-cap">--accent-soft · selected</span></div>
+      <div class="swatch"><i class="sw-success"></i><span class="k-cap">--success-primary · paid</span></div>
+      <div class="swatch"><i class="sw-warning"></i><span class="k-cap">--warning-primary · pending</span></div>
+      <div class="swatch"><i class="sw-danger"></i><span class="k-cap">--danger-primary · overdue</span></div>
+      <div class="swatch"><i class="sw-info"></i><span class="k-cap">--info-primary · issued</span></div>
+      <div class="swatch"><i class="sw-neutral"></i><span class="k-cap">--neutral-soft · draft</span></div>
+      <div class="swatch"><i class="sw-highlight"></i><span class="k-cap">--highlight · live change</span></div>
+    </div>
+  </section>
+
+  <section class="k-sec" aria-labelledby="k-type">
+    <h2 id="k-type">Type <small>Atkinson Hyperlegible Next · Mono · Noto Sans Bengali</small></h2>
+    <div>
+      <div class="type-row"><span class="k-cap">--text-amount / 700</span><span class="amount amount--hero">৳1,48,300</span></div>
+      <div class="type-row"><span class="k-cap">--text-title / 700</span><span class="t-title">Shanti Neer · Units</span></div>
+      <div class="type-row"><span class="k-cap">--text-3xl / 700 (KPI)</span><span class="kpi__value">৳3,84,500</span></div>
+      <div class="type-row"><span class="k-cap">--text-xl / 700</span><span class="t-section">Pending payment claims</span></div>
+      <div class="type-row"><span class="k-cap">--text-lg / 600</span><span class="t-card">November 2026 bill</span></div>
+      <div class="type-row"><span class="k-cap">--text-base / 400</span><span>Electricity is billed from the meter readings your caretaker enters each month.</span></div>
+      <div class="type-row"><span class="k-cap">--text-sm / 400</span><span class="t-sm secondary">Bills are created on the 1st and due by the 10th.</span></div>
+      <div class="type-row"><span class="k-cap">--text-xs / 600 caps</span><span class="eyebrow">Outstanding</span></div>
+      <div class="type-row"><span class="k-cap">--font-mono</span><span class="mono">BM-2026-000214 · TrxID 9ABCD1EFGH · 1,240 → 1,395</span></div>
+      <div class="type-row"><span class="k-cap">--font-bengali (i18n)</span><span lang="bn">নভেম্বর ২০২৬ এর বিল · বকেয়া ৳৭,৪৭৫</span></div>
+    </div>
+  </section>
+
+  <!-- ============ Buttons ============ -->
+  <section class="k-sec" aria-labelledby="k-btn">
+    <h2 id="k-btn">Button <small>.btn → &lt;Button&gt;</small></h2>
+    <div class="k-states">
+      <span class="k-cap"></span><span class="k-cap">idle</span><span class="k-cap">hover</span><span class="k-cap">focus-visible</span><span class="k-cap">active</span><span class="k-cap">disabled</span><span class="k-cap">loading</span>
+      <span class="k-cap">primary</span>
+      <button class="btn btn--primary" type="button">Pay ৳7,475</button>
+      <button class="btn btn--primary f-hover" type="button">Pay ৳7,475</button>
+      <button class="btn btn--primary f-focus" type="button">Pay ৳7,475</button>
+      <button class="btn btn--primary f-active" type="button">Pay ৳7,475</button>
+      <button class="btn btn--primary" type="button" disabled>Pay ৳7,475</button>
+      <button class="btn btn--primary" type="button" aria-busy="true" disabled><span class="spinner" aria-hidden="true"></span>Pay ৳7,475</button>
+      <span class="k-cap">secondary</span>
+      <button class="btn btn--secondary" type="button"><i data-lucide="download"></i>Receipt</button>
+      <button class="btn btn--secondary f-hover" type="button"><i data-lucide="download"></i>Receipt</button>
+      <button class="btn btn--secondary f-focus" type="button"><i data-lucide="download"></i>Receipt</button>
+      <button class="btn btn--secondary f-active" type="button"><i data-lucide="download"></i>Receipt</button>
+      <button class="btn btn--secondary" type="button" disabled><i data-lucide="download"></i>Receipt</button>
+      <button class="btn btn--secondary" type="button" aria-busy="true" disabled><span class="spinner" aria-hidden="true"></span>Receipt</button>
+      <span class="k-cap">ghost</span>
+      <button class="btn btn--ghost" type="button">Cancel</button>
+      <button class="btn btn--ghost f-hover" type="button">Cancel</button>
+      <button class="btn btn--ghost f-focus" type="button">Cancel</button>
+      <button class="btn btn--ghost f-active" type="button">Cancel</button>
+      <button class="btn btn--ghost" type="button" disabled>Cancel</button>
+      <span></span>
+      <span class="k-cap">danger</span>
+      <button class="btn btn--danger" type="button">Void payment</button>
+      <button class="btn btn--danger f-hover" type="button">Void payment</button>
+      <button class="btn btn--danger f-focus" type="button">Void payment</button>
+      <button class="btn btn--danger f-active" type="button">Void payment</button>
+      <button class="btn btn--danger" type="button" disabled>Void payment</button>
+      <button class="btn btn--danger" type="button" aria-busy="true" disabled><span class="spinner" aria-hidden="true"></span>Void payment</button>
+      <span class="k-cap">danger-ghost</span>
+      <button class="btn btn--danger-ghost" type="button">Reject</button>
+      <button class="btn btn--danger-ghost f-hover" type="button">Reject</button>
+      <button class="btn btn--danger-ghost f-focus" type="button">Reject</button>
+      <button class="btn btn--danger-ghost f-active" type="button">Reject</button>
+      <button class="btn btn--danger-ghost" type="button" disabled>Reject</button>
+      <span></span>
+    </div>
+    <div class="k-row">
+      <button class="btn btn--primary btn--lg" type="button">Pay now</button>
+      <button class="btn btn--secondary btn--sm" type="button">Confirm</button>
+      <button class="btn btn--link" type="button">Forgot password?</button>
+      <span class="bell"><button class="icon-btn" type="button" aria-label="Notifications, 3 unread"><i data-lucide="bell"></i></button><span class="bell__count" aria-hidden="true">3</span></span>
+      <button class="icon-btn icon-btn--outline" type="button" aria-label="Previous month"><i data-lucide="chevron-left"></i></button>
+      <button class="account-btn" type="button" aria-label="Account menu"><span class="avatar">FC</span><i data-lucide="chevron-down" class="i-sm"></i></button>
+      <span class="k-cap">Async label sequence: “Confirm ৳9,500” → spinner + same label (disabled) → toast “Payment confirmed · receipt BM-2026-000215”</span>
+    </div>
+  </section>
+
+  <!-- ============ Forms ============ -->
+  <section class="k-sec" aria-labelledby="k-form">
+    <h2 id="k-form">Form fields <small>.field .input .select .textarea → &lt;FormField&gt;</small></h2>
+    <div class="k-grid k-grid--4">
+      <div class="field"><label class="label" for="k1">Email</label><input class="input" id="k1" type="email" placeholder="you@example.com"><span class="k-cap">idle · placeholder</span></div>
+      <div class="field"><label class="label" for="k2">Email</label><input class="input f-hover" id="k2" type="email" value="farhana.chowdhury@gmail.com"><span class="k-cap">hover · filled</span></div>
+      <div class="field"><label class="label" for="k3">Amount</label><div class="input-group"><span class="input-group__affix">৳</span><input class="input input--num" id="k3" inputmode="numeric" value="7,475"></div><span class="hint">Minimum ৳100</span></div>
+      <div class="field"><label class="label" for="k4">bKash TrxID</label><input class="input input--mono f-focus" id="k4" value="9ABCD1EFGH"><span class="k-cap">focus</span></div>
+      <div class="field"><label class="label" for="k5">Current reading</label><input class="input input--num" id="k5" aria-invalid="true" value="2,980" aria-describedby="k5e"><span class="field-error" id="k5e"><i data-lucide="circle-alert"></i>Lower than last month (3,105). Tick “Meter replaced” if the meter was changed.</span></div>
+      <div class="field"><label class="label" for="k6">Organisation</label><input class="input" id="k6" value="Chowdhury Properties" disabled><span class="k-cap">disabled</span></div>
+      <div class="field"><label class="label" for="k7">Building</label><div class="select-wrap"><select class="select" id="k7"><option>Shanti Neer</option><option>Karnaphuli View</option><option>Hill Crest</option></select><i data-lucide="chevron-down"></i></div></div>
+      <div class="field"><label class="label" for="k8">Reason <span class="label__opt">(the tenant sees this)</span></label><textarea class="textarea" id="k8">TrxID not found in the bKash statement for 7 Nov.</textarea></div>
+      <div class="field"><label class="label" for="k9">Password</label><input class="input" id="k9" type="password" value="chattogram-2026"><div class="pw-meter" aria-hidden="true"><span class="on"></span><span class="on"></span><span class="on"></span><span></span></div><span class="hint">Good. Longer is stronger.</span></div>
+      <div class="k-cell"><label class="check"><input type="checkbox" checked> Meter replaced</label><label class="check"><input type="checkbox"> Pin to top</label><span class="k-cap">checkbox (label = 44 px target)</span></div>
+      <div class="k-cell"><div class="row"><button class="switch" role="switch" aria-checked="true" type="button" aria-label="Email for bill issued"></button><span>On</span></div><div class="row"><button class="switch" role="switch" aria-checked="false" type="button" aria-label="Push for notices"></button><span>Off</span></div><div class="row"><button class="switch" role="switch" aria-checked="true" aria-disabled="true" type="button" aria-label="Password reset email (always on)"></button><span class="muted">Locked</span></div></div>
+      <div class="k-cell"><div class="segmented" role="group" aria-label="Late fee type"><button type="button" aria-pressed="false">None</button><button type="button" aria-pressed="false">Flat ৳</button><button type="button" aria-pressed="true">% of due</button></div><span class="k-cap">segmented</span></div>
+    </div>
+  </section>
+
+  <!-- ============ Navigation ============ -->
+  <section class="k-sec" aria-labelledby="k-nav">
+    <h2 id="k-nav">Navigation <small>.sidebar .nav__item .bottom-nav .tabs .chip .month-picker</small></h2>
+    <div class="k-grid k-grid--3">
+      <div class="k-cell">
+        <div class="demo-sidebar">
+          <button class="org-switch" type="button" data-allow-wrap title="Chowdhury Properties · Landlord"><span class="org-switch__text"><span class="org-switch__name">Chowdhury Properties</span><span class="org-switch__role">Landlord</span></span><i data-lucide="chevrons-up-down" class="i-sm"></i></button>
+          <a class="nav__item" href="#" aria-current="page"><i data-lucide="layout-dashboard"></i><span class="nav__label">Dashboard</span></a>
+          <a class="nav__item f-hover" href="#"><i data-lucide="building-2"></i><span class="nav__label">Buildings</span></a>
+          <a class="nav__item" href="#"><i data-lucide="receipt-text"></i><span class="nav__label">Billing</span><span class="nav__count">7</span></a>
+          <a class="nav__item f-focus" href="#"><i data-lucide="wallet"></i><span class="nav__label">Payments</span><span class="nav__count">3</span></a>
+        </div>
+        <span class="k-cap">nav item: active · hover · count · focus</span>
+      </div>
+      <div class="k-cell">
+        <div class="demo-phone">
+          <nav class="bottom-nav" aria-label="Main">
+            <a class="bottom-nav__item" href="#" aria-current="page"><span class="bottom-nav__icon"><i data-lucide="house"></i></span><span class="bottom-nav__label">Home</span></a>
+            <a class="bottom-nav__item" href="#"><span class="bottom-nav__icon"><i data-lucide="receipt-text"></i></span><span class="bottom-nav__label">Bills</span></a>
+            <a class="bottom-nav__item" href="#"><span class="bottom-nav__icon"><i data-lucide="wrench"></i></span><span class="bottom-nav__label">Requests</span></a>
+            <a class="bottom-nav__item" href="#"><span class="bottom-nav__icon"><i data-lucide="megaphone"></i></span><span class="bottom-nav__label">Notices</span></a>
+            <a class="bottom-nav__item" href="#"><span class="bottom-nav__icon"><i data-lucide="circle-user-round"></i></span><span class="bottom-nav__label">Account</span></a>
+          </nav>
+        </div>
+        <span class="k-cap">bottom nav (tenant) · 64 px + safe area · equal items · label never wraps</span>
+      </div>
+      <div class="k-cell">
+        <div class="tabs" role="tablist" data-proto="tabs" data-scroll-x>
+          <button class="tab" role="tab" aria-selected="true" type="button">Drafts <span class="tab__count">7</span></button>
+          <button class="tab" role="tab" aria-selected="false" type="button">Issued <span class="tab__count">19</span></button>
+          <button class="tab" role="tab" aria-selected="false" type="button">Readings</button>
+        </div>
+        <div class="chips" data-scroll-x>
+          <button class="chip" type="button" aria-pressed="true">All</button>
+          <button class="chip" type="button" aria-pressed="false">Overdue <span class="num">4</span></button>
+          <button class="chip" type="button" aria-pressed="false">Partially paid</button>
+        </div>
+        <div class="month-picker"><button class="icon-btn" type="button" aria-label="Previous month"><i data-lucide="chevron-left"></i></button><span class="month-picker__label">November 2026</span><button class="icon-btn" type="button" aria-label="Next month"><i data-lucide="chevron-right"></i></button></div>
+        <div class="k-row"><span class="kbd">/</span><span class="k-cap">search</span><span class="kbd">g</span><span class="kbd">d</span><span class="k-cap">dashboard</span><span class="kbd">?</span><span class="k-cap">shortcuts</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ Badges ============ -->
+  <section class="k-sec" aria-labelledby="k-badge">
+    <h2 id="k-badge">Status badge <small>.badge → &lt;StatusBadge kind status&gt; · one component everywhere</small></h2>
+    <div class="k-grid k-grid--2">
+      <div class="k-cell"><span class="k-cap">bill</span><div class="k-row">
+        <span class="badge badge--neutral"><i data-lucide="pencil-line"></i>Draft</span>
+        <span class="badge badge--info"><i data-lucide="send"></i>Issued</span>
+        <span class="badge badge--warning"><i data-lucide="circle-dashed"></i>Partially paid</span>
+        <span class="badge badge--success"><i data-lucide="circle-check"></i>Paid</span>
+        <span class="badge badge--danger"><i data-lucide="alarm-clock"></i>Overdue</span>
+        <span class="badge badge--neutral badge--void"><i data-lucide="ban"></i>Void</span>
+        <span class="badge badge--warning"><i data-lucide="gauge"></i>Needs reading</span>
+      </div></div>
+      <div class="k-cell"><span class="k-cap">payment</span><div class="k-row">
+        <span class="badge badge--warning"><i data-lucide="hourglass"></i>Pending</span>
+        <span class="badge badge--success"><i data-lucide="circle-check"></i>Confirmed</span>
+        <span class="badge badge--danger"><i data-lucide="circle-x"></i>Rejected</span>
+        <span class="badge badge--neutral badge--void"><i data-lucide="ban"></i>Void</span>
+      </div></div>
+      <div class="k-cell"><span class="k-cap">maintenance request · priority</span><div class="k-row">
+        <span class="badge badge--info"><i data-lucide="circle-dot"></i>Open</span>
+        <span class="badge badge--info"><i data-lucide="user-check"></i>Assigned</span>
+        <span class="badge badge--warning"><i data-lucide="wrench"></i>In progress</span>
+        <span class="badge badge--success"><i data-lucide="circle-check"></i>Resolved</span>
+        <span class="badge badge--neutral"><i data-lucide="archive"></i>Closed</span>
+        <span class="prio prio--urgent"><i data-lucide="siren"></i>Urgent</span>
+        <span class="prio prio--normal"><i data-lucide="flag"></i>Normal</span>
+        <span class="prio"><i data-lucide="arrow-down"></i>Low</span>
+      </div></div>
+      <div class="k-cell"><span class="k-cap">lease · organisation</span><div class="k-row">
+        <span class="badge badge--warning"><i data-lucide="hourglass"></i>Invite pending</span>
+        <span class="badge badge--success"><i data-lucide="house"></i>Active</span>
+        <span class="badge badge--warning"><i data-lucide="calendar-clock"></i>Notice given</span>
+        <span class="badge badge--neutral"><i data-lucide="log-out"></i>Ended</span>
+        <span class="badge badge--danger"><i data-lucide="circle-alert"></i>Ended with dues</span>
+        <span class="badge badge--danger"><i data-lucide="circle-pause"></i>Suspended</span>
+        <span class="badge badge--neutral"><i data-lucide="door-open"></i>Vacant</span>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- ============ Signature + money ============ -->
+  <section class="k-sec" aria-labelledby="k-ledger">
+    <h2 id="k-ledger">Signature · Ledger sum <small>.ledger → &lt;LedgerSum&gt; · the double-ruled total</small></h2>
+    <div class="k-grid k-grid--3">
+      <div class="card">
+        <div class="card__head"><h3 class="card__title">November 2026</h3><span class="badge badge--info"><i data-lucide="send"></i>Issued</span></div>
+        <div class="ledger">
+          <div class="ledger__row"><span class="ledger__label">Rent</span><span class="ledger__leader"></span><span class="ledger__amount">৳12,000</span></div>
+          <div class="ledger__row"><span class="ledger__label">Service charge</span><span class="ledger__leader"></span><span class="ledger__amount">৳1,500</span></div>
+          <div class="ledger__row"><span class="ledger__label">Gas (double burner)</span><span class="ledger__leader"></span><span class="ledger__amount">৳1,080</span></div>
+          <div class="ledger__row"><span class="ledger__label">Water</span><span class="ledger__leader"></span><span class="ledger__amount">৳500</span></div>
+          <div class="ledger__row"><span class="ledger__label">Electricity</span><span class="ledger__leader"></span><span class="ledger__amount">৳1,395</span><span class="ledger__explain">1,240 → 1,395 = 155 units × ৳9.00</span></div>
+          <div class="ledger__total"><span class="ledger__total-label">Total</span><span class="ledger__total-amount">৳16,475</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card__head"><h3 class="card__title">With payments and a late fee</h3></div>
+        <div class="ledger">
+          <div class="ledger__row"><span class="ledger__label">November bill</span><span class="ledger__leader"></span><span class="ledger__amount">৳16,475</span></div>
+          <div class="ledger__row"><span class="ledger__label">Paid by bKash</span><span class="ledger__leader"></span><span class="ledger__amount ledger__amount--neg">−৳9,000</span><span class="ledger__explain">5 Nov · receipt BM-2026-000203</span></div>
+          <div class="ledger__row"><span class="ledger__label">Late fee</span><span class="ledger__leader"></span><span class="ledger__amount ledger__amount--fee">+৳374</span><span class="ledger__explain">5% of ৳7,475 unpaid after 12 Nov</span></div>
+          <div class="ledger__total"><span class="ledger__total-label">Due now</span><span class="ledger__total-amount">৳7,849</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card__head"><h3 class="card__title">Prorated first bill</h3></div>
+        <div class="ledger ledger--sm">
+          <div class="ledger__row"><span class="ledger__label">Rent</span><span class="ledger__leader"></span><span class="ledger__amount">৳5,200</span><span class="ledger__explain">৳12,000 × 13/30 days</span></div>
+          <div class="ledger__row"><span class="ledger__label">Service charge</span><span class="ledger__leader"></span><span class="ledger__amount">৳650</span><span class="ledger__explain">৳1,500 × 13/30</span></div>
+          <div class="ledger__row"><span class="ledger__label">Waived late fee</span><span class="ledger__leader"></span><span class="ledger__amount ledger__amount--waived">৳400</span><span class="ledger__explain">“Bank holiday on the due date” — Farhana</span></div>
+          <div class="ledger__total"><span class="ledger__total-label">Total</span><span class="ledger__total-amount">৳5,850</span></div>
+        </div>
+        <span class="k-cap">--sm variant · waived line struck through, reason quoted</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ Data display ============ -->
+  <section class="k-sec" aria-labelledby="k-data">
+    <h2 id="k-data">Data display <small>.kpi .card .list-row .table .notice .req-card .timeline</small></h2>
+    <div class="kpis">
+      <div class="kpi"><span class="kpi__label"><i data-lucide="receipt-text" class="i-sm"></i>Billed · November</span><span class="kpi__value">৳3,84,500</span><span class="kpi__meta">26 bills across 3 buildings</span></div>
+      <div class="kpi"><span class="kpi__label"><i data-lucide="hand-coins" class="i-sm"></i>Collected</span><span class="kpi__value">৳2,61,200</span><div class="meter meter--success" aria-hidden="true"><span style="width:68%"></span></div><span class="kpi__meta">68% of billed</span></div>
+      <div class="kpi"><span class="kpi__label"><i data-lucide="scale" class="i-sm"></i>Outstanding</span><span class="kpi__value">৳1,48,300</span><span class="kpi__meta"><span class="t-neg t-strong">4 overdue</span> · incl. older dues</span></div>
+      <div class="kpi"><span class="kpi__label"><i data-lucide="door-closed" class="i-sm"></i>Occupancy</span><span class="kpi__value">88%</span><span class="kpi__meta">23 of 26 units · 3 vacant</span></div>
+    </div>
+    <div class="k-grid k-grid--3">
+      <div class="list">
+        <a class="list-row" href="#"><span class="avatar">RK</span><span class="list-row__main"><span class="list-row__title">Md. Rezaul Karim</span><span class="list-row__meta">Shanti Neer 2A · bKash · 7 Nov</span></span><span class="list-row__end"><span class="num t-strong">৳14,200</span><span class="badge badge--warning"><i data-lucide="hourglass"></i>Pending</span></span></a>
+        <a class="list-row" href="#"><span class="avatar">IH</span><span class="list-row__main"><span class="list-row__title">Imran Hossain</span><span class="list-row__meta">Shanti Neer 3B · Nagad · 6 Nov</span></span><span class="list-row__end"><span class="num t-strong">৳8,000</span><span class="badge badge--warning"><i data-lucide="hourglass"></i>Pending</span></span></a>
+        <a class="list-row is-changed" href="#"><span class="avatar">TB</span><span class="list-row__main"><span class="list-row__title">Tahmina Begum</span><span class="list-row__meta">Karnaphuli View 3B · Cash · 5 Nov</span></span><span class="list-row__end"><span class="num t-strong">৳18,500</span><span class="badge badge--success"><i data-lucide="circle-check"></i>Confirmed</span></span></a>
+      </div>
+      <div class="stack">
+        <article class="notice notice--pinned"><div class="notice__head"><h3 class="notice__title">Water supply off on Sunday, 10 AM – 2 PM</h3><span class="pin"><i data-lucide="pin" class="i-sm"></i>Pinned</span></div><p class="notice__body t-sm">WASA is repairing the main line on Road 3. Please store water on Saturday night.</p><div class="notice__meta"><span>Shanti Neer</span><span>Posted 7 Nov by Farhana Chowdhury</span><span>Until 16 Nov</span></div></article>
+        <a class="req-card" href="#"><span class="req-card__title">Kitchen sink leaking under the cabinet</span><span class="req-card__meta"><span class="truncate" title="Shanti Neer 4A · Plumbing">Shanti Neer 4A · Plumbing</span><span class="age"><i data-lucide="clock" class="i-sm"></i>2 d</span></span><span class="row"><span class="prio prio--normal"><i data-lucide="flag"></i>Normal</span><span class="avatar avatar--sm" title="Jamal Uddin">JU</span></span></a>
+      </div>
+      <div class="card">
+        <div class="timeline">
+          <div class="tl-item"><span class="tl-dot tl-dot--accent"><i data-lucide="plus"></i></span><div class="tl-body"><span class="tl-title">Request created by Nusrat Jahan</span><span class="tl-meta">6 Nov, 9:12 PM · 2 photos</span></div></div>
+          <div class="tl-item"><span class="tl-dot"><i data-lucide="user-check"></i></span><div class="tl-body"><span class="tl-title">Assigned to Jamal Uddin</span><span class="tl-meta">7 Nov, 10:05 AM · by Farhana Chowdhury</span></div></div>
+          <div class="tl-item is-new"><span class="tl-dot"><i data-lucide="message-square"></i></span><div class="tl-body"><span class="tl-title">Jamal Uddin</span><p class="tl-comment">Plumber Shafiq will come tomorrow at 11 AM. Please keep the cabinet empty.</p><span class="tl-meta">7 Nov, 10:20 AM · new</span></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Unit</th><th>Tenant</th><th class="r">Rent</th><th>Status</th><th class="r">Dues</th><th class="r" aria-label="Actions"></th></tr></thead>
+        <tbody>
+          <tr><td class="t-strong">3B</td><td><span class="cell-stack"><a class="row-link" href="#">Imran Hossain</a><span class="cell-meta">since Jan 2025</span></span></td><td class="r num">৳12,000</td><td><span class="badge badge--success"><i data-lucide="house"></i>Active</span></td><td class="r num t-neg t-strong">৳15,664</td><td class="r"><button class="btn btn--secondary btn--sm" type="button">Open</button></td></tr>
+          <tr aria-selected="true"><td class="t-strong">4A</td><td><span class="cell-stack"><a class="row-link" href="#">Nusrat Jahan</a><span class="cell-meta">since Mar 2025</span></span></td><td class="r num">৳12,000</td><td><span class="badge badge--success"><i data-lucide="house"></i>Active</span></td><td class="r num t-strong">৳7,475</td><td class="r"><button class="btn btn--secondary btn--sm" type="button">Open</button></td></tr>
+          <tr><td class="t-strong">2B</td><td class="muted">—</td><td class="r num">৳12,000</td><td><span class="badge badge--neutral"><i data-lucide="door-open"></i>Vacant</span></td><td class="r muted">—</td><td class="r"><button class="btn btn--secondary btn--sm" type="button">Add tenant</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ Feedback ============ -->
+  <section class="k-sec" aria-labelledby="k-fb">
+    <h2 id="k-fb">Feedback <small>.banner .toast .offline-bar .pill-live .progress-top .sk .empty .error-state</small></h2>
+    <div class="k-grid k-grid--2">
+      <div class="stack">
+        <div class="banner banner--info" role="status"><i data-lucide="info"></i><div class="banner__body"><span class="banner__title">Bills are created on the 1st and due by the 10th.</span><span>A 5% late fee is added once if anything is still unpaid after 12 Nov.</span></div></div>
+        <div class="banner banner--warning" role="status"><i data-lucide="gauge"></i><div class="banner__body"><span class="banner__title">2 bills need a meter reading</span><span>Enter readings for 2A and 3B to issue them.</span></div><div class="banner__actions"><button class="btn btn--secondary btn--sm" type="button">Enter readings</button></div></div>
+        <div class="banner banner--danger" role="alert"><i data-lucide="wifi-off"></i><div class="banner__body"><span class="banner__title">Couldn't load pending claims</span><span>Network error. Your data is safe.</span></div><div class="banner__actions"><button class="btn btn--secondary btn--sm" type="button">Retry</button></div></div>
+        <div class="banner banner--success" role="status"><i data-lucide="circle-check"></i><div class="banner__body"><span class="banner__title">Payment received · ৳7,475</span><span>Receipt BM-2026-000214 is ready.</span></div></div>
+      </div>
+      <div class="stack">
+        <div class="toast" role="status"><i data-lucide="circle-check" class="toast__icon--ok"></i><span class="toast__body">Payment confirmed · receipt BM-2026-000215</span><button class="btn btn--link" type="button">View</button></div>
+        <div class="toast" role="alert"><i data-lucide="circle-x" class="toast__icon--err"></i><span class="toast__body">Couldn't issue bills: reading missing for 2A.</span><button class="btn btn--link" type="button">Retry</button></div>
+        <div class="offline-bar" role="status"><i data-lucide="wifi-off" class="i-sm"></i>You're offline. Showing saved data; changes are paused.</div>
+        <div class="row"><span class="pill-live" role="status"><span class="spinner" aria-hidden="true"></span>Reconnecting…</span><span class="k-cap">socket lost: bottom-centre pill, never blocking</span></div>
+        <div class="demo-progress"><span class="progress-top"></span><span class="muted">2 px top progress bar (after 150 ms)</span></div>
+        <div class="card" data-skeleton aria-busy="true"><span class="sk sk--title"></span><span class="sk sk--text"></span><span class="sk sk--text" style="width:80%"></span><span class="sk sk--btn" style="width:40%"></span></div>
+      </div>
+    </div>
+    <div class="k-grid k-grid--2">
+      <div class="card"><div class="empty"><span class="empty__icon"><i data-lucide="inbox"></i></span><span class="empty__title">No pending claims</span><p class="empty__text">When a tenant says they paid by cash, bKash or Nagad, it shows up here for you to confirm.</p><button class="btn btn--secondary" type="button"><i data-lucide="plus"></i>Record a payment</button></div></div>
+      <div class="card"><div class="error-state" role="alert"><span class="error-state__icon"><i data-lucide="cloud-off"></i></span><span class="error-state__title">Couldn't load this page</span><p class="error-state__text">The server didn't answer in time. Nothing was changed.</p><span class="error-state__code">Request ID 7f3a-21c9</span><button class="btn btn--primary" type="button"><i data-lucide="rotate-cw"></i>Retry</button></div></div>
+    </div>
+  </section>
+
+  <!-- ============ Overlays ============ -->
+  <section class="k-sec" aria-labelledby="k-ov">
+    <h2 id="k-ov">Overlays <small>.dialog .sheet .drawer → &lt;Dialog&gt; &lt;Sheet&gt;</small></h2>
+    <div class="k-grid k-grid--3">
+      <div class="demo-overlay"><div class="scrim"></div>
+        <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dlg1">
+          <h3 class="dialog__title" id="dlg1">Void payment of ৳5,000 from Abdul Karim?</h3>
+          <p class="t-sm secondary">The receipt BM-2026-000188 is marked VOID and his dues go back up by ৳5,000. This can't be undone.</p>
+          <div class="field"><label class="label" for="vr">Reason <span class="label__opt">(required)</span></label><textarea class="textarea" id="vr">Entered twice by mistake — same cash payment as BM-2026-000187.</textarea></div>
+          <div class="dialog__actions"><button class="btn btn--ghost" type="button">Cancel</button><button class="btn btn--danger" type="button">Void ৳5,000</button></div>
+        </div>
+      </div>
+      <div class="demo-phone">
+        <div class="sheet" role="dialog" aria-label="More">
+          <span class="sheet__grip"></span>
+          <nav class="list" aria-label="More">
+            <a class="list-row" href="#"><i data-lucide="building-2"></i><span class="list-row__main"><span class="list-row__title">Buildings</span></span><i data-lucide="chevron-right" class="list-row__chev"></i></a>
+            <a class="list-row" href="#"><i data-lucide="users"></i><span class="list-row__main"><span class="list-row__title">Tenants</span></span><i data-lucide="chevron-right" class="list-row__chev"></i></a>
+            <a class="list-row" href="#"><i data-lucide="megaphone"></i><span class="list-row__main"><span class="list-row__title">Notices</span></span><i data-lucide="chevron-right" class="list-row__chev"></i></a>
+            <a class="list-row" href="#"><i data-lucide="user-cog"></i><span class="list-row__main"><span class="list-row__title">Team</span></span><i data-lucide="chevron-right" class="list-row__chev"></i></a>
+          </nav>
+        </div>
+      </div>
+      <div class="k-cell"><span class="k-cap">Drawer (desktop, right, --width-drawer 520) — see D14 maintenance and D07 unit drawer. Mobile: drawers become full pages or bottom sheets (max 90dvh, sticky footer).</span>
+        <div class="k-cell"><span class="k-cap">Shortcut sheet (?)</span>
+          <div class="card card--tight">
+            <div class="row-between"><span class="t-sm">Focus search</span><span class="kbd">/</span></div>
+            <div class="row-between"><span class="t-sm">Go to dashboard</span><span class="row"><span class="kbd">g</span><span class="kbd">d</span></span></div>
+            <div class="row-between"><span class="t-sm">Go to bills</span><span class="row"><span class="kbd">g</span><span class="kbd">b</span></span></div>
+            <div class="row-between"><span class="t-sm">Go to maintenance</span><span class="row"><span class="kbd">g</span><span class="kbd">m</span></span></div>
+            <div class="row-between"><span class="t-sm">Close dialog or sheet</span><span class="kbd">Esc</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+</body>
+</html>

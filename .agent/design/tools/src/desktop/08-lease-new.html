@@ -1,0 +1,65 @@
+<!--meta {"title": "D08 · New lease — review step", "shell": "staff-d", "active": "tenants", "crumbs": ["Buildings", "Shanti Neer", "2B", "New lease"], "bell": "3"} -->
+<style>
+  .wizard { max-width: 1040px; display: grid; gap: var(--space-6); }
+  .review { display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: var(--space-6); align-items: start; }
+  .review__actions { display: flex; justify-content: space-between; gap: var(--space-3); padding-top: var(--space-5); border-top: 1px solid var(--border-default); }
+</style>
+<div class="page">
+  <div class="wizard">
+    <section class="page-head">
+      <div class="page-head__text">
+        <p class="eyebrow">New lease · Shanti Neer, unit 2B</p>
+        <h1 class="t-title">Check everything, then send the invite</h1>
+      </div>
+    </section>
+
+    <ol class="stepper" aria-label="Steps">
+      <li class="stepper__step" data-state="done"><span class="stepper__bar"></span><span class="stepper__label"><i data-lucide="circle-check" class="i-sm"></i>1 · Tenant</span></li>
+      <li class="stepper__step" data-state="done"><span class="stepper__bar"></span><span class="stepper__label"><i data-lucide="circle-check" class="i-sm"></i>2 · Terms</span></li>
+      <li class="stepper__step" data-state="current" aria-current="step"><span class="stepper__bar"></span><span class="stepper__label">3 · Review and invite</span></li>
+    </ol>
+
+    <div class="review">
+      <div class="stack">
+        <section class="card" aria-labelledby="t-h">
+          <div class="card__head"><h2 class="card__title" id="t-h">Tenant</h2><a class="btn btn--ghost" href="#step-1"><i data-lucide="pencil"></i>Edit</a></div>
+          <dl class="dl">
+            <div class="dl__row"><dt>Name</dt><dd>Sadia Islam</dd></div>
+            <div class="dl__row"><dt>Email</dt><dd>sadia.islam@gmail.com</dd></div>
+            <div class="dl__row"><dt>Household</dt><dd class="num">3 people</dd></div>
+          </dl>
+        </section>
+        <section class="card" aria-labelledby="tm-h">
+          <div class="card__head"><h2 class="card__title" id="tm-h">Terms</h2><a class="btn btn--ghost" href="#step-2"><i data-lucide="pencil"></i>Edit</a></div>
+          <dl class="dl">
+            <div class="dl__row"><dt>Moves in</dt><dd class="num">18 Nov 2026</dd></div>
+            <div class="dl__row"><dt>Monthly rent</dt><dd class="num">৳12,000</dd></div>
+            <div class="dl__row"><dt>Charges</dt><dd class="num">Service ৳1,500 · Gas ৳1,080 · Water ৳500</dd></div>
+            <div class="dl__row"><dt>Electricity</dt><dd>Sub-meter · ৳9.00 / unit · move-in reading <span class="mono">2,416</span></dd></div>
+            <div class="dl__row"><dt>Deposit</dt><dd class="num">৳24,000 · record it when received</dd></div>
+          </dl>
+        </section>
+        <div class="banner banner--info" role="note"><i data-lucide="mail"></i><div class="banner__body"><span class="banner__title">Sadia gets an email invite, valid for 7 days</span><span>The lease shows "Invite pending" until she accepts. Unit 2B is held for her; nobody else can be added.</span></div></div>
+      </div>
+
+      <section class="card" aria-labelledby="fb-h">
+        <div class="card__head"><h2 class="card__title" id="fb-h">First bill preview</h2><span class="badge badge--neutral"><i data-lucide="pencil-line"></i>Draft</span></div>
+        <p class="t-sm secondary">November 2026 · 18–30 Nov = <b>13 of 30 days</b>. Created on 18 Nov when the lease starts.</p>
+        <div class="ledger">
+          <div class="ledger__row"><span class="ledger__label">Rent</span><span class="ledger__leader"></span><span class="ledger__amount">৳5,200</span><span class="ledger__explain">৳12,000 × 13/30</span></div>
+          <div class="ledger__row"><span class="ledger__label">Service charge</span><span class="ledger__leader"></span><span class="ledger__amount">৳650</span><span class="ledger__explain">৳1,500 × 13/30</span></div>
+          <div class="ledger__row"><span class="ledger__label">Gas (double burner)</span><span class="ledger__leader"></span><span class="ledger__amount">৳468</span><span class="ledger__explain">৳1,080 × 13/30</span></div>
+          <div class="ledger__row"><span class="ledger__label">Water</span><span class="ledger__leader"></span><span class="ledger__amount">৳217</span><span class="ledger__explain">৳500 × 13/30 = ৳216.67, rounded to the nearest taka</span></div>
+          <div class="ledger__row"><span class="ledger__label">Electricity</span><span class="ledger__leader"></span><span class="ledger__amount muted">—</span><span class="ledger__explain">Starts on the December bill, from reading 2,416</span></div>
+          <div class="ledger__total"><span class="ledger__total-label">First bill</span><span class="ledger__total-amount">৳6,535</span></div>
+        </div>
+        <p class="t-sm muted">From December: ৳15,080 a month plus electricity.</p>
+      </section>
+    </div>
+
+    <div class="review__actions">
+      <a class="btn btn--secondary" href="#step-2"><i data-lucide="arrow-left"></i>Back to terms</a>
+      <button class="btn btn--primary btn--lg" type="submit"><i data-lucide="send"></i>Create lease and invite Sadia</button>
+    </div>
+  </div>
+</div>

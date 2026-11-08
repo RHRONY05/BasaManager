@@ -1,0 +1,498 @@
+# BasaManager design — the source of truth for looks
+
+Designed autonomously by the designer agent in task V2 (2026-11-08). **Implementers do not make design
+decisions.** Rebuild these artboards as React + Tailwind v4 + shadcn/ui components so they look the same:
+colours, spacing, sizes, radii, weights, copy. Behaviour lives in `.agent/06-UI.md`; where this folder and
+06-UI disagree on behaviour, 06-UI wins; on looks, this folder wins. Direction, decisions and the reason
+for each are in [`brief.md`](brief.md); the critique log is [`review.md`](review.md).
+
+## How to view
+```
+python -m http.server 4321 --directory .agent/design
+```
+Open http://localhost:4321/ for the gallery (`index.html`): every artboard, desktop at 40 %, mobile at
+60 %, with a System / Light / Dark switch; frames auto-fit to each artboard's real height. Click a title to
+open the artboard at full size. On any artboard: `?theme=dark` / `?theme=light` forces a theme,
+`?locale=en-XA` shows the pseudo-locale. Artboards also open from `file://`, but the gallery's auto-height
+needs http.
+
+## Files
+| Path | What it is |
+|---|---|
+| `brief.md` | Direction, adjectives, NOT list, signature element, voice, motion, every decision with its reason |
+| `tokens.css` | **All design tokens**, light + dark. Becomes `apps/web/src/styles/tokens.css` (see "Implementing the tokens") |
+| `ui.css` | Reference styles for every component; each block names its React component. The measurements are the spec. Do not ship it; rebuild with Tailwind utilities on tokens |
+| `index.html` | Gallery |
+| `screens.js` | Artboard manifest (title, size, route); read by the gallery and by `tools/check.mjs` |
+| `kit.html` | Component kit: every component in every state (idle, hover, focus-visible, active, disabled, loading, error) |
+| `states.html` | Pending / refreshing / error / empty for **22 data regions**, plus pay-result, auth, navigation, mutation, offline, cursor "Load more", iOS push opt-in ("Add to Home Screen") and live-update states. Responsive: also audited as a phone sheet |
+| `desktop/NN-name.html` | 1440-wide artboards (generated, see below) |
+| `mobile/NN-name.html` | 390-wide artboards, fluid from 320 (generated) |
+| `mobile/*--stress.html`, `desktop/05-dashboard--stress.html` | Stress variants: longest names, ৳1,25,00,000, 99+, 40-char IDs, `en-XA` |
+| `mock.js` | Mockup helper only: theme param, en-XA transform, Lucide icons, tab prototype. Not app code |
+| `tools/src/{desktop,mobile}/*.html` | Artboard **sources** (content + meta). Edit these, never the generated files |
+| `tools/build.py` | Wraps sources in the shared shells (sidebar, top bar, bottom nav, tenant top nav) → `desktop/`, `mobile/` |
+| `tools/stress.py` | Writes the stress-variant sources from the normal ones (run before `build.py`) |
+| `tools/states.py` | Writes `states.html` |
+| `tools/check.mjs` | Runs design-canvas `shoot.mjs` (light + dark, token / contrast / touch / font / overflow checks) and `tests/helpers/layout-audit.ts` `auditLayout()` at 390 / 360 / 320 (light + dark) on every mobile artboard and at 1440 on desktop ones; checks every icon renders. Screenshots go to `--out` (outside the repo) |
+| `tools/contrast.mjs` | WCAG contrast of every text/background and key non-text token pair, light + dark (`--md` for a table) |
+| `tools/sheet.py` | Contact sheet of screenshots for visual critique |
+
+Rebuild and check everything:
+```
+python .agent/design/tools/stress.py && python .agent/design/tools/build.py && python .agent/design/tools/states.py
+node --experimental-strip-types .agent/design/tools/check.mjs --out <scratch-dir>      # add --only <text> for one screen
+node .agent/design/tools/contrast.mjs
+```
+
+## Screens (artboard → route)
+Sample data is one consistent world (Chowdhury Properties; Shanti Neer, Nasirabad · Karnaphuli View, Agrabad ·
+Hill Crest, Khulshi; tenant Nusrat Jahan, 4A). It is **not seed data**; amounts add up (see brief).
+
+| # | Screen | Route (06-UI) | Desktop 1440 | Mobile 390 | States shown on the artboard |
+|---|---|---|---|---|---|
+| 01 | Landing | `/` | `desktop/01-landing.html` | `mobile/01-landing.html` | — |
+| 02 | Login | `/login` | `desktop/02-login.html` | `mobile/02-login.html` | mobile = wrong credentials error; locked / reset in states.html |
+| 03 | Signup | `/signup` | `desktop/03-signup.html` | `mobile/03-signup.html` | "Check your email" in states.html |
+| 04 | Invite accept | `/invite/:token` | `desktop/04-invite.html` | `mobile/04-invite.html` | email mismatch, expired link in states.html |
+| 05 | Landlord dashboard | `/l` | `desktop/05-dashboard.html` | `mobile/05-dashboard.html` | populated; stress |
+| 06 | Dashboard — first run | `/l` (no buildings) | `desktop/06-dashboard-first-run.html` | `mobile/06-dashboard-first-run.html` | onboarding checklist |
+| 07 | Building detail — Units tab (+ unit drawer on desktop) | `/l/buildings/:id` | `desktop/07-building-units.html` | `mobile/07-building-units.html` | stress |
+| 08 | New lease — review step | `/l/leases/new?unitId=` | `desktop/08-lease-new.html` | `mobile/08-lease-new.html` | first bill preview with proration |
+| 09 | Lease detail — Overview | `/l/leases/:id` | `desktop/09-lease-detail.html` | `mobile/09-lease-detail.html` | — |
+| 10 | Billing — Drafts | `/l/billing` | `desktop/10-billing-drafts.html` | `mobile/10-billing-drafts.html` | needs-reading rows |
+| 11 | Billing — Readings grid | `/l/billing` (Readings tab) | `desktop/11-billing-readings.html` | `mobile/11-billing-readings.html` | invalid reading inline |
+| 12 | Bill detail (landlord) | `/l/bills/:id` | `desktop/12-bill-detail.html` | `mobile/12-bill-detail.html` | adjustment with reason, pending claim |
+| 13 | Payments — Pending claims | `/l/payments` | `desktop/13-payments-claims.html` | `mobile/13-payments-claims.html` | reject with required reason (desktop); stress |
+| 14 | Maintenance board + detail drawer | `/l/maintenance` | `desktop/14-maintenance.html` | `mobile/14-maintenance.html` (list), `mobile/14b-maintenance-detail.html` | live comment highlight |
+| 15 | Tenant home — due | `/t` | `desktop/15-tenant-home-due.html` | `mobile/15-tenant-home-due.html` | push opt-in card; stress |
+| 16 | Tenant home — all paid | `/t` | `desktop/16-tenant-home-paid.html` | `mobile/16-tenant-home-paid.html` | — |
+| 17 | Tenant home — overdue | `/t` | `desktop/17-tenant-home-overdue.html` | `mobile/17-tenant-home-overdue.html` | late fee explained |
+| 18 | Tenant bill detail | `/t/bills/:id` | `desktop/18-tenant-bill.html` | `mobile/18-tenant-bill.html` | stress |
+| 19 | Pay result — paid | `/pay/result?tran=` | `desktop/19-pay-result.html` | `mobile/19-pay-result.html` | checking / failed / still processing / cancelled in states.html |
+| 20 | New maintenance request | `/t/requests/new` | `desktop/20-request-new.html` | `mobile/20-request-new.html` | — |
+| 21 | Request detail (tenant) | `/t/requests/:id` | `desktop/21-request-detail.html` | `mobile/21-request-detail.html` | resolved → close / reopen |
+| 22 | Notices (list + composer) | `/l/notices` | `desktop/22-notices.html` | `mobile/22-notices.html` | — |
+| 23 | Account | `/account` | `desktop/23-account.html` (landlord) | `mobile/23-account.html` (tenant) | locked security rows |
+| 24 | Admin — organisations | `/a` | `desktop/24-admin-orgs.html` (suspend dialog open) | `mobile/24-admin-orgs.html` | — |
+| K01 | Component kit | — | `kit.html` | — | all component states |
+| K02 | Data-region states | — | `states.html` | `states.html` at 390 | 22 regions × 4 states + flows |
+
+Pages in 06-UI without their own artboard reuse these patterns exactly: `/l/buildings` (cards like the
+first-run preview + KPI row), `/l/tenants` and "All payments" (the units table pattern), Billing settings /
+Map tabs (form = signup form layout inside a card; map = 16:9 `.ph` with a pin), `/l/team` and `/l/reports`
+(list rows + one primary action), `/t/bills` (list rows with status badge), `/t/pay` (ledger + amount
+input-group + "Continue to SSLCommerz"), `/t/claim` (the new-request form layout with method segmented +
+TrxID mono input + photo), `/t/notices` (notice cards), `/t/lease` (lease detail overview, read-only, with
+the landlord's phone), `/notifications` (list rows, unread = `.list-row--unread`), `/a/health` (table),
+caretaker `/c` (dashboard "Needs you" + lists). Their four states are in `states.html`.
+
+## Shells
+| Shell | Desktop (≥ 768) | Mobile (< 768) |
+|---|---|---|
+| Landlord / caretaker / admin | `.app`: 248 px sidebar (brand, org switcher if > 1 membership, nav with live counts, account + shortcuts at the bottom) + 64 px top bar (breadcrumb, search with `/`, bell) | 56 px top bar (brand or back, title, bell, avatar) + 64 px bottom nav: **Home · Billing · Payments · Requests · More** (landlord); **Today · Billing · Payments · Requests · Notices** (caretaker). Admin: no bottom nav (2 destinations), header link to System health |
+| Tenant | Top nav (brand, Home · Bills · Requests · Notices, bell, account) + centred column `--width-content` 720 px | Top bar + bottom nav **Home · Bills · Requests · Notices · Account** |
+| Focused flows (lease new, new request, pay, claim, pay result) | same shell | top bar with ✕ or ← and **no bottom nav**; primary action in a sticky `.action-bar` |
+| Auth / landing | split `.auth` (ledger aside + form) / marketing sections | single column, brand bar |
+
+## Component map (ui.css class → React component → shadcn primitive)
+| Class(es) | Component | shadcn / lib | Notes |
+|---|---|---|---|
+| `.app .sidebar .nav__item .nav__count .org-switch` | `AppShell`, `Sidebar`, `NavItem`, `OrgSwitcher` | `DropdownMenu` (org switcher) | Active = `aria-current="page"`. Counts use the label's font size (one text line). Org switcher only with > 1 membership |
+| `.topbar .topbar__crumbs .search` | `TopBar`, `Breadcrumbs`, `SearchTrigger` | `Command` (search dialog) | `/` focuses search |
+| `.m-topbar .bottom-nav .bottom-nav__item .bottom-nav__dot` | `MobileTopBar`, `BottomNav` | — | `data-bottom-nav`; labels truncate with `title`; dot has no text, the link's aria-label says "Requests, new updates" |
+| `.more sheet` (kit) | `MoreSheet` | `Sheet side="bottom"` | |
+| `.t-topnav .t-column` | `TenantShell` | — | |
+| `.action-bar` | `StickyActions` | — | focused flows only |
+| `.btn` `--primary --secondary --ghost --danger --danger-ghost --link --sm --lg --block` | `Button` | `Button` | 44 px tall everywhere (36 px `--sm` only inside desktop table rows); min-width 44; loading = `aria-busy` + spinner, label kept |
+| `.icon-btn` | `IconButton` | `Button size="icon"` | always `aria-label`; 44 × 44 |
+| `.bell .bell__count` | `NotificationBell` | `Popover` | the count is a sibling of the button (so the icon stays centred) |
+| `.field .label .hint .field-error .input .select .textarea .input-group` | `FormField`, `Input`, `Select`, `Textarea`, `MoneyInput` | `Form`, `Input`, `Select`, `Textarea` | label always visible; error under the field with icon; inputs 16 px; `MoneyInput` = ৳ affix + tabular right-aligned |
+| `.pw-meter` | `PasswordStrength` | — | |
+| `.check` `.switch` `.segmented` | `Checkbox`, `Switch`, `Segmented` | `Checkbox`, `Switch`, `ToggleGroup` | switch `aria-disabled` for locked security rows |
+| `.tabs .tab .tab__count` | `Tabs` | `Tabs` | mobile: scrolls (`data-scroll-x`), never wraps |
+| `.chips .chip` | `FilterChips` | `ToggleGroup` | `.chip--tap` (44 px) on mobile |
+| `.month-picker` | `MonthPicker` | — | `keepPreviousData` while switching (refreshing state) |
+| `.badge--*` | `StatusBadge kind status` | `Badge` | **one component everywhere**; tone + icon map in `ui.css` (bill, payment, request, lease, org, reading) |
+| `.prio` `.age` | `PriorityTag`, `AgeTag` | — | only urgent is loud; age turns warning after 3 days |
+| `.card .card__head .card__foot` | `Card` | `Card` | |
+| `.kpi .kpis .meter` | `KpiCard`, `Meter` | `Progress` | mobile dashboard shows KPIs as list rows |
+| `.ledger .ledger__row .ledger__explain .ledger__total` | **`LedgerSum`, `LedgerLine`, `LedgerTotal`** (signature) | — | explanation is the row's last child and spans the row; total has the double rule |
+| `.due-card .hero-total .due-card__strip .due-card__when` | `DueCard state="due\|overdue\|paid"` | — | |
+| `.amount --hero --xl` | `Money size` | — | `Intl.NumberFormat('en-IN')`, tabular, nowrap |
+| `.dl` | `DescriptionList` | — | |
+| `.table-wrap .table .table-foot` | `DataTable` | `Table` | below 768 px becomes `ListRow` cards (except the readings grid) |
+| `.list .list-row` | `ListRow` | — | multi-line rows inside `<nav>` need `data-allow-wrap` |
+| `.chart*` | `CollectionChart` | — | one column per month (billed = outlined track, collected = teal fill, % on top); tooltip on hover/focus; "Show as table" |
+| `.banner--*` | `Banner tone` | `Alert` | |
+| `.toast` | `Toaster` | `sonner` | 5 s; errors carry the API message |
+| `.offline-bar .pill-live` | `OfflineBanner`, `ConnectionPill` | — | |
+| `.progress-top` | `TopProgressBar` (exists from V1) | — | 2 px accent |
+| `.sk` + `data-skeleton` | `Skeleton` (exists from V1) | `Skeleton` | shimmer off under reduced motion |
+| `.empty .error-state` | `EmptyState`, `ErrorState` (exist from V1) | — | one primary action; Retry |
+| `.dialog` `.sheet` `.drawer .drawer-layer` | `Dialog`, `Sheet` | `Dialog`, `Sheet` | dialogs become bottom sheets on mobile (max 90dvh, sticky actions); drawer 520 px on desktop |
+| `.stepper` | `Stepper` | — | |
+| `.timeline .tl-*` | `Timeline` | — | `.is-new` = live highlight |
+| `.ph .thumbs .thumb .dropzone` | `PhotoThumb`, `PhotoPicker` | — | 1:1 thumbnails; `.ph` is a mockup placeholder for real images |
+| `.tiles .tile` | `CategoryPicker` | `RadioGroup` | |
+| `.board .board__col .req-card` | `MaintenanceBoard`, `RequestCard` | — | desktop only; mobile = list |
+| `.readings .readings-m` | `ReadingsGrid` | — | mobile: horizontal scroll with sticky unit column |
+| `.charge-row` | `ChargesEditor` | — | |
+| `.pref-grid` | `PreferenceGrid` | `Switch` | mobile: grouped rows |
+| `.notice .pin` | `NoticeCard` | — | pinned = accent outline |
+| `.checklist .check-step` | `OnboardingChecklist` | — | |
+| `.auth .auth-card .divider-text .google-g` | `AuthLayout`, `GoogleButton` | — | Google mark uses the `--google-*` tokens |
+| `.mk-*` | `LandingPage` sections | — | landing only |
+| `.brand .brand__mark` | `BrandMark` | — | inline SVG (house on a double rule), `currentColor`; also the PWA icon |
+
+## Rules for implementers
+- **Tokens only.** Every colour, size, radius, shadow, duration comes from `tokens.css` (token lint = 0).
+  Layout widths that are not tokens (e.g. the 400 px side column on the dashboard) are written in the
+  artboard `<style>`; use the same number.
+- **Fonts:** Atkinson Hyperlegible Next 400/600/700 (UI and numbers), Atkinson Hyperlegible Mono 400–600
+  (TrxIDs, receipt numbers, meter readings), Noto Sans Bengali 400–700 (loaded for i18n; also renders ৳).
+  All SIL OFL 1.1; self-host the woff2 files later (`@fontsource-variable/*` or files in `public/fonts`).
+  `font-variant-numeric: tabular-nums` on every amount, date and count.
+- **Icons:** `lucide-react` with the same names as `data-lucide` here (all checked against lucide 1.70),
+  16 / 20 / 24 px, stroke 2.
+- **Breakpoints:** < 768 px mobile shell; ≥ 768 desktop shell; tenant column 720 px; staff page max 1200 px.
+- **Money** `৳16,475` / `৳1,25,000` (`Intl.NumberFormat('en-IN')`), dates `10 Nov 2026`, months
+  `November 2026`, times `7:42 PM`, all Asia/Dhaka. Discounts and payments shown as `−৳9,000` (U+2212).
+- **Mobile:** follow `.claude/skills/mobile-layout-qa`. Patterns that made the audit pass and must be kept:
+  buttons are `inline-flex` + `whitespace-nowrap` + min 44 × 44; counts inside tabs / nav use the label's
+  font size; the bell count sits outside the button; multi-line rows inside `<nav>` carry `data-allow-wrap`;
+  scrolling tab and chip rows carry `data-scroll-x`; never use `btn--sm` on mobile.
+- **Visually hidden text:** prefer `aria-label` / `aria-labelledby`. The audit counts a 1 px `.sr-only` box
+  as clipped text, so table header cells use `aria-label` (as here), not an sr-only span.
+- **States:** every data region implements the four states in `states.html`, per `.claude/skills/ui-states`.
+- **Light/dark:** follow the system; `data-theme` on `<html>` forces one (a theme toggle in Account is
+  optional, not designed). Dark is designed, not inverted.
+- **Focus:** 2 px `--focus-ring` outline, 2 px offset, on every interactive element; never removed.
+- **Reduced motion:** all transitions/animations off; skeleton shimmer becomes static.
+- Before ticking a UI task, compare the built page side by side with the artboard at 1440 × 900 and
+  390 × 844 (plus 360), light and dark.
+
+## Motion spec
+| Moment | Spec | Where |
+|---|---|---|
+| Button press | `scale(0.98)` `--dur-instant`; pending state same frame | `Button` |
+| Hover | background/colour `--dur-fast` `--ease-default`; no movement | rows, cards, nav |
+| Tabs | underline slides `--dur-normal` `--ease-in-out` | `Tabs` |
+| Sheet / drawer / dialog | enter translateY(16px) / translateX(24px) + fade `--dur-slow` `--ease-out`; exit `--dur-normal` `--ease-in`; scrim fade `--dur-normal` | overlays |
+| Toast | slide 12 px + fade, 5 s, exit fade `--dur-fast` | `Toaster` |
+| Skeleton | shimmer 1.4 s, shown after 150 ms | `Skeleton` |
+| Success content | fade in ≤ 150 ms (`.fade-in`) | data regions |
+| Live update | background `--highlight`, fades over 1.2 s | `useHighlight` |
+| Payment confirmed | row fades out `--dur-normal`; the due card amount crossfades; the total's double rule draws left → right `--dur-slow` `--ease-out` (scaleX from 0) | claims list, `DueCard` |
+| Top progress bar | appears after 150 ms, grows with `--ease-out`, completes and fades `--dur-fast` | `TopProgressBar` |
+
+## Implementing the tokens
+1. Replace `apps/web/src/styles/tokens.css` with `.agent/design/tokens.css` minus the Google Fonts
+   `@import` (fonts are self-hosted). **No V1 token name was removed or renamed**, so the existing
+   `@theme` block keeps working; values changed for `--size-bottom-nav` (56 → 64), `--radius-md` (8 → 10),
+   `--radius-lg` (12 → 14), and all colours.
+2. Extend the `@theme` block in `globals.css` so every token is reachable as a utility (no arbitrary values):
+```css
+@theme {
+  --color-bg: var(--bg-app);              --color-surface: var(--bg-surface);
+  --color-surface-hover: var(--bg-surface-hover);  --color-muted: var(--bg-muted);  --color-inverse: var(--bg-inverse);
+  --color-fg: var(--fg-default);          --color-fg-secondary: var(--fg-secondary);
+  --color-fg-muted: var(--fg-muted);      --color-fg-inverse: var(--fg-inverse);
+  --color-border: var(--border-default);  --color-border-muted: var(--border-muted);  --color-border-strong: var(--border-strong);
+  --color-accent: var(--accent-primary);  --color-accent-hover: var(--accent-hover);  --color-accent-pressed: var(--accent-pressed);
+  --color-accent-fg: var(--accent-fg);    --color-accent-soft: var(--accent-soft);    --color-accent-text: var(--accent-text);
+  --color-success: var(--success-primary); --color-success-soft: var(--success-soft); --color-success-text: var(--success-text); --color-success-border: var(--success-border);
+  --color-warning: var(--warning-primary); --color-warning-soft: var(--warning-soft); --color-warning-text: var(--warning-text); --color-warning-border: var(--warning-border);
+  --color-danger: var(--danger-primary);  --color-danger-hover: var(--danger-hover);  --color-danger-fg: var(--danger-fg);
+  --color-danger-soft: var(--danger-soft); --color-danger-text: var(--danger-text);  --color-danger-border: var(--danger-border);
+  --color-info: var(--info-primary);      --color-info-soft: var(--info-soft);        --color-info-text: var(--info-text);  --color-info-border: var(--info-border);
+  --color-neutral-soft: var(--neutral-soft); --color-neutral-text: var(--neutral-text); --color-neutral-border: var(--neutral-border);
+  --color-highlight: var(--highlight);    --color-focus: var(--focus-ring);  --color-chart-collected: var(--chart-collected);
+  --font-sans: var(--font-body);          --font-display: var(--font-display);  --font-mono: var(--font-mono);
+  --text-xs: var(--text-xs); --text-xs--line-height: var(--leading-xs);   /* …same for sm, base, lg, xl, 2xl, 3xl, 4xl, 5xl */
+  --text-title: var(--text-title); --text-amount: var(--text-amount); --text-hero: var(--text-hero);
+  --radius-xs: var(--radius-xs); --radius-sm: var(--radius-sm); --radius-md: var(--radius-md); --radius-lg: var(--radius-lg); --radius-xl: var(--radius-xl); --radius-full: var(--radius-full);
+  --shadow-sm: var(--shadow-sm); --shadow-md: var(--shadow-md); --shadow-lg: var(--shadow-lg);
+  --spacing-tap: var(--size-tap); --spacing-control: var(--size-control); --spacing-control-sm: var(--size-control-sm);
+  --spacing-topbar: var(--size-topbar); --spacing-topbar-desktop: var(--size-topbar-desktop); --spacing-bottom-nav: var(--size-bottom-nav);
+  --spacing-sidebar: var(--width-sidebar); --spacing-drawer: var(--width-drawer); --spacing-content: var(--width-content);
+  --container-content: var(--width-content); --container-page: var(--width-page); --container-form: var(--width-form);
+  --ease-out: var(--ease-out); --ease-in: var(--ease-in); --ease-in-out: var(--ease-in-out);
+}
+```
+   Spacing: Tailwind's default 4 px spacing scale equals `--space-*` (`p-4` = 16 px = `--space-4`), so use
+   the normal utilities; never `p-[13px]`.
+
+## Notes for the lead (found while auditing)
+- `auditLayout()` at a 844 px-high viewport reports `overlapping-targets` for any control that is scrolled
+  *under* the fixed bottom nav (geometry ignores stacking). The designer's check runs the audit with the
+  viewport as tall as the page. `layout.spec.ts` should do the same (or skip pairs where one element is
+  inside `[data-bottom-nav]`), otherwise every long mobile page fails.
+- The audit's `wrapped-label` rule counts distinct text tops, so a control whose label mixes font sizes
+  (e.g. 14 px label + 12 px count) is reported as wrapped. The kit avoids that; keep it that way.
+- A visible `.sr-only` element is reported as `clipped-text`; see "Visually hidden text" above.
+
+## Token table
+Colour tokens (light → dark). Contrast for every text pair is in "Contrast" below.
+
+| Token | Light | Dark |
+|---|---|---|
+| `--bg-app` | `#f5f3ee` | `#0f1413` |
+| `--bg-surface` | `#ffffff` | `#171e1d` |
+| `--bg-surface-hover` | `#f8f6f2` | `#1d2625` |
+| `--bg-muted` | `#edeae3` | `#212a28` |
+| `--bg-inverse` | `#1d2725` | `#e6ebe9` |
+| `--fg-default` | `#17201e` | `#e7ecea` |
+| `--fg-secondary` | `#424d49` | `#b8c3bf` |
+| `--fg-muted` | `#5a6561` | `#98a5a0` |
+| `--fg-inverse` | `#f3f1ec` | `#142020` |
+| `--border-default` | `#d8d3c9` | `#2f3a37` |
+| `--border-muted` | `#e8e4db` | `#252f2d` |
+| `--border-strong` | `#7f8883` | `#6d7b76` |
+| `--accent-primary` | `#0b5a61` | `#4db5b7` |
+| `--accent-hover` | `#084b51` | `#67c4c5` |
+| `--accent-pressed` | `#063e43` | `#3a9fa1` |
+| `--accent-fg` | `#ffffff` | `#052020` |
+| `--accent-soft` | `#e0eeee` | `#143435` |
+| `--accent-soft-hover` | `#d0e5e5` | `#1a4243` |
+| `--accent-text` | `#0a5960` | `#78cfcf` |
+| `--success-primary` | `#23703a` | `#4caf6e` |
+| `--success-soft` | `#e3f0e4` | `#15301f` |
+| `--success-text` | `#1c6131` | `#86d39e` |
+| `--success-border` | `#a8d1b0` | `#2c5b3b` |
+| `--warning-primary` | `#a35f00` | `#e0a23a` |
+| `--warning-soft` | `#fbefd8` | `#33260e` |
+| `--warning-text` | `#7a4800` | `#f0bf6c` |
+| `--warning-border` | `#e8c385` | `#6a4d1c` |
+| `--danger-primary` | `#b42318` | `#f07167` |
+| `--danger-hover` | `#96190f` | `#f58a81` |
+| `--danger-fg` | `#ffffff` | `#220807` |
+| `--danger-soft` | `#fbe6e2` | `#3a1916` |
+| `--danger-text` | `#a11f15` | `#ff9e95` |
+| `--danger-border` | `#ebaea5` | `#6f2f29` |
+| `--info-primary` | `#2b5797` | `#6f9be0` |
+| `--info-soft` | `#e4ebf6` | `#172540` |
+| `--info-text` | `#264e88` | `#a5c1f0` |
+| `--info-border` | `#b2c5e5` | `#2f4670` |
+| `--neutral-soft` | `#ebe8e1` | `#252f2d` |
+| `--neutral-text` | `#48524e` | `#b8c3bf` |
+| `--neutral-border` | `#cfcac0` | `#3a4643` |
+| `--focus-ring` | `#0b5a61` | `#78cfcf` |
+| `--highlight` | `#fff1bf` | `#3b3416` |
+| `--skeleton-base` | `#e8e4dc` | `#212a28` |
+| `--skeleton-shine` | `#f3f0ea` | `#2a3432` |
+| `--scrim` | `rgba(16, 22, 20, 0.48)` | `rgba(0, 0, 0, 0.6)` |
+| `--chart-collected` | `#0b5a61` | `#4db5b7` |
+| `--shadow-color` | `23 32 30` | `0 0 0` |
+
+| Token | Value |
+|---|---|
+| `--google-blue` | `#4285f4` |
+| `--google-green` | `#34a853` |
+| `--google-yellow` | `#fbbc05` |
+| `--google-red` | `#ea4335` |
+| `--font-body` | `'Atkinson Hyperlegible Next', 'Noto Sans Bengali', system-ui, sans-serif` |
+| `--font-display` | `'Atkinson Hyperlegible Next', 'Noto Sans Bengali', system-ui, sans-serif` |
+| `--font-mono` | `'Atkinson Hyperlegible Mono', ui-monospace, 'Cascadia Mono', monospace` |
+| `--font-bengali` | `'Noto Sans Bengali', 'Atkinson Hyperlegible Next', system-ui, sans-serif` |
+| `--text-xs` | `0.75rem` |
+| `--leading-xs` | `1rem` |
+| `--text-sm` | `0.875rem` |
+| `--leading-sm` | `1.25rem` |
+| `--text-base` | `1rem` |
+| `--leading-base` | `1.5rem` |
+| `--text-lg` | `1.125rem` |
+| `--leading-lg` | `1.625rem` |
+| `--text-xl` | `1.25rem` |
+| `--leading-xl` | `1.75rem` |
+| `--text-2xl` | `1.5rem` |
+| `--leading-2xl` | `2rem` |
+| `--text-3xl` | `1.875rem` |
+| `--leading-3xl` | `2.25rem` |
+| `--text-4xl` | `2.25rem` |
+| `--leading-4xl` | `2.5rem` |
+| `--text-5xl` | `3rem` |
+| `--leading-5xl` | `3.25rem` |
+| `--text-title` | `clamp(1.5rem, 1.2rem + 1.2vw, 1.875rem)` |
+| `--text-amount` | `clamp(2.25rem, 1.7rem + 2.6vw, 3rem)` |
+| `--text-hero` | `clamp(2rem, 1.2rem + 3.4vw, 3.5rem)` |
+| `--weight-regular` | `400` |
+| `--weight-medium` | `500` |
+| `--weight-semibold` | `600` |
+| `--weight-bold` | `700` |
+| `--weight-heavy` | `800` |
+| `--leading-tight` | `1.15` |
+| `--leading-snug` | `1.3` |
+| `--leading-normal` | `1.5` |
+| `--leading-bengali` | `1.7` |
+| `--tracking-tight` | `-0.02em` |
+| `--tracking-normal` | `0` |
+| `--tracking-wide` | `0.06em` |
+| `--space-0` | `0` |
+| `--space-px` | `1px` |
+| `--space-0-5` | `2px` |
+| `--space-1` | `4px` |
+| `--space-1-5` | `6px` |
+| `--space-2` | `8px` |
+| `--space-3` | `12px` |
+| `--space-4` | `16px` |
+| `--space-5` | `20px` |
+| `--space-6` | `24px` |
+| `--space-8` | `32px` |
+| `--space-10` | `40px` |
+| `--space-12` | `48px` |
+| `--space-16` | `64px` |
+| `--space-20` | `80px` |
+| `--space-24` | `96px` |
+| `--radius-xs` | `4px` |
+| `--radius-sm` | `6px` |
+| `--radius-md` | `10px` |
+| `--radius-lg` | `14px` |
+| `--radius-xl` | `20px` |
+| `--radius-full` | `9999px` |
+| `--shadow-sm` | `0 1px 2px rgb(var(--shadow-color) / 0.06), 0 1px 1px rgb(var(--shadow-color) / 0.04)` |
+| `--shadow-md` | `0 4px 12px rgb(var(--shadow-color) / 0.08), 0 1px 3px rgb(var(--shadow-color) / 0.06)` |
+| `--shadow-lg` | `0 16px 40px rgb(var(--shadow-color) / 0.16), 0 4px 12px rgb(var(--shadow-color) / 0.08)` |
+| `--dur-instant` | `100ms` |
+| `--dur-fast` | `150ms` |
+| `--dur-normal` | `250ms` |
+| `--dur-slow` | `350ms` |
+| `--ease-default` | `cubic-bezier(0.4, 0, 0.2, 1)` |
+| `--ease-out` | `cubic-bezier(0.16, 1, 0.3, 1)` |
+| `--ease-in` | `cubic-bezier(0.7, 0, 0.84, 0)` |
+| `--ease-in-out` | `cubic-bezier(0.65, 0, 0.35, 1)` |
+| `--size-tap` | `44px` |
+| `--size-control` | `44px` |
+| `--size-control-sm` | `36px` |
+| `--size-topbar` | `56px` |
+| `--size-topbar-desktop` | `64px` |
+| `--size-bottom-nav` | `64px` |
+| `--size-icon-sm` | `16px` |
+| `--size-icon` | `20px` |
+| `--size-icon-lg` | `24px` |
+| `--size-avatar` | `36px` |
+| `--size-progress` | `2px` |
+| `--width-sidebar` | `248px` |
+| `--width-sidebar-collapsed` | `72px` |
+| `--width-content` | `720px` |
+| `--width-page` | `1200px` |
+| `--width-form` | `480px` |
+| `--width-drawer` | `520px` |
+| `--width-prose` | `65ch` |
+| `--focus-ring-width` | `2px` |
+| `--focus-ring-offset` | `2px` |
+| `--z-sticky` | `10` |
+| `--z-nav` | `20` |
+| `--z-dropdown` | `30` |
+| `--z-drawer` | `40` |
+| `--z-modal` | `50` |
+| `--z-toast` | `60` |
+| `--z-progress` | `70` |
+
+## Contrast (WCAG 2.2 AA, from `tools/contrast.mjs`)
+Text needs 4.5:1; non-text UI parts (input outlines, focus ring, indicators, chart fill) need 3:1. All pass.
+
+| Theme | Foreground | Background | Ratio | Target | Use | |
+|---|---|---|---|---|---|---|
+| light | `--fg-default` | `--bg-app` | 15.01:1 | 4.5:1 | text | pass |
+| light | `--fg-default` | `--bg-surface` | 16.64:1 | 4.5:1 | text | pass |
+| light | `--fg-default` | `--bg-surface-hover` | 15.42:1 | 4.5:1 | text | pass |
+| light | `--fg-default` | `--bg-muted` | 13.85:1 | 4.5:1 | text | pass |
+| light | `--fg-secondary` | `--bg-app` | 7.93:1 | 4.5:1 | text | pass |
+| light | `--fg-secondary` | `--bg-surface` | 8.79:1 | 4.5:1 | text | pass |
+| light | `--fg-secondary` | `--bg-surface-hover` | 8.14:1 | 4.5:1 | text | pass |
+| light | `--fg-secondary` | `--bg-muted` | 7.32:1 | 4.5:1 | text | pass |
+| light | `--fg-muted` | `--bg-app` | 5.46:1 | 4.5:1 | text | pass |
+| light | `--fg-muted` | `--bg-surface` | 6.05:1 | 4.5:1 | text | pass |
+| light | `--fg-muted` | `--bg-surface-hover` | 5.61:1 | 4.5:1 | text | pass |
+| light | `--fg-muted` | `--bg-muted` | 5.04:1 | 4.5:1 | text | pass |
+| light | `--accent-text` | `--bg-app` | 7.25:1 | 4.5:1 | text | pass |
+| light | `--accent-text` | `--bg-surface` | 8.04:1 | 4.5:1 | text | pass |
+| light | `--accent-text` | `--bg-surface-hover` | 7.45:1 | 4.5:1 | text | pass |
+| light | `--accent-text` | `--bg-muted` | 6.70:1 | 4.5:1 | text | pass |
+| light | `--success-text` | `--bg-surface` | 7.49:1 | 4.5:1 | text | pass |
+| light | `--success-text` | `--bg-app` | 6.75:1 | 4.5:1 | text | pass |
+| light | `--success-text` | `--success-soft` | 6.37:1 | 4.5:1 | badge/banner text | pass |
+| light | `--success-primary` | `--bg-surface` | 6.09:1 | 3:1 | icon / bar (non-text) | pass |
+| light | `--warning-text` | `--bg-surface` | 7.62:1 | 4.5:1 | text | pass |
+| light | `--warning-text` | `--bg-app` | 6.88:1 | 4.5:1 | text | pass |
+| light | `--warning-text` | `--warning-soft` | 6.69:1 | 4.5:1 | badge/banner text | pass |
+| light | `--warning-primary` | `--bg-surface` | 5.01:1 | 3:1 | icon / bar (non-text) | pass |
+| light | `--danger-text` | `--bg-surface` | 7.71:1 | 4.5:1 | text | pass |
+| light | `--danger-text` | `--bg-app` | 6.96:1 | 4.5:1 | text | pass |
+| light | `--danger-text` | `--danger-soft` | 6.44:1 | 4.5:1 | badge/banner text | pass |
+| light | `--danger-primary` | `--bg-surface` | 6.57:1 | 3:1 | icon / bar (non-text) | pass |
+| light | `--info-text` | `--bg-surface` | 8.31:1 | 4.5:1 | text | pass |
+| light | `--info-text` | `--bg-app` | 7.49:1 | 4.5:1 | text | pass |
+| light | `--info-text` | `--info-soft` | 6.93:1 | 4.5:1 | badge/banner text | pass |
+| light | `--info-primary` | `--bg-surface` | 7.21:1 | 3:1 | icon / bar (non-text) | pass |
+| light | `--neutral-text` | `--neutral-soft` | 6.62:1 | 4.5:1 | badge text | pass |
+| light | `--accent-text` | `--accent-soft` | 6.75:1 | 4.5:1 | selected nav text | pass |
+| light | `--fg-default` | `--accent-soft` | 13.98:1 | 4.5:1 | selected row text | pass |
+| light | `--fg-muted` | `--accent-soft` | 5.08:1 | 4.5:1 | selected row meta | pass |
+| light | `--fg-default` | `--highlight` | 14.73:1 | 4.5:1 | realtime highlight | pass |
+| light | `--accent-fg` | `--accent-primary` | 7.93:1 | 4.5:1 | primary button | pass |
+| light | `--accent-fg` | `--accent-hover` | 9.83:1 | 4.5:1 | primary button hover | pass |
+| light | `--accent-fg` | `--accent-pressed` | 11.81:1 | 4.5:1 | primary button pressed | pass |
+| light | `--danger-fg` | `--danger-primary` | 6.57:1 | 4.5:1 | danger button | pass |
+| light | `--danger-fg` | `--danger-hover` | 8.60:1 | 4.5:1 | danger button hover | pass |
+| light | `--fg-inverse` | `--bg-inverse` | 13.59:1 | 4.5:1 | toast | pass |
+| light | `--border-strong` | `--bg-surface` | 3.65:1 | 3:1 | input outline (non-text) | pass |
+| light | `--focus-ring` | `--bg-surface` | 7.93:1 | 3:1 | focus ring (non-text) | pass |
+| light | `--accent-primary` | `--bg-surface` | 7.93:1 | 3:1 | accent indicator (non-text) | pass |
+| light | `--border-strong` | `--bg-app` | 3.29:1 | 3:1 | input outline (non-text) | pass |
+| light | `--focus-ring` | `--bg-app` | 7.15:1 | 3:1 | focus ring (non-text) | pass |
+| light | `--accent-primary` | `--bg-app` | 7.15:1 | 3:1 | accent indicator (non-text) | pass |
+| light | `--chart-collected` | `--bg-surface` | 7.93:1 | 3:1 | chart bar (non-text) | pass |
+| light | `--chart-collected` | `--bg-muted` | 6.60:1 | 3:1 | collected fill vs billed track (non-text) | pass |
+| dark | `--fg-default` | `--bg-app` | 15.56:1 | 4.5:1 | text | pass |
+| dark | `--fg-default` | `--bg-surface` | 14.18:1 | 4.5:1 | text | pass |
+| dark | `--fg-default` | `--bg-surface-hover` | 12.97:1 | 4.5:1 | text | pass |
+| dark | `--fg-default` | `--bg-muted` | 12.33:1 | 4.5:1 | text | pass |
+| dark | `--fg-secondary` | `--bg-app` | 10.26:1 | 4.5:1 | text | pass |
+| dark | `--fg-secondary` | `--bg-surface` | 9.35:1 | 4.5:1 | text | pass |
+| dark | `--fg-secondary` | `--bg-surface-hover` | 8.55:1 | 4.5:1 | text | pass |
+| dark | `--fg-secondary` | `--bg-muted` | 8.13:1 | 4.5:1 | text | pass |
+| dark | `--fg-muted` | `--bg-app` | 7.28:1 | 4.5:1 | text | pass |
+| dark | `--fg-muted` | `--bg-surface` | 6.63:1 | 4.5:1 | text | pass |
+| dark | `--fg-muted` | `--bg-surface-hover` | 6.06:1 | 4.5:1 | text | pass |
+| dark | `--fg-muted` | `--bg-muted` | 5.77:1 | 4.5:1 | text | pass |
+| dark | `--accent-text` | `--bg-app` | 10.29:1 | 4.5:1 | text | pass |
+| dark | `--accent-text` | `--bg-surface` | 9.38:1 | 4.5:1 | text | pass |
+| dark | `--accent-text` | `--bg-surface-hover` | 8.57:1 | 4.5:1 | text | pass |
+| dark | `--accent-text` | `--bg-muted` | 8.15:1 | 4.5:1 | text | pass |
+| dark | `--success-text` | `--bg-surface` | 9.54:1 | 4.5:1 | text | pass |
+| dark | `--success-text` | `--bg-app` | 10.47:1 | 4.5:1 | text | pass |
+| dark | `--success-text` | `--success-soft` | 8.02:1 | 4.5:1 | badge/banner text | pass |
+| dark | `--success-primary` | `--bg-surface` | 6.18:1 | 3:1 | icon / bar (non-text) | pass |
+| dark | `--warning-text` | `--bg-surface` | 9.98:1 | 4.5:1 | text | pass |
+| dark | `--warning-text` | `--bg-app` | 10.95:1 | 4.5:1 | text | pass |
+| dark | `--warning-text` | `--warning-soft` | 8.69:1 | 4.5:1 | badge/banner text | pass |
+| dark | `--warning-primary` | `--bg-surface` | 7.58:1 | 3:1 | icon / bar (non-text) | pass |
+| dark | `--danger-text` | `--bg-surface` | 8.53:1 | 4.5:1 | text | pass |
+| dark | `--danger-text` | `--bg-app` | 9.36:1 | 4.5:1 | text | pass |
+| dark | `--danger-text` | `--danger-soft` | 7.95:1 | 4.5:1 | badge/banner text | pass |
+| dark | `--danger-primary` | `--bg-surface` | 5.86:1 | 3:1 | icon / bar (non-text) | pass |
+| dark | `--info-text` | `--bg-surface` | 9.26:1 | 4.5:1 | text | pass |
+| dark | `--info-text` | `--bg-app` | 10.17:1 | 4.5:1 | text | pass |
+| dark | `--info-text` | `--info-soft` | 8.35:1 | 4.5:1 | badge/banner text | pass |
+| dark | `--info-primary` | `--bg-surface` | 6.00:1 | 3:1 | icon / bar (non-text) | pass |
+| dark | `--neutral-text` | `--neutral-soft` | 7.61:1 | 4.5:1 | badge text | pass |
+| dark | `--accent-text` | `--accent-soft` | 7.39:1 | 4.5:1 | selected nav text | pass |
+| dark | `--fg-default` | `--accent-soft` | 11.18:1 | 4.5:1 | selected row text | pass |
+| dark | `--fg-muted` | `--accent-soft` | 5.23:1 | 4.5:1 | selected row meta | pass |
+| dark | `--fg-default` | `--highlight` | 10.41:1 | 4.5:1 | realtime highlight | pass |
+| dark | `--accent-fg` | `--accent-primary` | 6.98:1 | 4.5:1 | primary button | pass |
+| dark | `--accent-fg` | `--accent-hover` | 8.33:1 | 4.5:1 | primary button hover | pass |
+| dark | `--accent-fg` | `--accent-pressed` | 5.39:1 | 4.5:1 | primary button pressed | pass |
+| dark | `--danger-fg` | `--danger-primary` | 6.57:1 | 4.5:1 | danger button | pass |
+| dark | `--danger-fg` | `--danger-hover` | 7.99:1 | 4.5:1 | danger button hover | pass |
+| dark | `--fg-inverse` | `--bg-inverse` | 13.86:1 | 4.5:1 | toast | pass |
+| dark | `--border-strong` | `--bg-surface` | 3.83:1 | 3:1 | input outline (non-text) | pass |
+| dark | `--focus-ring` | `--bg-surface` | 9.38:1 | 3:1 | focus ring (non-text) | pass |
+| dark | `--accent-primary` | `--bg-surface` | 6.94:1 | 3:1 | accent indicator (non-text) | pass |
+| dark | `--border-strong` | `--bg-app` | 4.20:1 | 3:1 | input outline (non-text) | pass |
+| dark | `--focus-ring` | `--bg-app` | 10.29:1 | 3:1 | focus ring (non-text) | pass |
+| dark | `--accent-primary` | `--bg-app` | 7.62:1 | 3:1 | accent indicator (non-text) | pass |
+| dark | `--chart-collected` | `--bg-surface` | 6.94:1 | 3:1 | chart bar (non-text) | pass |
+| dark | `--chart-collected` | `--bg-muted` | 6.04:1 | 3:1 | collected fill vs billed track (non-text) | pass |

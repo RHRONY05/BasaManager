@@ -1,0 +1,108 @@
+<!--meta {"title": "D07 · Building detail — units tab + unit drawer", "shell": "staff-d", "active": "buildings", "crumbs": ["Buildings", "Shanti Neer"], "bell": "3"} -->
+<style>
+  .bld-stats { display: flex; gap: var(--space-8); flex-wrap: wrap; }
+  .bld-stat { display: grid; gap: var(--space-0-5); }
+  .bld-stat strong { font-size: var(--text-xl); line-height: var(--leading-xl); font-variant-numeric: tabular-nums; }
+  .toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }
+  .drawer-note { align-self: center; }
+  .unit-label { font-weight: var(--weight-bold); font-size: var(--text-base); }
+</style>
+<div class="page">
+  <section class="page-head">
+    <div class="page-head__text">
+      <p class="eyebrow">Building</p>
+      <h1 class="t-title">Shanti Neer</h1>
+      <p class="secondary row"><i data-lucide="map-pin" class="i-sm"></i>House 14, Road 3, Nasirabad Housing Society, Chattogram</p>
+    </div>
+    <div class="page-head__actions"><button class="btn btn--secondary" type="button"><i data-lucide="pencil"></i>Edit building</button><button class="btn btn--primary" type="button"><i data-lucide="plus"></i>Add unit</button></div>
+  </section>
+  <div class="bld-stats" aria-label="Building summary">
+    <div class="bld-stat"><span class="t-sm muted">Units</span><strong>12</strong></div>
+    <div class="bld-stat"><span class="t-sm muted">Occupied</span><strong>10 <span class="t-sm muted">(83%)</span></strong></div>
+    <div class="bld-stat"><span class="t-sm muted">Vacant</span><strong>2</strong></div>
+    <div class="bld-stat"><span class="t-sm muted">Outstanding</span><strong class="t-neg">৳40,339</strong></div>
+    <div class="bld-stat"><span class="t-sm muted">Caretaker</span><strong class="t-body t-strong">Jamal Uddin</strong></div>
+  </div>
+
+  <div class="tabs" role="tablist" aria-label="Building sections" data-proto="tabs">
+    <button class="tab" role="tab" aria-selected="true" type="button">Units <span class="tab__count">12</span></button>
+    <button class="tab" role="tab" aria-selected="false" type="button">Billing settings</button>
+    <button class="tab" role="tab" aria-selected="false" type="button">Notices <span class="tab__count">2</span></button>
+    <button class="tab" role="tab" aria-selected="false" type="button">Map</button>
+  </div>
+
+  <div class="toolbar">
+    <div class="chips" role="group" aria-label="Filter units">
+      <button class="chip" type="button" aria-pressed="true">All 12</button>
+      <button class="chip" type="button" aria-pressed="false">Occupied 10</button>
+      <button class="chip" type="button" aria-pressed="false">Vacant 2</button>
+      <button class="chip" type="button" aria-pressed="false">Notice given 1</button>
+      <button class="chip" type="button" aria-pressed="false">With dues 4</button>
+    </div>
+    <span class="t-sm muted">Bills on the 1st · due by the 10th · 5% late fee after 2 grace days</span>
+  </div>
+
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Unit</th><th>Floor</th><th>Type</th><th>Tenant</th><th class="r">Rent</th><th>Status</th><th class="r">Dues</th></tr></thead>
+      <tbody>
+        <tr><td class="unit-label">G1</td><td class="num">Ground</td><td>Shop</td><td><span class="cell-stack"><a class="row-link" href="#">Rahman Pharmacy</a><span class="cell-meta">Habibur Rahman</span></span></td><td class="r num">৳18,000</td><td><span class="badge badge--success"><i data-lucide="house"></i>Active</span></td><td class="r num muted">৳0</td></tr>
+        <tr><td class="unit-label">1A</td><td class="num">1</td><td>Family flat</td><td><a class="row-link" href="#">Abdul Mannan</a></td><td class="r num">৳11,500</td><td><span class="badge badge--success"><i data-lucide="house"></i>Active</span></td><td class="r num muted">৳0</td></tr>
+        <tr><td class="unit-label">1B</td><td class="num">1</td><td>Family flat</td><td><a class="row-link" href="#">Rumana Akter</a></td><td class="r num">৳11,500</td><td><span class="badge badge--success"><i data-lucide="house"></i>Active</span></td><td class="r"><span class="cell-stack"><span class="num t-neg t-strong">৳3,000</span><span class="cell-meta">overdue since 10 Oct</span></span></td></tr>
+        <tr><td class="unit-label">2A</td><td class="num">2</td><td>Family flat</td><td><a class="row-link" href="#">Md. Rezaul Karim</a></td><td class="r num">৳12,000</td><td><span class="badge badge--success"><i data-lucide="house"></i>Active</span></td><td class="r"><span class="cell-stack"><span class="num t-strong">৳14,200</span><span class="cell-meta">claim pending</span></span></td></tr>
+        <tr><td class="unit-label">2B</td><td class="num">2</td><td>Family flat</td><td class="muted">—</td><td class="r num">৳12,000</td><td><span class="badge badge--neutral"><i data-lucide="door-open"></i>Vacant</span></td><td class="r"><a class="btn btn--secondary btn--sm" href="#/l/leases/new?unitId=2B">Add tenant</a></td></tr>
+        <tr><td class="unit-label">3A</td><td class="num">3</td><td>Family flat</td><td><span class="cell-stack"><a class="row-link" href="#">Sabrina Haque</a><span class="cell-meta">leaving 30 Nov</span></span></td><td class="r num">৳12,000</td><td><span class="badge badge--warning"><i data-lucide="calendar-clock"></i>Notice given</span></td><td class="r num muted">৳0</td></tr>
+        <tr><td class="unit-label">3B</td><td class="num">3</td><td>Family flat</td><td><a class="row-link" href="#">Imran Hossain</a></td><td class="r num">৳12,000</td><td><span class="badge badge--success"><i data-lucide="house"></i>Active</span></td><td class="r num t-strong">৳15,664</td></tr>
+        <tr aria-selected="true"><td class="unit-label">4A</td><td class="num">4</td><td>Family flat</td><td><a class="row-link" href="#">Nusrat Jahan</a></td><td class="r num">৳12,000</td><td><span class="badge badge--success"><i data-lucide="house"></i>Active</span></td><td class="r num t-strong">৳7,475</td></tr>
+        <tr><td class="unit-label">4B</td><td class="num">4</td><td>Family flat</td><td><a class="row-link" href="#">Tanvir Ahmed</a></td><td class="r num">৳12,500</td><td><span class="badge badge--success"><i data-lucide="house"></i>Active</span></td><td class="r num muted">৳0</td></tr>
+        <tr><td class="unit-label">5A</td><td class="num">5</td><td>Bachelor flat</td><td><span class="cell-stack"><a class="row-link" href="#">Arif Chowdhury</a><span class="cell-meta">+2 tenants</span></span></td><td class="r num">৳9,000</td><td><span class="badge badge--success"><i data-lucide="house"></i>Active</span></td><td class="r num muted">৳0</td></tr>
+        <tr><td class="unit-label">5B</td><td class="num">5</td><td>Bachelor flat</td><td class="muted">—</td><td class="r num">৳9,000</td><td><span class="badge badge--neutral"><i data-lucide="door-open"></i>Vacant</span></td><td class="r"><a class="btn btn--secondary btn--sm" href="#/l/leases/new?unitId=5B">Add tenant</a></td></tr>
+        <tr><td class="unit-label">R1</td><td class="num">Roof</td><td>Room</td><td><a class="row-link" href="#">Kamal Uddin</a></td><td class="r num">৳4,500</td><td><span class="badge badge--success"><i data-lucide="house"></i>Active</span></td><td class="r num muted">৳0</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<!--overlay-->
+<div class="drawer-layer">
+  <div class="scrim"></div>
+  <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="unit-h">
+    <header class="drawer__head">
+      <div class="stack-sm grow"><p class="eyebrow">Shanti Neer · Floor 4</p><h2 class="t-section" id="unit-h">Unit 4A</h2><span class="badge badge--success"><i data-lucide="house"></i>Active lease</span></div>
+      <button class="icon-btn" type="button" aria-label="Close unit 4A"><i data-lucide="x"></i></button>
+    </header>
+    <div class="drawer__body">
+      <dl class="dl dl--grid">
+        <div class="dl__row"><dt>Type</dt><dd>Family flat</dd></div>
+        <div class="dl__row"><dt>Default rent</dt><dd class="num">৳12,000</dd></div>
+        <div class="dl__row"><dt>Electricity</dt><dd>Sub-meter</dd></div>
+        <div class="dl__row"><dt>Last reading</dt><dd class="mono">1,395 · 1 Nov</dd></div>
+        <div class="dl__row"><dt>Rate</dt><dd class="num">৳9.00 / unit</dd></div>
+        <div class="dl__row"><dt>Floor</dt><dd class="num">4</dd></div>
+      </dl>
+
+      <section class="stack-sm" aria-labelledby="ch-h">
+        <div class="section-head"><h3 class="t-strong" id="ch-h">Monthly charges</h3><button class="btn btn--ghost" type="button"><i data-lucide="plus"></i>Add charge</button></div>
+        <div class="charge-row"><input class="input" id="c1n" value="Service charge" aria-label="Charge name"><div class="input-group"><span class="input-group__affix">৳</span><input class="input input--num" value="1,500" aria-label="Service charge amount"></div><button class="icon-btn" type="button" aria-label="Remove service charge"><i data-lucide="trash-2"></i></button></div>
+        <div class="charge-row"><input class="input" id="c2n" value="Gas (double burner)" aria-label="Charge name"><div class="input-group"><span class="input-group__affix">৳</span><input class="input input--num" value="1,080" aria-label="Gas amount"></div><button class="icon-btn" type="button" aria-label="Remove gas"><i data-lucide="trash-2"></i></button></div>
+        <div class="charge-row"><input class="input" id="c3n" value="Water" aria-label="Charge name"><div class="input-group"><span class="input-group__affix">৳</span><input class="input input--num" value="500" aria-label="Water amount"></div><button class="icon-btn" type="button" aria-label="Remove water"><i data-lucide="trash-2"></i></button></div>
+        <p class="hint">Changes apply from the next bill (1 Dec). Bills already issued don't change.</p>
+      </section>
+
+      <section class="card card--tight" aria-labelledby="ls-h">
+        <div class="card__head"><h3 class="t-strong" id="ls-h">Current lease</h3><a class="btn btn--link" href="#/l/leases/l-4a">Open lease</a></div>
+        <div class="row"><span class="avatar">NJ</span><div class="stack-sm grow"><span class="t-strong">Nusrat Jahan</span><span class="t-sm muted">since 1 Mar 2025 · household of 4</span></div></div>
+        <dl class="dl">
+          <div class="dl__row"><dt>Rent</dt><dd class="num">৳12,000</dd></div>
+          <div class="dl__row"><dt>Deposit held</dt><dd class="num">৳24,000</dd></div>
+          <div class="dl__row"><dt>Dues now</dt><dd class="num">৳7,475 · due 10 Nov</dd></div>
+        </dl>
+      </section>
+    </div>
+    <footer class="drawer__foot">
+      <button class="btn btn--primary" type="button">Save charges</button>
+      <button class="btn btn--ghost" type="button">Cancel</button>
+      <span class="grow"></span>
+      <span class="t-xs muted drawer-note">Archive is available when no lease is active.</span>
+    </footer>
+  </aside>
+</div>

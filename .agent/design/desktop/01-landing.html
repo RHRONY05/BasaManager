@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>D01 · Landing — BasaManager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../ui.css">
+<script src="https://unpkg.com/lucide@1.70.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+<style>
+  /* layout only — tokens only */
+  .mk-how { padding-top: var(--space-16); }
+</style>
+</head>
+<body>
+<div class="frame-d">
+<header>
+  <nav class="mk-nav" aria-label="Main">
+    <a class="brand" href="#/"><svg class="brand__mark" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15 16 6l10 9"/><path d="M9 13v9h14v-9"/><path d="M13.5 22v-5h5v5"/><path d="M5 26h22M5 29.5h22" stroke-width="1.6"/></svg>BasaManager</a><span class="brand__bn" lang="bn">বাসা ম্যানেজার</span>
+    <div class="mk-nav__actions"><a class="btn btn--ghost" href="#/login">Sign in</a><a class="btn btn--primary" href="#/signup">Create landlord account</a></div>
+  </nav>
+</header>
+<main>
+  <section class="mk-wrap mk-hero" aria-labelledby="hero-h">
+    <div class="stack-lg">
+      <p class="eyebrow">Rent, bills and receipts for Bangladeshi buildings</p>
+      <h1 class="mk-hero__title" id="hero-h">Every taka of rent, worked out and explained.</h1>
+      <p class="mk-hero__lead">BasaManager builds each tenant's bill every month: rent, service, gas, water and metered electricity. Tenants pay online or by cash and bKash, and everyone gets a receipt.</p>
+      <div class="btn-row"><a class="btn btn--primary btn--lg" href="#/signup">Create landlord account</a><a class="btn btn--secondary btn--lg" href="#/login">Sign in</a></div>
+      <p class="t-sm muted">Tenants and caretakers join by an invite from their landlord.</p>
+    </div>
+    <div class="mk-stage" aria-label="Example: a tenant's bill as it appears on their phone">
+      <div class="due-card">
+        <div class="due-card__top"><span class="t-card">November 2026 · Flat 4A</span><span class="badge badge--info"><i data-lucide="send"></i>Issued</span></div>
+        <div class="ledger">
+          <div class="ledger__row"><span class="ledger__label">Rent</span><span class="ledger__leader"></span><span class="ledger__amount">৳12,000</span></div>
+          <div class="ledger__row"><span class="ledger__label">Service charge</span><span class="ledger__leader"></span><span class="ledger__amount">৳1,500</span></div>
+          <div class="ledger__row"><span class="ledger__label">Gas (double burner)</span><span class="ledger__leader"></span><span class="ledger__amount">৳1,080</span></div>
+          <div class="ledger__row"><span class="ledger__label">Water</span><span class="ledger__leader"></span><span class="ledger__amount">৳500</span></div>
+          <div class="ledger__row"><span class="ledger__label">Electricity</span><span class="ledger__leader"></span><span class="ledger__amount">৳1,395</span><span class="ledger__explain">1,240 → 1,395 = 155 units × ৳9.00</span></div>
+          <div class="ledger__total"><span class="ledger__total-label">Total</span><span class="ledger__total-amount">৳16,475</span></div>
+        </div>
+        <span class="btn btn--primary btn--block" aria-hidden="true">Pay ৳16,475 now</span>
+      </div>
+      <div class="toast mk-stage__toast" role="img" aria-label="Example notification: payment confirmed"><i data-lucide="circle-check" class="toast__icon--ok"></i><span class="toast__body">Payment confirmed · receipt BM-2026-000214</span></div>
+    </div>
+  </section>
+
+  <section class="mk-band" aria-labelledby="why-h">
+    <div class="mk-wrap mk-split">
+      <div class="stack">
+        <p class="eyebrow">Why landlords switch from the khata</p>
+        <h2 class="t-title" id="why-h">Bills that explain themselves</h2>
+        <p class="secondary">No more working out electricity on a calculator. Enter the meter reading and the bill shows the sum, so a tenant can check it in five seconds. Move-ins in the middle of the month are prorated to the day, and a late fee is added once, only on what's unpaid.</p>
+        <div class="card card--tight">
+          <div class="ledger ledger--sm">
+            <div class="ledger__row"><span class="ledger__label">Rent, moved in 18 Nov</span><span class="ledger__leader"></span><span class="ledger__amount">৳5,200</span><span class="ledger__explain">৳12,000 × 13 of 30 days</span></div>
+            <div class="ledger__row"><span class="ledger__label">Late fee</span><span class="ledger__leader"></span><span class="ledger__amount ledger__amount--fee">+৳374</span><span class="ledger__explain">5% of ৳7,475 still unpaid after the grace days, once</span></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="mk-point"><span class="mk-point__icon"><i data-lucide="receipt-text"></i></span><div class="stack-sm"><h3 class="t-card">Paid is paid</h3><p class="secondary">Online payments through SSLCommerz are confirmed with the gateway before a bill is marked paid. Cash and bKash claims wait for you or your caretaker to confirm. Every payment gets a numbered PDF receipt.</p></div></div>
+        <div class="mk-point"><span class="mk-point__icon"><i data-lucide="wrench"></i></span><div class="stack-sm"><h3 class="t-card">Repairs don't get lost</h3><p class="secondary">Tenants report a leak with photos. Your caretaker updates it from his phone and the tenant sees each step as it happens.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mk-wrap" aria-labelledby="how-h">
+    <h2 class="t-section mk-how" id="how-h">Set up in an evening</h2>
+    <ol class="mk-steps">
+      <li class="mk-step"><span class="mk-step__n">01</span><h3 class="t-card">Add buildings and units</h3><p class="secondary">Rent, service, gas and water per flat, and how electricity is metered.</p></li>
+      <li class="mk-step"><span class="mk-step__n">02</span><h3 class="t-card">Invite tenants</h3><p class="secondary">They get an email link and see their bills on their phone. No app to install.</p></li>
+      <li class="mk-step"><span class="mk-step__n">03</span><h3 class="t-card">Bills go out by themselves</h3><p class="secondary">On your bill day, with reminders before and after the due date.</p></li>
+    </ol>
+    <footer class="mk-foot"><span>BasaManager · made in Chattogram</span><span>Payments in sandbox mode through SSLCommerz</span></footer>
+  </section>
+</main>
+</div>
+
+</body>
+</html>

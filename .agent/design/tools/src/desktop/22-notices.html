@@ -1,0 +1,56 @@
+<!--meta {"title": "D22 · Notices — list + composer", "shell": "staff-d", "active": "notices", "crumbs": ["Notices"], "bell": "3"} -->
+<style>
+  .nt { display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: var(--space-6); align-items: start; }
+  .notice__actions { display: flex; gap: var(--space-1); }
+  .composer { position: sticky; top: calc(var(--size-topbar-desktop) + var(--space-6)); }
+  .pin-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+</style>
+<div class="page">
+  <section class="page-head">
+    <div class="page-head__text">
+      <h1 class="t-title">Notices</h1>
+      <p class="secondary">Tenants of the building get each notice in the app, and by email and push if they turned those on.</p>
+    </div>
+  </section>
+
+  <div class="nt">
+    <section class="stack" aria-labelledby="list-h">
+      <div class="row-between"><h2 class="t-section" id="list-h">Posted</h2><div class="chips" role="group" aria-label="Building"><button class="chip" type="button" aria-pressed="true">All</button><button class="chip" type="button" aria-pressed="false">Shanti Neer</button><button class="chip" type="button" aria-pressed="false">Karnaphuli View</button><button class="chip" type="button" aria-pressed="false">Hill Crest</button></div></div>
+      <article class="notice notice--pinned">
+        <div class="notice__head"><h3 class="notice__title">Water supply off on Sunday, 10 AM – 2 PM</h3><div class="notice__actions"><span class="pin"><i data-lucide="pin" class="i-sm"></i>Pinned</span><button class="icon-btn" type="button" aria-label="More actions for this notice"><i data-lucide="ellipsis"></i></button></div></div>
+        <p class="notice__body">WASA is repairing the main line on Road 3. Please store water on Saturday night. The lift will work as usual.</p>
+        <div class="notice__meta"><span>Shanti Neer · 12 flats</span><span>Posted 7 Nov by Farhana Chowdhury</span><span>Until 16 Nov</span></div>
+      </article>
+      <article class="notice">
+        <div class="notice__head"><h3 class="notice__title">Gas line inspection on Thursday</h3><button class="icon-btn" type="button" aria-label="More actions for this notice"><i data-lucide="ellipsis"></i></button></div>
+        <p class="notice__body">Karnaphuli Gas inspectors will visit every flat between 10 AM and 4 PM on 12 Nov. Please keep someone at home or tell the caretaker.</p>
+        <div class="notice__meta"><span>Karnaphuli View · 7 flats</span><span>Posted 6 Nov by Jamal Uddin</span><span>Until 12 Nov</span></div>
+      </article>
+      <article class="notice">
+        <div class="notice__head"><h3 class="notice__title">Bills now due by the 10th</h3><button class="icon-btn" type="button" aria-label="More actions for this notice"><i data-lucide="ellipsis"></i></button></div>
+        <p class="notice__body">From December, Hill Crest bills are due by the 10th instead of the 15th, the same as our other buildings.</p>
+        <div class="notice__meta"><span>Hill Crest · 6 flats</span><span>Posted 2 Nov by Farhana Chowdhury</span><span>No end date</span></div>
+      </article>
+      <article class="notice">
+        <div class="notice__head"><h3 class="notice__title">Lift service every first Friday</h3><button class="icon-btn" type="button" aria-label="More actions for this notice"><i data-lucide="ellipsis"></i></button></div>
+        <p class="notice__body">The lift is stopped from 9 AM to 11 AM on the first Friday of each month for regular service.</p>
+        <div class="notice__meta"><span>Shanti Neer · 12 flats</span><span>Posted 14 Oct by Farhana Chowdhury</span><span>No end date</span></div>
+      </article>
+    </section>
+
+    <section class="card composer" aria-labelledby="c-h">
+      <h2 class="card__title" id="c-h">New notice</h2>
+      <form class="form">
+        <div class="field"><label class="label" for="b">Building</label><div class="select-wrap"><select class="select" id="b"><option>Karnaphuli View</option><option>Shanti Neer</option><option>Hill Crest</option></select><i data-lucide="chevron-down"></i></div></div>
+        <div class="field"><label class="label" for="t">Title</label><input class="input" id="t" value="Generator test on Saturday morning"></div>
+        <div class="field"><label class="label" for="bd">Message</label><textarea class="textarea" id="bd">The building generator will be tested on Saturday 14 Nov from 9:00 to 9:30 AM. Power may switch off twice for a few seconds.</textarea></div>
+        <div class="form-row">
+          <div class="field"><label class="label" for="ex">Show until <span class="label__opt">(optional)</span></label><input class="input" id="ex" value="14 Nov 2026" inputmode="none" aria-describedby="exh"><span class="hint" id="exh">Opens a date picker</span></div>
+          <div class="field"><span class="label" id="pl">Pin to top</span><div class="pin-row"><span class="t-sm secondary">Tenants see it first</span><button class="switch" role="switch" aria-checked="false" aria-label="Pin to top" type="button"></button></div></div>
+        </div>
+        <p class="hint">Goes to 7 tenants at Karnaphuli View.</p>
+        <button class="btn btn--primary" type="submit"><i data-lucide="megaphone"></i>Post notice</button>
+      </form>
+    </section>
+  </div>
+</div>

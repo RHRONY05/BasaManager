@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>M21 · Request detail (tenant) — BasaManager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../ui.css">
+<script src="https://unpkg.com/lucide@1.70.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+<style>
+  /* layout only — tokens only */
+  .req-head { display: grid; gap: var(--space-2); }
+  .tags { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+  .comment { display: grid; gap: var(--space-2); }
+</style>
+</head>
+<body>
+<div class="frame-m">
+<header class="m-topbar m-topbar--back"><a class="icon-btn" href="#back" aria-label="Back"><i data-lucide="arrow-left"></i></a><h1 class="m-topbar__title" title="Request #1042">Request #1042</h1><span class="bell"><a class="icon-btn" href="#notifications" aria-label="Notifications, 1 unread"><i data-lucide="bell"></i></a><span class="bell__count" aria-hidden="true">1</span></span></header>
+<main class="m-main">
+<section class="req-head" aria-labelledby="rq-h">
+  <h2 class="t-title" id="rq-h">Kitchen sink leaking under the cabinet</h2>
+  <div class="tags"><span class="badge badge--success"><i data-lucide="circle-check"></i>Resolved</span><span class="t-sm secondary">Plumbing</span><span class="prio prio--normal"><i data-lucide="flag"></i>Normal</span></div>
+  <p class="t-sm muted">Flat 4A · opened 6 Nov, 9:12 PM</p>
+</section>
+
+<section class="banner banner--success" aria-labelledby="fix-h">
+  <i data-lucide="circle-check"></i>
+  <div class="banner__body">
+    <h3 class="banner__title" id="fix-h">Jamal Uddin marked this fixed on 8 Nov. Is it?</h3>
+    <span>If you do nothing, it closes on its own on 15 Nov.</span>
+  </div>
+</section>
+<div class="btn-stack">
+  <button class="btn btn--primary btn--block" type="button">Yes, close request</button>
+  <button class="btn btn--secondary btn--block" type="button">Still a problem, reopen</button>
+</div>
+
+<section class="stack-sm" aria-labelledby="ph-h">
+  <h2 class="t-strong" id="ph-h">Your photos</h2>
+  <div class="thumbs">
+    <a class="thumb" href="#photo-1" aria-label="Open photo 1, wet cabinet floor"><span class="ph" style="aspect-ratio:1/1">Photo — wet cabinet floor · 1:1</span></a>
+    <a class="thumb" href="#photo-2" aria-label="Open photo 2, dripping pipe joint"><span class="ph" style="aspect-ratio:1/1">Photo — dripping pipe joint · 1:1</span></a>
+  </div>
+  <p class="t-sm secondary">Water drips from the pipe joint under the sink whenever the tap is on. The cabinet floor is wet and the wood is getting soft.</p>
+</section>
+
+<section class="stack" aria-labelledby="tl-h">
+  <h2 class="t-strong" id="tl-h">Updates</h2>
+  <div class="timeline">
+    <div class="tl-item"><span class="tl-dot tl-dot--accent"><i data-lucide="plus"></i></span><div class="tl-body"><span class="tl-title">You opened this request</span><span class="tl-meta">6 Nov, 9:12 PM · 2 photos</span></div></div>
+    <div class="tl-item"><span class="tl-dot"><i data-lucide="user-check"></i></span><div class="tl-body"><span class="tl-title">Assigned to Jamal Uddin</span><span class="tl-meta">7 Nov, 10:05 AM · by Farhana Chowdhury</span></div></div>
+    <div class="tl-item"><span class="tl-dot"><i data-lucide="message-square"></i></span><div class="tl-body"><span class="tl-title">Jamal Uddin</span><p class="tl-comment">Plumber Shafiq will come tomorrow at 11 AM. Please keep the cabinet empty.</p><span class="tl-meta">7 Nov, 10:20 AM</span></div></div>
+    <div class="tl-item"><span class="tl-dot tl-dot--warning"><i data-lucide="wrench"></i></span><div class="tl-body"><span class="tl-title">Work started</span><span class="tl-meta">8 Nov, 11:10 AM · Jamal Uddin</span></div></div>
+    <div class="tl-item is-new"><span class="tl-dot tl-dot--success"><i data-lucide="circle-check"></i></span><div class="tl-body"><span class="tl-title">Marked fixed</span><p class="tl-comment">Shafiq replaced the pipe joint and sealed it. Please run the tap for a few minutes and tell us.</p><span class="tl-meta">8 Nov, 1:30 PM · Jamal Uddin · just now</span></div></div>
+  </div>
+</section>
+
+<form class="comment" aria-label="Add a comment">
+  <label class="label" for="c">Add a comment</label>
+  <textarea class="textarea" id="c" placeholder="Write to Jamal and Farhana"></textarea>
+  <button class="btn btn--secondary btn--block" type="submit"><i data-lucide="send-horizontal"></i>Send comment</button>
+</form>
+
+</main>
+<nav class="bottom-nav" data-bottom-nav aria-label="Main">
+  <a class="bottom-nav__item" href="#home"><span class="bottom-nav__icon"><i data-lucide="house"></i></span><span class="bottom-nav__label" title="Home">Home</span></a>
+  <a class="bottom-nav__item" href="#bills"><span class="bottom-nav__icon"><i data-lucide="receipt-text"></i></span><span class="bottom-nav__label" title="Bills">Bills</span></a>
+  <a class="bottom-nav__item" href="#requests" aria-current="page"><span class="bottom-nav__icon"><i data-lucide="wrench"></i></span><span class="bottom-nav__label" title="Requests">Requests</span></a>
+  <a class="bottom-nav__item" href="#notices"><span class="bottom-nav__icon"><i data-lucide="megaphone"></i></span><span class="bottom-nav__label" title="Notices">Notices</span></a>
+  <a class="bottom-nav__item" href="#account"><span class="bottom-nav__icon"><i data-lucide="circle-user-round"></i></span><span class="bottom-nav__label" title="Account">Account</span></a>
+</nav>
+</div>
+</body>
+</html>

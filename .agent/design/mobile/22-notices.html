@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>M22 · Notices — BasaManager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../ui.css">
+<script src="https://unpkg.com/lucide@1.70.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+<style>
+  /* layout only — tokens only */
+
+</style>
+</head>
+<body>
+<div class="frame-m">
+<header class="m-topbar"><a class="brand" href="#home" aria-label="BasaManager home"><svg class="brand__mark" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15 16 6l10 9"/><path d="M9 13v9h14v-9"/><path d="M13.5 22v-5h5v5"/><path d="M5 26h22M5 29.5h22" stroke-width="1.6"/></svg></a><h1 class="m-topbar__title" title="Notices">Notices</h1><span class="bell"><a class="icon-btn" href="#notifications" aria-label="Notifications, 3 unread"><i data-lucide="bell"></i></a><span class="bell__count" aria-hidden="true">3</span></span><a class="icon-btn" href="#account" aria-label="Account"><span class="avatar avatar--sm">FC</span></a></header>
+<main class="m-main">
+<a class="btn btn--primary btn--block" href="#compose" data-button><i data-lucide="plus"></i>New notice</a>
+<div class="chips" role="group" aria-label="Building" data-scroll-x>
+  <button class="chip chip--tap" type="button" aria-pressed="true">All</button>
+  <button class="chip chip--tap" type="button" aria-pressed="false">Shanti Neer</button>
+  <button class="chip chip--tap" type="button" aria-pressed="false">Karnaphuli View</button>
+  <button class="chip chip--tap" type="button" aria-pressed="false">Hill Crest</button>
+</div>
+<article class="notice notice--pinned">
+  <div class="notice__head"><h2 class="notice__title">Water supply off on Sunday, 10 AM – 2 PM</h2><button class="icon-btn" type="button" aria-label="More actions for this notice"><i data-lucide="ellipsis"></i></button></div>
+  <span class="pin"><i data-lucide="pin" class="i-sm"></i>Pinned</span>
+  <p class="notice__body t-sm">WASA is repairing the main line on Road 3. Please store water on Saturday night. The lift will work as usual.</p>
+  <div class="notice__meta"><span>Shanti Neer</span><span>7 Nov · Farhana</span><span>Until 16 Nov</span></div>
+</article>
+<article class="notice">
+  <div class="notice__head"><h2 class="notice__title">Gas line inspection on Thursday</h2><button class="icon-btn" type="button" aria-label="More actions for this notice"><i data-lucide="ellipsis"></i></button></div>
+  <p class="notice__body t-sm">Karnaphuli Gas inspectors will visit every flat between 10 AM and 4 PM on 12 Nov. Please keep someone at home or tell the caretaker.</p>
+  <div class="notice__meta"><span>Karnaphuli View</span><span>6 Nov · Jamal Uddin</span><span>Until 12 Nov</span></div>
+</article>
+<article class="notice">
+  <div class="notice__head"><h2 class="notice__title">Bills now due by the 10th</h2><button class="icon-btn" type="button" aria-label="More actions for this notice"><i data-lucide="ellipsis"></i></button></div>
+  <p class="notice__body t-sm">From December, Hill Crest bills are due by the 10th instead of the 15th, the same as our other buildings.</p>
+  <div class="notice__meta"><span>Hill Crest</span><span>2 Nov · Farhana</span></div>
+</article>
+
+</main>
+<nav class="bottom-nav" data-bottom-nav aria-label="Main">
+  <a class="bottom-nav__item" href="#home"><span class="bottom-nav__icon"><i data-lucide="house"></i></span><span class="bottom-nav__label" title="Home">Home</span></a>
+  <a class="bottom-nav__item" href="#billing"><span class="bottom-nav__icon"><i data-lucide="receipt-text"></i></span><span class="bottom-nav__label" title="Billing">Billing</span></a>
+  <a class="bottom-nav__item" href="#payments"><span class="bottom-nav__icon"><i data-lucide="wallet"></i></span><span class="bottom-nav__label" title="Payments">Payments</span></a>
+  <a class="bottom-nav__item" href="#requests"><span class="bottom-nav__icon"><i data-lucide="wrench"></i></span><span class="bottom-nav__label" title="Requests">Requests</span></a>
+  <a class="bottom-nav__item" href="#more" aria-current="page"><span class="bottom-nav__icon"><i data-lucide="menu"></i></span><span class="bottom-nav__label" title="More">More</span></a>
+</nav>
+</div>
+</body>
+</html>

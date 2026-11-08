@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>M11 · Billing — readings grid — BasaManager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../ui.css">
+<script src="https://unpkg.com/lucide@1.70.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+<style>
+  /* layout only — tokens only */
+  .readings-m .input[aria-invalid='true'] { background: var(--danger-soft); }
+</style>
+</head>
+<body>
+<div class="frame-m">
+<header class="m-topbar m-topbar--back"><a class="icon-btn" href="#back" aria-label="Back"><i data-lucide="arrow-left"></i></a><h1 class="m-topbar__title" title="Readings · Karnaphuli View">Readings · Karnaphuli View</h1><span class="bell"><a class="icon-btn" href="#notifications" aria-label="Notifications, 3 unread"><i data-lucide="bell"></i></a><span class="bell__count" aria-hidden="true">3</span></span></header>
+<main class="m-main">
+<p class="t-sm secondary">November 2026 · readings for October's use · ৳9.00 per unit. Swipe the table sideways to see units and amounts.</p>
+
+<div class="readings-m" data-scroll-x role="region" aria-label="Meter readings" tabindex="0">
+  <table>
+    <thead><tr><th>Unit</th><th>Previous</th><th>Current</th><th>Units</th><th>Amount</th></tr></thead>
+    <tbody>
+      <tr><td><b>1A</b></td><td class="mono">3,412</td><td><input class="input input--num input--mono" value="3,584" aria-label="Current reading 1A"></td><td class="num">172</td><td class="num">৳1,548</td></tr>
+      <tr><td><b>1B</b></td><td class="mono">2,905</td><td><input class="input input--num input--mono" value="3,043" aria-label="Current reading 1B"></td><td class="num">138</td><td class="num">৳1,242</td></tr>
+      <tr><td><b>2A</b></td><td class="mono">4,120</td><td><input class="input input--num input--mono" placeholder="4,2…" aria-label="Current reading 2A"></td><td class="muted">—</td><td class="muted">—</td></tr>
+      <tr><td><b>3A</b></td><td class="mono">1,877</td><td><input class="input input--num input--mono" value="2,078" aria-label="Current reading 3A"></td><td class="num">201</td><td class="num">৳1,809</td></tr>
+      <tr><td><b>3B</b></td><td class="mono">3,105</td><td><input class="input input--num input--mono" value="2,980" aria-invalid="true" aria-describedby="e3b" aria-label="Current reading 3B"></td><td class="num t-neg">−125</td><td class="muted">—</td></tr>
+      <tr><td><b>4B</b></td><td class="mono">2,640</td><td><input class="input input--num input--mono" value="2,804" aria-label="Current reading 4B"></td><td class="num">164</td><td class="num">৳1,476</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="banner banner--danger" role="alert" id="e3b"><i data-lucide="circle-alert"></i><div class="banner__body"><span class="banner__title">3B: 2,980 is lower than last month (3,105)</span><span>Check the meter. If it was replaced, tick below and enter the new meter's start reading.</span></div></div>
+<label class="check"><input type="checkbox"> Meter in 3B was replaced</label>
+
+<button class="btn btn--primary btn--block" type="button"><i data-lucide="save"></i>Save 4 readings</button>
+<p class="t-xs muted">2A is still empty. 4A uses a prepaid meter and isn't listed.</p>
+
+</main>
+<nav class="bottom-nav" data-bottom-nav aria-label="Main">
+  <a class="bottom-nav__item" href="#home"><span class="bottom-nav__icon"><i data-lucide="house"></i></span><span class="bottom-nav__label" title="Home">Home</span></a>
+  <a class="bottom-nav__item" href="#billing" aria-current="page"><span class="bottom-nav__icon"><i data-lucide="receipt-text"></i></span><span class="bottom-nav__label" title="Billing">Billing</span></a>
+  <a class="bottom-nav__item" href="#payments"><span class="bottom-nav__icon"><i data-lucide="wallet"></i></span><span class="bottom-nav__label" title="Payments">Payments</span></a>
+  <a class="bottom-nav__item" href="#requests"><span class="bottom-nav__icon"><i data-lucide="wrench"></i></span><span class="bottom-nav__label" title="Requests">Requests</span></a>
+  <a class="bottom-nav__item" href="#more"><span class="bottom-nav__icon"><i data-lucide="menu"></i></span><span class="bottom-nav__label" title="More">More</span></a>
+</nav>
+</div>
+</body>
+</html>

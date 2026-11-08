@@ -1,0 +1,47 @@
+<!--meta {"title": "M05 · Landlord dashboard", "shell": "staff-m", "active": "home", "topbar": "Dashboard", "bell": "3", "avatar": true, "initials": "FC"} -->
+<style>
+  .month-picker--block { display: flex; }
+  .month-picker--block .month-picker__label { flex: 1; min-width: 0; }
+  .kpi-list .list-row { min-height: calc(var(--size-tap) + var(--space-6)); }
+  .kpi-list .kpi__value { font-size: var(--text-xl); line-height: var(--leading-xl); }
+  .attn-row { display: grid; gap: var(--space-3); }
+</style>
+<div class="month-picker month-picker--block"><button class="icon-btn" type="button" aria-label="Previous month, October 2026"><i data-lucide="chevron-left"></i></button><span class="month-picker__label">November 2026</span><button class="icon-btn" type="button" aria-label="Next month" disabled><i data-lucide="chevron-right"></i></button></div>
+
+<section class="list kpi-list" aria-label="This month">
+  <div class="list-row"><span class="list-row__main"><span class="kpi__label"><i data-lucide="receipt-text" class="i-sm"></i>Billed</span><span class="list-row__meta">26 bills · 7 still drafts</span></span><span class="kpi__value">৳3,84,500</span></div>
+  <div class="list-row"><span class="list-row__main"><span class="kpi__label"><i data-lucide="hand-coins" class="i-sm"></i>Collected · 68%</span><div class="meter meter--success" role="img" aria-label="68% of billed"><span style="width:68%"></span></div></span><span class="kpi__value">৳2,61,200</span></div>
+  <div class="list-row"><span class="list-row__main"><span class="kpi__label"><i data-lucide="scale" class="i-sm"></i>Outstanding</span><span class="list-row__meta"><span class="t-neg t-strong">4 overdue</span> · incl. October</span></span><span class="kpi__value">৳1,48,300</span></div>
+  <div class="list-row"><span class="list-row__main"><span class="kpi__label"><i data-lucide="door-closed" class="i-sm"></i>Occupancy</span><span class="list-row__meta">23 of 26 units · 3 vacant</span></span><span class="kpi__value">88%</span></div>
+</section>
+
+<section class="stack-sm" aria-labelledby="attn-h">
+  <h2 class="t-section" id="attn-h">Needs you</h2>
+  <a class="list-row card card--tight" href="#/l/billing"><span class="badge badge--info"><i data-lucide="file-pen-line"></i>7</span><span class="list-row__main"><span class="list-row__title">Draft bills at Karnaphuli View</span><span class="list-row__meta">5 ready · 2 need a reading</span></span><i data-lucide="chevron-right" class="list-row__chev"></i></a>
+  <a class="list-row card card--tight" href="#/l/payments"><span class="badge badge--warning"><i data-lucide="hourglass"></i>3</span><span class="list-row__main"><span class="list-row__title">Payment claims to check</span><span class="list-row__meta num">৳40,700 in total</span></span><i data-lucide="chevron-right" class="list-row__chev"></i></a>
+  <a class="list-row card card--tight" href="#/l/maintenance"><span class="badge badge--danger"><i data-lucide="siren"></i>2</span><span class="list-row__main"><span class="list-row__title">Urgent requests</span><span class="list-row__meta">Lift stuck at Shanti Neer · 6 h</span></span><i data-lucide="chevron-right" class="list-row__chev"></i></a>
+</section>
+
+<section class="card" aria-labelledby="chart-h">
+  <div class="card__head"><h2 class="card__title" id="chart-h">Last 6 months</h2><button class="btn btn--ghost" type="button"><i data-lucide="table-2" class="i-sm"></i>Table</button></div>
+  <div class="chart">
+    <div class="chart__legend"><span class="chart__key"><span class="chart__swatch"></span>Billed</span><span class="chart__key"><span class="chart__swatch chart__swatch--collected"></span>Collected</span></div>
+    <div class="chart__plot" role="img" aria-label="Collection rate: June 98%, July 96%, August 98%, September 94%, October 93%, November 68% so far">
+      <div class="chart__group"><span class="chart__col" style="height:72%"><span class="chart__rate">98%</span><span class="chart__fill" style="height:98%"></span></span></div>
+      <div class="chart__group"><span class="chart__col" style="height:73%"><span class="chart__rate">96%</span><span class="chart__fill" style="height:96%"></span></span></div>
+      <div class="chart__group"><span class="chart__col" style="height:74%"><span class="chart__rate">98%</span><span class="chart__fill" style="height:98%"></span></span></div>
+      <div class="chart__group"><span class="chart__col" style="height:74%"><span class="chart__rate">94%</span><span class="chart__fill" style="height:94%"></span></span></div>
+      <div class="chart__group"><span class="chart__col" style="height:77%"><span class="chart__rate">93%</span><span class="chart__fill" style="height:93%"></span></span></div>
+      <div class="chart__group chart__group--current"><span class="chart__col" style="height:77%"><span class="chart__rate">68%</span><span class="chart__fill" style="height:68%"></span></span></div>
+    </div>
+    <div class="chart__axis" aria-hidden="true"><span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span></div>
+  </div>
+</section>
+
+<section class="stack-sm" aria-labelledby="claims-h">
+  <div class="section-head"><h2 id="claims-h">Pending claims</h2><a class="btn btn--link" href="#/l/payments" data-button>All</a></div>
+  <div class="list">
+    <a class="list-row" href="#/l/payments?claim=1"><span class="list-row__main"><span class="list-row__title">Md. Rezaul Karim</span><span class="list-row__meta">Shanti Neer 2A · bKash · 7 Nov</span></span><span class="list-row__end"><span class="num t-strong">৳14,200</span><span class="badge badge--warning"><i data-lucide="hourglass"></i>Pending</span></span></a>
+    <a class="list-row" href="#/l/payments?claim=2"><span class="list-row__main"><span class="list-row__title">Imran Hossain</span><span class="list-row__meta">Shanti Neer 3B · Nagad · 6 Nov</span></span><span class="list-row__end"><span class="num t-strong">৳8,000</span><span class="badge badge--warning"><i data-lucide="hourglass"></i>Pending</span></span></a>
+  </div>
+</section>

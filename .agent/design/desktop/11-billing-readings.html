@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>D11 · Billing — readings grid — BasaManager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../ui.css">
+<script src="https://unpkg.com/lucide@1.70.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+<style>
+  /* layout only — tokens only */
+  .filters { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+  .filters .select-wrap { width: 240px; }
+  .toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }
+  .readings td .input { width: 132px; margin-left: auto; }
+  .readings .err-row td { padding-top: 0; border-bottom: 1px solid var(--border-muted); background: var(--danger-soft); }
+  .readings .is-invalid td { border-bottom: 0; }
+</style>
+</head>
+<body>
+<div class="frame-d app">
+  <aside class="sidebar" aria-label="Sidebar">
+    <div class="sidebar__brand"><a class="brand" href="#/"><svg class="brand__mark" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15 16 6l10 9"/><path d="M9 13v9h14v-9"/><path d="M13.5 22v-5h5v5"/><path d="M5 26h22M5 29.5h22" stroke-width="1.6"/></svg>BasaManager</a><button class="icon-btn" type="button" aria-label="Collapse sidebar"><i data-lucide="panel-left-close"></i></button></div>
+    <button class="org-switch" type="button" data-allow-wrap title="Chowdhury Properties · Landlord" aria-label="Switch organisation, current Chowdhury Properties">
+      <span class="org-switch__text"><span class="org-switch__name">Chowdhury Properties</span><span class="org-switch__role">Landlord</span></span><i data-lucide="chevrons-up-down" class="i-sm"></i>
+    </button>
+    <nav class="nav" aria-label="Main">
+      <a class="nav__item" href="#/l"><i data-lucide="layout-dashboard"></i><span class="nav__label">Dashboard</span></a>
+      <a class="nav__item" href="#/l/buildings"><i data-lucide="building-2"></i><span class="nav__label">Buildings</span></a>
+      <a class="nav__item" href="#/l/tenants"><i data-lucide="users"></i><span class="nav__label">Tenants</span></a>
+      <a class="nav__item" href="#/l/billing" aria-current="page"><i data-lucide="receipt-text"></i><span class="nav__label">Billing</span><span class="nav__count" aria-label="7 waiting">7</span></a>
+      <a class="nav__item" href="#/l/payments"><i data-lucide="wallet"></i><span class="nav__label">Payments</span><span class="nav__count" aria-label="3 waiting">3</span></a>
+      <a class="nav__item" href="#/l/maintenance"><i data-lucide="wrench"></i><span class="nav__label">Maintenance</span><span class="nav__count" aria-label="5 waiting">5</span></a>
+      <a class="nav__item" href="#/l/notices"><i data-lucide="megaphone"></i><span class="nav__label">Notices</span></a>
+      <span class="eyebrow nav__group">Organisation</span>
+      <a class="nav__item" href="#/l/team"><i data-lucide="user-cog"></i><span class="nav__label">Team</span></a>
+      <a class="nav__item" href="#/l/reports"><i data-lucide="file-chart-column"></i><span class="nav__label">Reports</span></a>
+      <a class="nav__item" href="#/l/settings"><i data-lucide="settings"></i><span class="nav__label">Settings</span></a>
+    </nav>
+    <div class="sidebar__foot">
+      <a class="nav__item" href="#/account"><span class="avatar avatar--sm">FC</span><span class="nav__label">Farhana Chowdhury</span></a>
+      <a class="nav__item" href="#shortcuts"><i data-lucide="keyboard"></i><span class="nav__label">Shortcuts</span><span class="kbd">?</span></a>
+    </div>
+  </aside>
+  <div class="main">
+    <header class="topbar">
+      <nav class="topbar__crumbs" aria-label="Breadcrumb"><a href="#">Billing</a><i data-lucide="chevron-right" class="i-sm"></i><span aria-current="page">Readings</span></nav>
+      <div class="topbar__actions"><label class="search"><i data-lucide="search" class="i-sm"></i><span class="grow">Search tenants, units, TrxID</span><span class="kbd">/</span></label><span class="bell"><a class="icon-btn" href="#notifications" aria-label="Notifications, 3 unread"><i data-lucide="bell"></i></a><span class="bell__count" aria-hidden="true">3</span></span></div>
+    </header>
+<div class="page">
+  <section class="page-head">
+    <div class="page-head__text">
+      <h1 class="t-title">Billing</h1>
+      <p class="secondary">Karnaphuli View · electricity ৳9.00 per unit</p>
+    </div>
+    <div class="filters">
+      <div class="select-wrap"><select class="select" aria-label="Building"><option>Karnaphuli View</option></select><i data-lucide="chevron-down"></i></div>
+      <div class="month-picker"><button class="icon-btn" type="button" aria-label="Previous month"><i data-lucide="chevron-left"></i></button><span class="month-picker__label">November 2026</span><button class="icon-btn" type="button" aria-label="Next month" disabled><i data-lucide="chevron-right"></i></button></div>
+    </div>
+  </section>
+
+  <div class="tabs" role="tablist" aria-label="Billing" data-proto="tabs">
+    <button class="tab" role="tab" aria-selected="false" type="button">Drafts <span class="tab__count">7</span></button>
+    <button class="tab" role="tab" aria-selected="false" type="button">Issued <span class="tab__count">0</span></button>
+    <button class="tab" role="tab" aria-selected="true" type="button">Readings <span class="tab__count">2 missing</span></button>
+  </div>
+
+  <div class="toolbar">
+    <p class="t-sm secondary">Readings taken on 5 Nov for October's use. <span class="kbd">Tab</span> moves down the Current column. A lower number than last month is refused unless the meter was replaced.</p>
+    <button class="btn btn--primary" type="button"><i data-lucide="save"></i>Save 4 readings</button>
+  </div>
+
+  <div class="table-wrap">
+    <table class="table readings">
+      <thead><tr><th>Unit</th><th>Tenant</th><th class="r">Previous · 5 Oct</th><th class="r">Current · 5 Nov</th><th class="r">Units</th><th class="r">Amount</th><th>Meter replaced</th></tr></thead>
+      <tbody>
+        <tr><td class="t-strong">1A</td><td>Sharmin Akter</td><td class="r mono">3,412</td><td class="r"><input class="input input--num input--mono" value="3,584" aria-label="Current reading 1A"></td><td class="r num">172</td><td class="r num t-strong">৳1,548</td><td><label class="check"><input type="checkbox"><span class="muted">No</span></label></td></tr>
+        <tr><td class="t-strong">1B</td><td>Mahmudul Hasan</td><td class="r mono">2,905</td><td class="r"><input class="input input--num input--mono" value="3,043" aria-label="Current reading 1B"></td><td class="r num">138</td><td class="r num t-strong">৳1,242</td><td><label class="check"><input type="checkbox"><span class="muted">No</span></label></td></tr>
+        <tr aria-selected="true"><td class="t-strong">2A</td><td>Farzana Rahman</td><td class="r mono">4,120</td><td class="r"><input class="input input--num input--mono" placeholder="e.g. 4,290" aria-label="Current reading 2A" autofocus></td><td class="r muted">—</td><td class="r muted">—</td><td><label class="check"><input type="checkbox"><span class="muted">No</span></label></td></tr>
+        <tr><td class="t-strong">3A</td><td>Shakil Ahmed</td><td class="r mono">1,877</td><td class="r"><input class="input input--num input--mono" value="2,078" aria-label="Current reading 3A"></td><td class="r num">201</td><td class="r num t-strong">৳1,809</td><td><label class="check"><input type="checkbox"><span class="muted">No</span></label></td></tr>
+        <tr class="is-invalid"><td class="t-strong">3B</td><td>Tahmina Begum</td><td class="r mono">3,105</td><td class="r"><input class="input input--num input--mono" value="2,980" aria-invalid="true" aria-describedby="e3b" aria-label="Current reading 3B"></td><td class="r t-neg t-strong">−125</td><td class="r muted">—</td><td><label class="check"><input type="checkbox"><span>Replaced?</span></label></td></tr>
+        <tr class="err-row"><td colspan="7"><span class="field-error" id="e3b"><i data-lucide="circle-alert"></i>2,980 is lower than last month (3,105). Check the meter, or tick "Replaced?" and enter the new meter's start reading.</span></td></tr>
+        <tr><td class="t-strong">4B</td><td>Nazmul Huda</td><td class="r mono">2,640</td><td class="r"><input class="input input--num input--mono" value="2,804" aria-label="Current reading 4B"></td><td class="r num">164</td><td class="r num t-strong">৳1,476</td><td><label class="check"><input type="checkbox"><span class="muted">No</span></label></td></tr>
+      </tbody>
+    </table>
+    <div class="table-foot"><span>4A uses a prepaid meter, so it is not listed.</span><span>Last saved 5 Nov, 10:42 AM by Jamal Uddin</span></div>
+  </div>
+</div>
+
+  </div>
+</div>
+</body>
+</html>

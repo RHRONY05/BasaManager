@@ -1,0 +1,51 @@
+<!--meta {"title": "M16 · Tenant home — all paid", "shell": "tenant-m", "active": "home", "topbar": "Home", "bell": "1", "dots": []} -->
+<style>
+  .greet { display: grid; gap: var(--space-1); }
+</style>
+<section class="greet" aria-label="Your flat">
+  <p class="eyebrow">Shanti Neer · Flat 4A</p>
+  <h2 class="t-title">Good evening, <span data-user>Nusrat</span></h2>
+</section>
+
+<section class="due-card due-card--paid fade-in" aria-labelledby="due-h">
+  <div class="due-card__top">
+    <h2 class="t-card" id="due-h">November 2026</h2>
+    <span class="badge badge--success"><i data-lucide="circle-check"></i>Paid</span>
+  </div>
+  <div class="ledger ledger--sm">
+    <div class="ledger__row"><span class="ledger__label">November bill</span><span class="ledger__leader"></span><span class="ledger__amount">৳16,475</span></div>
+    <div class="ledger__row"><span class="ledger__label">Paid by bKash</span><span class="ledger__leader"></span><span class="ledger__amount ledger__amount--neg">−৳9,000</span><span class="ledger__explain">5 Nov · receipt BM-2026-000203</span></div>
+    <div class="ledger__row"><span class="ledger__label">Paid online</span><span class="ledger__leader"></span><span class="ledger__amount ledger__amount--neg">−৳7,475</span><span class="ledger__explain">8 Nov · receipt BM-2026-000214</span></div>
+  </div>
+  <div class="hero-total">
+    <span class="t-sm t-strong secondary">Left to pay</span>
+    <span class="amount amount--hero">৳0</span>
+  </div>
+  <p class="due-card__strip due-card__strip--ok"><i data-lucide="circle-check" class="i-sm"></i>All paid for November. Thank you.</p>
+  <div class="dl">
+    <div class="dl__row"><dt>Next bill</dt><dd class="num">1 Dec 2026</dd></div>
+    <div class="dl__row"><dt>Due by</dt><dd class="num">10 Dec 2026</dd></div>
+  </div>
+  <div class="due-card__actions">
+    <a class="btn btn--secondary btn--block" href="#/receipts/BM-2026-000214" data-button><i data-lucide="download"></i>Receipt BM-2026-000214</a>
+  </div>
+</section>
+
+<section class="stack-sm" aria-labelledby="notice-h">
+  <div class="section-head"><h2 id="notice-h">Building notice</h2><a class="btn btn--link" href="#/t/notices" data-button>All notices</a></div>
+  <article class="notice notice--pinned">
+    <div class="notice__head"><h3 class="notice__title">Water supply off on Sunday, 10 AM – 2 PM</h3><span class="pin"><i data-lucide="pin" class="i-sm"></i>Pinned</span></div>
+    <p class="notice__body t-sm">WASA is repairing the main line on Road 3. Please store water on Saturday night. The lift will work as usual.</p>
+    <div class="notice__meta"><span>Farhana Chowdhury</span><span>7 Nov</span></div>
+  </article>
+</section>
+
+<section class="stack-sm" aria-labelledby="req-h">
+  <div class="section-head"><h2 id="req-h">Your requests</h2><a class="btn btn--link" href="#/t/requests/new" data-button>New request</a></div>
+  <div class="list">
+    <a class="list-row" href="#/t/requests/r-1042">
+      <span class="list-row__main"><span class="list-row__title">Kitchen sink leaking under the cabinet</span><span class="list-row__meta">Plumbing · Jamal Uddin · updated 11:10 AM</span></span>
+      <span class="list-row__end"><span class="badge badge--warning"><i data-lucide="wrench"></i>In progress</span></span>
+    </a>
+  </div>
+</section>
