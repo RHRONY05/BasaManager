@@ -36,7 +36,7 @@ docker network inspect bm-edge >/dev/null 2>&1 || { log "creating docker network
 
 # Refresh the stable copies of the helper scripts (cron and manual runs use these), then the cron entries.
 install_bin() {
-  cp "$HERE"/scripts/*.sh "$BASE/bin/"
+  cp "$HERE"/scripts/{_lib,deploy,rollback,backup,restore}.sh "$BASE/bin/"
   cp "$HERE/postgres/server-roles.sql" "$BASE/bin/server-roles.sql"
   chmod 755 "$BASE"/bin/*.sh
   local tmp
