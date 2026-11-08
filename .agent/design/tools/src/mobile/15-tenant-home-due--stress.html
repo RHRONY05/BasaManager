@@ -1,0 +1,57 @@
+<!--meta {"title": "S15 · Tenant home — stress (en-XA)", "shell": "tenant-m", "active": "home", "topbar": "Home", "bell": "99+", "dots": ["requests"], "pseudo": "en-XA"} -->
+<style>
+  .greet { display: grid; gap: var(--space-1); }
+</style>
+<section class="greet" aria-label="Your flat">
+  <p class="eyebrow">Al-Madina Tower, House 12/B, Road 5, Block C, Nasirabad Housing Society · Flat 12/B</p>
+  <h2 class="t-title">Good evening, <span data-user>Nusrat Jahan Binte Kamal</span></h2>
+</section>
+
+<section class="due-card fade-in" aria-labelledby="due-h">
+  <div class="due-card__top">
+    <h2 class="t-card" id="due-h">November 2026</h2>
+    <span class="badge badge--warning"><i data-lucide="circle-dashed"></i>Partially paid</span>
+  </div>
+  <div class="ledger ledger--sm">
+    <div class="ledger__row"><span class="ledger__label">November bill</span><span class="ledger__leader"></span><span class="ledger__amount">৳1,25,00,000</span></div>
+    <div class="ledger__row"><span class="ledger__label">Paid by bKash</span><span class="ledger__leader"></span><span class="ledger__amount ledger__amount--neg">−৳12,500</span><span class="ledger__explain">5 Nov · receipt BM-2026-000123</span></div>
+  </div>
+  <div class="hero-total">
+    <span class="t-sm t-strong secondary">Left to pay</span>
+    <span class="amount amount--hero">৳1,24,87,500</span>
+    <span class="due-card__when"><i data-lucide="calendar-clock" class="i-sm"></i>Due 10 Nov · in 2 days</span>
+  </div>
+  <div class="due-card__actions">
+    <a class="btn btn--primary btn--lg btn--block" href="#/t/pay" data-button>Pay ৳1,24,87,500 now</a>
+    <a class="btn btn--secondary btn--block" href="#/t/claim" data-button>I paid another way</a>
+  </div>
+  <a class="btn btn--link" href="#/t/bills/nov-2026" data-button>See every line of this bill</a>
+</section>
+
+<section class="stack-sm" aria-labelledby="notice-h">
+  <div class="section-head"><h2 id="notice-h">Building notice</h2><a class="btn btn--link" href="#/t/notices" data-button>All notices</a></div>
+  <article class="notice notice--pinned">
+    <div class="notice__head"><h3 class="notice__title">Water supply off on Sunday, 10 AM – 2 PM</h3><span class="pin"><i data-lucide="pin" class="i-sm"></i>Pinned</span></div>
+    <p class="notice__body t-sm">WASA is repairing the main line on Road 3. Please store water on Saturday night. The lift will work as usual.</p>
+    <div class="notice__meta"><span>Farhana Chowdhury</span><span>7 Nov</span></div>
+  </article>
+</section>
+
+<section class="stack-sm" aria-labelledby="req-h">
+  <div class="section-head"><h2 id="req-h">Your requests</h2><a class="btn btn--link" href="#/t/requests/new" data-button>New request</a></div>
+  <div class="list">
+    <a class="list-row" href="#/t/requests/r-1042">
+      <span class="list-row__main"><span class="list-row__title">Kitchen sink leaking under the cabinet</span><span class="list-row__meta">Plumbing · Jamal Uddin · updated 11:10 AM</span></span>
+      <span class="list-row__end"><span class="badge badge--warning"><i data-lucide="wrench"></i>In progress</span></span>
+    </a>
+  </div>
+</section>
+
+<section class="card card--tight push-card" aria-labelledby="push-h">
+  <span class="push-card__icon"><i data-lucide="bell-ring"></i></span>
+  <div class="stack-sm grow">
+    <h2 class="t-strong" id="push-h">Get reminders on this phone</h2>
+    <p class="t-sm secondary">We'll tell you 3 days before the 10th, on the due date, and when a payment is confirmed. Nothing else unless you choose.</p>
+    <div class="btn-row"><button class="btn btn--secondary" type="button">Turn on</button><button class="btn btn--ghost" type="button">Not now</button></div>
+  </div>
+</section>

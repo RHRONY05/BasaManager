@@ -34,14 +34,14 @@ V0 Preflight ─▶ V1 Monorepo + CI ─▶ V2 Design ─▶ V3 Infra walking sk
   - **Tests:** a sample unit, integration (`/ready` with real Postgres+Redis) and e2e (home loads, both projects).
   - **AC:** `pnpm dev` starts everything; `pnpm test:all` green locally and in CI on the first PR; docs site builds.
 
-- [ ] **V2 Design (designer agent, autonomous)**
+- [x] **V2 Design (designer agent, autonomous)** — merged afe9217 (PR #4), staging green 2026-11-09
   - Inputs: `01-PRODUCT.md`, `06-UI.md`, role list. Skills: `ui-ux-pro-max` (research), `design-canvas` (craft, critique, `shoot.mjs`) with overrides from `11-AGENT-TEAM.md`; plan-for-agent-build `references/design-pack.md` for the folder format.
   - Output `.agent/design/`: `brief.md` (direction, adjectives, NOT list, signature element, voice, and **why** for every choice), `tokens.css` (light + dark), `ui.css` kit, `README.md` (component map, rules, how to view), `index.html` gallery, `states.html`, and artboards at 1440 and 390 for: landing, login/signup, invite accept, landlord dashboard (with first-run), building detail (units tab), lease new stepper, lease detail, billing (drafts + readings grid), bill detail, payments (pending claims), maintenance board + detail drawer, tenant home (due / all paid / overdue), tenant bill detail, pay result, maintenance new + detail (tenant), notices, account, admin orgs. Icons: lucide. Fonts: Latin + a matching Bengali family loaded but unused (i18n-ready).
   - Every screen has a mobile **and** desktop artboard. Each mobile artboard is also rendered at 360 and 320 and run through `auditLayout()` (`mobile-layout-qa`); the main screens get a **stress-content** variant (longest names, ৳1,25,00,000, `en-XA`). `states.html` shows pending skeleton / refreshing / error / empty for every data region (`ui-states`).
   - Critique loop on every screen (score ≥ threshold in `design-canvas/references/critique.md`), then a **design review by the reviewer agent** (Opus) against 06-UI behaviour + accessibility (contrast AA, 44 px targets). Fix until approved.
   - **AC:** gallery opens; every screen at both sizes, light + dark; `shoot.mjs` report and `auditLayout()` have 0 errors at 390/360/320; stress variants clean; design review approved; no lorem ipsum.
 
-- [ ] **V3 Infra walking skeleton** (DevOps)
+- [x] **V3 Infra walking skeleton** (DevOps) — merged feddf21, staging deploy green 2026-11-09 (prod tag v0.1.0 pending)
   - `infra/azure/create-vm.sh` → VM up; `bootstrap.sh`; Caddyfile for prod, staging, docs; Cloudflare DNS records via API (only new records named `basamanager*`); read the zone SSL mode and choose proxied vs DNS-only per 02 (never change zone settings); Caddy automatic HTTPS.
   - Dockerfiles (multi-stage, non-root); `compose.server.yml`; `deploy.yml` (main → staging, tag → prod, smoke + auto-rollback); `deploy.sh`, `rollback.sh`, `backup.sh` (+ VM cron), `restore.sh`, `weekly.yml` restore drill.
   - Azure storage account + private `backups` container + 30-day lifecycle rule + container SAS (60 days) via `az`. Cloudinary: verify the account; test `private_download_url` with expiry on the free plan for an image and a raw PDF.
@@ -139,6 +139,7 @@ V0 Preflight ─▶ V1 Monorepo + CI ─▶ V2 Design ─▶ V3 Infra walking sk
 ## Changes outside tasks
 Fixes and changes made outside a task above. One line each, newest last: date · what changed · which docs were updated, or "no doc change: <why>".
 - 2026-11-08 · V1 review follow-up (fix/V1-review): logging self-check, client-4xx error mapping, CLOCK_OVERRIDE ISO, `?lng=` gate, all routes in layout/states specs, worker imports `@bm/api` exports + Redis fail-fast, dev script `--wait`/`--raw` · docs: 02, 04, 09, ADR-001, repo-map, logging, request-lifecycle, testing-strategy, error-codes
+- 2026-11-09 · V3 follow-up (fix/V3-followup): ci images step `shell: bash`, deploy.sh housekeeping non-fatal, rollback.sh usage + unknown-step error, weekly audit green (`@size-limit/file` replaces `preset-app` to drop estimo/puppeteer chain; override `vitepress>vite` 6.4.5; `--audit-level high` unchanged) · docs: rollback.md
 
 ## Questions for the human
 (The build never waits on these; the lead decides and logs. The owner may answer later.)

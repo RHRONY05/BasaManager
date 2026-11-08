@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>D24 · Admin — organisations — BasaManager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../ui.css">
+<script src="https://unpkg.com/lucide@1.70.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+<style>
+  /* layout only — tokens only */
+  .toolbar { display: flex; align-items: center; gap: var(--space-3); }
+  .toolbar .input { max-width: 360px; }
+  .dlg-layer { position: fixed; inset: 0; z-index: var(--z-modal); display: grid; place-items: center; }
+  .dlg-layer > .scrim { position: absolute; z-index: auto; }
+</style>
+</head>
+<body>
+<div class="frame-d app">
+  <aside class="sidebar" aria-label="Sidebar">
+    <div class="sidebar__brand"><a class="brand" href="#/"><svg class="brand__mark" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15 16 6l10 9"/><path d="M9 13v9h14v-9"/><path d="M13.5 22v-5h5v5"/><path d="M5 26h22M5 29.5h22" stroke-width="1.6"/></svg>BasaManager</a><button class="icon-btn" type="button" aria-label="Collapse sidebar"><i data-lucide="panel-left-close"></i></button></div>
+    <nav class="nav" aria-label="Main">
+      <a class="nav__item" href="#/a" aria-current="page"><i data-lucide="building"></i><span class="nav__label">Organisations</span></a>
+      <a class="nav__item" href="#/a/health"><i data-lucide="activity"></i><span class="nav__label">System health</span></a>
+    </nav>
+    <div class="sidebar__foot">
+      <a class="nav__item" href="#/account"><span class="avatar avatar--sm">RH</span><span class="nav__label">Rony (platform admin)</span></a>
+      <a class="nav__item" href="#shortcuts"><i data-lucide="keyboard"></i><span class="nav__label">Shortcuts</span><span class="kbd">?</span></a>
+    </div>
+  </aside>
+  <div class="main">
+    <header class="topbar">
+      <nav class="topbar__crumbs" aria-label="Breadcrumb"><a href="#">Admin</a><i data-lucide="chevron-right" class="i-sm"></i><span aria-current="page">Organisations</span></nav>
+      <div class="topbar__actions"><span class="bell"><a class="icon-btn" href="#notifications" aria-label="Notifications, 1 unread"><i data-lucide="bell"></i></a><span class="bell__count" aria-hidden="true">1</span></span></div>
+    </header>
+<div class="page">
+  <section class="page-head">
+    <div class="page-head__text">
+      <h1 class="t-title">Organisations</h1>
+      <p class="secondary">Counts only. Tenant documents and money stay private to each landlord.</p>
+    </div>
+    <a class="btn btn--secondary" href="#/a/health"><i data-lucide="activity"></i>System health</a>
+  </section>
+  <div class="toolbar">
+    <input class="input" type="search" placeholder="Search by organisation or landlord" aria-label="Search organisations">
+    <div class="chips" role="group" aria-label="Status"><button class="chip" type="button" aria-pressed="true">All 5</button><button class="chip" type="button" aria-pressed="false">Active 4</button><button class="chip" type="button" aria-pressed="false">Suspended 1</button></div>
+  </div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Organisation</th><th>Landlord</th><th class="r">Buildings</th><th class="r">Units</th><th class="r">Active leases</th><th>Status</th><th>Joined</th><th class="r" aria-label="Actions"></th></tr></thead>
+      <tbody>
+        <tr><td><span class="cell-stack"><span class="t-strong">Chowdhury Properties</span><span class="cell-meta">Nasirabad, Agrabad, Khulshi</span></span></td><td>Farhana Chowdhury</td><td class="r num">3</td><td class="r num">26</td><td class="r num">23</td><td><span class="badge badge--success"><i data-lucide="circle-check"></i>Active</span></td><td class="num">12 Oct 2026</td><td class="r"><button class="btn btn--secondary btn--sm" type="button">Suspend</button></td></tr>
+        <tr><td><span class="cell-stack"><span class="t-strong">Green View Apartments</span><span class="cell-meta">GEC, Halishahar</span></span></td><td>Mizanur Rahman</td><td class="r num">2</td><td class="r num">14</td><td class="r num">11</td><td><span class="badge badge--success"><i data-lucide="circle-check"></i>Active</span></td><td class="num">20 Oct 2026</td><td class="r"><button class="btn btn--secondary btn--sm" type="button">Suspend</button></td></tr>
+        <tr><td><span class="cell-stack"><span class="t-strong">Hossain Estates</span><span class="cell-meta">Halishahar</span></span></td><td>Delwar Hossain</td><td class="r num">1</td><td class="r num">6</td><td class="r num">5</td><td><span class="badge badge--success"><i data-lucide="circle-check"></i>Active</span></td><td class="num">28 Oct 2026</td><td class="r"><button class="btn btn--secondary btn--sm" type="button">Suspend</button></td></tr>
+        <tr><td><span class="cell-stack"><span class="t-strong">Sea Breeze Holdings</span><span class="cell-meta">Patenga · “Owner asked to pause during building sale”</span></span></td><td>Anwar Kabir</td><td class="r num">1</td><td class="r num">9</td><td class="r num">0</td><td><span class="badge badge--danger"><i data-lucide="circle-pause"></i>Suspended</span></td><td class="num">2 Nov 2026</td><td class="r"><button class="btn btn--secondary btn--sm" type="button">Reactivate</button></td></tr>
+        <tr><td><span class="cell-stack"><span class="t-strong">BasaManager Demo</span><span class="cell-meta">Demo data · resets nightly</span></span></td><td>Demo landlord</td><td class="r num">2</td><td class="r num">10</td><td class="r num">8</td><td><span class="badge badge--neutral"><i data-lucide="flask-conical"></i>Demo</span></td><td class="num">1 Nov 2026</td><td class="r"><span class="t-xs muted">—</span></td></tr>
+      </tbody>
+    </table>
+    <div class="table-foot"><span>5 organisations · 65 units · 47 active leases</span><span>Updated 8 Nov, 8:15 PM</span></div>
+  </div>
+</div>
+
+  </div>
+<div class="dlg-layer">
+  <div class="scrim"></div>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="sus-h">
+    <h2 class="dialog__title" id="sus-h">Suspend Green View Apartments?</h2>
+    <p class="t-sm secondary">Mizanur Rahman, his caretakers and 11 tenants can still sign in but will only see a "suspended" screen. Bills, reminders and late fees stop until you reactivate. Nothing is deleted.</p>
+    <div class="field"><label class="label" for="r">Reason <span class="label__opt">(required, shown to the landlord)</span></label><textarea class="textarea" id="r">Repeated reports of fake payment claims, under review.</textarea></div>
+    <div class="dialog__actions"><button class="btn btn--ghost" type="button">Cancel</button><button class="btn btn--danger" type="button">Suspend organisation</button></div>
+  </div>
+</div>
+</div>
+</body>
+</html>

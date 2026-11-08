@@ -1,0 +1,78 @@
+<!--meta {"title": "D09 · Lease detail — overview", "shell": "staff-d", "active": "tenants", "crumbs": ["Tenants", "Nusrat Jahan · 4A"], "bell": "3"} -->
+<style>
+  .lease-head { display: flex; align-items: center; gap: var(--space-4); }
+  .avatar--lg { width: var(--space-16); height: var(--space-16); font-size: var(--text-xl); }
+  .money3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
+  .ov { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: var(--space-6); align-items: start; }
+  .doc { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) 0; border-bottom: 1px solid var(--border-muted); }
+  .doc:last-of-type { border-bottom: 0; }
+  .doc__icon { display: grid; place-items: center; width: var(--size-tap); height: var(--size-tap); border-radius: var(--radius-md); background: var(--bg-muted); color: var(--fg-secondary); flex-shrink: 0; }
+</style>
+<div class="page">
+  <section class="page-head">
+    <div class="lease-head">
+      <span class="avatar avatar--lg">NJ</span>
+      <div class="page-head__text">
+        <h1 class="t-title">Nusrat Jahan</h1>
+        <div class="row"><span class="badge badge--success"><i data-lucide="house"></i>Active</span><span class="secondary">Shanti Neer 4A · since 1 Mar 2025 · nusrat.jahan@gmail.com</span></div>
+      </div>
+    </div>
+    <div class="page-head__actions">
+      <button class="btn btn--ghost" type="button"><i data-lucide="calendar-clock"></i>Give notice</button>
+      <button class="btn btn--danger-ghost" type="button"><i data-lucide="log-out"></i>End lease</button>
+      <button class="btn btn--primary" type="button"><i data-lucide="plus"></i>Record payment</button>
+    </div>
+  </section>
+
+  <div class="tabs" role="tablist" aria-label="Lease sections" data-proto="tabs">
+    <button class="tab" role="tab" aria-selected="true" type="button">Overview</button>
+    <button class="tab" role="tab" aria-selected="false" type="button">Bills <span class="tab__count">21</span></button>
+    <button class="tab" role="tab" aria-selected="false" type="button">Payments <span class="tab__count">24</span></button>
+    <button class="tab" role="tab" aria-selected="false" type="button">Documents <span class="tab__count">3</span></button>
+    <button class="tab" role="tab" aria-selected="false" type="button">Requests <span class="tab__count">4</span></button>
+    <button class="tab" role="tab" aria-selected="false" type="button">History</button>
+  </div>
+
+  <section class="money3" aria-label="Money on this lease">
+    <div class="kpi"><span class="kpi__label"><i data-lucide="landmark" class="i-sm"></i>Deposit held</span><span class="kpi__value">৳24,000</span><span class="kpi__meta">Received 1 Mar 2025 · cash · kept as deposit, not rent</span></div>
+    <div class="kpi"><span class="kpi__label"><i data-lucide="piggy-bank" class="i-sm"></i>Credit</span><span class="kpi__value">৳0</span><span class="kpi__meta">Overpayments are used on the next bill automatically</span></div>
+    <div class="kpi"><span class="kpi__label"><i data-lucide="scale" class="i-sm"></i>Dues</span><span class="kpi__value">৳7,475</span><span class="kpi__meta">November bill · due 10 Nov · in 2 days</span></div>
+  </section>
+
+  <div class="ov">
+    <div class="stack-lg">
+      <section class="card card--flush" aria-labelledby="b-h">
+        <div class="card__head card__head--pad"><h2 class="card__title" id="b-h">Recent bills</h2><a class="btn btn--link" href="#bills">All 21 bills</a></div>
+        <table class="table">
+          <thead><tr><th>Month</th><th>Status</th><th class="r">Total</th><th class="r">Paid</th><th class="r">Balance</th></tr></thead>
+          <tbody>
+            <tr><td><a class="row-link" href="#/l/bills/nov">November 2026</a></td><td><span class="badge badge--warning"><i data-lucide="circle-dashed"></i>Partially paid</span></td><td class="r num">৳16,475</td><td class="r num">৳9,000</td><td class="r num t-strong">৳7,475</td></tr>
+            <tr><td><a class="row-link" href="#/l/bills/oct">October 2026</a></td><td><span class="badge badge--success"><i data-lucide="circle-check"></i>Paid</span></td><td class="r num">৳16,250</td><td class="r num">৳16,250</td><td class="r num muted">৳0</td></tr>
+            <tr><td><a class="row-link" href="#/l/bills/sep">September 2026</a></td><td><span class="badge badge--success"><i data-lucide="circle-check"></i>Paid</span></td><td class="r num">৳16,601</td><td class="r num">৳16,601</td><td class="r num muted">৳0</td></tr>
+          </tbody>
+        </table>
+      </section>
+      <section class="card" aria-labelledby="terms-h">
+        <h2 class="card__title" id="terms-h">Terms</h2>
+        <dl class="dl dl--grid">
+          <div class="dl__row"><dt>Monthly rent</dt><dd class="num">৳12,000</dd></div>
+          <div class="dl__row"><dt>Charges</dt><dd class="num">৳3,080 (service, gas, water)</dd></div>
+          <div class="dl__row"><dt>Electricity</dt><dd>Sub-meter · ৳9.00 / unit</dd></div>
+          <div class="dl__row"><dt>Started</dt><dd class="num">1 Mar 2025</dd></div>
+          <div class="dl__row"><dt>Household</dt><dd class="num">4 people</dd></div>
+          <div class="dl__row"><dt>Move-in reading</dt><dd class="mono">412</dd></div>
+        </dl>
+      </section>
+    </div>
+
+    <section class="card" aria-labelledby="d-h">
+      <div class="card__head"><h2 class="card__title" id="d-h">Documents</h2><button class="btn btn--secondary btn--sm" type="button"><i data-lucide="upload" class="i-sm"></i>Upload</button></div>
+      <p class="t-sm secondary row"><i data-lucide="lock" class="i-sm"></i>Private. Only you and Nusrat can open these; each link works for 5 minutes.</p>
+      <div>
+        <div class="doc"><span class="doc__icon"><i data-lucide="id-card"></i></span><div class="grow stack-sm"><span class="t-strong">NID — front</span><span class="t-xs muted">JPG · 412 KB · added 1 Mar 2025</span></div><button class="icon-btn" type="button" aria-label="View NID front"><i data-lucide="eye"></i></button><button class="icon-btn" type="button" aria-label="Delete NID front"><i data-lucide="trash-2"></i></button></div>
+        <div class="doc"><span class="doc__icon"><i data-lucide="id-card"></i></span><div class="grow stack-sm"><span class="t-strong">NID — back</span><span class="t-xs muted">JPG · 398 KB · added 1 Mar 2025</span></div><button class="icon-btn" type="button" aria-label="View NID back"><i data-lucide="eye"></i></button><button class="icon-btn" type="button" aria-label="Delete NID back"><i data-lucide="trash-2"></i></button></div>
+        <div class="doc"><span class="doc__icon"><i data-lucide="file-text"></i></span><div class="grow stack-sm"><span class="t-strong">Rental agreement</span><span class="t-xs muted">PDF · 1.2 MB · added 28 Feb 2025</span></div><button class="icon-btn" type="button" aria-label="Download rental agreement"><i data-lucide="download"></i></button><button class="icon-btn" type="button" aria-label="Delete rental agreement"><i data-lucide="trash-2"></i></button></div>
+      </div>
+    </section>
+  </div>
+</div>

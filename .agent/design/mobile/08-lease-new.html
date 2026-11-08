@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>M08 · New lease — review step — BasaManager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../ui.css">
+<script src="https://unpkg.com/lucide@1.70.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+<style>
+  /* layout only — tokens only */
+
+</style>
+</head>
+<body>
+<div class="frame-m">
+<header class="m-topbar m-topbar--back"><a class="icon-btn" href="#close" aria-label="Close"><i data-lucide="x"></i></a><h1 class="m-topbar__title" title="New lease · 2B">New lease · 2B</h1></header>
+<main class="m-main m-main--flow">
+<ol class="stepper" aria-label="Steps">
+  <li class="stepper__step" data-state="done"><span class="stepper__bar"></span><span class="stepper__label" title="Tenant">Tenant</span></li>
+  <li class="stepper__step" data-state="done"><span class="stepper__bar"></span><span class="stepper__label" title="Terms">Terms</span></li>
+  <li class="stepper__step" data-state="current" aria-current="step"><span class="stepper__bar"></span><span class="stepper__label" title="Review">Review</span></li>
+</ol>
+<h2 class="t-title">Check, then send the invite</h2>
+
+<section class="card card--tight" aria-labelledby="t-h">
+  <div class="card__head"><h3 class="t-strong" id="t-h">Tenant</h3><a class="btn btn--ghost" href="#step-1" data-button>Edit</a></div>
+  <dl class="dl">
+    <div class="dl__row"><dt>Name</dt><dd>Sadia Islam</dd></div>
+    <div class="dl__row"><dt>Email</dt><dd>sadia.islam@gmail.com</dd></div>
+    <div class="dl__row"><dt>Household</dt><dd class="num">3 people</dd></div>
+  </dl>
+</section>
+
+<section class="card card--tight" aria-labelledby="tm-h">
+  <div class="card__head"><h3 class="t-strong" id="tm-h">Terms</h3><a class="btn btn--ghost" href="#step-2" data-button>Edit</a></div>
+  <dl class="dl">
+    <div class="dl__row"><dt>Moves in</dt><dd class="num">18 Nov 2026</dd></div>
+    <div class="dl__row"><dt>Rent</dt><dd class="num">৳12,000</dd></div>
+    <div class="dl__row"><dt>Charges</dt><dd class="num">৳3,080 a month</dd></div>
+    <div class="dl__row"><dt>Meter at move-in</dt><dd class="mono">2,416</dd></div>
+    <div class="dl__row"><dt>Deposit</dt><dd class="num">৳24,000</dd></div>
+  </dl>
+</section>
+
+<section class="card" aria-labelledby="fb-h">
+  <div class="card__head"><h3 class="card__title" id="fb-h">First bill</h3><span class="badge badge--neutral"><i data-lucide="pencil-line"></i>Draft</span></div>
+  <p class="t-sm secondary">18–30 Nov = <b>13 of 30 days</b>, created on 18 Nov.</p>
+  <div class="ledger ledger--sm">
+    <div class="ledger__row"><span class="ledger__label">Rent</span><span class="ledger__leader"></span><span class="ledger__amount">৳5,200</span><span class="ledger__explain">৳12,000 × 13/30</span></div>
+    <div class="ledger__row"><span class="ledger__label">Service charge</span><span class="ledger__leader"></span><span class="ledger__amount">৳650</span><span class="ledger__explain">৳1,500 × 13/30</span></div>
+    <div class="ledger__row"><span class="ledger__label">Gas</span><span class="ledger__leader"></span><span class="ledger__amount">৳468</span><span class="ledger__explain">৳1,080 × 13/30</span></div>
+    <div class="ledger__row"><span class="ledger__label">Water</span><span class="ledger__leader"></span><span class="ledger__amount">৳217</span><span class="ledger__explain">৳216.67, rounded to the nearest taka</span></div>
+    <div class="ledger__row"><span class="ledger__label">Electricity</span><span class="ledger__leader"></span><span class="ledger__amount muted">—</span><span class="ledger__explain">Starts in December</span></div>
+    <div class="ledger__total"><span class="ledger__total-label">First bill</span><span class="ledger__total-amount">৳6,535</span></div>
+  </div>
+</section>
+<p class="t-sm secondary">Sadia gets an email invite, valid for 7 days. Unit 2B is held for her until then.</p>
+
+<div class="action-bar">
+  <button class="btn btn--primary btn--block" type="submit"><i data-lucide="send"></i>Create lease and invite</button>
+</div>
+
+</main>
+
+</div>
+</body>
+</html>

@@ -1,7 +1,7 @@
 # Environments & config
 
-> **First version (task V1).** Dev and test are documented from the real compose and env files. Staging and
-> production are marked "from V3": the VM, its Compose file and its secrets do not exist yet.
+> **Updated in task V3.** Dev and test come from the real compose and env files (V1); staging and production
+> from the VM, `infra/compose.server.yml` and the GitHub Environment secrets (V3).
 
 ## What problem it solves
 
@@ -17,16 +17,16 @@ those variables at start-up and refuses to run if they are inconsistent.
 
 ### The four environments
 
-|                      | dev                                        | test                                                     | staging                                | prod                                |
-| -------------------- | ------------------------------------------ | -------------------------------------------------------- | -------------------------------------- | ----------------------------------- |
-| Where                | your laptop                                | your laptop and GitHub Actions                           | the VM, project `bm-staging` (from V3) | the VM, project `bm-prod` (from V3) |
-| Started by           | `pnpm dev`                                 | `pnpm test:int`, `pnpm test:e2e`                         | merge to `main` (from V3)              | a `v*` tag (from V3)                |
-| `APP_ENV`            | `dev`                                      | `test`                                                   | `staging`                              | `prod`                              |
-| Postgres             | container, db `basamanager_dev`, port 5432 | container, db `basamanager_test`, port 5433, data in RAM | own container and volume               | own container and volume            |
-| Redis                | container, port 6379                       | container, port 6380                                     | own container                          | own container                       |
-| Mailpit (fake inbox) | SMTP 1025, UI `localhost:8025`             | SMTP 1026, UI 8026                                       | none: real email through Resend        | none: real email through Resend     |
-| API / web            | 4000 / 5173                                | 4100 / 4173 (built preview)                              | `staging.basamanager.rhrony05.me`      | `basamanager.rhrony05.me`           |
-| Files                | local disk (`.data/uploads`)               | local disk (temp)                                        | Cloudinary                             | Cloudinary                          |
+|                      | dev                                        | test                                                     | staging                           | prod                            |
+| -------------------- | ------------------------------------------ | -------------------------------------------------------- | --------------------------------- | ------------------------------- |
+| Where                | your laptop                                | your laptop and GitHub Actions                           | the VM, project `bm-staging`      | the VM, project `bm-prod`       |
+| Started by           | `pnpm dev`                                 | `pnpm test:int`, `pnpm test:e2e`                         | merge to `main`                   | a `v*` tag                      |
+| `APP_ENV`            | `dev`                                      | `test`                                                   | `staging`                         | `prod`                          |
+| Postgres             | container, db `basamanager_dev`, port 5432 | container, db `basamanager_test`, port 5433, data in RAM | own container and volume          | own container and volume        |
+| Redis                | container, port 6379                       | container, port 6380                                     | own container                     | own container                   |
+| Mailpit (fake inbox) | SMTP 1025, UI `localhost:8025`             | SMTP 1026, UI 8026                                       | none: real email through Resend   | none: real email through Resend |
+| API / web            | 4000 / 5173                                | 4100 / 4173 (built preview)                              | `staging.basamanager.rhrony05.me` | `basamanager.rhrony05.me`       |
+| Files                | local disk (`.data/uploads`)               | local disk (temp)                                        | Cloudinary                        | Cloudinary                      |
 
 The first two columns exist today. The whole design is written in `.agent/02-ARCHITECTURE.md`
 ("Environments").
@@ -77,7 +77,9 @@ container script above only adds the dev/test passwords; staging and production 
 DevOps.
 
 The passwords (`bm_owner_dev`, `bm_app_dev`, ...) are **dev and test only** and are public in this repo.
-Staging and production get generated passwords in V3 and never reuse these.
+Staging and production use the **same role names** but **generated passwords**, one set per environment,
+and never reuse these. `infra/postgres/server-roles.sql` creates the roles on the VM (and re-applies the
+passwords) on every deploy; the passwords come from the env file, never from the repository.
 
 ### Env files
 
@@ -123,6 +125,22 @@ migrations and never leftover dev data. The commands that touch the schema, and 
 | `pnpm db:seed`    | the one behind `DATABASE_URL`, as `bm_app` (dev/staging only) |
 | `pnpm test:int`   | a fresh database per run, dropped after                       |
 | `pnpm db:docs`    | a scratch database on the test Postgres, dropped after        |
+
+### Staging and production (V3)
+
+|                    | staging                                                     | prod                                              |
+| ------------------ | ----------------------------------------------------------- | ------------------------------------------------- |
+| URL                | `staging.basamanager.rhrony05.me` (DNS-only)                | `basamanager.rhrony05.me` (proxied by Cloudflare) |
+| Compose project    | `bm-staging`                                                | `bm-prod`                                         |
+| Database           | container `bm-staging-postgres-1`, db `basamanager_staging` | `bm-prod-postgres-1`, db `basamanager_prod`       |
+| Env file on the VM | `/opt/basamanager/env/staging.env` (mode 600)               | `/opt/basamanager/env/prod.env`                   |
+| Secrets live in    | GitHub Environment `staging`                                | GitHub Environment `production`                   |
+| Files              | Cloudinary `basamanager/staging/`                           | Cloudinary `basamanager/prod/`                    |
+| Deployed by        | every merge to `main`                                       | a `v*` tag, only if staging runs that commit      |
+
+The env file is **written by the deploy workflow** from the secrets (`infra/scripts/render-env.sh`); nobody
+edits it on the server. Both stacks run the identical images; only the env file differs. See
+[Docker & the VPS](/concepts/docker-and-vps) and [CI/CD](/concepts/ci-cd).
 
 ### Running several copies at once
 

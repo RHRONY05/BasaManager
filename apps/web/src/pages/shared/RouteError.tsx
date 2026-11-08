@@ -1,10 +1,16 @@
+import { useEffect } from 'react';
 import { useRouteError, useNavigate, Link } from 'react-router';
+import { captureError } from '../../lib/sentry';
 import { useTranslation } from 'react-i18next';
 
 export default function RouteError() {
   const error = useRouteError();
   const navigate = useNavigate();
   const { t } = useTranslation();
+
+  useEffect(() => {
+    captureError(error);
+  }, [error]);
 
   const errorMessage =
     error instanceof Error ? error.message : typeof error === 'string' ? error : t('status.routeError');

@@ -1,0 +1,51 @@
+<!--meta {"title": "D20 · New maintenance request", "shell": "tenant-d", "active": "requests", "bell": "2"} -->
+<style>
+  .back { justify-self: start; }
+  .tiles--7 { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .form-actions { display: flex; justify-content: flex-end; gap: var(--space-2); padding-top: var(--space-4); border-top: 1px solid var(--border-muted); }
+  .thumbs--row { grid-template-columns: repeat(3, 120px); }
+</style>
+<a class="btn btn--ghost back" href="#/t/requests"><i data-lucide="arrow-left"></i>Requests</a>
+<div class="stack-sm">
+  <h1 class="t-title">New request</h1>
+  <p class="secondary">Tell us what's wrong in Flat 4A. Jamal Uddin (caretaker) and Farhana Chowdhury will see it straight away, and you can follow every update here.</p>
+</div>
+
+<form class="card form" aria-label="New request">
+  <fieldset class="field">
+    <legend class="label">What kind of problem?</legend>
+    <div class="tiles tiles--7" role="radiogroup" aria-label="Category">
+      <button class="tile" type="button" role="radio" aria-checked="true"><i data-lucide="droplets"></i>Plumbing</button>
+      <button class="tile" type="button" role="radio" aria-checked="false"><i data-lucide="zap"></i>Electrical</button>
+      <button class="tile" type="button" role="radio" aria-checked="false"><i data-lucide="flame"></i>Gas</button>
+      <button class="tile" type="button" role="radio" aria-checked="false"><i data-lucide="arrow-up-down"></i>Lift</button>
+      <button class="tile" type="button" role="radio" aria-checked="false"><i data-lucide="brush-cleaning"></i>Cleaning</button>
+      <button class="tile" type="button" role="radio" aria-checked="false"><i data-lucide="shield"></i>Security</button>
+      <button class="tile" type="button" role="radio" aria-checked="false"><i data-lucide="circle-help"></i>Other</button>
+    </div>
+  </fieldset>
+  <div class="form-row">
+    <div class="field">
+      <label class="label" for="t">Short title</label>
+      <input class="input" id="t" value="Kitchen sink leaking under the cabinet" maxlength="80">
+    </div>
+    <div class="field">
+      <span class="label" id="prio-l">How urgent?</span>
+      <div class="segmented" role="group" aria-labelledby="prio-l"><button type="button" aria-pressed="false">Low</button><button type="button" aria-pressed="true">Normal</button><button type="button" aria-pressed="false">Urgent</button></div>
+      <span class="hint">Urgent is for gas smell, sparks, no water or a stuck lift.</span>
+    </div>
+  </div>
+  <div class="field">
+    <label class="label" for="d">What's happening?</label>
+    <textarea class="textarea" id="d">Water drips from the pipe joint under the sink whenever the tap is on. The cabinet floor is wet and the wood is getting soft.</textarea>
+  </div>
+  <div class="field">
+    <span class="label">Photos <span class="label__opt">(up to 3, JPG or PNG, 5 MB each)</span></span>
+    <div class="thumbs thumbs--row">
+      <div class="thumb"><div class="ph" style="aspect-ratio:1/1">Photo — wet cabinet floor · 1:1</div><button class="icon-btn" type="button" aria-label="Remove photo 1"><i data-lucide="x"></i></button></div>
+      <div class="thumb"><div class="ph" style="aspect-ratio:1/1">Photo — dripping pipe · 1:1</div><button class="icon-btn" type="button" aria-label="Remove photo 2"><i data-lucide="x"></i></button></div>
+      <button class="dropzone thumb" type="button" aria-label="Add a photo, 1 left"><i data-lucide="image-plus"></i>Add photo</button>
+    </div>
+  </div>
+  <div class="form-actions"><a class="btn btn--ghost" href="#/t/requests">Cancel</a><button class="btn btn--primary" type="submit">Send request</button></div>
+</form>

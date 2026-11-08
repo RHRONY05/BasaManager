@@ -1,0 +1,25 @@
+<!--meta {"title": "M14 · Maintenance list", "shell": "staff-m", "active": "requests", "topbar": "Requests", "bell": "3", "avatar": true, "initials": "FC"} -->
+<style>
+  .req-row { display: grid; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border-muted); color: inherit; text-decoration: none; }
+  .req-row:last-child { border-bottom: 0; }
+  .req-row__top { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-3); }
+  .req-row__meta { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); }
+</style>
+<div class="chips" role="group" aria-label="Status" data-scroll-x>
+  <button class="chip chip--tap" type="button" aria-pressed="true">Active 7</button>
+  <button class="chip chip--tap" type="button" aria-pressed="false">Open 3</button>
+  <button class="chip chip--tap" type="button" aria-pressed="false">Assigned 2</button>
+  <button class="chip chip--tap" type="button" aria-pressed="false">In progress 2</button>
+  <button class="chip chip--tap" type="button" aria-pressed="false">Resolved 1</button>
+</div>
+<div class="row"><div class="select-wrap grow"><select class="select" aria-label="Building"><option>All buildings</option></select><i data-lucide="chevron-down"></i></div><button class="btn btn--secondary" type="button"><i data-lucide="sliders-horizontal"></i>Filter</button></div>
+
+<div class="list">
+  <a class="req-row" href="#r-1051"><span class="req-row__top"><span class="list-row__title">Lift stops between 3rd and 4th floor</span><span class="badge badge--info"><i data-lucide="circle-dot"></i>Open</span></span><span class="req-row__meta"><span class="list-row__meta">Shanti Neer · Lift</span><span class="row"><span class="prio prio--urgent"><i data-lucide="siren"></i>Urgent</span><span class="age"><i data-lucide="clock" class="i-sm"></i>6 h</span></span></span></a>
+  <a class="req-row" href="#r-1049"><span class="req-row__top"><span class="list-row__title">Gas burner flame very low</span><span class="badge badge--warning"><i data-lucide="wrench"></i>In progress</span></span><span class="req-row__meta"><span class="list-row__meta">Karnaphuli View 3A · Jamal</span><span class="row"><span class="prio prio--urgent"><i data-lucide="siren"></i>Urgent</span><span class="age"><i data-lucide="clock" class="i-sm"></i>1 d</span></span></span></a>
+  <a class="req-row" href="#r-1042"><span class="req-row__top"><span class="list-row__title">Kitchen sink leaking under the cabinet</span><span class="badge badge--info"><i data-lucide="user-check"></i>Assigned</span></span><span class="req-row__meta"><span class="list-row__meta">Shanti Neer 4A · Jamal</span><span class="age"><i data-lucide="clock" class="i-sm"></i>2 d</span></span></a>
+  <a class="req-row" href="#r-1040"><span class="req-row__top"><span class="list-row__title">Main gate lock broken</span><span class="badge badge--warning"><i data-lucide="wrench"></i>In progress</span></span><span class="req-row__meta"><span class="list-row__meta">Hill Crest · Monir</span><span class="age age--old"><i data-lucide="clock" class="i-sm"></i>3 d</span></span></a>
+  <a class="req-row" href="#r-1037"><span class="req-row__top"><span class="list-row__title">Stair light not working on 2nd floor</span><span class="badge badge--info"><i data-lucide="circle-dot"></i>Open</span></span><span class="req-row__meta"><span class="list-row__meta">Hill Crest · not assigned</span><span class="age age--old"><i data-lucide="clock" class="i-sm"></i>4 d</span></span></a>
+  <a class="req-row" href="#r-1046"><span class="req-row__top"><span class="list-row__title">Bathroom tap won't close fully</span><span class="badge badge--info"><i data-lucide="user-check"></i>Assigned</span></span><span class="req-row__meta"><span class="list-row__meta">Hill Crest 2B · Monir</span><span class="age"><i data-lucide="clock" class="i-sm"></i>1 d</span></span></a>
+  <a class="req-row" href="#r-1053"><span class="req-row__top"><span class="list-row__title">Water leaking from roof tank overflow</span><span class="badge badge--info"><i data-lucide="circle-dot"></i>Open</span></span><span class="req-row__meta"><span class="list-row__meta">Karnaphuli View · Plumbing</span><span class="age"><i data-lucide="clock" class="i-sm"></i>2 h</span></span></a>
+</div>

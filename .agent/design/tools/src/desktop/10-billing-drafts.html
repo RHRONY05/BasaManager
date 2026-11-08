@@ -1,0 +1,47 @@
+<!--meta {"title": "D10 · Billing — drafts", "shell": "staff-d", "active": "billing", "crumbs": ["Billing"], "bell": "3"} -->
+<style>
+  .filters { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+  .filters .select-wrap { width: 240px; }
+  .toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }
+</style>
+<div class="page">
+  <section class="page-head">
+    <div class="page-head__text">
+      <h1 class="t-title">Billing</h1>
+      <p class="secondary">Karnaphuli View · bills are created on the 5th and due by the 15th</p>
+    </div>
+    <div class="filters">
+      <div class="select-wrap"><select class="select" aria-label="Building"><option>Karnaphuli View</option><option>Shanti Neer</option><option>Hill Crest</option></select><i data-lucide="chevron-down"></i></div>
+      <div class="month-picker"><button class="icon-btn" type="button" aria-label="Previous month"><i data-lucide="chevron-left"></i></button><span class="month-picker__label">November 2026</span><button class="icon-btn" type="button" aria-label="Next month" disabled><i data-lucide="chevron-right"></i></button></div>
+    </div>
+  </section>
+
+  <div class="tabs" role="tablist" aria-label="Billing" data-proto="tabs">
+    <button class="tab" role="tab" aria-selected="true" type="button">Drafts <span class="tab__count">7</span></button>
+    <button class="tab" role="tab" aria-selected="false" type="button">Issued <span class="tab__count">0</span></button>
+    <button class="tab" role="tab" aria-selected="false" type="button">Readings <span class="tab__count">2 missing</span></button>
+  </div>
+
+  <div class="banner banner--warning" role="status"><i data-lucide="gauge"></i><div class="banner__body"><span class="banner__title">2 bills are waiting for a meter reading</span><span>Enter the November readings for 2A and 3B. Their electricity line is added and they become ready to issue.</span></div><div class="banner__actions"><a class="btn btn--secondary btn--sm" href="#readings">Enter readings</a></div></div>
+
+  <div class="toolbar">
+    <span class="t-sm secondary"><b class="t-strong">5 ready</b> · <span class="num">৳99,475</span> · issuing locks the lines and notifies each tenant</span>
+    <button class="btn btn--primary" type="button"><i data-lucide="send"></i>Issue 5 ready bills</button>
+  </div>
+
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Unit</th><th>Tenant</th><th class="r">Rent</th><th class="r">Charges</th><th class="r">Electricity</th><th class="r">Total</th><th>Status</th><th class="r" aria-label="Actions"></th></tr></thead>
+      <tbody>
+        <tr><td class="t-strong">1A</td><td>Sharmin Akter</td><td class="r num">৳14,000</td><td class="r num">৳3,680</td><td class="r"><span class="cell-stack"><span class="num">৳1,548</span><span class="cell-meta">172 units</span></span></td><td class="r num t-strong">৳19,228</td><td><span class="badge badge--neutral"><i data-lucide="pencil-line"></i>Draft · ready</span></td><td class="r"><a class="btn btn--secondary btn--sm" href="#/l/bills/kv-1a">Review</a></td></tr>
+        <tr><td class="t-strong">1B</td><td>Mahmudul Hasan</td><td class="r num">৳14,000</td><td class="r num">৳3,680</td><td class="r"><span class="cell-stack"><span class="num">৳1,242</span><span class="cell-meta">138 units</span></span></td><td class="r num t-strong">৳18,922</td><td><span class="badge badge--neutral"><i data-lucide="pencil-line"></i>Draft · ready</span></td><td class="r"><a class="btn btn--secondary btn--sm" href="#/l/bills/kv-1b">Review</a></td></tr>
+        <tr class="is-attention"><td class="t-strong">2A</td><td>Farzana Rahman</td><td class="r num">৳15,000</td><td class="r num">৳3,680</td><td class="r"><span class="cell-meta">no reading yet</span></td><td class="r num muted">৳18,680 +</td><td><span class="badge badge--warning"><i data-lucide="gauge"></i>Needs reading</span></td><td class="r"><a class="btn btn--secondary btn--sm" href="#readings">Enter reading</a></td></tr>
+        <tr><td class="t-strong">3A</td><td>Shakil Ahmed</td><td class="r num">৳15,000</td><td class="r num">৳3,680</td><td class="r"><span class="cell-stack"><span class="num">৳1,809</span><span class="cell-meta">201 units</span></span></td><td class="r num t-strong">৳20,489</td><td><span class="badge badge--neutral"><i data-lucide="pencil-line"></i>Draft · ready</span></td><td class="r"><a class="btn btn--secondary btn--sm" href="#/l/bills/kv-3a">Review</a></td></tr>
+        <tr class="is-attention"><td class="t-strong">3B</td><td>Tahmina Begum</td><td class="r num">৳15,000</td><td class="r num">৳3,680</td><td class="r"><span class="cell-meta">no reading yet</span></td><td class="r num muted">৳18,680 +</td><td><span class="badge badge--warning"><i data-lucide="gauge"></i>Needs reading</span></td><td class="r"><a class="btn btn--secondary btn--sm" href="#readings">Enter reading</a></td></tr>
+        <tr><td class="t-strong">4A</td><td>Rakibul Islam</td><td class="r num">৳16,000</td><td class="r num">৳3,680</td><td class="r"><span class="cell-meta">prepaid meter</span></td><td class="r num t-strong">৳19,680</td><td><span class="badge badge--neutral"><i data-lucide="pencil-line"></i>Draft · ready</span></td><td class="r"><a class="btn btn--secondary btn--sm" href="#/l/bills/kv-4a">Review</a></td></tr>
+        <tr><td class="t-strong">4B</td><td>Nazmul Huda</td><td class="r num">৳16,000</td><td class="r num">৳3,680</td><td class="r"><span class="cell-stack"><span class="num">৳1,476</span><span class="cell-meta">164 units</span></span></td><td class="r num t-strong">৳21,156</td><td><span class="badge badge--neutral"><i data-lucide="pencil-line"></i>Draft · ready</span></td><td class="r"><a class="btn btn--secondary btn--sm" href="#/l/bills/kv-4b">Review</a></td></tr>
+      </tbody>
+    </table>
+    <div class="table-foot"><span>7 drafts · 2B is vacant, so no bill</span><span class="num">Ready total <b class="t-strong">৳99,475</b></span></div>
+  </div>
+</div>

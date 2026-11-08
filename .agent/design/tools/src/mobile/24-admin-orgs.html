@@ -1,0 +1,29 @@
+<!--meta {"title": "M24 · Admin — organisations", "shell": "staff-m", "plain": true, "topbar": "Organisations", "bell": "1", "avatar": true, "initials": "RH"} -->
+<style>
+  .org { display: grid; gap: var(--space-3); padding: var(--space-4); background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-lg); }
+  .org__counts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
+  .org__counts div { display: grid; gap: var(--space-0-5); }
+</style>
+<p class="t-sm secondary">Counts only. Tenant documents and money stay private to each landlord.</p>
+<input class="input" type="search" placeholder="Search organisations" aria-label="Search organisations">
+<div class="chips" role="group" aria-label="Status" data-scroll-x><button class="chip chip--tap" type="button" aria-pressed="true">All 5</button><button class="chip chip--tap" type="button" aria-pressed="false">Active 4</button><button class="chip chip--tap" type="button" aria-pressed="false">Suspended 1</button></div>
+
+<article class="org" aria-labelledby="o1">
+  <div class="row-between"><h2 class="t-strong wrap" id="o1">Chowdhury Properties</h2><span class="badge badge--success"><i data-lucide="circle-check"></i>Active</span></div>
+  <span class="t-sm muted">Farhana Chowdhury · since 12 Oct 2026</span>
+  <div class="org__counts"><div><span class="t-xs muted">Buildings</span><span class="num t-strong">3</span></div><div><span class="t-xs muted">Units</span><span class="num t-strong">26</span></div><div><span class="t-xs muted">Leases</span><span class="num t-strong">23</span></div></div>
+  <button class="btn btn--secondary btn--block" type="button">Suspend</button>
+</article>
+<article class="org" aria-labelledby="o2">
+  <div class="row-between"><h2 class="t-strong wrap" id="o2">Green View Apartments</h2><span class="badge badge--success"><i data-lucide="circle-check"></i>Active</span></div>
+  <span class="t-sm muted">Mizanur Rahman · since 20 Oct 2026</span>
+  <div class="org__counts"><div><span class="t-xs muted">Buildings</span><span class="num t-strong">2</span></div><div><span class="t-xs muted">Units</span><span class="num t-strong">14</span></div><div><span class="t-xs muted">Leases</span><span class="num t-strong">11</span></div></div>
+  <button class="btn btn--secondary btn--block" type="button">Suspend</button>
+</article>
+<article class="org" aria-labelledby="o4">
+  <div class="row-between"><h2 class="t-strong wrap" id="o4">Sea Breeze Holdings</h2><span class="badge badge--danger"><i data-lucide="circle-pause"></i>Suspended</span></div>
+  <span class="t-sm muted">Anwar Kabir · “Owner asked to pause during building sale”</span>
+  <div class="org__counts"><div><span class="t-xs muted">Buildings</span><span class="num t-strong">1</span></div><div><span class="t-xs muted">Units</span><span class="num t-strong">9</span></div><div><span class="t-xs muted">Leases</span><span class="num t-strong">0</span></div></div>
+  <button class="btn btn--secondary btn--block" type="button">Reactivate</button>
+</article>
+<a class="btn btn--ghost btn--block" href="#/a/health" data-button><i data-lucide="activity"></i>System health</a>

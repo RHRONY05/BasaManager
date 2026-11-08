@@ -1,0 +1,33 @@
+<!--meta {"title": "M19 · Pay result — paid", "shell": "tenant-m", "plain": true, "topbar": "Payment", "topright": ""} -->
+<style>
+  .result { display: grid; justify-items: center; gap: var(--space-2); text-align: center; padding-top: var(--space-4); }
+  .result__icon { display: grid; place-items: center; width: var(--space-16); height: var(--space-16); border-radius: var(--radius-full); background: var(--success-soft); color: var(--success-text); }
+  .result__icon svg.lucide { width: var(--space-8); height: var(--space-8); }
+</style>
+<section class="result" aria-labelledby="res-h" role="status">
+  <span class="result__icon"><i data-lucide="circle-check"></i></span>
+  <h2 class="t-title" id="res-h">Payment received</h2>
+  <span class="amount amount--hero">৳7,475</span>
+  <p class="secondary">paid to Chowdhury Properties for Shanti Neer 4A</p>
+</section>
+
+<section class="card" aria-labelledby="rc-h">
+  <div class="card__head"><h2 class="card__title" id="rc-h">Receipt</h2><span class="mono t-sm">BM-2026-000214</span></div>
+  <div class="dl">
+    <div class="dl__row"><dt>Paid</dt><dd class="num">8 Nov 2026, 7:42 PM</dd></div>
+    <div class="dl__row"><dt>Method</dt><dd>Online · SSLCommerz</dd></div>
+    <div class="dl__row"><dt>Transaction</dt><dd class="mono">BMT-8N2K4Q7R1T</dd></div>
+  </div>
+  <div class="ledger ledger--sm">
+    <div class="ledger__row"><span class="ledger__label">November bill, left to pay</span><span class="ledger__leader"></span><span class="ledger__amount">৳7,475</span></div>
+    <div class="ledger__row"><span class="ledger__label">This payment</span><span class="ledger__leader"></span><span class="ledger__amount ledger__amount--neg">−৳7,475</span></div>
+    <div class="ledger__total"><span class="ledger__total-label">Left to pay</span><span class="ledger__total-amount">৳0</span></div>
+  </div>
+</section>
+
+<p class="t-sm secondary">Confirmed with SSLCommerz by our server, so it is final. A copy of the receipt was emailed to <span class="wrap" data-user>nusrat.jahan@gmail.com</span>.</p>
+
+<div class="btn-stack">
+  <a class="btn btn--primary btn--block" href="#/receipts/BM-2026-000214" data-button><i data-lucide="download"></i>Download receipt</a>
+  <a class="btn btn--secondary btn--block" href="#/t" data-button>Back to home</a>
+</div>

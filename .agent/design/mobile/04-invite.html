@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>M04 · Invite accept — BasaManager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../ui.css">
+<script src="https://unpkg.com/lucide@1.70.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+<style>
+  /* layout only — tokens only */
+  .m-nav { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4); }
+  .m-auth { display: grid; gap: var(--space-6); padding: var(--space-4) var(--space-4) var(--space-10); }
+</style>
+</head>
+<body>
+<div class="frame-m">
+<header class="m-nav"><a class="brand" href="#/"><svg class="brand__mark" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15 16 6l10 9"/><path d="M9 13v9h14v-9"/><path d="M13.5 22v-5h5v5"/><path d="M5 26h22M5 29.5h22" stroke-width="1.6"/></svg>BasaManager</a></header>
+<main class="m-auth">
+      <div class="stack-sm">
+        <p class="eyebrow">Invitation</p>
+        <h1 class="t-title">Join Chowdhury Properties</h1>
+        <p class="secondary">Farhana Chowdhury invited you as the <b>tenant of Shanti Neer, flat 2B</b>. The invite works until 15 Nov 2026.</p>
+      </div>
+      <div class="card card--tight">
+        <dl class="dl">
+          <div class="dl__row"><dt>Building</dt><dd>Shanti Neer, Nasirabad</dd></div>
+          <div class="dl__row"><dt>Role</dt><dd>Tenant · flat 2B</dd></div>
+          <div class="dl__row"><dt>Moves in</dt><dd class="num">18 Nov 2026</dd></div>
+        </dl>
+      </div>
+      <button class="btn btn--secondary btn--block" type="button"><svg class="google-g" viewBox="0 0 48 48" aria-hidden="true"><path class="g-y" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path class="g-r" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path class="g-g" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path class="g-b" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Continue with Google</button>
+      <div class="divider-text">or set a password</div>
+      <form class="form">
+        <div class="field"><label class="label" for="em">Email</label><input class="input" id="em" type="email" value="sadia.islam@gmail.com" disabled><span class="hint">The invite is for this address only.</span></div>
+        <div class="field"><label class="label" for="fn">Your full name</label><input class="input" id="fn" autocomplete="name" value="Sadia Islam"></div>
+        <div class="field"><label class="label" for="pw">Password</label><input class="input" id="pw" type="password" autocomplete="new-password" value=""><div class="pw-meter" aria-hidden="true"><span></span><span></span><span></span><span></span></div><span class="hint">At least 10 characters.</span></div>
+        <button class="btn btn--primary btn--block btn--lg" type="submit">Accept and join</button>
+      </form>
+      <p class="t-sm secondary">Not Sadia? <a href="#/login">Sign in with another account</a> and we'll explain what to do.</p>
+</main>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,36 @@
+<!--meta {"title": "M10 · Billing — drafts", "shell": "staff-m", "active": "billing", "topbar": "Billing", "bell": "3", "avatar": true, "initials": "FC"} -->
+<style>
+  .tabs-m { margin: 0 calc(var(--space-4) * -1); padding: 0 var(--space-4); }
+  .month-picker--block { display: flex; }
+  .month-picker--block .month-picker__label { flex: 1; min-width: 0; }
+  .unit-tag { display: grid; place-items: center; min-width: var(--size-tap); height: var(--size-tap); padding: 0 var(--space-1); border-radius: var(--radius-md); background: var(--bg-muted); font-weight: var(--weight-bold); flex-shrink: 0; }
+</style>
+<div class="stack-sm">
+  <div class="select-wrap"><select class="select" aria-label="Building"><option>Karnaphuli View</option><option>Shanti Neer</option><option>Hill Crest</option></select><i data-lucide="chevron-down"></i></div>
+  <div class="month-picker month-picker--block"><button class="icon-btn" type="button" aria-label="Previous month"><i data-lucide="chevron-left"></i></button><span class="month-picker__label">November 2026</span><button class="icon-btn" type="button" aria-label="Next month" disabled><i data-lucide="chevron-right"></i></button></div>
+</div>
+
+<div class="tabs tabs-m" role="tablist" aria-label="Billing" data-scroll-x data-proto="tabs">
+  <button class="tab" role="tab" aria-selected="true" type="button">Drafts <span class="tab__count">7</span></button>
+  <button class="tab" role="tab" aria-selected="false" type="button">Issued</button>
+  <button class="tab" role="tab" aria-selected="false" type="button">Readings <span class="tab__count">2</span></button>
+</div>
+
+<div class="banner banner--warning" role="status"><i data-lucide="gauge"></i><div class="banner__body"><span class="banner__title">2 need a meter reading</span><span>2A and 3B can't be issued yet.</span></div></div>
+<a class="btn btn--secondary btn--block" href="#readings" data-button><i data-lucide="gauge"></i>Enter readings</a>
+
+<div class="list">
+  <a class="list-row" href="#/l/bills/kv-2a"><span class="unit-tag">2A</span><span class="list-row__main"><span class="list-row__title">Farzana Rahman</span><span class="list-row__meta num">৳18,680 + electricity</span></span><span class="list-row__end"><span class="badge badge--warning"><i data-lucide="gauge"></i>Reading</span></span></a>
+  <a class="list-row" href="#/l/bills/kv-3b"><span class="unit-tag">3B</span><span class="list-row__main"><span class="list-row__title">Tahmina Begum</span><span class="list-row__meta num">৳18,680 + electricity</span></span><span class="list-row__end"><span class="badge badge--warning"><i data-lucide="gauge"></i>Reading</span></span></a>
+  <a class="list-row" href="#/l/bills/kv-1a"><span class="unit-tag">1A</span><span class="list-row__main"><span class="list-row__title">Sharmin Akter</span><span class="list-row__meta">172 units · ৳1,548</span></span><span class="list-row__end"><span class="num t-strong">৳19,228</span><span class="badge badge--neutral"><i data-lucide="pencil-line"></i>Ready</span></span></a>
+  <a class="list-row" href="#/l/bills/kv-1b"><span class="unit-tag">1B</span><span class="list-row__main"><span class="list-row__title">Mahmudul Hasan</span><span class="list-row__meta">138 units · ৳1,242</span></span><span class="list-row__end"><span class="num t-strong">৳18,922</span><span class="badge badge--neutral"><i data-lucide="pencil-line"></i>Ready</span></span></a>
+  <a class="list-row" href="#/l/bills/kv-3a"><span class="unit-tag">3A</span><span class="list-row__main"><span class="list-row__title">Shakil Ahmed</span><span class="list-row__meta">201 units · ৳1,809</span></span><span class="list-row__end"><span class="num t-strong">৳20,489</span><span class="badge badge--neutral"><i data-lucide="pencil-line"></i>Ready</span></span></a>
+  <a class="list-row" href="#/l/bills/kv-4a"><span class="unit-tag">4A</span><span class="list-row__main"><span class="list-row__title">Rakibul Islam</span><span class="list-row__meta">Prepaid meter</span></span><span class="list-row__end"><span class="num t-strong">৳19,680</span><span class="badge badge--neutral"><i data-lucide="pencil-line"></i>Ready</span></span></a>
+  <a class="list-row" href="#/l/bills/kv-4b"><span class="unit-tag">4B</span><span class="list-row__main"><span class="list-row__title">Nazmul Huda</span><span class="list-row__meta">164 units · ৳1,476</span></span><span class="list-row__end"><span class="num t-strong">৳21,156</span><span class="badge badge--neutral"><i data-lucide="pencil-line"></i>Ready</span></span></a>
+</div>
+
+<section class="card card--tight" aria-label="Issue">
+  <div class="row-between"><span class="t-sm secondary">5 ready to issue</span><span class="num t-strong">৳99,475</span></div>
+  <button class="btn btn--primary btn--block" type="button"><i data-lucide="send"></i>Issue 5 ready bills</button>
+  <p class="t-xs muted">Issuing locks the lines and notifies each tenant.</p>
+</section>

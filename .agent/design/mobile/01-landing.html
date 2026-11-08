@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>M01 · Landing — BasaManager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../ui.css">
+<script src="https://unpkg.com/lucide@1.70.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+<style>
+  /* layout only — tokens only */
+  .m-nav { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4); }
+  .m-hero { display: grid; gap: var(--space-5); padding: var(--space-6) var(--space-4) var(--space-10); }
+  .m-sec { display: grid; gap: var(--space-4); padding: var(--space-10) var(--space-4); }
+  .m-hero .mk-hero__title { font-size: var(--text-hero); }
+  .mk-point { grid-template-columns: var(--size-tap) minmax(0, 1fr); }
+  .mk-steps { grid-template-columns: minmax(0, 1fr); padding: 0; gap: var(--space-6); }
+  .mk-foot { padding: var(--space-6) var(--space-4) var(--space-10); }
+</style>
+</head>
+<body>
+<div class="frame-m">
+<header class="m-nav">
+  <a class="brand" href="#/"><svg class="brand__mark" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15 16 6l10 9"/><path d="M9 13v9h14v-9"/><path d="M13.5 22v-5h5v5"/><path d="M5 26h22M5 29.5h22" stroke-width="1.6"/></svg>BasaManager</a>
+  <a class="btn btn--ghost" href="#/login" data-button>Sign in</a>
+</header>
+<main>
+  <section class="m-hero" aria-labelledby="hero-h">
+    <p class="eyebrow">Rent, bills and receipts</p>
+    <h1 class="mk-hero__title" id="hero-h">Every taka of rent, worked out and explained.</h1>
+    <p class="mk-hero__lead">Each tenant's bill is built every month: rent, service, gas, water and metered electricity. Pay online or by cash and bKash, with a receipt every time.</p>
+    <div class="btn-stack"><a class="btn btn--primary btn--lg btn--block" href="#/signup" data-button>Create landlord account</a><a class="btn btn--secondary btn--block" href="#/login" data-button>Sign in</a></div>
+    <p class="t-sm muted">Tenants and caretakers join by an invite from their landlord.</p>
+    <div class="due-card" aria-label="Example: a tenant's bill">
+      <div class="due-card__top"><span class="t-card">November 2026</span><span class="badge badge--info"><i data-lucide="send"></i>Issued</span></div>
+      <div class="ledger ledger--sm">
+        <div class="ledger__row"><span class="ledger__label">Rent</span><span class="ledger__leader"></span><span class="ledger__amount">৳12,000</span></div>
+        <div class="ledger__row"><span class="ledger__label">Service, gas, water</span><span class="ledger__leader"></span><span class="ledger__amount">৳3,080</span></div>
+        <div class="ledger__row"><span class="ledger__label">Electricity</span><span class="ledger__leader"></span><span class="ledger__amount">৳1,395</span><span class="ledger__explain">1,240 → 1,395 = 155 units × ৳9.00</span></div>
+        <div class="ledger__total"><span class="ledger__total-label">Total</span><span class="ledger__total-amount">৳16,475</span></div>
+      </div>
+    </div>
+  </section>
+  <section class="mk-band" aria-labelledby="why-h">
+    <div class="m-sec">
+      <h2 class="t-title" id="why-h">Bills that explain themselves</h2>
+      <p class="secondary">Enter the meter reading and the bill shows the sum. Mid-month move-ins are prorated to the day; a late fee is added once, only on what's unpaid.</p>
+      <div>
+        <div class="mk-point"><span class="mk-point__icon"><i data-lucide="receipt-text"></i></span><div class="stack-sm"><h3 class="t-card">Paid is paid</h3><p class="secondary t-sm">Online payments are confirmed with SSLCommerz before a bill is marked paid. Cash and bKash claims wait for your confirmation. Every payment gets a PDF receipt.</p></div></div>
+        <div class="mk-point"><span class="mk-point__icon"><i data-lucide="wrench"></i></span><div class="stack-sm"><h3 class="t-card">Repairs don't get lost</h3><p class="secondary t-sm">Tenants report with photos; your caretaker updates it from his phone.</p></div></div>
+      </div>
+    </div>
+  </section>
+  <section class="m-sec" aria-labelledby="how-h">
+    <h2 class="t-section" id="how-h">Set up in an evening</h2>
+    <ol class="mk-steps">
+      <li class="mk-step"><span class="mk-step__n">01</span><h3 class="t-card">Add buildings and units</h3></li>
+      <li class="mk-step"><span class="mk-step__n">02</span><h3 class="t-card">Invite tenants</h3></li>
+      <li class="mk-step"><span class="mk-step__n">03</span><h3 class="t-card">Bills go out by themselves</h3></li>
+    </ol>
+  </section>
+  <footer class="mk-foot"><span>BasaManager · made in Chattogram</span><span>Payments in SSLCommerz sandbox mode</span></footer>
+</main>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>D19 · Pay result — paid — BasaManager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../ui.css">
+<script src="https://unpkg.com/lucide@1.70.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+<style>
+  /* layout only — tokens only */
+  .result { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-5); align-items: center; }
+  .result__icon { display: grid; place-items: center; width: var(--space-16); height: var(--space-16); border-radius: var(--radius-full); background: var(--success-soft); color: var(--success-text); }
+  .result__icon svg.lucide { width: var(--space-8); height: var(--space-8); }
+  .rc { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-8); }
+</style>
+</head>
+<body>
+<div class="frame-d">
+<header class="t-topnav">
+  <div class="t-topnav__inner">
+    <a class="brand" href="#home"><svg class="brand__mark" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15 16 6l10 9"/><path d="M9 13v9h14v-9"/><path d="M13.5 22v-5h5v5"/><path d="M5 26h22M5 29.5h22" stroke-width="1.6"/></svg>BasaManager</a>
+    <nav class="t-topnav__links" aria-label="Main"><a class="t-topnav__link" href="#home">Home</a><a class="t-topnav__link" href="#bills">Bills</a><a class="t-topnav__link" href="#requests">Requests</a><a class="t-topnav__link" href="#notices">Notices</a></nav>
+    <div class="topbar__actions"><span class="bell"><a class="icon-btn" href="#notifications" aria-label="Notifications, 1 unread"><i data-lucide="bell"></i></a><span class="bell__count" aria-hidden="true">1</span></span><a class="account-btn" href="#account" aria-label="Account, Nusrat Jahan"><span class="avatar">NJ</span><i data-lucide="chevron-down" class="i-sm"></i></a></div>
+  </div>
+</header>
+<main class="t-column">
+<section class="result" aria-labelledby="res-h" role="status">
+  <span class="result__icon"><i data-lucide="circle-check"></i></span>
+  <div class="stack-sm">
+    <h1 class="t-title" id="res-h">Payment received · <span class="num">৳7,475</span></h1>
+    <p class="secondary">Paid to Chowdhury Properties for Shanti Neer 4A. Confirmed with SSLCommerz by our server, so it is final.</p>
+  </div>
+</section>
+
+<section class="card" aria-labelledby="rc-h">
+  <div class="card__head"><h2 class="card__title" id="rc-h">Receipt <span class="mono t-sm secondary">BM-2026-000214</span></h2><span class="badge badge--success"><i data-lucide="circle-check"></i>Confirmed</span></div>
+  <div class="rc">
+    <div class="dl">
+      <div class="dl__row"><dt>Paid</dt><dd class="num">8 Nov 2026, 7:42 PM</dd></div>
+      <div class="dl__row"><dt>Method</dt><dd>Online · SSLCommerz</dd></div>
+      <div class="dl__row"><dt>Transaction</dt><dd class="mono">BMT-8N2K4Q7R1T</dd></div>
+      <div class="dl__row"><dt>Emailed to</dt><dd data-user>nusrat.jahan@gmail.com</dd></div>
+    </div>
+    <div class="ledger">
+      <div class="ledger__row"><span class="ledger__label">November bill, left to pay</span><span class="ledger__leader"></span><span class="ledger__amount">৳7,475</span></div>
+      <div class="ledger__row"><span class="ledger__label">This payment</span><span class="ledger__leader"></span><span class="ledger__amount ledger__amount--neg">−৳7,475</span></div>
+      <div class="ledger__total"><span class="ledger__total-label">Left to pay</span><span class="ledger__total-amount">৳0</span></div>
+    </div>
+  </div>
+  <div class="card__foot"><span class="t-sm muted">Next bill on 1 Dec 2026, due by 10 Dec.</span><div class="btn-row"><a class="btn btn--secondary" href="#/t">Back to home</a><a class="btn btn--primary" href="#/receipts/BM-2026-000214"><i data-lucide="download"></i>Download receipt</a></div></div>
+</section>
+
+</main>
+</div>
+</body>
+</html>

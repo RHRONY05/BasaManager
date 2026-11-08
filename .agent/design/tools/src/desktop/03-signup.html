@@ -1,0 +1,33 @@
+<!--meta {"title": "D03 · Signup", "shell": "plain"} -->
+<div class="frame-d auth">
+  <aside class="auth__aside" aria-label="About BasaManager">
+    <a class="brand" href="#/">{{MARK}}BasaManager <span class="brand__bn" lang="bn">বাসা ম্যানেজার</span></a>
+    <div class="stack-lg">
+      <p class="t-title">Your buildings, bills and receipts in one calm place.</p>
+      <div class="card card--tight">
+        <div class="ledger ledger--sm">
+          <div class="ledger__row"><span class="ledger__label">Rent · Flat 4A</span><span class="ledger__leader"></span><span class="ledger__amount">৳12,000</span></div>
+          <div class="ledger__row"><span class="ledger__label">Electricity</span><span class="ledger__leader"></span><span class="ledger__amount">৳1,395</span><span class="ledger__explain">1,240 → 1,395 = 155 units × ৳9.00</span></div>
+          <div class="ledger__row"><span class="ledger__label">Service, gas, water</span><span class="ledger__leader"></span><span class="ledger__amount">৳3,080</span></div>
+          <div class="ledger__total"><span class="ledger__total-label">November</span><span class="ledger__total-amount">৳16,475</span></div>
+        </div>
+      </div>
+    </div>
+    <p class="t-sm muted">Made in Chattogram · payments in SSLCommerz sandbox mode</p>
+  </aside>
+  <main class="auth__main">
+    <div class="auth-card">
+      <div class="stack-sm"><h1 class="t-title">Create your landlord account</h1><p class="secondary">Free. Takes about two minutes. Tenants join later by your invite.</p></div>
+      <button class="btn btn--secondary btn--block" type="button">{{GOOGLE}}Sign up with Google</button>
+      <div class="divider-text">or with email</div>
+      <form class="form">
+        <div class="field"><label class="label" for="fn">Your full name</label><input class="input" id="fn" autocomplete="name" value="Farhana Chowdhury"></div>
+        <div class="field"><label class="label" for="em">Email</label><input class="input" id="em" type="email" autocomplete="email" value="farhana.chowdhury@gmail.com"><span class="hint">We'll send a link to confirm it.</span></div>
+        <div class="field"><label class="label" for="pw">Password</label><input class="input" id="pw" type="password" autocomplete="new-password" value="nasirabad-road-3"><div class="pw-meter" aria-hidden="true"><span class="on"></span><span class="on"></span><span class="on"></span><span></span></div><span class="hint">Good. At least 10 characters; a short sentence works well.</span></div>
+        <div class="field"><label class="label" for="on">Organisation name</label><input class="input" id="on" value="Chowdhury Properties"><span class="hint">Tenants see this on bills and receipts.</span></div>
+        <button class="btn btn--primary btn--block btn--lg" type="submit">Create account</button>
+      </form>
+      <p class="t-sm secondary">Already have an account? <a href="#/login">Sign in</a></p>
+    </div>
+  </main>
+</div>

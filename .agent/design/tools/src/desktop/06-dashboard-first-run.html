@@ -1,0 +1,44 @@
+<!--meta {"title": "D06 · Landlord dashboard — first run", "shell": "staff-d", "active": "dashboard", "crumbs": ["Dashboard"], "bell": "", "nocounts": true, "org": ["Chowdhury Properties", "Landlord"]} -->
+<style>
+  .first { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: var(--space-8); align-items: start; }
+  .preview { display: grid; gap: var(--space-3); }
+  .preview .due-card { box-shadow: var(--shadow-sm); }
+</style>
+<div class="page">
+  <section class="page-head">
+    <div class="page-head__text">
+      <p class="eyebrow">Welcome</p>
+      <h1 class="t-title">Let's set up Chowdhury Properties</h1>
+      <p class="secondary">Four steps, about 10 minutes. After that, bills are worked out for you every month.</p>
+    </div>
+  </section>
+
+  <div class="first">
+    <section class="stack" aria-labelledby="steps-h">
+      <div class="row-between"><h2 class="t-section" id="steps-h">Getting started</h2><span class="t-sm muted">1 of 5 done</span></div>
+      <div class="meter" role="img" aria-label="1 of 5 steps done"><span style="width:20%"></span></div>
+      <ol class="checklist">
+        <li class="check-step check-step--done"><span class="check-step__n"><i data-lucide="check" class="i-sm"></i></span><div class="check-step__body"><span class="t-strong">Verify your email</span><span class="t-sm secondary">farhana.chowdhury@gmail.com · verified 8 Nov</span></div></li>
+        <li class="check-step check-step--current"><span class="check-step__n">2</span><div class="check-step__body"><span class="t-strong">Add your first building</span><span class="t-sm secondary">Name, address and a map pin so tenants can find it. Example: Shanti Neer, House 14, Road 3, Nasirabad.</span></div><a class="btn btn--primary" href="#/l/buildings/new"><i data-lucide="plus"></i>Add building</a></li>
+        <li class="check-step"><span class="check-step__n">3</span><div class="check-step__body"><span class="t-strong">Add units with rent and charges</span><span class="t-sm secondary">Flat, room or shop · monthly rent · service, gas, water · electricity by sub-meter or prepaid.</span></div></li>
+        <li class="check-step"><span class="check-step__n">4</span><div class="check-step__body"><span class="t-strong">Set the bill day and late fee</span><span class="t-sm secondary">Defaults: bills on the 1st, due by the 10th, no late fee. Change them any time.</span></div></li>
+        <li class="check-step"><span class="check-step__n">5</span><div class="check-step__body"><span class="t-strong">Invite your first tenant</span><span class="t-sm secondary">They get an email link, set a password, and see their bills on their phone.</span></div></li>
+      </ol>
+    </section>
+
+    <aside class="preview" aria-labelledby="prev-h">
+      <h2 class="t-section" id="prev-h">What your tenants will see</h2>
+      <p class="t-sm secondary">Every bill shows each line and how it was worked out, so there's nothing to argue about.</p>
+      <div class="due-card">
+        <div class="due-card__top"><span class="t-card">November 2026</span><span class="badge badge--info"><i data-lucide="send"></i>Issued</span></div>
+        <div class="ledger ledger--sm">
+          <div class="ledger__row"><span class="ledger__label">Rent</span><span class="ledger__leader"></span><span class="ledger__amount">৳12,000</span></div>
+          <div class="ledger__row"><span class="ledger__label">Service, gas, water</span><span class="ledger__leader"></span><span class="ledger__amount">৳3,080</span></div>
+          <div class="ledger__row"><span class="ledger__label">Electricity</span><span class="ledger__leader"></span><span class="ledger__amount">৳1,395</span><span class="ledger__explain">1,240 → 1,395 = 155 units × ৳9.00</span></div>
+          <div class="ledger__total"><span class="ledger__total-label">Total</span><span class="ledger__total-amount">৳16,475</span></div>
+        </div>
+      </div>
+      <p class="t-xs muted">Example only. Your numbers appear once you add a unit.</p>
+    </aside>
+  </div>
+</div>

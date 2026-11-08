@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>M20 · New maintenance request — BasaManager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../ui.css">
+<script src="https://unpkg.com/lucide@1.70.0/dist/umd/lucide.min.js"></script>
+<script src="../mock.js"></script>
+<style>
+  /* layout only — tokens only */
+  .tiles--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .segmented--block { display: flex; }
+  .segmented--block button { flex: 1 1 0; min-height: var(--size-tap); }
+</style>
+</head>
+<body>
+<div class="frame-m">
+<header class="m-topbar m-topbar--back"><a class="icon-btn" href="#close" aria-label="Close"><i data-lucide="x"></i></a><h1 class="m-topbar__title" title="New request">New request</h1></header>
+<main class="m-main m-main--flow">
+<p class="secondary">Tell us what's wrong in Flat 4A. Jamal Uddin (caretaker) and Farhana Chowdhury will see it straight away.</p>
+
+<form class="form" aria-label="New request">
+  <fieldset class="field">
+    <legend class="label">What kind of problem?</legend>
+    <div class="tiles tiles--3" role="radiogroup" aria-label="Category">
+      <button class="tile" type="button" role="radio" aria-checked="true"><i data-lucide="droplets"></i>Plumbing</button>
+      <button class="tile" type="button" role="radio" aria-checked="false"><i data-lucide="zap"></i>Electrical</button>
+      <button class="tile" type="button" role="radio" aria-checked="false"><i data-lucide="flame"></i>Gas</button>
+      <button class="tile" type="button" role="radio" aria-checked="false"><i data-lucide="arrow-up-down"></i>Lift</button>
+      <button class="tile" type="button" role="radio" aria-checked="false"><i data-lucide="brush-cleaning"></i>Cleaning</button>
+      <button class="tile" type="button" role="radio" aria-checked="false"><i data-lucide="shield"></i>Security</button>
+      <button class="tile" type="button" role="radio" aria-checked="false"><i data-lucide="circle-help"></i>Other</button>
+    </div>
+  </fieldset>
+
+  <div class="field">
+    <span class="label" id="prio-l">How urgent?</span>
+    <div class="segmented segmented--block" role="group" aria-labelledby="prio-l">
+      <button type="button" aria-pressed="false">Low</button>
+      <button type="button" aria-pressed="true">Normal</button>
+      <button type="button" aria-pressed="false">Urgent</button>
+    </div>
+    <span class="hint">Urgent is for gas smell, sparks, no water or a stuck lift.</span>
+  </div>
+
+  <div class="field">
+    <label class="label" for="t">Short title</label>
+    <input class="input" id="t" value="Kitchen sink leaking under the cabinet" maxlength="80">
+  </div>
+
+  <div class="field">
+    <label class="label" for="d">What's happening?</label>
+    <textarea class="textarea" id="d">Water drips from the pipe joint under the sink whenever the tap is on. The cabinet floor is wet and the wood is getting soft.</textarea>
+  </div>
+
+  <div class="field">
+    <span class="label">Photos <span class="label__opt">(up to 3, JPG or PNG, 5 MB each)</span></span>
+    <div class="thumbs">
+      <div class="thumb"><div class="ph" style="aspect-ratio:1/1">Photo — wet cabinet floor · 1:1</div><button class="icon-btn" type="button" aria-label="Remove photo 1"><i data-lucide="x"></i></button></div>
+      <div class="thumb"><div class="ph" style="aspect-ratio:1/1">Photo — dripping pipe joint · 1:1</div><button class="icon-btn" type="button" aria-label="Remove photo 2"><i data-lucide="x"></i></button></div>
+      <button class="dropzone thumb" type="button" aria-label="Add a photo, 1 left"><i data-lucide="camera"></i>Add</button>
+    </div>
+  </div>
+</form>
+
+<div class="action-bar">
+  <button class="btn btn--primary btn--block" type="submit">Send request</button>
+</div>
+
+</main>
+
+</div>
+</body>
+</html>
