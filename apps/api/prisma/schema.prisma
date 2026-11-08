@@ -1,15 +1,1139 @@
 // BasaManager database schema. Owner: architect (03-DATABASE.md). Implementers never edit this file.
 // Prisma 7: the connection URL lives in ../prisma.config.ts (migrations, DATABASE_OWNER_URL), and the
 // running app connects through the pg driver adapter in src/config/db.ts (DATABASE_URL, role bm_app).
-// Roles, RLS, checks and partial indexes are hand-written SQL migrations next to this file.
+// Roles, RLS, check constraints and the admin views are hand-written SQL migrations next to this file.
+// Partial indexes are declared here (`where: raw(...)`, preview feature `partialIndexes`) so that
+// `prisma migrate diff` keeps them instead of trying to drop them.
+//
+// Conventions (03 "Conventions"): uuid ids from gen_random_uuid(); created_at default now();
+// updated_at default now() + @updatedAt; money is BigInt poisha (JS `bigint`); billing-calendar days are
+// `date`; instants `timestamptz`. Every "who did it" column (*_by, actor_id) references users.id; only
+// maintenance_requests.assigned_to references memberships.id.
 
 generator client {
-  provider     = "prisma-client"
-  output       = "../src/generated/prisma"
-  runtime      = "nodejs"
-  moduleFormat = "esm"
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  runtime         = "nodejs"
+  moduleFormat    = "esm"
+  previewFeatures = ["partialIndexes"]
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+// ── Enums (Postgres enums; mirrored as Zod enums in packages/shared/src/enums.ts) ─────────────────
+
+enum OauthProvider {
+  google
+
+  @@map("oauth_provider")
+}
+
+enum AuthTokenKind {
+  email_verify
+  password_reset
+
+  @@map("auth_token_kind")
+}
+
+enum OrgStatus {
+  active
+  suspended
+
+  @@map("org_status")
+}
+
+enum MembershipRole {
+  landlord
+  caretaker
+  tenant
+
+  @@map("membership_role")
+}
+
+enum MembershipStatus {
+  active
+  removed
+
+  @@map("membership_status")
+}
+
+enum InvitationRole {
+  caretaker
+  tenant
+
+  @@map("invitation_role")
+}
+
+enum LateFeeType {
+  none
+  flat
+  percent
+
+  @@map("late_fee_type")
+}
+
+enum UnitType {
+  family_flat
+  bachelor_flat
+  room
+  shop
+
+  @@map("unit_type")
+}
+
+enum ElectricityMode {
+  none
+  prepaid
+  submeter
+
+  @@map("electricity_mode")
+}
+
+enum LeaseStatus {
+  pending
+  active
+  notice
+  ended
+  ended_with_dues
+
+  @@map("lease_status")
+}
+
+enum DepositEntryKind {
+  received
+  refunded
+  applied_to_dues
+
+  @@map("deposit_entry_kind")
+}
+
+enum BillStatus {
+  draft
+  issued
+  partially_paid
+  paid
+  void
+
+  @@map("bill_status")
+}
+
+enum BillLineKind {
+  rent
+  fixed_charge
+  electricity
+  adjustment
+  late_fee
+
+  @@map("bill_line_kind")
+}
+
+enum PaymentMethod {
+  cash
+  bkash
+  nagad
+  bank
+  sslcommerz
+
+  @@map("payment_method")
+}
+
+enum PaymentStatus {
+  pending_claim
+  confirmed
+  rejected
+  void
+
+  @@map("payment_status")
+}
+
+enum CreditEntryKind {
+  overpayment
+  applied
+  reversed
+
+  @@map("credit_entry_kind")
+}
+
+enum PaymentIntentStatus {
+  initiated
+  confirmed
+  failed
+  cancelled
+  expired
+  flagged
+
+  @@map("payment_intent_status")
+}
+
+enum ReceiptStatus {
+  valid
+  void
+
+  @@map("receipt_status")
+}
+
+enum MaintenanceCategory {
+  plumbing
+  electrical
+  gas
+  lift
+  cleaning
+  security
+  other
+
+  @@map("maintenance_category")
+}
+
+enum MaintenancePriority {
+  low
+  normal
+  urgent
+
+  @@map("maintenance_priority")
+}
+
+enum MaintenanceStatus {
+  open
+  assigned
+  in_progress
+  resolved
+  closed
+
+  @@map("maintenance_status")
+}
+
+enum MaintenanceEventKind {
+  created
+  status
+  assigned
+  comment
+  photo
+
+  @@map("maintenance_event_kind")
+}
+
+enum FileProvider {
+  cloudinary
+  local
+
+  @@map("file_provider")
+}
+
+enum FileResourceType {
+  image
+  raw
+
+  @@map("file_resource_type")
+}
+
+enum FileKind {
+  maintenance_photo
+  payment_proof
+  document
+  receipt_pdf
+  statement_pdf
+  settlement_pdf
+
+  @@map("file_kind")
+}
+
+enum DocumentKind {
+  nid_front
+  nid_back
+  agreement
+  other
+
+  @@map("document_kind")
+}
+
+enum NotificationChannel {
+  in_app
+  email
+  push
+
+  @@map("notification_channel")
+}
+
+enum OutboxStatus {
+  pending
+  processing
+  done
+  failed
+
+  @@map("outbox_status")
+}
+
+enum JobRunStatus {
+  ok
+  failed
+  skipped
+
+  @@map("job_run_status")
+}
+
+// ── Identity & access ─────────────────────────────────────────────────────────────────────────────
+
+/// Not org-owned (no RLS). Access only through the auth/users services. Anonymised on deletion.
+model User {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email            String    @unique @db.Citext
+  emailVerifiedAt  DateTime? @map("email_verified_at") @db.Timestamptz(6)
+  passwordHash     String?   @map("password_hash")
+  fullName         String    @map("full_name")
+  phone            String?
+  isPlatformAdmin  Boolean   @default(false) @map("is_platform_admin")
+  failedLoginCount Int       @default(0) @map("failed_login_count")
+  lockedUntil      DateTime? @map("locked_until") @db.Timestamptz(6)
+  deletedAt        DateTime? @map("deleted_at") @db.Timestamptz(6)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  oauthAccounts           OauthAccount[]
+  sessions                Session[]
+  authTokens              AuthToken[]
+  memberships             Membership[]
+  notifications           Notification[]
+  notificationPreferences NotificationPreference[]
+  pushSubscriptions       PushSubscription[]
+
+  orgsCreated            Organization[]       @relation("OrganizationCreatedBy")
+  invitationsSent        Invitation[]         @relation("InvitationInvitedBy")
+  leasesCreated          Lease[]              @relation("LeaseCreatedBy")
+  depositEntriesRecorded DepositEntry[]       @relation("DepositEntryRecordedBy")
+  meterReadingsEntered   MeterReading[]       @relation("MeterReadingEnteredBy")
+  billsIssued            Bill[]               @relation("BillIssuedBy")
+  billLinesCreated       BillLine[]           @relation("BillLineCreatedBy")
+  paymentsSubmitted      Payment[]            @relation("PaymentSubmittedBy")
+  paymentsConfirmed      Payment[]            @relation("PaymentConfirmedBy")
+  paymentsVoided         Payment[]            @relation("PaymentVoidedBy")
+  paymentIntentsCreated  PaymentIntent[]      @relation("PaymentIntentCreatedBy")
+  maintenanceRequests    MaintenanceRequest[] @relation("MaintenanceRequestCreatedBy")
+  maintenanceEvents      MaintenanceEvent[]   @relation("MaintenanceEventActor")
+  noticesCreated         Notice[]             @relation("NoticeCreatedBy")
+  filesUploaded          File[]               @relation("FileUploadedBy")
+  documentsUploaded      Document[]           @relation("DocumentUploadedBy")
+
+  @@map("users")
+}
+
+model OauthAccount {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String        @map("user_id") @db.Uuid
+  provider       OauthProvider
+  providerUserId String        @map("provider_user_id")
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId])
+  @@index([userId])
+  @@map("oauth_accounts")
+}
+
+/// Refresh-token sessions. `family_id` groups rotations; reusing a rotated token revokes the family.
+model Session {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
+  familyId     String    @map("family_id") @db.Uuid
+  tokenHash    Bytes     @unique @map("token_hash")
+  expiresAt    DateTime  @map("expires_at") @db.Timestamptz(6)
+  rotatedAt    DateTime? @map("rotated_at") @db.Timestamptz(6)
+  revokedAt    DateTime? @map("revoked_at") @db.Timestamptz(6)
+  revokeReason String?   @map("revoke_reason")
+  userAgent    String?   @map("user_agent")
+  ip           String?   @db.Inet
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "sessions_user_id_live_idx", where: raw("(revoked_at IS NULL)"))
+  @@index([familyId])
+  @@map("sessions")
+}
+
+model AuthToken {
+  id        String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  kind      AuthTokenKind
+  userId    String        @map("user_id") @db.Uuid
+  tokenHash Bytes         @unique @map("token_hash")
+  expiresAt DateTime      @map("expires_at") @db.Timestamptz(6)
+  usedAt    DateTime?     @map("used_at") @db.Timestamptz(6)
+  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("auth_tokens")
+}
+
+/// RLS by `id` (policy org_self): members see their own org; admin context may read all.
+model Organization {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  slug      String    @unique
+  status    OrgStatus @default(active)
+  isDemo    Boolean   @default(false) @map("is_demo")
+  createdBy String    @map("created_by") @db.Uuid
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  creator User @relation("OrganizationCreatedBy", fields: [createdBy], references: [id])
+
+  memberships         Membership[]
+  caretakerBuildings  CaretakerBuilding[]
+  invitations         Invitation[]
+  buildings           Building[]
+  units               Unit[]
+  unitCharges         UnitCharge[]
+  leases              Lease[]
+  leaseTenants        LeaseTenant[]
+  leaseCharges        LeaseCharge[]
+  depositEntries      DepositEntry[]
+  meterReadings       MeterReading[]
+  bills               Bill[]
+  billLines           BillLine[]
+  payments            Payment[]
+  paymentAllocations  PaymentAllocation[]
+  creditEntries       CreditEntry[]
+  paymentIntents      PaymentIntent[]
+  receiptCounters     ReceiptCounter[]
+  receipts            Receipt[]
+  maintenanceRequests MaintenanceRequest[]
+  maintenanceEvents   MaintenanceEvent[]
+  notices             Notice[]
+  files               File[]
+  documents           Document[]
+  notifications       Notification[]
+  outboxMessages      OutboxMessage[]
+
+  @@index([createdBy])
+  @@map("organizations")
+}
+
+model Membership {
+  id        String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orgId     String           @map("org_id") @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
+  role      MembershipRole
+  status    MembershipStatus @default(active)
+  removedAt DateTime?        @map("removed_at") @db.Timestamptz(6)
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  org  Organization @relation(fields: [orgId], references: [id])
+  user User         @relation(fields: [userId], references: [id])
+
+  caretakerBuildings CaretakerBuilding[]
+  leaseTenants       LeaseTenant[]
+  assignedRequests   MaintenanceRequest[] @relation("MaintenanceRequestAssignedTo")
+
+  @@unique([orgId, userId])
+  /// Exactly one active landlord per org.
+  @@unique([orgId], map: "memberships_one_active_landlord", where: raw("((role = 'landlord'::membership_role) AND (status = 'active'::membership_status))"))
+  @@index([userId])
+  @@map("memberships")
+}
+
+model CaretakerBuilding {
+  orgId        String   @map("org_id") @db.Uuid
+  membershipId String   @map("membership_id") @db.Uuid
+  buildingId   String   @map("building_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  org        Organization @relation(fields: [orgId], references: [id])
+  membership Membership   @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  building   Building     @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+
+  @@id([membershipId, buildingId])
+  @@index([orgId])
+  @@index([buildingId])
+  @@map("caretaker_buildings")
+}
+
+model Invitation {
+  id          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orgId       String         @map("org_id") @db.Uuid
+  email       String         @db.Citext
+  role        InvitationRole
+  /// Caretaker invitations: the buildings they will be assigned to.
+  buildingIds String[]       @default([]) @map("building_ids") @db.Uuid
+  /// Tenant invitations: the (pending) lease they join.
+  leaseId     String?        @map("lease_id") @db.Uuid
+  tokenHash   Bytes          @unique @map("token_hash")
+  expiresAt   DateTime       @map("expires_at") @db.Timestamptz(6)
+  acceptedAt  DateTime?      @map("accepted_at") @db.Timestamptz(6)
+  revokedAt   DateTime?      @map("revoked_at") @db.Timestamptz(6)
+  invitedBy   String         @map("invited_by") @db.Uuid
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  org     Organization @relation(fields: [orgId], references: [id])
+  lease   Lease?       @relation(fields: [leaseId], references: [id])
+  inviter User         @relation("InvitationInvitedBy", fields: [invitedBy], references: [id])
+
+  /// One open invitation per email and role in an org.
+  @@unique([orgId, email, role], map: "invitations_one_open_per_email", where: raw("((accepted_at IS NULL) AND (revoked_at IS NULL))"))
+  @@index([orgId])
+  @@index([leaseId])
+  @@index([invitedBy])
+  @@map("invitations")
+}
+
+// ── Property ──────────────────────────────────────────────────────────────────────────────────────
+
+model Building {
+  id                    String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orgId                 String      @map("org_id") @db.Uuid
+  name                  String
+  address               String
+  area                  String
+  city                  String
+  lat                   Decimal?    @db.Decimal(9, 6)
+  lng                   Decimal?    @db.Decimal(9, 6)
+  billDay               Int         @default(1) @map("bill_day") @db.SmallInt
+  dueDay                Int         @default(10) @map("due_day") @db.SmallInt
+  graceDays             Int         @default(0) @map("grace_days") @db.SmallInt
+  lateFeeType           LateFeeType @default(none) @map("late_fee_type")
+  /// Poisha for `flat`, basis points for `percent` (500 = 5%).
+  lateFeeValue          Int         @default(0) @map("late_fee_value")
+  electricityRatePoisha Int         @default(0) @map("electricity_rate_poisha")
+  archivedAt            DateTime?   @map("archived_at") @db.Timestamptz(6)
+  createdAt             DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  org Organization @relation(fields: [orgId], references: [id])
+
+  units               Unit[]
+  caretakerBuildings  CaretakerBuilding[]
+  maintenanceRequests MaintenanceRequest[]
+  notices             Notice[]
+
+  @@index([orgId])
+  @@map("buildings")
+}
+
+model Unit {
+  id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orgId             String          @map("org_id") @db.Uuid
+  buildingId        String          @map("building_id") @db.Uuid
+  label             String
+  floor             Int             @db.SmallInt
+  type              UnitType
+  defaultRentPoisha BigInt          @map("default_rent_poisha")
+  electricityMode   ElectricityMode @map("electricity_mode")
+  archivedAt        DateTime?       @map("archived_at") @db.Timestamptz(6)
+  createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  org      Organization @relation(fields: [orgId], references: [id])
+  building Building     @relation(fields: [buildingId], references: [id])
+
+  charges             UnitCharge[]
+  leases              Lease[]
+  meterReadings       MeterReading[]
+  maintenanceRequests MaintenanceRequest[]
+
+  @@unique([buildingId, label])
+  @@index([orgId])
+  @@map("units")
+}
+
+model UnitCharge {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orgId        String   @map("org_id") @db.Uuid
+  unitId       String   @map("unit_id") @db.Uuid
+  name         String
+  amountPoisha BigInt   @map("amount_poisha")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  org  Organization @relation(fields: [orgId], references: [id])
+  unit Unit         @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@unique([unitId, name])
+  @@index([orgId])
+  @@map("unit_charges")
+}
+
+// ── Leases ────────────────────────────────────────────────────────────────────────────────────────
+
+model Lease {
+  id                String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orgId             String      @map("org_id") @db.Uuid
+  unitId            String      @map("unit_id") @db.Uuid
+  startDate         DateTime    @map("start_date") @db.Date
+  endDate           DateTime?   @map("end_date") @db.Date
+  noticeDate        DateTime?   @map("notice_date") @db.Date
+  monthlyRentPoisha BigInt      @map("monthly_rent_poisha")
+  depositPoisha     BigInt      @default(0) @map("deposit_poisha")
+  householdSize     Int         @default(1) @map("household_size") @db.SmallInt
+  /// `pending` = invited, tenant hasn't accepted yet.
+  status            LeaseStatus @default(pending)
+  moveInReading     Int?        @map("move_in_reading")
+  moveOutReading    Int?        @map("move_out_reading")
+  settlementJson    Json?       @map("settlement_json")
+  createdBy         String      @map("created_by") @db.Uuid
+  createdAt         DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  org     Organization @relation(fields: [orgId], references: [id])
+  unit    Unit         @relation(fields: [unitId], references: [id])
+  creator User         @relation("LeaseCreatedBy", fields: [createdBy], references: [id])
+
+  tenants             LeaseTenant[]
+  charges             LeaseCharge[]
+  depositEntries      DepositEntry[]
+  bills               Bill[]
+  payments            Payment[]
+  creditEntries       CreditEntry[]
+  paymentIntents      PaymentIntent[]
+  maintenanceRequests MaintenanceRequest[]
+  documents           Document[]
+  invitations         Invitation[]
+
+  /// One live lease per unit.
+  @@unique([unitId], map: "leases_one_live_per_unit", where: raw("(status = ANY (ARRAY['pending'::lease_status, 'active'::lease_status, 'notice'::lease_status]))"))
+  @@index([orgId, status])
+  @@index([unitId])
+  @@index([createdBy])
+  @@map("leases")
+}
+
+model LeaseTenant {
+  orgId        String   @map("org_id") @db.Uuid
+  leaseId      String   @map("lease_id") @db.Uuid
+  membershipId String   @map("membership_id") @db.Uuid
+  isPrimary    Boolean  @default(false) @map("is_primary")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  org        Organization @relation(fields: [orgId], references: [id])
+  lease      Lease        @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+  membership Membership   @relation(fields: [membershipId], references: [id])
+
+  @@id([leaseId, membershipId])
+  /// One primary tenant per lease.
+  @@unique([leaseId], map: "lease_tenants_one_primary", where: raw("is_primary"))
+  @@index([orgId])
+  @@index([membershipId])
+  @@map("lease_tenants")
+}
+
+/// Copied from unit_charges at lease start; editable before the first bill.
+model LeaseCharge {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orgId        String   @map("org_id") @db.Uuid
+  leaseId      String   @map("lease_id") @db.Uuid
+  name         String
+  amountPoisha BigInt   @map("amount_poisha")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  org   Organization @relation(fields: [orgId], references: [id])
+  lease Lease        @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+
+  @@unique([leaseId, name])
+  @@index([orgId])
+  @@map("lease_charges")
+}
+
+/// Deposit held = Σ received − refunded − applied_to_dues.
+model DepositEntry {
+  id           String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orgId        String           @map("org_id") @db.Uuid
+  leaseId      String           @map("lease_id") @db.Uuid
+  kind         DepositEntryKind
+  amountPoisha BigInt           @map("amount_poisha")
+  note         String?
+  recordedBy   String           @map("recorded_by") @db.Uuid
+  createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  org      Organization @relation(fields: [orgId], references: [id])
+  lease    Lease        @relation(fields: [leaseId], references: [id])
+  recorder User         @relation("DepositEntryRecordedBy", fields: [recordedBy], references: [id])
+
+  @@index([orgId])
+  @@index([leaseId])
+  @@index([recordedBy])
+  @@map("deposit_entries")
+}
+
+// ── Billing & payments ────────────────────────────────────────────────────────────────────────────
+
+model MeterReading {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orgId         String   @map("org_id") @db.Uuid
+  unitId        String   @map("unit_id") @db.Uuid
+  /// First day of the month (check constraint).
+  periodMonth   DateTime @map("period_month") @db.Date
+  reading       Int
+  meterReplaced Boolean  @default(false) @map("meter_replaced")
+  newMeterStart Int?     @map("new_meter_start")
+  enteredBy     String   @map("entered_by") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  org     Organization @relation(fields: [orgId], references: [id])
+  unit    Unit         @relation(fields: [unitId], references: [id])
+  enterer User         @relation("MeterReadingEnteredBy", fields: [enteredBy], references: [id])
+
+  @@unique([unitId, periodMonth])
+  @@index([orgId])
+  @@index([enteredBy])
+  @@map("meter_readings")
+}
+
+model Bill {
+  id               String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orgId            String     @map("org_id") @db.Uuid
+  leaseId          String     @map("lease_id") @db.Uuid
+  /// First day of the month (check constraint).
+  periodMonth      DateTime   @map("period_month") @db.Date
+  dueDate          DateTime   @map("due_date") @db.Date
+  status           BillStatus @default(draft)
+  needsReading     Boolean    @default(false) @map("needs_reading")
+  /// Σ bill_lines.amount_poisha, kept by the billing service in the same tx.
+  totalPoisha      BigInt     @default(0) @map("total_poisha")
+  /// Σ allocations of confirmed, non-void payments, kept by the payments service.
+  paidPoisha       BigInt     @default(0) @map("paid_poisha")
+  issuedAt         DateTime?  @map("issued_at") @db.Timestamptz(6)
+  issuedBy         String?    @map("issued_by") @db.Uuid
+  lateFeeAppliedAt DateTime?  @map("late_fee_applied_at") @db.Timestamptz(6)
+  voidReason       String?    @map("void_reason")
+  createdAt        DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  org    Organization @relation(fields: [orgId], references: [id])
+  lease  Lease        @relation(fields: [leaseId], references: [id])
+  issuer User?        @relation("BillIssuedBy", fields: [issuedBy], references: [id])
+
+  lines         BillLine[]
+  allocations   PaymentAllocation[]
+  creditEntries CreditEntry[]
+
+  @@unique([leaseId, periodMonth])
+  @@index([orgId, status, dueDate])
+  @@index([issuedBy])
+  @@map("bills")
+}
+
+/// History: bm_app/bm_worker have no DELETE grant.
+model BillLine {
+  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orgId        String       @map("org_id") @db.Uuid
+  billId       String       @map("bill_id") @db.Uuid
+  kind         BillLineKind
+  label        String
+  /// Signed: discounts are negative.
+  amountPoisha BigInt       @map("amount_poisha")
+  /// factor, prev, curr, rate, ...
+  meta         Json         @default("{}")
+  reason       String?
+  createdBy    String?      @map("created_by") @db.Uuid
+  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  org     Organization @relation(fields: [orgId], references: [id])
+  bill    Bill         @relation(fields: [billId], references: [id])
+  creator User?        @relation("BillLineCreatedBy", fields: [createdBy], references: [id])
+
+  /// Never two late fees on one bill.
+  @@unique([billId], map: "bill_lines_one_late_fee", where: raw("(kind = 'late_fee'::bill_line_kind)"))
+  @@index([orgId])
+  @@index([billId])
+  @@index([createdBy])
+  @@map("bill_lines")
+}
+
+/// History: never deleted, only voided (Rule 6).
+model Payment {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orgId          String        @map("org_id") @db.Uuid
+  leaseId        String        @map("lease_id") @db.Uuid
+  amountPoisha   BigInt        @map("amount_poisha")
+  method         PaymentMethod
+  status         PaymentStatus
+  /// bKash/Nagad TrxID, bank reference, SSLCommerz bank_tran_id.
+  reference      String?
+  proofFileId    String?       @map("proof_file_id") @db.Uuid
+  paidOn         DateTime      @map("paid_on") @db.Date
+  submittedBy    String        @map("submitted_by") @db.Uuid
+  confirmedBy    String?       @map("confirmed_by") @db.Uuid
+  confirmedAt    DateTime?     @map("confirmed_at") @db.Timestamptz(6)
+  rejectedReason String?       @map("rejected_reason")
+  voidReason     String?       @map("void_reason")
+  voidedBy       String?       @map("voided_by") @db.Uuid
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  org       Organization @relation(fields: [orgId], references: [id])
+  lease     Lease        @relation(fields: [leaseId], references: [id])
+  proofFile File?        @relation("PaymentProofFile", fields: [proofFileId], references: [id])
+  submitter User         @relation("PaymentSubmittedBy", fields: [submittedBy], references: [id])
+  confirmer User?        @relation("PaymentConfirmedBy", fields: [confirmedBy], references: [id])
+  voider    User?        @relation("PaymentVoidedBy", fields: [voidedBy], references: [id])
+
+  allocations   PaymentAllocation[]
+  creditEntries CreditEntry[]
+  intents       PaymentIntent[]
+  receipt       Receipt?
+
+  /// The same bKash/Nagad TrxID can't be claimed twice (a rejected claim frees it).
+  @@unique([method, reference], map: "payments_one_claim_per_reference", where: raw("((method = ANY (ARRAY['bkash'::payment_method, 'nagad'::payment_method])) AND (status <> 'rejected'::payment_status))"))
+  @@index([orgId, status])
+  @@index([leaseId])
+  @@index([proofFileId])
+  @@index([submittedBy])
+  @@index([confirmedBy])
+  @@index([voidedBy])
+  @@map("payments")
+}
+
+/// History. Σ amount per bill = bills.paid_poisha.
+model PaymentAllocation {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orgId        String   @map("org_id") @db.Uuid
+  paymentId    String   @map("payment_id") @db.Uuid
+  billId       String   @map("bill_id") @db.Uuid
+  amountPoisha BigInt   @map("amount_poisha")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  org     Organization @relation(fields: [orgId], references: [id])
+  payment Payment      @relation(fields: [paymentId], references: [id])
+  bill    Bill         @relation(fields: [billId], references: [id])
+
+  @@index([orgId])
+  @@index([paymentId])
+  @@index([billId])
+  @@map("payment_allocations")
+}
+
+/// History. Lease credit = Σ amount (signed), never negative.
+model CreditEntry {
+  id           String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orgId        String          @map("org_id") @db.Uuid
+  leaseId      String          @map("lease_id") @db.Uuid
+  /// Signed: overpayment +, applied −, reversed ±.
+  amountPoisha BigInt          @map("amount_poisha")
+  paymentId    String?         @map("payment_id") @db.Uuid
+  billId       String?         @map("bill_id") @db.Uuid
+  kind         CreditEntryKind
+  createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  org     Organization @relation(fields: [orgId], references: [id])
+  lease   Lease        @relation(fields: [leaseId], references: [id])
+  payment Payment?     @relation(fields: [paymentId], references: [id])
+  bill    Bill?        @relation(fields: [billId], references: [id])
+
+  @@index([orgId])
+  @@index([leaseId])
+  @@index([paymentId])
+  @@index([billId])
+  @@map("credit_entries")
+}
+
+model PaymentIntent {
+  id              String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orgId           String              @map("org_id") @db.Uuid
+  leaseId         String              @map("lease_id") @db.Uuid
+  tranId          String              @unique @map("tran_id")
+  amountPoisha    BigInt              @map("amount_poisha")
+  status          PaymentIntentStatus @default(initiated)
+  sessionKey      String?             @map("session_key")
+  valId           String?             @map("val_id")
+  gatewayResponse Json?               @map("gateway_response")
+  paymentId       String?             @map("payment_id") @db.Uuid
+  createdBy       String              @map("created_by") @db.Uuid
+  createdAt       DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  org     Organization @relation(fields: [orgId], references: [id])
+  lease   Lease        @relation(fields: [leaseId], references: [id])
+  payment Payment?     @relation(fields: [paymentId], references: [id])
+  creator User         @relation("PaymentIntentCreatedBy", fields: [createdBy], references: [id])
+
+  @@index([status, createdAt])
+  @@index([orgId])
+  @@index([leaseId])
+  @@index([paymentId])
+  @@index([createdBy])
+  @@map("payment_intents")
+}
+
+/// Gapless receipt numbers per org and year (upsert inside the payment transaction).
+model ReceiptCounter {
+  orgId     String   @map("org_id") @db.Uuid
+  year      Int      @db.SmallInt
+  lastSeq   Int      @default(0) @map("last_seq")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  org Organization @relation(fields: [orgId], references: [id])
+
+  @@id([orgId, year])
+  @@map("receipt_counters")
+}
+
+/// History. Number format `BM-<year>-<seq 6 digits>`.
+model Receipt {
+  id        String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orgId     String        @map("org_id") @db.Uuid
+  paymentId String        @unique @map("payment_id") @db.Uuid
+  number    String
+  status    ReceiptStatus @default(valid)
+  fileId    String?       @map("file_id") @db.Uuid
+  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  org     Organization @relation(fields: [orgId], references: [id])
+  payment Payment      @relation(fields: [paymentId], references: [id])
+  file    File?        @relation("ReceiptFile", fields: [fileId], references: [id])
+
+  @@unique([orgId, number])
+  @@index([fileId])
+  @@map("receipts")
+}
+
+// ── Operations ────────────────────────────────────────────────────────────────────────────────────
+
+model MaintenanceRequest {
+  id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orgId       String              @map("org_id") @db.Uuid
+  buildingId  String              @map("building_id") @db.Uuid
+  unitId      String              @map("unit_id") @db.Uuid
+  leaseId     String              @map("lease_id") @db.Uuid
+  createdBy   String              @map("created_by") @db.Uuid
+  category    MaintenanceCategory
+  priority    MaintenancePriority @default(normal)
+  title       String
+  description String
+  status      MaintenanceStatus   @default(open)
+  /// memberships.id of the assignee (the only actor column that is not a users.id).
+  assignedTo  String?             @map("assigned_to") @db.Uuid
+  resolvedAt  DateTime?           @map("resolved_at") @db.Timestamptz(6)
+  closedAt    DateTime?           @map("closed_at") @db.Timestamptz(6)
+  reopenCount Int                 @default(0) @map("reopen_count") @db.SmallInt
+  createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  org      Organization @relation(fields: [orgId], references: [id])
+  building Building     @relation(fields: [buildingId], references: [id])
+  unit     Unit         @relation(fields: [unitId], references: [id])
+  lease    Lease        @relation(fields: [leaseId], references: [id])
+  creator  User         @relation("MaintenanceRequestCreatedBy", fields: [createdBy], references: [id])
+  assignee Membership?  @relation("MaintenanceRequestAssignedTo", fields: [assignedTo], references: [id])
+
+  events MaintenanceEvent[]
+
+  @@index([orgId, status])
+  @@index([buildingId, status])
+  @@index([unitId])
+  @@index([leaseId])
+  @@index([createdBy])
+  @@index([assignedTo])
+  @@map("maintenance_requests")
+}
+
+/// Append-only timeline (history: no DELETE grant).
+model MaintenanceEvent {
+  id         String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orgId      String               @map("org_id") @db.Uuid
+  requestId  String               @map("request_id") @db.Uuid
+  actorId    String               @map("actor_id") @db.Uuid
+  kind       MaintenanceEventKind
+  fromStatus MaintenanceStatus?   @map("from_status")
+  toStatus   MaintenanceStatus?   @map("to_status")
+  body       String?
+  fileId     String?              @map("file_id") @db.Uuid
+  createdAt  DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  org     Organization       @relation(fields: [orgId], references: [id])
+  request MaintenanceRequest @relation(fields: [requestId], references: [id])
+  actor   User               @relation("MaintenanceEventActor", fields: [actorId], references: [id])
+  file    File?              @relation("MaintenanceEventFile", fields: [fileId], references: [id])
+
+  @@index([orgId])
+  @@index([requestId, createdAt])
+  @@index([actorId])
+  @@index([fileId])
+  @@map("maintenance_events")
+}
+
+model Notice {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orgId      String    @map("org_id") @db.Uuid
+  buildingId String    @map("building_id") @db.Uuid
+  title      String
+  body       String
+  pinned     Boolean   @default(false)
+  expiresAt  DateTime? @map("expires_at") @db.Timestamptz(6)
+  createdBy  String    @map("created_by") @db.Uuid
+  deletedAt  DateTime? @map("deleted_at") @db.Timestamptz(6)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  org      Organization @relation(fields: [orgId], references: [id])
+  building Building     @relation(fields: [buildingId], references: [id])
+  creator  User         @relation("NoticeCreatedBy", fields: [createdBy], references: [id])
+
+  @@index([orgId])
+  @@index([buildingId, createdAt(sort: Desc)])
+  @@index([createdBy])
+  @@map("notices")
+}
+
+/// Stored objects (Cloudinary `type: authenticated` or the local driver). Never public.
+model File {
+  id              String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orgId           String           @map("org_id") @db.Uuid
+  provider        FileProvider
+  publicId        String           @unique @map("public_id")
+  resourceType    FileResourceType @map("resource_type")
+  thumbPublicId   String?          @map("thumb_public_id")
+  format          String
+  mime            String
+  sizeBytes       Int              @map("size_bytes")
+  sha256          String
+  kind            FileKind
+  uploadedBy      String?          @map("uploaded_by") @db.Uuid
+  deletedAt       DateTime?        @map("deleted_at") @db.Timestamptz(6)
+  objectDeletedAt DateTime?        @map("object_deleted_at") @db.Timestamptz(6)
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  org      Organization @relation(fields: [orgId], references: [id])
+  uploader User?        @relation("FileUploadedBy", fields: [uploadedBy], references: [id])
+
+  paymentProofs     Payment[]          @relation("PaymentProofFile")
+  receipts          Receipt[]          @relation("ReceiptFile")
+  maintenanceEvents MaintenanceEvent[] @relation("MaintenanceEventFile")
+  documents         Document[]
+
+  @@index([orgId])
+  @@index([uploadedBy])
+  @@map("files")
+}
+
+/// Extra RLS: invisible when app.role = 'caretaker' (restrictive policy no_caretaker).
+model Document {
+  id         String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orgId      String       @map("org_id") @db.Uuid
+  leaseId    String       @map("lease_id") @db.Uuid
+  kind       DocumentKind
+  fileId     String       @map("file_id") @db.Uuid
+  uploadedBy String       @map("uploaded_by") @db.Uuid
+  createdAt  DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  org      Organization @relation(fields: [orgId], references: [id])
+  lease    Lease        @relation(fields: [leaseId], references: [id])
+  file     File         @relation(fields: [fileId], references: [id])
+  uploader User         @relation("DocumentUploadedBy", fields: [uploadedBy], references: [id])
+
+  @@index([orgId])
+  @@index([leaseId])
+  @@index([fileId])
+  @@index([uploadedBy])
+  @@map("documents")
+}
+
+/// In-app notifications. RLS by app.user_id only (policy own_rows); org_id null = platform message.
+model Notification {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orgId     String?   @map("org_id") @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  type      String
+  title     String
+  body      String?
+  link      String?
+  readAt    DateTime? @map("read_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  org  Organization? @relation(fields: [orgId], references: [id])
+  user User          @relation(fields: [userId], references: [id])
+
+  @@index([userId, readAt, createdAt(sort: Desc)])
+  @@index([orgId])
+  @@map("notifications")
+}
+
+/// Missing row = default from the shared notification defaults.
+model NotificationPreference {
+  userId    String              @map("user_id") @db.Uuid
+  type      String
+  channel   NotificationChannel
+  enabled   Boolean
+  createdAt DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, type, channel])
+  @@map("notification_preferences")
+}
+
+model PushSubscription {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String    @map("user_id") @db.Uuid
+  endpoint      String    @unique
+  p256dh        String
+  auth          String
+  userAgent     String?   @map("user_agent")
+  lastSuccessAt DateTime? @map("last_success_at") @db.Timestamptz(6)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_subscriptions")
+}
+
+/// Delivery queue. bm_app may only INSERT (use createMany: no RETURNING); bm_worker claims rows with
+/// `for update skip locked`.
+model OutboxMessage {
+  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orgId         String?      @map("org_id") @db.Uuid
+  type          String
+  payload       Json
+  status        OutboxStatus @default(pending)
+  attempts      Int          @default(0)
+  nextAttemptAt DateTime     @default(now()) @map("next_attempt_at") @db.Timestamptz(6)
+  lastError     String?      @map("last_error")
+  lockedAt      DateTime?    @map("locked_at") @db.Timestamptz(6)
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  org Organization? @relation(fields: [orgId], references: [id])
+
+  @@index([status, nextAttemptAt])
+  @@index([orgId])
+  @@map("outbox")
+}
+
+/// Worker job history (admin health). Not org-owned.
+model JobRun {
+  id         String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  job        String
+  startedAt  DateTime      @default(now()) @map("started_at") @db.Timestamptz(6)
+  finishedAt DateTime?     @map("finished_at") @db.Timestamptz(6)
+  /// null while running.
+  status     JobRunStatus?
+  details    Json?
+  createdAt  DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([job, startedAt(sort: Desc)])
+  @@map("job_runs")
 }
