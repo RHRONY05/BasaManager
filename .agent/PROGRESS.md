@@ -338,3 +338,7 @@ Next: when e2e is green, `gh pr merge 5 --squash`, check staging deploy, tick V4
 ### 2026-11-09 — Claude (lead) — V4 e2e wait 7
 Did: rechecked PR #5 at e766ebf: 7 of 8 checks green; e2e (run 42533841375) started 23:10Z, still in progress at 23:18Z. No code change.
 Next: when e2e is green, `gh pr merge 5 --squash`, check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
+
+### 2026-11-09 — Claude (lead) — V4 merge main (3rd)
+Did: e2e finished green, CI 8/8 on e766ebf, but `gh pr merge 5` said not mergeable (main moved, PROGRESS.md conflict only). Merged origin/main into feat/V4 taking main's PROGRESS.md, pushed 268a1a0. CI re-running.
+Next: when CI is 8/8 on 268a1a0, `gh pr merge 5 --squash` (merge main first if behind), check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
