@@ -112,7 +112,7 @@ fi
 
 # Housekeeping: keep the 5 newest release folders (never the ones in use), drop images no environment uses any more.
 install_bin
-KEEP="$(cat "$STATE"/*.current "$STATE"/*.previous 2>/dev/null | sort -u | tr '\n' ' ')"
+KEEP="$(cat "$STATE"/*.current "$STATE"/*.previous 2>/dev/null | sort -u | tr '\n' ' ' || true)"
 ls -1t "$BASE/releases" | tail -n +6 | while read -r old; do
   case " $KEEP " in *" $old "*) ;; *) rm -rf -- "${BASE:?}/releases/$old" ;; esac
 done
