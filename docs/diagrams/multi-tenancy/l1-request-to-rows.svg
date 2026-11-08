@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1700 800" width="1700" height="800" font-family="'Segoe UI', Inter, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1f1f1f"/>
+    </marker>
+  </defs>
+  <rect width="1700" height="800" fill="#ffffff"/>
+
+  <text x="40" y="52" font-size="28" font-weight="700" fill="#1f1f1f">Multi-tenancy, level 1: from session to rows</text>
+  <text x="40" y="82" font-size="16" fill="#3a3a3a">The tenant context is built from the session, carried into one transaction, and read by Postgres policies.</text>
+  <g font-size="15" fill="#3a3a3a">
+    <line x1="1130" y1="36" x2="1190" y2="36" stroke="#1f1f1f" stroke-width="2.4" marker-end="url(#arrow)"/>
+    <text x="1202" y="41">call / read</text>
+    <line x1="1130" y1="62" x2="1190" y2="62" stroke="#1f1f1f" stroke-width="2.4" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <text x="1202" y="67">return / response</text>
+    <rect x="1370" y="24" width="26" height="18" rx="3" fill="#FEC8C3"/><text x="1406" y="39">people</text>
+    <rect x="1490" y="24" width="26" height="18" rx="7" fill="#BFE3FD"/><text x="1526" y="39">our code</text>
+    <circle cx="1383" cy="62" r="9" fill="#E3CCFD"/><text x="1406" y="67">data store</text>
+    <rect x="1490" y="53" width="26" height="18" rx="3" fill="#C9F2D6"/><text x="1526" y="67">output</text>
+    <rect x="1370" y="80" width="26" height="18" rx="3" fill="#FFF1B8"/><text x="1406" y="95">guard</text>
+  </g>
+
+  <!-- Arrows first -->
+  <g fill="none" stroke="#1f1f1f" stroke-width="2.4">
+    <path d="M190,400 H276" marker-end="url(#arrow)"/>
+    <path d="M520,400 H616" marker-end="url(#arrow)"/>
+    <path d="M860,400 H956" marker-end="url(#arrow)"/>
+    <path d="M1220,400 H1401" marker-end="url(#arrow)"/>
+    <path d="M1090,240 V321" marker-end="url(#arrow)"/>
+    <path d="M1530,230 V271" marker-end="url(#arrow)"/>
+    <path d="M1480,517 V700 H1264" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <path d="M956,700 H110 V449" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+  </g>
+
+  <!-- Shapes -->
+  <rect x="30" y="355" width="160" height="90" rx="6" fill="#FEC8C3"/>
+  <text x="110" y="393" font-size="20" font-weight="700" fill="#1f1f1f" text-anchor="middle">Browser</text>
+  <text x="110" y="418" font-size="15" fill="#3a3a3a" text-anchor="middle">cookie + request</text>
+  <text x="233" y="378" font-size="16" fill="#1f1f1f" text-anchor="middle">cookie</text>
+
+  <rect x="280" y="325" width="240" height="150" rx="48" fill="#BFE3FD"/>
+  <text x="400" y="362" font-size="20" font-weight="700" fill="#1f1f1f" text-anchor="middle">① Session</text>
+  <text x="400" y="390" font-size="15" fill="#3a3a3a" text-anchor="middle">who is it, which org,</text>
+  <text x="400" y="412" font-size="15" fill="#3a3a3a" text-anchor="middle">which role? Builds</text>
+  <text x="400" y="434" font-size="15" fill="#3a3a3a" text-anchor="middle">TenantCtx (from V5)</text>
+  <text x="568" y="378" font-size="16" fill="#1f1f1f" text-anchor="middle">TenantCtx</text>
+
+  <rect x="620" y="325" width="240" height="150" rx="48" fill="#BFE3FD"/>
+  <text x="740" y="362" font-size="20" font-weight="700" fill="#1f1f1f" text-anchor="middle">② Service</text>
+  <text x="740" y="390" font-size="15" fill="#3a3a3a" text-anchor="middle">business rules, role</text>
+  <text x="740" y="412" font-size="15" fill="#3a3a3a" text-anchor="middle">checks, explicit</text>
+  <text x="740" y="434" font-size="15" fill="#3a3a3a" text-anchor="middle">org_id in every where</text>
+  <text x="908" y="378" font-size="16" fill="#1f1f1f" text-anchor="middle">ctx + fn</text>
+
+  <rect x="960" y="325" width="260" height="150" rx="48" fill="#BFE3FD"/>
+  <text x="1090" y="360" font-size="20" font-weight="700" fill="#1f1f1f" text-anchor="middle">③ db.$tx(ctx, fn)</text>
+  <text x="1090" y="388" font-size="15" fill="#3a3a3a" text-anchor="middle">BEGIN, then set_config</text>
+  <text x="1090" y="410" font-size="15" fill="#3a3a3a" text-anchor="middle">x4 (local), first</text>
+  <text x="1090" y="432" font-size="15" fill="#3a3a3a" text-anchor="middle">statement; run fn(tx);</text>
+  <text x="1090" y="454" font-size="15" fill="#3a3a3a" text-anchor="middle">COMMIT or ROLLBACK</text>
+  <text x="1310" y="378" font-size="16" fill="#1f1f1f" text-anchor="middle">SQL as bm_app</text>
+
+  <rect x="960" y="150" width="260" height="90" rx="6" fill="#FFF1B8"/>
+  <text x="1090" y="182" font-size="16" font-weight="700" fill="#1f1f1f" text-anchor="middle">Guard in the Prisma client</text>
+  <text x="1090" y="206" font-size="15" fill="#3a3a3a" text-anchor="middle">db.building outside $tx</text>
+  <text x="1090" y="226" font-size="15" fill="#3a3a3a" text-anchor="middle">throws TenantContextMissing</text>
+  <text x="1106" y="285" font-size="16" fill="#1f1f1f">no $tx, no query</text>
+
+  <circle cx="1530" cy="400" r="127" fill="#E3CCFD"/>
+  <text x="1530" y="362" font-size="24" font-weight="700" fill="#1f1f1f" text-anchor="middle">Postgres</text>
+  <text x="1530" y="392" font-size="16" fill="#3a3a3a" text-anchor="middle">tables + policies</text>
+  <text x="1530" y="416" font-size="16" fill="#3a3a3a" text-anchor="middle">org_id = app.org_id</text>
+  <text x="1530" y="440" font-size="16" fill="#3a3a3a" text-anchor="middle">(row-level security)</text>
+
+  <rect x="1400" y="150" width="260" height="80" rx="30" fill="#BFE3FD"/>
+  <text x="1530" y="184" font-size="18" font-weight="700" fill="#1f1f1f" text-anchor="middle">Worker (bm_worker)</text>
+  <text x="1530" y="208" font-size="15" fill="#3a3a3a" text-anchor="middle">bypasses RLS, filters itself</text>
+  <text x="1546" y="258" font-size="16" fill="#1f1f1f">BYPASSRLS</text>
+
+  <rect x="960" y="660" width="300" height="80" rx="6" fill="#C9F2D6"/>
+  <text x="1110" y="692" font-size="18" font-weight="700" fill="#1f1f1f" text-anchor="middle">Rows of one org only</text>
+  <text x="1110" y="716" font-size="15" fill="#3a3a3a" text-anchor="middle">other orgs' rows are invisible</text>
+  <text x="1372" y="688" font-size="16" fill="#1f1f1f" text-anchor="middle">that org's rows</text>
+  <text x="530" y="688" font-size="16" fill="#1f1f1f" text-anchor="middle">service builds the response</text>
+</svg>

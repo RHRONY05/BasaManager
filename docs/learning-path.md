@@ -34,11 +34,19 @@ what you already learned.
 - [ ] [Backups](/concepts/backups) (stub, V3)
 - [ ] [Operations runbooks](/operations/) (stub, V3)
 
-## Step 5: The data and who may see it (task V4)
+## Step 5: The data and who may see it (readable now, task V4)
 
-- [ ] [Data map](/overview/data-map) (stub, V4)
-- [ ] [Multi-tenancy & row-level security](/concepts/multi-tenancy-and-rls) (stub, V4)
-- [ ] [Transactions & locking](/concepts/transactions-and-locking) (stub, V4 and V9)
+Do the first item before anything else in this step, and before the auth pages in Step 6: row-level security
+is new to you and almost every later page assumes it.
+
+- [ ] [Multi-tenancy & row-level security](/concepts/multi-tenancy-and-rls): **new concept, read slowly.** One
+      shared database, `org_id` everywhere, and why Postgres enforces it as well as the code.
+- [ ] [Data map](/overview/data-map): every table, who reads and writes it, how long it lives. Open the generated
+      [Database schema](/database/README) beside it for the ER diagram.
+- [ ] [Transactions & locking](/concepts/transactions-and-locking): first version (the row-locks-around-money
+      section is written in V9).
+- [ ] [Testing strategy](/concepts/testing-strategy): read the new "fresh database for every run" and "query
+      counter" parts.
 
 ## Step 6: Who is using it (task V5)
 
