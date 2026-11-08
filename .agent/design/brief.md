@@ -64,8 +64,8 @@ screens. File list and routes: README.md.
 
 ## States designed
 Populated on every artboard. Empty, pending skeleton, refreshing, error for every data region in
-`states.html`. Error on mobile login. Due / all-paid / overdue for tenant home. Checking / paid / failed /
-still-processing for pay result (desktop shows paid, mobile shows checking → paid sequence in states.html).
+`states.html`. Error on mobile login. Due / all-paid / overdue for tenant home. Paid for pay result on both artboards;
+checking / failed / cancelled / still processing in states.html.
 First-run for the dashboard. Long/overflow content in the stress variants.
 
 ## Motion
@@ -139,3 +139,21 @@ slides only, everything off under `prefers-reduced-motion`.
     (see README "Sample numbers"). It is not seed data.
 17. **Gallery = `index.html`** with a light/dark/system switch, auto-measured iframe heights, served with
     `python -m http.server`; screenshots and audit output go to the designer's scratch folder, never the repo.
+18. **Billed vs collected is one column per month, not two bars.** The column (outlined track) is what was
+    billed, the teal fill is what was collected, the collection rate is printed on top. The dataviz
+    palette validator failed a two-hue teal pair (chroma/lightness band), and the real question a landlord
+    asks is "how much of what I billed came in", so one measure shown as part-of-whole needs no categorical
+    palette and reads in greyscale. Y axis in lakh (৳1 lakh … ৳5 lakh), which is how BD landlords count.
+19. **Admin on mobile has no bottom nav** (it has only two destinations); System health is a link on the
+    Organisations page. Admin is a desktop task; the mobile artboard proves it still works.
+20. **Artboards are generated from sources** (`tools/src` + `tools/build.py`) so the sidebar, top bar and
+    bottom nav are byte-identical on every screen; stress variants come from `tools/stress.py`, the states
+    sheet from `tools/states.py`. The generated HTML in `desktop/` and `mobile/` is the spec.
+21. **Google sign-in mark keeps Google's colours** as four `--google-*` tokens (Google's branding rules
+    require the coloured G); they are used nowhere else.
+22. **Mobile building/unit rows show this month's bill status** (Overdue, Claim, Part paid, Paid), the
+    desktop units table shows lease status plus dues. On a phone the money question comes first.
+23. **Desktop tables keep 36 px compact buttons** (`btn--sm`) because the desktop touch rule is 24 px and
+    rows stay scannable; mobile never uses them.
+24. **Pages in 06-UI without an artboard** reuse named patterns (README, "Screens"), so implementers never
+    invent layouts: e.g. `/t/pay` = ledger + MoneyInput + "Continue to SSLCommerz".
