@@ -8,11 +8,28 @@
 ## Now
 | | |
 |---|---|
-| **Phase** | Planned. `/project-config` done; Builder setup all ✅ |
-| **Next task** | Owner pastes GOAL.md into the lead session |
+| **Phase** | **PAUSED by the owner on 2026-11-08** (weekly Claude limit). Setup is done; the owner starts the relay later. V0 ✅, V1 ✅. V2, V3, V4 built, not merged |
+| **Next task** | Merge the relay PR if still open, then the first row of the table in "Resume here" (#3 V3), then V5 |
 | **Blocked on** | — |
 | **Production URL** | — (will be https://basamanager.rhrony05.me) |
-| **Last updated** | 2026-11-08 by Claude (lead, /project-config) |
+| **Last updated** | 2026-11-08 by Claude (lead), at the pause |
+
+## Resume here (written at the 2026-11-08 pause)
+**First item:** the relay setup is in PR #6 (`chore/relay`), and the main checkout is on that branch. Merge it when CI is green, then `git switch main` and `git pull`. Then start the VM through devops: `az vm start -g rg-basamanager -n vm-basamanager` (deallocated for the pause; staging is offline until then).
+
+Work in order. One task at a time, no parallel Opus runs (three at once used up the 5-hour window). Everything below is in git or on disk; nothing depends on the old session.
+
+| PR | Branch / worktree | State | To finish |
+|---|---|---|---|
+| [#3 V3 infra](https://github.com/RHRONY05/BasaManager/pull/3) | `feat/V3-infra`, `D:/Projects/bm-wt/V3-infra` | CI 7/7 on the last push. Opus review: CHANGES REQUESTED (1 blocker, 16 shoulds, 8 nits), posted on the PR. DevOps' fixes are **half done and uncommitted** in the worktree | DevOps finishes the review items (blocker = rollback after a failed deploy step; prove it once on staging; separate deploy key; environment branch policies), pushes, re-review, merge, wait for staging smoke, lead tags `v0.1.0`, check prod `/api/health` |
+| [#4 V2 design](https://github.com/RHRONY05/BasaManager/pull/4) | `feat/V2-design`, `D:/Projects/bm-wt/V2-design` | CI 7/7. Complete and pushed. **Design review not finished** (reviewer hit the limit; nothing posted) | Run the design review again, fix, merge |
+| [#5 V4 schema/RLS](https://github.com/RHRONY05/BasaManager/pull/5) | `feat/V4`, `D:/Projects/bm-wt/V4` | Complete and pushed. CI 6/7: `integration` fails 1 of 76 in `tenant-extension.int.test.ts` ("non-org tables can be queried…", expected [] but found a row; passes locally, so probably data left by another test file). **Opus review not finished** | Debugger fixes the test, Opus review again (including trying to break isolation), merge main after V3, merge |
+
+Then V5: `.agent/briefs/V5-tests.md` and `V5-backend.md` are written (untracked in the main checkout, like this edit to PROGRESS.md). Before the first UI task, fix `auditLayout`: at a phone-height viewport it reports controls scrolled under the bottom nav as overlapping, and labels mixing font sizes as wrapped (details: `.agent/design/README.md`).
+
+Add METRICS.md rows for V2, V3 and V4 when they merge. Token use reported by subagents: designer 571k; devops 337k (V3, before the review fixes); architect 354k (V4); V4 docs 212k; test-designer 127k.
+
+The Azure VM is deallocated for the pause. Prod has not been deployed.
 
 ## Human steps
 Things only the human can do. Agents add to this list; the human ticks them.
@@ -101,6 +118,8 @@ Agents append one line per choice the docs didn't cover (newest last). If it cha
 - 2026-11-08 — Lead (V1 review): Playwright `setup` project (log each role in once) moves to **V5** (no auth before then); `tests/helpers/queryCounter.ts` moves to **V4** (no Prisma models before then). Both noted in 09-TESTING.
 - 2026-11-08 — Debugger (V1 review): client-caused errors with a numeric 4xx status (bad `%` path, unsupported charset/encoding, verify failures, 431) map to 400 `VALIDATION_FAILED` with a fixed message; no new 415 code (keeps `errorStatus` consistent). e2e builds the web app with `--mode test` so `en-XA` stays available to the layout audit while production builds ignore it.
 - 2026-11-08 — Lead: V2 (design), V3 (infra) and the V1 follow-up run in parallel worktrees because their files do not overlap (design only `.agent/design/**`; infra `infra/**`, `.github/**`, deploy glue). Feature tasks from V4 on still go in order.
+
+- 2026-11-08 — Owner: the build must run with no human after the initial grant. agy runs in turbo (`--dangerously-skip-permissions`); leads run as fresh Sonnet 5.5 sessions at medium effort (owner decision to save usage; Opus stays for high-risk reviews and schema work) from `scripts/autonomous.sh` with permissions bypassed. Updated 11-AGENT-TEAM.md and next-task.
 
 ## Session log
 Newest at the bottom. One entry per task. Keep entries short.

@@ -19,7 +19,7 @@ the lead records metrics so the owner can judge what the agents could and couldn
 ## Roles and models
 | Role | Runs as | Model | Owns |
 |---|---|---|---|
-| **Lead / orchestrator** | Main Claude Code session | **Opus 5.5** (high; max when re-planning) | Reads PROGRESS + TASKS, splits each task into briefs, dispatches, merges, tags releases, keeps PROGRESS.md and METRICS.md, escalates |
+| **Lead / orchestrator** | Main Claude Code session | **Sonnet 5.5** (medium effort, owner decision) | Reads PROGRESS + TASKS, splits each task into briefs, dispatches, merges, tags releases, keeps PROGRESS.md and METRICS.md, escalates |
 | **Architect** | Claude subagent `architect` | **Opus 5.5** | Prisma schema, SQL migrations + RLS, `packages/shared` Zod contracts, OpenAPI file. Contracts are frozen before parallel FE/BE work starts |
 | **Designer** | Claude subagent `designer` | **Opus 5.5** | Autonomous design in V2: tokens, kit, every screen desktop + mobile, critique loop |
 | **Test designer** | Claude subagent `test-designer` | **Sonnet 5.5** | Writes failing tests first for billing, auth, payments, permissions/RLS, allocation (from `07-BILLING.md` examples and `04-API.md` error cases) |
@@ -43,7 +43,7 @@ lead reads 08-TASKS (next task) + PROGRESS
   │       each brief = goal, files allowed to change, contracts to use, tests that must pass, AC, "do not" list
   ├─ 2. contracts: architect updates schema/contracts if the task needs it → merged first
   ├─ 3. tests first: test-designer writes failing tests for critical logic → committed on the task branch
-  ├─ 4. implement: lead creates a worktree and dispatches agy (command below), in the background
+  ├─ 4. implement: lead creates a worktree and dispatches agy (command below) in the foreground and waits for it
   ├─ 5. verify: lead runs typecheck, lint, unit, integration, e2e for the area itself; failures go back
   │       to the same agy conversation (--conversation <id>) with the exact failing output, max 3 rounds,
   │       then the debugger takes over
@@ -54,31 +54,26 @@ lead reads 08-TASKS (next task) + PROGRESS
   └─ 10. record: PROGRESS.md session entry + METRICS.md row; worktree removed
 ```
 
-### Dispatching Antigravity (edit-only mode, decided in V0 on 2026-11-08)
+### Dispatching Antigravity (turbo, owner decision 2026-11-08)
 ```bash
 git worktree add ../bm-wt/<task>-<part> -b feat/<task>-<part>
 cd ../bm-wt/<task>-<part>
-agy -p "$(cat .agent/briefs/<task>-<part>.md)" \
-  --model gemini-3.8-flash-high \
-  --mode accept-edits \
-  --output-format json --print-timeout 45m \
-  > ../bm-runs/<task>-<part>-1.json
-# follow-up on the same session (the lead pastes the exact failing output):
-agy -p "<exact failing output + what to fix>" --conversation <conversation_id from the JSON> --model gemini-3.8-flash-high --mode accept-edits --output-format json
+agy -p "$(cat .agent/briefs/<task>-<part>.md)" --model gemini-3.8-flash-high   --dangerously-skip-permissions --output-format json --print-timeout 45m > ../bm-runs/<task>-<part>-1.json
+# follow-up: same flags plus --conversation <conversation_id from the JSON>
 ```
-- **agy edits files only; it never runs shell commands.** In print mode agy auto-denies every command
-  unless `--dangerously-skip-permissions` is passed (allow-rules in `--settings` and in its global config
-  were not honoured for commands, tested in V0), and the lead's environment refuses to start an agent with
-  all permissions skipped. So every brief says "you cannot run commands; edit files only", and the **lead runs
-  install, typecheck, lint and tests** in the worktree after each round and sends the exact failures back with
-  `--conversation` (max 3 rounds, then the debugger). Dependencies are added by the lead (`pnpm add`) from the
-  list the brief allows, before dispatch.
+- The lead runs this as a foreground Bash call with `timeout: 3000000` (50 min) and never ends its session while agy runs, so the JSON result always comes back to it. `scripts/autonomous.sh` sets `BASH_MAX_TIMEOUT_MS=3000000` to allow this; a headless session waited 640 s this way on 2026-11-08.
+- Turbo probe, 2026-11-08, throwaway worktree, launched by a Claude session outside the relay: agy installed dependencies, ran Vitest, ran a Playwright test against localhost and opened localhost with its Chrome DevTools tool, with no permission prompt (185 s).
+- agy runs commands itself (install, typecheck, lint, tests) and fixes its own failures; briefs say so. The lead checks the final result only.
+- A worktree does not confine agy: it runs as the owner's Windows user. The owner accepted this to make the build fully autonomous. Briefs still keep agy to its task: no `gh`, `az`, `ssh`, `git push`, deploy scripts or the credentials folder (rules: Secrets).
 - Antigravity reads `AGENTS.md` itself; every brief still starts with "Read AGENTS.md, rules/basamanager.md and these docs: …".
 - Parallel limit: **3 agy sessions at once**. Each worktree uses its own test database
   (`basamanager_test_<task>`) and its own dev ports (from `scripts/ports.mjs`) so they never collide.
 - The JSON result includes token usage; the lead copies it into METRICS.md.
 - V0 Preflight proved the whole loop on a throwaway task (create worktree → agy edits files → lead runs the
   test → JSON parsed → follow-up with `--conversation` → worktree removed), 2026-11-08.
+
+## Running without a human (relay, owner decision 2026-11-08)
+The owner plans, grants permissions once and checks in; the agents do the rest. One long lead session can't finish the build, because every request re-sends its whole context. So `scripts/autonomous.sh` starts a fresh lead session (Sonnet 5.5 at medium effort, owner decision to save usage; permissions bypassed by the owner's choice) per step until every task is ticked. A usage limit only pauses it. The files are the lead's memory: PROGRESS.md, 08-TASKS.md, briefs, git. Opus also stays for the reviews listed above and the architect and designer roles.
 
 ## Merge gates (branch protection on `main`)
 CI green (lint, typecheck, unit, integration, e2e desktop + mobile, docs build, audit, gitleaks, CodeQL)
