@@ -17,8 +17,8 @@ SCRIPT_NAME=rollback
 # Everything is inside a function and ends in `exit`: bash reads a script while it runs, and the script file can be
 # replaced by deploy.sh (it installs bin/) before this one has finished.
 main() {
-  TARGET="${1:?usage: rollback.sh <staging|prod> <failed-sha>}"
-  FAILED="${2:?usage: rollback.sh <staging|prod> <failed-sha>}"
+  TARGET="${1:?usage: rollback.sh <staging|prod> <failed-sha> [deploy|smoke]}"
+  FAILED="${2:?usage: rollback.sh <staging|prod> <failed-sha> [deploy|smoke]}"
   case "$TARGET" in staging|prod) ;; *) die "target must be staging or prod" ;; esac
 
   CUR="$(cat "$STATE/$TARGET.current" 2>/dev/null || true)"
@@ -27,7 +27,8 @@ main() {
   case "$STEP" in
     deploy) GOTO="$CUR" ;;  # deploy.sh failed: state was not updated, "current" is the last good release (may equal $FAILED on a re-deploy)
     smoke) GOTO="$PREV" ;;  # the failed release is already "current": go one release down
-    *) if [ -n "$CUR" ] && [ "$CUR" != "$FAILED" ]; then GOTO="$CUR"; else GOTO="$PREV"; fi ;;
+    "") if [ -n "$CUR" ] && [ "$CUR" != "$FAILED" ]; then GOTO="$CUR"; else GOTO="$PREV"; fi ;;
+    *) die "unknown step '$STEP' (use deploy or smoke, or leave it out)" ;;
   esac
   [ -n "$GOTO" ] || die "nothing to roll back to for $TARGET (this was its first deploy). To go to a specific commit: $BASE/releases/<sha>/infra/scripts/deploy.sh $TARGET <sha> --rollback"
   [ -x "$BASE/releases/$GOTO/infra/scripts/deploy.sh" ] || die "release folder for $GOTO is gone ($BASE/releases/$GOTO)"

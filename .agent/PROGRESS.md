@@ -228,3 +228,7 @@ Next: METRICS rows for V3, remove worktree D:/Projects/bm-wt/V3-infra, then the 
 ### 2026-11-09 — Claude (lead) — V3 cleanup
 Did: added the V3 row to METRICS.md; removed worktree D:/Projects/bm-wt/V3-infra and deleted local branch feat/V3-infra.
 Next: follow-up PR `fix/V3-followup` (devops): the 3 nits (ci.yml image build `shell: bash`; deploy.sh:129-147 non-fatal cleanup after state is written; rollback.md:15 / rollback.sh:20-21 usage strings + unknown-argument error) and make the weekly `audit` job green (compare with the PR `security` job scope; pnpm overrides / bump vitepress / size-limit). Then #4 V2 review, #5 V4.
+
+### 2026-11-09 — Claude (devops) — V3 follow-up PR
+Did: fix/V3-followup: 3 Opus nits (ci `shell: bash`; deploy.sh housekeeping runs in a subshell and only warns; rollback.sh usage + `die` on unknown step; rollback.md). Weekly audit: swapped `@size-limit/preset-app` for `@size-limit/file` (same size check, drops estimo>puppeteer-core/nanoid/extract-zip(unpatched)/basic-ftp/zod) and overrode `vitepress>vite` to 6.4.5 (pnpm-workspace.yaml). `pnpm audit --audit-level high` now passes (1 moderate left: minimatch via eslint). Audit level not weakened.
+Next: CI green, lead squash-merges, then #4 V2 review, #5 V4.

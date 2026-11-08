@@ -23,7 +23,7 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
-    "@size-limit/preset-app": "14.3.0",
+    "@size-limit/file": "14.3.0",
     "@tailwindcss/vite": "4.3.5",
     "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.3",
