@@ -139,6 +139,7 @@ V0 Preflight ─▶ V1 Monorepo + CI ─▶ V2 Design ─▶ V3 Infra walking sk
 ## Changes outside tasks
 Fixes and changes made outside a task above. One line each, newest last: date · what changed · which docs were updated, or "no doc change: <why>".
 - 2026-11-08 · V1 review follow-up (fix/V1-review): logging self-check, client-4xx error mapping, CLOCK_OVERRIDE ISO, `?lng=` gate, all routes in layout/states specs, worker imports `@bm/api` exports + Redis fail-fast, dev script `--wait`/`--raw` · docs: 02, 04, 09, ADR-001, repo-map, logging, request-lifecycle, testing-strategy, error-codes
+- 2026-11-09 · V3 follow-up (fix/V3-followup): ci images step `shell: bash`, deploy.sh housekeeping non-fatal, rollback.sh usage + unknown-step error, weekly audit green (`@size-limit/file` replaces `preset-app` to drop estimo/puppeteer chain; override `vitepress>vite` 6.4.5; `--audit-level high` unchanged) · docs: rollback.md
 
 ## Questions for the human
 (The build never waits on these; the lead decides and logs. The owner may answer later.)

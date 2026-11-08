@@ -132,15 +132,21 @@ fi
 
 # Housekeeping: keep the 5 newest release folders (never the ones in use), drop images no environment uses any more.
 # A rollback must not replace the helper scripts in bin/ with the OLDER copies from the release it goes back to.
-[ "$ROLLBACK" -eq 1 ] || install_bin
-KEEP="$(cat "$STATE"/*.current "$STATE"/*.previous 2>/dev/null | sort -u | tr '\n' ' ' || true)"
-ls -1t "$BASE/releases" | tail -n +6 | while read -r old; do
-  case " $KEEP " in *" $old "*) ;; *) rm -rf -- "${BASE:?}/releases/$old" ;; esac
-done
-docker image ls --format '{{.Repository}}:{{.Tag}}' 'ghcr.io/rhrony05/basamanager-*' | while read -r img; do
-  tag="${img##*:}"
-  case " $KEEP " in *" $tag "*) ;; *) docker image rm "$img" >/dev/null 2>&1 || true ;; esac
-done
-docker image prune -f >/dev/null
+# The state is already written and the release is running, so a housekeeping failure must not fail the deploy
+# (rollback.sh would then wrongly treat the new, unsmoked release as the good one). It only logs a warning.
+housekeeping() {
+  set +e
+  [ "$ROLLBACK" -eq 1 ] || install_bin
+  KEEP="$(cat "$STATE"/*.current "$STATE"/*.previous 2>/dev/null | sort -u | tr '\n' ' ' || true)"
+  ls -1t "$BASE/releases" | tail -n +6 | while read -r old; do
+    case " $KEEP " in *" $old "*) ;; *) rm -rf -- "${BASE:?}/releases/$old" ;; esac
+  done
+  docker image ls --format '{{.Repository}}:{{.Tag}}' 'ghcr.io/rhrony05/basamanager-*' | while read -r img; do
+    tag="${img##*:}"
+    case " $KEEP " in *" $tag "*) ;; *) docker image rm "$img" >/dev/null 2>&1 || true ;; esac
+  done
+  docker image prune -f >/dev/null
+}
+( housekeeping ) || log "WARN: housekeeping failed (the deploy itself is fine)"
 
 log "$TARGET: $SHA is up"

@@ -12,7 +12,7 @@ smoke test fails. You can also do it by hand.
 
 ## Automatic
 
-In the `deploy` job: if `deploy.sh` or the smoke test fails, the next step runs `rollback.sh <env> <failed-sha>`,
+In the `deploy` job: if `deploy.sh` or the smoke test fails, the next step runs `rollback.sh <env> <failed-sha> deploy|smoke`,
 then a second smoke test proves the working version answers with its own SHA. The job stays **red** on purpose,
 with the message "Release X FAILED and was rolled back to Y". The first-ever deploy of an environment has nothing
 to roll back to and just fails.
