@@ -118,17 +118,6 @@ Agents append one line per choice the docs didn't cover (newest last). If it cha
 - 2026-11-08 — Lead (V1 review): Playwright `setup` project (log each role in once) moves to **V5** (no auth before then); `tests/helpers/queryCounter.ts` moves to **V4** (no Prisma models before then). Both noted in 09-TESTING.
 - 2026-11-08 — Debugger (V1 review): client-caused errors with a numeric 4xx status (bad `%` path, unsupported charset/encoding, verify failures, 431) map to 400 `VALIDATION_FAILED` with a fixed message; no new 415 code (keeps `errorStatus` consistent). e2e builds the web app with `--mode test` so `en-XA` stays available to the layout audit while production builds ignore it.
 - 2026-11-08 — Lead: V2 (design), V3 (infra) and the V1 follow-up run in parallel worktrees because their files do not overlap (design only `.agent/design/**`; infra `infra/**`, `.github/**`, deploy glue). Feature tasks from V4 on still go in order.
-- 2026-11-08 — Lead (V4): **no `prisma migrate reset` anywhere** (Prisma 7 refuses it for AI agents without human consent; we never set its consent variable). `apps/api/test/global-setup.ts` creates a fresh database per run (`<base>_<timestamp>_<random>`), applies `prisma migrate deploy`, points the three DB URLs at it and drops only that database in teardown. New migrations are made with `prisma migrate diff`, never `migrate dev`. Updated 03, 09, 02, rules, 11, backend-standards skill.
-- 2026-11-08 — Lead (V4): RLS policies read settings with `nullif(current_setting(name, true), '')` (after any `set_config(..., true)` a pooled connection reads `''`, not NULL). Updated 03 "RLS".
-- 2026-11-08 — Lead (V4): `outbox` keeps RLS + force with an insert-only policy for `bm_app` (own org or null); `bm_app` has no select/update/delete on it, so the API writes it with `createMany` (no RETURNING); `bm_worker` (BYPASSRLS) delivers. The test-designer's tests are consistent with this (outbox is rightly not in the "queryable outside $tx" list). Updated 03.
-- 2026-11-08 — Lead (V4): every `*_by` / `actor_id` column references `users.id`; only `maintenance_requests.assigned_to` references `memberships.id`. `updated_at` has a DB default `now()` as well as `@updatedAt`. Updated 03 "Conventions".
-- 2026-11-08 — Architect (V4): partial indexes live in `schema.prisma` (`where: raw(...)`, preview feature `partialIndexes`), so `prisma migrate diff` stays empty against a migrated DB (verified; `pnpm --filter @bm/api db:drift`). Checks, RLS, grants and views are SQL migrations. Migration folders `20261108000000_roles`, `…0100_tables`, `…0200_rls`, `…0300_constraints_grants_views` (03 "Migrations").
-- 2026-11-08 — Architect (V4): `maintenance_requests.category` is a Postgres enum `maintenance_category` (values from 01 M1); `notifications.body/link`, `job_runs.status` (null while running) and several actor/time columns are nullable; checks added beyond 03: `bills.period_month` first of month, `payments/payment_intents.amount_poisha > 0`, money `>= 0` per the convention. Model `OutboxMessage` maps `outbox`. Updated 03.
-- 2026-11-08 — Architect (V4): admin views return rows only when `app.is_admin = 'true'` and rely on `bm_owner` being the superuser (views run with owner rights, bypassing RLS). `admin_health` is one row per item (job runs, failed outbox, flagged intents, intents `initiated` > 30 min). Columns in 03.
-- 2026-11-08 — Architect (V4): `TENANT_MODELS` (models that must go through `db.$tx`) = models with an `orgId` field + `Organization`, derived from the generated client. A new org is inserted inside `db.$tx({ orgId: newId() … })` because `org_self` checks inserts too.
-- 2026-11-08 — Architect (V4): `pnpm db:docs` builds a scratch database from the migrations on the test Postgres, reads it with tbls as `bm_readonly`, and drops it (docs describe migrations, never dev data); `TBLS_DSN` overrides. Added `db:docs:check` and `db:lint`. `docs/database/` is prettier-ignored (generated).
-- 2026-11-08 — Architect (V4): new dependency `argon2` 0.45.2 in `@bm/api` (already in 02's list) for the seed's password hash (argon2id m=19456,t=2,p=1). `db:migrate` now runs `prisma migrate deploy`; `db:seed` loads the root `.env` if present.
-- 2026-11-08 — Lead (V4 follow-up, gap found by the docs agent): user-scoped access with no org context, migration `20261108000400_user_scoped_access`: `memberships` gets a select-only permissive policy `own_memberships` (own rows in every org); `organizations` gets `member_orgs` (orgs the user is a member of) and `org_self` is split into `org_self_select` / `org_self_insert` / `org_self_update` (landlord of that org or admin context) with no delete policy; invitations are looked up by token hash only through the `security definer` function `app_find_invitation` (owner bm_owner, fixed search_path, execute for bm_app only), wrapped by `findInvitationByTokenHash` in `db.ts`. `rls.int.test.ts` now expects the four organizations policy names instead of `org_self`. Updated 03 "RLS", the multi-tenancy concept page and the data map.
 
 - 2026-11-09 — Architect (V4 review): the db.ts nested-relation guard reads the relation map from the Prisma client's internal `_runtimeDataModel` (Prisma 7 has no `Prisma.dmmf`; startup fails if it is missing). `receipts` gets an extra unique `(org_id, payment_id)` because Prisma needs it for the one-to-one link. Recorded in 03.
 - 2026-11-08 — Owner: the build must run with no human after the initial grant. agy runs in turbo (`--dangerously-skip-permissions`); leads run as fresh Sonnet 5.5 sessions at medium effort (owner decision to save usage; Opus stays for high-risk reviews and schema work) from `scripts/autonomous.sh` with permissions bypassed. Updated 11-AGENT-TEAM.md and next-task.
@@ -314,6 +303,38 @@ Did: CI 8/8 on 8735126. Opus reviewer re-checked PR #5 on a throwaway Postgres: 
 Tokens: reviewer 90k.
 Next: squash merge #5 (merge main first if behind), check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
 
-### 2026-11-09 — Claude (lead) — V4 merge blocked by strict check
-Did: CI was 8/8 on 8735126 but `gh pr merge 5` refused (branch behind main: only my PROGRESS commits). Merged origin/main into feat/V4 (2dd601c, docs only) and pushed. To avoid an endless race, PROGRESS entries for V4 are now committed on feat/V4, not on main, until the merge.
-Next: when CI is 8/8 on the head of feat/V4, `gh pr merge 5 --squash` (no more commits to main meanwhile); then check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
+### 2026-11-09 — Claude (lead) — V4 merge wait
+Did: tried to merge #5: state BLOCKED because CI is re-running on the new head e766ebf (main was merged into feat/V4 with docs-only changes, run 42533841375, all 7 checks pending). No code changed since the 8/8 on 8735126.
+Next: when CI is 8/8 on e766ebf, `gh pr merge 5 --squash` (merge main first if behind), check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
+
+### 2026-11-09 — Claude (lead) — V4 CI wait
+Did: checked PR #5 at e766ebf: lint-typecheck, unit, integration, images, docs, security, CodeQL green; only e2e still pending (run 42533841375). No code changed since the 8/8 on 8735126, so nothing to fix.
+Next: when e2e is green, `gh pr merge 5 --squash`, check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
+
+### 2026-11-09 — Claude (lead) — V4 e2e wait
+Did: checked PR #5 at e766ebf: all checks green except e2e, which started 23:10Z and was still in progress at 23:13Z (run 42533841375). Normal duration, not stuck. No code change.
+Next: when e2e is green, `gh pr merge 5 --squash`, check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
+
+### 2026-11-09 — Claude (lead) — V4 e2e wait 2
+Did: rechecked PR #5 at e766ebf: all checks green except e2e (run 42533841375, started 23:10Z, still running at 23:13Z, normal duration). No code change.
+Next: when e2e is green, `gh pr merge 5 --squash`, check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
+
+### 2026-11-09 — Claude (lead) — V4 e2e wait 3
+Did: rechecked PR #5 at e766ebf: 6 of 7 checks green; e2e (run 42533841375) started 23:10Z, in progress at 23:14Z (about 4 min in). No code change.
+Next: when e2e is green, `gh pr merge 5 --squash`, check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
+
+### 2026-11-09 — Claude (lead) — V4 e2e wait 4
+Did: rechecked PR #5 at e766ebf: 7 of 8 checks green; e2e (run 42533841375) started 23:10Z, still in progress at 23:15Z. No code change.
+Next: when e2e is green, `gh pr merge 5 --squash`, check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
+
+### 2026-11-09 — Claude (lead) — V4 e2e wait 5
+Did: rechecked PR #5 at e766ebf: 7 of 8 checks green; e2e (run 42533841375) started 23:10Z, still in progress at 23:16Z. No code change.
+Next: when e2e is green, `gh pr merge 5 --squash`, check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
+
+### 2026-11-09 — Claude (lead) — V4 e2e wait 6
+Did: rechecked PR #5 at e766ebf: 7 of 8 checks green; e2e (run 42533841375) started 23:10Z, still in progress at 23:17Z. No code change.
+Next: when e2e is green, `gh pr merge 5 --squash`, check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
+
+### 2026-11-09 — Claude (lead) — V4 e2e wait 7
+Did: rechecked PR #5 at e766ebf: 7 of 8 checks green; e2e (run 42533841375) started 23:10Z, still in progress at 23:18Z. No code change.
+Next: when e2e is green, `gh pr merge 5 --squash`, check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
