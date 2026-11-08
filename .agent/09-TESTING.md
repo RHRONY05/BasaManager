@@ -15,9 +15,15 @@ Coverage thresholds (CI fails below): `packages/domain` **95%** lines and branch
 `apps/web` no global threshold (logic-heavy hooks/components are unit-tested).
 
 ## Test data, users and isolation
-- Test DB per run: `basamanager_test` (or `basamanager_test_<task>` in a worktree). `globalSetup` runs
-  `prisma migrate reset --force --skip-seed` with the **owner** URL, then tests connect as `bm_app` (so RLS
-  is exercised exactly like prod). **Never** `prisma db push`.
+- **Fresh test DB per run:** `apps/api/test/global-setup.ts` connects as the owner (`DATABASE_OWNER_URL`, whose
+  database is only used for CREATE/DROP DATABASE), creates `<base>_<yyyymmddhhmmss>_<random>` where `<base>` is
+  `TEST_DB_NAME`, else `scripts/ports.mjs` TEST_DB_NAME (`basamanager_test_<task>` in a worktree), else the
+  URL's database (`basamanager_test`); applies the real migrations with `prisma migrate deploy`; points
+  `DATABASE_URL` (bm_app), `DATABASE_OWNER_URL` and `DATABASE_WORKER_URL` at it for the test workers; and drops
+  **only that database** in teardown (`drop database … with (force)`). Tests connect as `bm_app`, so RLS is
+  exercised exactly like prod. **Never** `prisma db push`, and never `prisma migrate reset` (Prisma refuses it
+  for AI agents without a human's consent; nobody bypasses that guard). A crashed run can leave its database
+  behind; the test Postgres keeps data in RAM, so `compose down` clears it.
 - Factories in `tests/helpers/factories.ts` (`makeOrg`, `makeBuilding`, `makeLease`, `makeBill`, …) create data
   through services where possible. Each integration file truncates org-owned tables in `beforeEach`.
 - `tests/helpers/auth.ts`: `loginAs(role, org)` returns a Supertest agent with cookies + CSRF.
@@ -78,7 +84,9 @@ Coverage thresholds (CI fails below): `packages/domain` **95%** lines and branch
 | `visual.spec.ts` | screenshot main screens per role, compared once by the designer with `design/`, then baselines |
 
 ## Speed checks in CI
-- **Query count:** `tests/helpers/queryCounter.ts` counts Prisma queries per request (added in V4 with the first models; decided 2026-11-08) (Prisma `$on('query')`); every
+- **Query count:** `tests/helpers/queryCounter.ts` counts the SQL statements Prisma sends (Prisma `$on('query')`
+  via `createPrisma(url, { onQuery: counter.onQuery })`; `counter.measure(fn)` → `{ result, count, statements }`;
+  BEGIN/COMMIT and the `$tx` `set_config` statement are not counted unless `{ countAll: true }`); every
   list endpoint has a test asserting a fixed count for 5 vs 50 items (no N+1). Integration runs log any request > 200 ms.
 - **Bundle size:** `size-limit` (dev dep) in `lint`: initial JS ≤ 200 KB gzip, each route chunk ≤ 100 KB gzip.
 
@@ -103,7 +111,7 @@ for app pages. Local production build in V16, then **prod** in V17.
 ## Scripts (root `package.json`)
 `typecheck`, `lint` (eslint + prettier check + token lint), `test`, `test:cov` (= `vitest run --coverage`; what CI runs, enforces the coverage thresholds), `test:int`, `test:e2e`, `test:load`,
 `docs:check`, `test:all` (= typecheck + lint + test + test:int + test:e2e + docs:check), `db:migrate`,
-`db:seed`, `e2e:seed`, `db:docs` (db-docs skill), `dev` (all apps + `compose.dev.yml`).
+`db:seed`, `e2e:seed`, `db:docs` / `db:docs:check` / `db:lint` (db-docs skill; scratch DB from the migrations on the test Postgres), `dev` (all apps + `compose.dev.yml`).
 
 ## CI (`.github/workflows/ci.yml`, on PR and push)
 Jobs in parallel where possible: `lint+typecheck` → `unit` → `integration` (services: postgres:17, redis:7,

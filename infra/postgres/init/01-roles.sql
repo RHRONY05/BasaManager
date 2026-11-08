@@ -5,7 +5,7 @@
 -- Runs once on first start of the Postgres container (docker-entrypoint-initdb.d) against
 -- POSTGRES_DB (basamanager_dev in compose.dev.yml, basamanager_test in compose.test.yml),
 -- which is already owned by the superuser bm_owner. CI runs the same file with psql.
--- Idempotent: safe to run twice. The V4 migration 0001_roles.sql builds on top of this.
+-- Idempotent: safe to run twice. The V4 migration 20261108000000_roles builds on top of this.
 
 DO $$
 BEGIN

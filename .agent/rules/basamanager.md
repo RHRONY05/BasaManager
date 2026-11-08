@@ -40,7 +40,7 @@ Never change design or scope to match drifted code: fix the code. When unsure, r
 - Every org-owned table: `org_id`, RLS enabled + forced + policy (the RLS test enforces it).
 - All app queries on org tables go through `db.$tx(ctx, …)`. Multi-step writes are one transaction; lock the lease row (`for update`) before money changes.
 - Money is integer poisha. Never floats, never `Number(x) * 1.05` on money: use `packages/domain/money`.
-- Tests run against migrations (`prisma migrate reset`), **never** `prisma db push`.
+- Tests run against migrations (a fresh database per run + `prisma migrate deploy`, 09), **never** `prisma db push`, never `prisma migrate dev`/`reset`.
 
 ## Security
 - Validate every boundary input with the shared Zod schema. Return `NOT_FOUND` for "exists but not yours".

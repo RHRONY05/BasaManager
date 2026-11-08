@@ -108,7 +108,8 @@ Postgres superuser `bm_owner` (password `bm_owner_dev`) owns the database. `infr
 (run on first container start, and by `psql` in CI) creates login roles `bm_app` (`NOBYPASSRLS`, `bm_app_dev`),
 `bm_worker` (`BYPASSRLS`, `bm_worker_dev`), `bm_readonly` (`bm_readonly_dev`) plus the `citext` and `pgcrypto`
 extensions. These passwords are **dev/test only**; staging/prod get generated ones in V3. The V4 migration
-`0001_roles.sql` is idempotent on top of this. Copy `.env.example` to `.env` and `.env.test.example` to `.env.test`.
+`20261108000000_roles` is idempotent on top of this and also sets up every new database (extensions, grants,
+default privileges), so tests can create a fresh database per run (09). Copy `.env.example` to `.env` and `.env.test.example` to `.env.test`.
 
 ## Environment variables (`.env.example`)
 ```dotenv
