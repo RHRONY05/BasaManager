@@ -41,7 +41,7 @@ V0 Preflight ─▶ V1 Monorepo + CI ─▶ V2 Design ─▶ V3 Infra walking sk
   - Critique loop on every screen (score ≥ threshold in `design-canvas/references/critique.md`), then a **design review by the reviewer agent** (Opus) against 06-UI behaviour + accessibility (contrast AA, 44 px targets). Fix until approved.
   - **AC:** gallery opens; every screen at both sizes, light + dark; `shoot.mjs` report and `auditLayout()` have 0 errors at 390/360/320; stress variants clean; design review approved; no lorem ipsum.
 
-- [ ] **V3 Infra walking skeleton** (DevOps)
+- [x] **V3 Infra walking skeleton** (DevOps) — merged feddf21, staging deploy green 2026-11-09 (prod tag v0.1.0 pending)
   - `infra/azure/create-vm.sh` → VM up; `bootstrap.sh`; Caddyfile for prod, staging, docs; Cloudflare DNS records via API (only new records named `basamanager*`); read the zone SSL mode and choose proxied vs DNS-only per 02 (never change zone settings); Caddy automatic HTTPS.
   - Dockerfiles (multi-stage, non-root); `compose.server.yml`; `deploy.yml` (main → staging, tag → prod, smoke + auto-rollback); `deploy.sh`, `rollback.sh`, `backup.sh` (+ VM cron), `restore.sh`, `weekly.yml` restore drill.
   - Azure storage account + private `backups` container + 30-day lifecycle rule + container SAS (60 days) via `az`. Cloudinary: verify the account; test `private_download_url` with expiry on the free plan for an image and a raw PDF.
