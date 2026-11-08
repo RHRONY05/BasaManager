@@ -1,0 +1,74 @@
+<!--meta {"title": "D23 · Account", "shell": "staff-d", "active": "", "crumbs": ["Account"], "bell": "3"} -->
+<style>
+  .acct { display: grid; grid-template-columns: 200px minmax(0, 760px); gap: var(--space-8); align-items: start; }
+  .acct__nav { position: sticky; top: calc(var(--size-topbar-desktop) + var(--space-6)); display: grid; gap: var(--space-0-5); }
+  .acct__nav a { display: flex; align-items: center; min-height: var(--size-tap); padding: 0 var(--space-3); border-radius: var(--radius-md); color: var(--fg-secondary); text-decoration: none; font-weight: var(--weight-semibold); font-size: var(--text-sm); }
+  .acct__nav a[aria-current='true'] { background: var(--accent-soft); color: var(--accent-text); }
+  .session { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) 0; border-bottom: 1px solid var(--border-muted); }
+  .session:last-child { border-bottom: 0; }
+  .session__icon { display: grid; place-items: center; width: var(--size-tap); height: var(--size-tap); border-radius: var(--radius-md); background: var(--bg-muted); color: var(--fg-secondary); flex-shrink: 0; }
+  .danger-zone { border-color: var(--danger-border); }
+  .lock-row td:first-child { color: var(--fg-muted); }
+</style>
+<div class="page">
+  <section class="page-head"><div class="page-head__text"><h1 class="t-title">Account</h1><p class="secondary">Farhana Chowdhury · landlord of Chowdhury Properties</p></div></section>
+  <div class="acct">
+    <nav class="acct__nav" aria-label="Account sections">
+      <a href="#profile" aria-current="true">Profile</a><a href="#password">Password</a><a href="#sessions">Devices</a><a href="#notifications">Notifications</a><a href="#delete">Delete account</a>
+    </nav>
+    <div class="stack-lg">
+      <section class="card" id="profile" aria-labelledby="p-h">
+        <h2 class="card__title" id="p-h">Profile</h2>
+        <form class="form">
+          <div class="form-row">
+            <div class="field"><label class="label" for="n">Full name</label><input class="input" id="n" value="Farhana Chowdhury"></div>
+            <div class="field"><label class="label" for="ph">Phone <span class="label__opt">(optional)</span></label><input class="input" id="ph" value="+880 1711-234567" inputmode="tel"></div>
+          </div>
+          <div class="field"><label class="label" for="e">Email</label><input class="input" id="e" value="farhana.chowdhury@gmail.com" disabled><span class="hint row"><i data-lucide="badge-check" class="i-sm"></i>Verified 8 Nov 2026 · signs in with password and Google</span></div>
+          <div><button class="btn btn--primary" type="submit">Save profile</button></div>
+        </form>
+      </section>
+
+      <section class="card" id="password" aria-labelledby="pw-h">
+        <h2 class="card__title" id="pw-h">Change password</h2>
+        <form class="form">
+          <div class="form-row">
+            <div class="field"><label class="label" for="cp">Current password</label><input class="input" id="cp" type="password"></div>
+            <div class="field"><label class="label" for="np">New password</label><input class="input" id="np" type="password"><span class="hint">At least 10 characters. Your other devices are signed out.</span></div>
+          </div>
+          <div><button class="btn btn--secondary" type="submit">Change password</button></div>
+        </form>
+      </section>
+
+      <section class="card" id="sessions" aria-labelledby="s-h">
+        <div class="card__head"><h2 class="card__title" id="s-h">Signed-in devices</h2><button class="btn btn--danger-ghost" type="button"><i data-lucide="log-out"></i>Sign out everywhere else</button></div>
+        <div>
+          <div class="session"><span class="session__icon"><i data-lucide="laptop"></i></span><div class="grow stack-sm"><span class="t-strong">Chrome on Windows <span class="badge badge--success"><i data-lucide="circle-check"></i>This device</span></span><span class="t-sm muted">Chattogram · active now</span></div></div>
+          <div class="session"><span class="session__icon"><i data-lucide="smartphone"></i></span><div class="grow stack-sm"><span class="t-strong">Chrome on Android (Samsung A54)</span><span class="t-sm muted">Chattogram · last active 7 Nov, 9:40 PM</span></div><button class="btn btn--secondary btn--sm" type="button">Sign out</button></div>
+          <div class="session"><span class="session__icon"><i data-lucide="monitor-smartphone"></i></span><div class="grow stack-sm"><span class="t-strong">Safari on iPad</span><span class="t-sm muted">Dhaka · last active 29 Oct</span></div><button class="btn btn--secondary btn--sm" type="button">Sign out</button></div>
+        </div>
+      </section>
+
+      <section class="card card--flush" id="notifications" aria-labelledby="n-h">
+        <div class="card__head card__head--pad"><h2 class="card__title" id="n-h">Notifications</h2><span class="t-sm muted">Saved as you switch</span></div>
+        <table class="pref-grid">
+          <thead><tr><th>What</th><th>In app</th><th>Email</th><th>Push</th></tr></thead>
+          <tbody>
+            <tr><td>Payment claim submitted</td><td><button class="switch" role="switch" aria-checked="true" aria-label="Payment claim, in app" type="button"></button></td><td><button class="switch" role="switch" aria-checked="true" aria-label="Payment claim, email" type="button"></button></td><td><button class="switch" role="switch" aria-checked="true" aria-label="Payment claim, push" type="button"></button></td></tr>
+            <tr><td>Online payment received</td><td><button class="switch" role="switch" aria-checked="true" aria-label="Online payment, in app" type="button"></button></td><td><button class="switch" role="switch" aria-checked="false" aria-label="Online payment, email" type="button"></button></td><td><button class="switch" role="switch" aria-checked="true" aria-label="Online payment, push" type="button"></button></td></tr>
+            <tr><td>Maintenance request opened or updated</td><td><button class="switch" role="switch" aria-checked="true" aria-label="Maintenance, in app" type="button"></button></td><td><button class="switch" role="switch" aria-checked="false" aria-label="Maintenance, email" type="button"></button></td><td><button class="switch" role="switch" aria-checked="true" aria-label="Maintenance, push" type="button"></button></td></tr>
+            <tr><td>Monthly statement ready</td><td><button class="switch" role="switch" aria-checked="true" aria-label="Statement, in app" type="button"></button></td><td><button class="switch" role="switch" aria-checked="true" aria-label="Statement, email" type="button"></button></td><td><button class="switch" role="switch" aria-checked="false" aria-label="Statement, push" type="button"></button></td></tr>
+            <tr class="lock-row"><td><span class="row"><i data-lucide="lock" class="i-sm"></i>Security: password reset, sign-in alerts</span></td><td><button class="switch" role="switch" aria-checked="true" aria-disabled="true" aria-label="Security, in app, always on" type="button"></button></td><td><button class="switch" role="switch" aria-checked="true" aria-disabled="true" aria-label="Security, email, always on" type="button"></button></td><td><button class="switch" role="switch" aria-checked="false" aria-disabled="true" aria-label="Security, push, not available" type="button"></button></td></tr>
+          </tbody>
+        </table>
+        <div class="table-foot"><span>Push on this computer: <b class="t-strong">on</b></span><button class="btn btn--ghost btn--sm" type="button">Turn off on this device</button></div>
+      </section>
+
+      <section class="card danger-zone" id="delete" aria-labelledby="d-h">
+        <h2 class="card__title" id="d-h">Delete account</h2>
+        <p class="t-sm secondary">Your name, email and phone are removed. Bills, payments and receipts stay for your tenants' records. As the landlord, you must first hand over or close Chowdhury Properties.</p>
+        <div><button class="btn btn--danger-ghost" type="button"><i data-lucide="trash-2"></i>Delete my account…</button></div>
+      </section>
+    </div>
+  </div>
+</div>

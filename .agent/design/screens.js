@@ -60,10 +60,10 @@ window.CANVAS = {
       { file: 'mobile/21-request-detail.html', title: 'M21 · Request detail', w: 390, h: 1487, route: '/t/requests/:id' },
     ] },
     { id: 'shared', title: 'Shared and admin', screens: [
-      { file: 'desktop/23-account.html', title: 'D23 · Account', w: 1440, h: 900, route: '/account' },
-      { file: 'mobile/23-account.html', title: 'M23 · Account', w: 390, h: 844, route: '/account' },
+      { file: 'desktop/23-account.html', title: 'D23 · Account', w: 1440, h: 1826, route: '/account' },
+      { file: 'mobile/23-account.html', title: 'M23 · Account', w: 390, h: 1482, route: '/account' },
       { file: 'desktop/24-admin-orgs.html', title: 'D24 · Admin — organisations', w: 1440, h: 900, route: '/a' },
-      { file: 'mobile/24-admin-orgs.html', title: 'M24 · Admin — organisations', w: 390, h: 844, route: '/a' },
+      { file: 'mobile/24-admin-orgs.html', title: 'M24 · Admin — organisations', w: 390, h: 1024, route: '/a' },
     ] },
     { id: 'stress', title: 'Stress variants (en-XA, longest content)', screens: [
       { file: 'mobile/05-dashboard--stress.html', title: 'S05 · Dashboard — stress', w: 390, h: 844, route: '/l' },
