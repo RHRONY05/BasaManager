@@ -370,3 +370,7 @@ Next: when e2e is green, `gh pr merge 5 --squash` (merge main first if behind), 
 ### 2026-11-09 — Claude (lead) — V4 CI wait 7 on 268a1a0
 Did: rechecked PR #5 at 268a1a0: 7 of 8 checks green; only e2e still in progress. No code change.
 Next: when e2e is green, `gh pr merge 5 --squash` (merge main first if behind), check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
+
+### 2026-11-09 — Claude (lead) — V4 merge main (4th), note kept on the branch
+Did: CI was 8/8 on 268a1a0 but `gh pr merge 5` refused (main moved again: only PROGRESS-only commits). Each PROGRESS commit on main puts the branch behind, so this entry is committed on feat/V4 instead, after merging origin/main (docs-only change). Pushed; CI re-running.
+Next: when CI is 8/8 on the new head, `gh pr merge 5 --squash` right away (do NOT push to main first), then check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
