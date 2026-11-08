@@ -116,7 +116,9 @@ if (!args.includes('--no-audit')) {
   let src = fs.readFileSync(path.join(designDir, 'screens.js'), 'utf8');
   for (const r of auditRows) {
     if (r.theme !== 'light' || (r.w !== 390 && r.w < 768) || !r.height) continue;
-    const at = src.indexOf(`file: '${r.file}'`);
+    let at = src.indexOf(`file: '${r.file}'`);
+    // the same file can be listed at two widths (states.html): pick the entry whose w matches
+    while (at >= 0 && !src.slice(at, src.indexOf('}', at)).includes(`w: ${r.w < 768 ? 390 : r.w},`)) at = src.indexOf(`file: '${r.file}'`, at + 1);
     if (at < 0) continue;
     const hAt = src.indexOf('h: ', at) + 3;
     const end = hAt + /^\d+/.exec(src.slice(hAt))[0].length;
