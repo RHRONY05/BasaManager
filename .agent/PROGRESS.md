@@ -267,4 +267,5 @@ Next: check staging deploy 42521236153 green and main ci 42521236160 (main lint 
 
 ### 2026-11-09 — Claude (lead) — V2 closed
 Did: staging deploy 42521236153 and main ci 42521236160 both green on afe9217. Ticked V2 in 08-TASKS, added METRICS row, removed worktree D:/Projects/bm-wt/V2-design and branch feat/V2-design.
+Note: leftover dir D:/Projects/bm-wt/V2-design (locked, "Device or resource busy" on .agent/design) is deregistered from git; delete it by hand later.
 Next: #5 V4: debugger fixes the failing `tenant-extension.int.test.ts` case in worktree D:/Projects/bm-wt/V4, merge main, Opus review (try to break isolation), merge.
