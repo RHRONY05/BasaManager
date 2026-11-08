@@ -4,8 +4,7 @@ name: deploy
 # (used once to prove the automatic rollback).
 on:
   push:
-    # TEMPORARY while V3 is proven on its own branch; removed before the merge.
-    branches: [main, feat/V3-infra]
+    branches: [main]
     tags: ['v*']
   workflow_dispatch:
     inputs:

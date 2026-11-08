@@ -255,7 +255,9 @@ client polls/listens for `file:ready`. Receipt numbers are allocated in the paym
   valid in both modes. The chosen mode is recorded in PROGRESS.md "Environment facts".
 - **Caddy:** automatic HTTPS (Let's Encrypt); HSTS, CSP, `X-Content-Type-Options`, `Referrer-Policy`,
   `Permissions-Policy`; gzip/zstd; long cache for hashed assets, `no-cache` for `index.html` and `sw.js`.
-- **Images:** `ghcr.io/rhrony05/basamanager-{api,worker,web,docs}:<git-sha>`, multi-stage, non-root user.
+- **Images:** `ghcr.io/rhrony05/basamanager-{api,worker,web,docs}:<git-sha>`, multi-stage, non-root user. api and worker run TypeScript with `tsx` (decision V3); web and docs are static files served by a tiny Caddy on :8080. `infra/compose.server.yml` (projects `bm-staging`, `bm-prod`) and `infra/compose.edge.yml` (project `bm-edge`: Caddy + docs); only Caddy publishes ports.
+- **DNS (V3):** only the prod name is proxied: Cloudflare's free certificate covers `*.rhrony05.me` but not `staging.basamanager.…` or `docs.basamanager.…`, so those two are DNS-only (see `infra/cloudflare/dns.sh`).
+- **Secrets in deploys (V3):** GitHub Environment secrets → `infra/scripts/render-env.sh` → `/opt/basamanager/env/<env>.env` (mode 600) written by the workflow over SSH.
 - **Deploy (`deploy.sh <env> <sha>`):** pull images → take a pre-deploy `pg_dump` → run
   `prisma migrate deploy` with `DATABASE_OWNER_URL` in a one-off container → `docker compose up -d` (api,
   worker, web) → wait for `/ready` → smoke tests (`tests/smoke.ts`: health, login of the smoke user, one

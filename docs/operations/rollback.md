@@ -17,7 +17,10 @@ second smoke test proves the old version answers with the old SHA. The job stays
 message "Release X FAILED and was rolled back to Y". The first-ever deploy of an environment has nothing to roll
 back to and just fails.
 
-**Proof (V3):** workflow run with "force smoke fail" on staging, see PROGRESS.md for the run link and output.
+**Proof (V3, 2026-11-08):** staging was deployed with a deliberately failing smoke test; the log shows
+`rolling back 5001aedb... -> ac8642aa...`, then `SMOKE PASSED` for the old SHA, and `/api/health` reported the
+old release again (run 42442524711). To repeat the drill: run the workflow by hand with "force smoke fail"
+ticked, or push a commit to `main` whose message contains `[force-smoke-fail]` (use sparingly: it rolls staging back).
 
 ## By hand
 
