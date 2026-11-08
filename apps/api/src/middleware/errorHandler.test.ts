@@ -28,6 +28,22 @@ describe('errorHandler middleware', () => {
       throw new Error('Secret database crashed unexpectedly');
     });
 
+    app.get('/items/:id', (_req, res) => {
+      res.json({ ok: true });
+    });
+
+    app.get('/client-status', () => {
+      throw Object.assign(new Error('verify says <script>'), { status: 403, type: 'entity.verify.failed' });
+    });
+
+    app.get('/client-status-code', () => {
+      throw Object.assign(new Error('too many headers'), { statusCode: 431 });
+    });
+
+    app.get('/server-status', () => {
+      throw Object.assign(new Error('upstream broke'), { status: 502 });
+    });
+
     app.use(express.json({ limit: '100kb' }));
     app.post('/echo', (_req, res) => {
       res.json({ ok: true });
@@ -103,5 +119,42 @@ describe('errorHandler middleware', () => {
     expect(res.status).toBe(413);
     expect(res.body.error.code).toBe(ErrorCode.PAYLOAD_TOO_LARGE);
     expect(res.body.error.requestId).toBe(res.headers['x-request-id']);
+  });
+
+  it('maps a malformed percent-encoded path (URIError, 400) to 400 VALIDATION_FAILED', async () => {
+    const res = await request(createTestApp()).get('/items/%E0%A4%A');
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe(ErrorCode.VALIDATION_FAILED);
+    expect(res.body.error.requestId).toBe(res.headers['x-request-id']);
+  });
+
+  it('maps an unsupported charset (415) to 400 VALIDATION_FAILED', async () => {
+    const res = await request(createTestApp())
+      .post('/echo')
+      .set('Content-Type', 'application/json; charset=klingon')
+      .send('{}');
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe(ErrorCode.VALIDATION_FAILED);
+  });
+
+  it.each(['/client-status', '/client-status-code'])(
+    'maps any error with a numeric 4xx status (%s) to 400 without echoing its message',
+    async (path) => {
+      const res = await request(createTestApp()).get(path);
+
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe(ErrorCode.VALIDATION_FAILED);
+      expect(res.body.error.message).toBe('Request could not be processed');
+      expect(res.text).not.toContain('script');
+    },
+  );
+
+  it('keeps errors with a 5xx status as 500 INTERNAL', async () => {
+    const res = await request(createTestApp()).get('/server-status');
+
+    expect(res.status).toBe(500);
+    expect(res.body.error.code).toBe(ErrorCode.INTERNAL);
   });
 });

@@ -97,7 +97,7 @@ export const envSchema = z
     // ── Seed & test only ─────────────────────────────────────────────────────
     SEED_PASSWORD: optionalString,
     E2E_PASSWORD: optionalString,
-    CLOCK_OVERRIDE: optionalString,
+    CLOCK_OVERRIDE: z.preprocess(emptyToUndefined, z.iso.datetime({ offset: true }).optional()),
   })
   // Cross-field rules (refine)
   .refine((data) => data.SSLCOMMERZ_SANDBOX === true, {

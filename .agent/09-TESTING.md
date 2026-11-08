@@ -23,7 +23,7 @@ Coverage thresholds (CI fails below): `packages/domain` **95%** lines and branch
 - `tests/helpers/auth.ts`: `loginAs(role, org)` returns a Supertest agent with cookies + CSRF.
 - E2E seed: `pnpm e2e:seed` creates two orgs (A and B) with users `landlord.a@e2e.test`, `caretaker.a@e2e.test`,
   `tenant.a1@e2e.test`, `tenant.a2@e2e.test`, `landlord.b@e2e.test`, `admin@e2e.test`, password from
-  `E2E_PASSWORD` (`.env.test`). Playwright setup project logs each role in once and saves storage state.
+  `E2E_PASSWORD` (`.env.test`). Playwright setup project logs each role in once and saves storage state. (Added in V5 with auth; decided 2026-11-08.)
 - **Clock:** all code reads time via `clock.now()`. Tests set `CLOCK_OVERRIDE` (api/worker) or call
   `clock.set()`; e2e sets it through `POST /api/test/clock` (route exists only when `APP_ENV=test`).
 - **Mocks:** SSLCommerz via `msw` (init, validation, transaction query; scenarios: valid, invalid, amount
@@ -72,15 +72,15 @@ Coverage thresholds (CI fails below): `packages/domain` **95%** lines and branch
 | `admin.spec.ts` (desktop) | suspend org → landlord sees suspended screen → reactivate |
 | `isolation.spec.ts` | landlord B pastes org A URLs → 404 pages |
 | `pwa.spec.ts` (desktop chromium) | manifest valid, SW registered, offline banner |
-| `layout.spec.ts` | `auditLayout()` from `mobile-layout-qa` on every route per role at 320/360/390/414/768 + 1440, light/dark, stress org + `en-XA`: zero violations. Each UI task adds its routes |
-| `states.spec.ts` | The six checks in `ui-states` (slow API, slow chunks, cached back nav, errors, mutation pending, filters) for each role's navigation. Each UI task adds its routes |
+| `layout.spec.ts` | `auditLayout()` from `mobile-layout-qa` on every route per role at 320/360/390/414/768 + 1440, light/dark, stress org + `en-XA`: zero violations. Routes come from `ROUTE_PATHS` (`preload.ts`); each UI task adds its page there |
+| `states.spec.ts` | The six checks in `ui-states` (slow API, slow chunks, cached back nav, errors, mutation pending, filters) for each role's navigation. Routes come from `ROUTE_PATHS` (`preload.ts`); each UI task adds its page there |
 | `a11y.spec.ts` | axe on every main page per role, light and dark: no serious/critical |
 | `visual.spec.ts` | screenshot main screens per role, compared once by the designer with `design/`, then baselines |
 
 ## Speed checks in CI
-- **Query count:** `tests/helpers/queryCounter.ts` counts Prisma queries per request (Prisma `$on('query')`); every
+- **Query count:** `tests/helpers/queryCounter.ts` counts Prisma queries per request (added in V4 with the first models; decided 2026-11-08) (Prisma `$on('query')`); every
   list endpoint has a test asserting a fixed count for 5 vs 50 items (no N+1). Integration runs log any request > 200 ms.
-- **Bundle size:** `size-limit` (dev dep) in `lint`: initial JS ≤ 200 KB gzip, each route chunk ≤ 100 KB gzip.
+- **Bundle size:** `size-limit` (dev dep) in `lint`: initial JS ≤ 200 KB brotli (size-limit default), each route chunk ≤ 100 KB brotli (size-limit default).
 
 ## Load (k6, against staging, V16)
 50 virtual users for 5 min mixing tenant home, bill detail, landlord dashboard, list pages; 5 rps payment-claim

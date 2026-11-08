@@ -49,12 +49,14 @@ the health module exists.
 ### `apps/worker`
 
 A separate Node process for work that must not block web requests: scheduled jobs, notification delivery,
-PDF rendering. After V1 it only loads config, creates a logger and Redis client, logs `worker started` and
-shuts down cleanly on SIGTERM/SIGINT.
+PDF rendering. After V1 it only loads config (`@bm/api/config/env`), creates a logger (`@bm/api/lib/logger`),
+connects to Redis and exits 1 if it cannot (fail fast, like the API), logs `worker started` and shuts down
+cleanly on SIGTERM/SIGINT.
 
 | Path                             | What it is                                                                         |
 | -------------------------------- | ---------------------------------------------------------------------------------- |
 | `apps/worker/src/index.ts`       | Boot and graceful shutdown                                                         |
+| `apps/worker/src/boot.ts`        | `startWorker`: pings Redis, exits 1 when unreachable (tested)                      |
 | `apps/worker/src/jobs/index.ts`  | The job registry: an empty `jobs` array of `{ name, schedule, ttlMs, run }`        |
 | `apps/worker/src/lib/jobLock.ts` | `withJobLock`: a Redis lock so two workers never run the same job at once (tested) |
 
@@ -77,7 +79,7 @@ The React app. Desktop-first for landlords and caretakers, mobile-first for tena
 | `apps/web/src/locales/en/common.json`                            | Every user-facing string                                                                                    |
 | `apps/web/src/styles/tokens.css`                                 | Design tokens (colours, spacing). Only a placeholder until the designer task V2                             |
 | `apps/web/vite.config.ts`                                        | Vite config; proxies `/api` and `/socket.io` to the API in dev and preview                                  |
-| `apps/web/.size-limit.json`, `apps/web/scripts/check-chunks.mjs` | Bundle budgets (entry ≤ 200 kB, each route chunk ≤ 100 kB, gzip)                                            |
+| `apps/web/.size-limit.json`, `apps/web/scripts/check-chunks.mjs` | Bundle budgets (entry ≤ 200 kB, each route chunk ≤ 100 kB, brotli)                                            |
 
 ### `apps/docs`
 

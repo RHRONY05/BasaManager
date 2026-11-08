@@ -8,11 +8,28 @@
 ## Now
 | | |
 |---|---|
-| **Phase** | Planned. `/project-config` done; Builder setup all ✅ |
-| **Next task** | Owner pastes GOAL.md into the lead session |
+| **Phase** | **PAUSED by the owner on 2026-11-08** (weekly Claude limit). Setup is done; the owner starts the relay later. V0 ✅, V1 ✅. V2, V3, V4 built, not merged |
+| **Next task** | #3 V3 is **MERGED** (squash feddf21, 2026-11-09, CI 8/8 on bb93001). Staging deploy run 42515537657 on feddf21 is GREEN and V3 is ticked. **v0.1.0 tagged on 38ebb32 (2026-11-09); prod deploy run 42516300840 GREEN; https://basamanager.rhrony05.me/api/health = 200.** `weekly` run once 2026-11-09 (run 42516601364): restore-drill **RESTORE OK** (backups/staging/2026-11-08.dump); `audit` job RED (see below). V3 METRICS row added and worktree `V3-infra` removed (2026-11-09). Follow-up PR #7 (`fix/V3-followup`, worktree `D:/Projects/bm-wt/V3-followup`) is open with CI 8/8, not merged: 3 nits + weekly `audit` green. Reviewer (Sonnet) APPROVED #7 at f57e08b (2026-11-09, 0 blockers, CI 8/8, mergeState CLEAN). **#7 MERGED (squash a2f17a7, 2026-11-09); staging deploy run 42518261355 + ci 42518261300 running.** `weekly` re-run 42518815701: audit + restore-drill both GREEN; worktree V3-followup removed. gzip/brotli wording fixed (2026-11-09). Next: #4 V2 review, #5 V4 (merge main first), then V5 |
 | **Blocked on** | — |
 | **Production URL** | — (will be https://basamanager.rhrony05.me) |
-| **Last updated** | 2026-11-08 by Claude (lead, /project-config) |
+| **Last updated** | 2026-11-09 by Claude (lead): gzip/brotli wording fixed; next is the #4 V2 design review |
+
+## Resume here (written at the 2026-11-08 pause)
+**First item:** ✅ done 2026-11-08: VM `vm-basamanager` started (public IP 172.198.71.173, SSH with the deploy key works). The ssh user cannot run `docker ps` (permission denied on the socket), so staging container state is unchecked; devops should check with sudo when finishing #3. **2026-11-09: devops finished all 25 V3 review items (head `fed9bc2`, CI green, blocker proved on staging, runs 42507019561 / 42507429890). Next item: devops fixes the 2026-11-09 Opus re-review of #3 (CHANGES REQUESTED, https://github.com/RHRONY05/BasaManager/pull/3#pullrequestreview-5819099087): (1) BLOCKER: install openssl in the `base` stage of `infra/docker/api.Dockerfile` and `worker.Dockerfile` (migrate fails "Can't write to @prisma/engines" on every new image); prove with a clean build + green migrate on staging. (2) Re-run both rollback drills (migrate/early failure and smoke failure) with the new scripts and record them. (3) Correct PROGRESS and `docs/operations/rollback.md`: runs 42507019561/42507429890 failed at migrate, not at a forced hook. (4) Add a CI step that builds the api image and runs migrate. (5) Nits: deploy.yml:160-161, rollback.sh:566, sentry.test.ts:215-217, provision-secrets.sh:26. Then Opus re-review, squash merge, lead tags `v0.1.0`, checks prod `/api/health`, runs `weekly` once. Environment branch policies are still unset (deployment_branch_policy null on staging and production): set via `gh api` if the token allows, else keep as an owner Human step.**
+
+Work in order. One task at a time, no parallel Opus runs (three at once used up the 5-hour window). Everything below is in git or on disk; nothing depends on the old session.
+
+| PR | Branch / worktree | State | To finish |
+|---|---|---|---|
+| [#3 V3 infra](https://github.com/RHRONY05/BasaManager/pull/3) | `feat/V3-infra`, `D:/Projects/bm-wt/V3-infra` | CI 7/7 on the last push. Opus review: CHANGES REQUESTED (1 blocker, 16 shoulds, 8 nits), posted on the PR. DevOps' fixes are **half done and uncommitted** in the worktree | DevOps finishes the review items (blocker = rollback after a failed deploy step; prove it once on staging; separate deploy key; environment branch policies), pushes, re-review, merge, wait for staging smoke, lead tags `v0.1.0`, check prod `/api/health` |
+| [#4 V2 design](https://github.com/RHRONY05/BasaManager/pull/4) | `feat/V2-design`, `D:/Projects/bm-wt/V2-design` | CI 7/7. Complete and pushed. **Design review not finished** (reviewer hit the limit; nothing posted) | Run the design review again, fix, merge |
+| [#5 V4 schema/RLS](https://github.com/RHRONY05/BasaManager/pull/5) | `feat/V4`, `D:/Projects/bm-wt/V4` | Complete and pushed. CI 6/7: `integration` fails 1 of 76 in `tenant-extension.int.test.ts` ("non-org tables can be queried…", expected [] but found a row; passes locally, so probably data left by another test file). **Opus review not finished** | Debugger fixes the test, Opus review again (including trying to break isolation), merge main after V3, merge |
+
+Then V5: `.agent/briefs/V5-tests.md` and `V5-backend.md` are written (untracked in the main checkout, like this edit to PROGRESS.md). Before the first UI task, fix `auditLayout`: at a phone-height viewport it reports controls scrolled under the bottom nav as overlapping, and labels mixing font sizes as wrapped (details: `.agent/design/README.md`).
+
+Add METRICS.md rows for V2, V3 and V4 when they merge. Token use reported by subagents: designer 571k; devops 337k (V3, before the review fixes); architect 354k (V4); V4 docs 212k; test-designer 127k.
+
+The Azure VM is deallocated for the pause. Prod has not been deployed.
 
 ## Human steps
 Things only the human can do. Agents add to this list; the human ticks them.
@@ -98,6 +115,11 @@ Agents append one line per choice the docs didn't cover (newest last). If it cha
 - 2026-11-08 — Lead (V1): `auditLayout()` counts lines of text nodes only; the reference version counted an icon above a label (bottom nav) as a wrapped label. Updated `.claude/skills/mobile-layout-qa/SKILL.md`.
 - 2026-11-08 — Debugger (V1): pages are `React.lazy` components inside a `Suspense` keyed by pathname, not React Router route `lazy` (route lazy kept the old page on screen during chunk loads). Updated `ui-states` skill + 02.
 - 2026-11-08 — Lead (V1): coverage excludes process bootstraps (`apps/api/src/server.ts`, `apps/worker/src/index.ts`; booted by integration/e2e), generated code and the `packages/domain` stub; thresholds unchanged (api 80% lines, domain 95%). New error code `PAYLOAD_TOO_LARGE` (413) for bodies over the limit (04 updated).
+- 2026-11-08 — Lead (V1 review): Playwright `setup` project (log each role in once) moves to **V5** (no auth before then); `tests/helpers/queryCounter.ts` moves to **V4** (no Prisma models before then). Both noted in 09-TESTING.
+- 2026-11-08 — Debugger (V1 review): client-caused errors with a numeric 4xx status (bad `%` path, unsupported charset/encoding, verify failures, 431) map to 400 `VALIDATION_FAILED` with a fixed message; no new 415 code (keeps `errorStatus` consistent). e2e builds the web app with `--mode test` so `en-XA` stays available to the layout audit while production builds ignore it.
+- 2026-11-08 — Lead: V2 (design), V3 (infra) and the V1 follow-up run in parallel worktrees because their files do not overlap (design only `.agent/design/**`; infra `infra/**`, `.github/**`, deploy glue). Feature tasks from V4 on still go in order.
+
+- 2026-11-08 — Owner: the build must run with no human after the initial grant. agy runs in turbo (`--dangerously-skip-permissions`); leads run as fresh Sonnet 5.5 sessions at medium effort (owner decision to save usage; Opus stays for high-risk reviews and schema work) from `scripts/autonomous.sh` with permissions bypassed. Updated 11-AGENT-TEAM.md and next-task.
 
 ## Session log
 Newest at the bottom. One entry per task. Keep entries short.
@@ -160,3 +182,75 @@ Next: owner clears the ❌ items in Human steps, then pastes GOAL.md.
 Did: preflight table all ✅; skills/agents verified; agy loop proved in edit-only mode (permission modes probed; `--dangerously-skip-permissions` refused by the lead's environment); Azure region chosen (indiasouthcentral, policy-limited); package versions pinned.
 Docs changed: 11-AGENT-TEAM.md (dispatch = edit-only, lead runs commands), 02 (region, Prisma adapter).
 Next: V1.
+
+### 2026-11-08 — Claude (lead) — V1 Monorepo, tooling, CI, docs skeleton
+Did: 6 parts (architect contracts, devops ci+repo, agy tooling/api/web, docs agent) + 2 debugger passes; PR #1 merged (reviewer APPROVE, 0 blockers; CI 7/7). Follow-up PR fixes the 5 shoulds + 4 nits.
+Tests: typecheck ✅ lint ✅ unit ✅ (144, coverage thresholds met) int ✅ (6) e2e ✅ (1026 passed, 4 skipped = ui-states checks 5/6 for V5/V6) docs ✅
+Commits / PR: #1 (squash dc2ebaa), follow-up fix/V1-review
+Problems / surprises: agy edit-only rounds are slow (12–43 min each); web needed 3 rounds + debugger (route lazy froze the old page). Docs agent found real defects (body-parser 500s, redaction gaps, coverage not running). pnpm release-age policy rejected fresh packages. Windows: `timeout` leaves grandchild node processes.
+Next: V2 design + V3 infra (parallel), then V4.
+
+### 2026-11-09 — Claude (lead) — V3 re-review
+Did: Opus reviewer re-reviewed PR #3 at fed9bc2 (CI 7/7). Verdict CHANGES REQUESTED: 1 blocker (openssl missing in the Dockerfile base stage, so `prisma migrate deploy` fails on every new image; the two "proved rollback" runs actually failed at migrate), 4 shoulds, 4 nits. Rollback logic and the separate deploy key were verified correct; 23 of 25 earlier items fixed. Posted: pullrequestreview-5819099087 (a COMMENT, since the author cannot request changes on its own PR).
+Tokens: reviewer 137k.
+Next: devops fixes the items listed in "Resume here", then re-review and merge.
+
+### 2026-11-09 — Claude (lead) — V3 re-review fixes
+Did: devops fixed all items of review 5819099087. openssl added to the base stage of both Dockerfiles; staging deploy 42512602747 migrate + smoke green. Both rollback drills re-run and passed (deploy-step failure run 42513127173, smoke failure run 42513431008). New CI job `images` builds both images and runs migrate. rollback.sh takes the failing step explicitly. Environment branch policies set (staging = main, production = tag v*). PROGRESS and rollback.md corrected. CI 8/8. Not merged.
+Tokens: devops 91k. Details: ../bm-runs/V3-fixes-2.md
+Next: Opus re-review of #3 (focus: Dockerfile fix, images job, rollback.sh step argument), squash merge, check staging, tag v0.1.0, check prod /api/health, run `weekly` once.
+
+### 2026-11-09 — Claude (lead) — V3 second re-review
+Did: Opus reviewer re-reviewed PR #3 at fd7e07f (CI 8/8). Verdict APPROVE (posted as a COMMENT, pullrequestreview-5819302341): openssl fix, `images` job, rollback step argument, both drills, doc corrections, 4 nits and branch policies all verified. 3 new non-blocking nits: ci.yml image build needs `shell: bash` (pipefail); deploy.sh:129-147 cleanup should be non-fatal after state is written; rollback.md:15 / rollback.sh:20-21 usage strings and unknown-argument error. Details: ../bm-runs/V3-rereview-2.md.
+Tokens: reviewer 67k.
+Next: squash merge #3, wait for staging deploy green, tick V3 in 08-TASKS, tag v0.1.0, check prod /api/health, run `weekly` once (expect RESTORE OK), METRICS rows, remove worktree. Fix the 3 nits in a small follow-up.
+
+### 2026-11-09 — Claude (lead) — V3 merge attempt
+Did: `gh pr merge 3 --squash` refused: branch behind main (strict required checks). Merged origin/main into feat/V3-infra in the worktree (clean, only docs/briefs/scripts/autonomous.sh), pushed bb93001. CI re-running.
+Next: when CI is 8/8 on bb93001, squash merge #3, wait for staging deploy green, tick V3 in 08-TASKS, tag v0.1.0, check prod /api/health, run `weekly` once, METRICS rows, remove worktree, then the 3 nits follow-up.
+
+### 2026-11-09 — Claude (lead) — V3 merged
+Did: waited for CI on bb93001 (8/8 green incl. e2e and `images`), `gh pr merge 3 --squash` -> feddf21 on main.
+Next: check the staging deploy run for feddf21; if green tick V3, tag v0.1.0, check prod /api/health, run `weekly`, METRICS rows, remove worktree, nits follow-up PR.
+
+### 2026-11-09 — Claude (lead) — V3 staging verified
+Did: staging deploy run 42515537657 (feddf21) all jobs green (meta, 4 image builds, sentry-release, deploy). V3 ticked in 08-TASKS. Local main had 8 PROGRESS-only commits that conflicted with the squash merge; reset to origin/main and re-applied the latest PROGRESS.md.
+Next: tag v0.1.0 (prod deploy), check prod /api/health, run `weekly` once (expect RESTORE OK), METRICS rows for V3, remove worktree D:/Projects/bm-wt/V3-infra, then the 3-nit follow-up PR.
+
+### 2026-11-09 — Claude (lead) — V3 prod release
+Did: staging green on 38ebb32, tagged v0.1.0, prod deploy run 42516300840 all jobs green, prod /api/health 200 (release 38ebb32).
+Next: run `weekly` once (expect RESTORE OK), METRICS rows for V3, remove worktree D:/Projects/bm-wt/V3-infra, then the 3-nit follow-up PR. After that: #4 V2 review, #5 V4.
+
+### 2026-11-09 — Claude (lead) — V3 weekly run
+Did: ran `weekly` by hand (run 42516601364). restore-drill GREEN: `RESTORE OK: backups/staging/2026-11-08.dump restored (11 objects, 1 table in public)`. `audit` job RED: `pnpm audit --audit-level high` reports 17 vulns (8 high), among them vite <=6.4.3 via vitepress (apps/docs), zod <4.6.6 via size-limit>estimo>puppeteer-core>chromium-bidi (dev-only), basic-ftp via size-limit. Not caused by V3; the PR `security` job evidently passes with a different scope, so check how it differs.
+Next: METRICS rows for V3, remove worktree D:/Projects/bm-wt/V3-infra, then the follow-up PR: 3 V3 nits + make the weekly audit green (pnpm overrides / bump vitepress / size-limit, or align with the PR audit scope). After that: #4 V2 review, #5 V4.
+
+### 2026-11-09 — Claude (lead) — V3 cleanup
+Did: added the V3 row to METRICS.md; removed worktree D:/Projects/bm-wt/V3-infra and deleted local branch feat/V3-infra.
+Next: follow-up PR `fix/V3-followup` (devops): the 3 nits (ci.yml image build `shell: bash`; deploy.sh:129-147 non-fatal cleanup after state is written; rollback.md:15 / rollback.sh:20-21 usage strings + unknown-argument error) and make the weekly `audit` job green (compare with the PR `security` job scope; pnpm overrides / bump vitepress / size-limit). Then #4 V2 review, #5 V4.
+
+### 2026-11-09 — Claude (lead) — V3 follow-up PR
+Did: devops opened PR #7 (`fix/V3-followup`): ci.yml `shell: bash` on image build; deploy.sh cleanup non-fatal after state is written; rollback usage strings + unknown-argument error; weekly audit fixed by swapping `@size-limit/preset-app` for `@size-limit/file` 14.3.0 and overriding `vitepress>vite` to 6.4.5 (`pnpm audit --audit-level high` exits 0, one moderate left). CI 8/8. Not merged. Details: ../bm-runs/V3-followup.md.
+Tokens: devops 62k.
+Next: reviewer (Sonnet) checks #7, squash merge, staging deploy green, run `weekly` once (expect audit green), remove worktree D:/Projects/bm-wt/V3-followup. Then #4 V2 review, #5 V4.
+
+### 2026-11-09 — Claude (lead) — V3 follow-up review
+Did: Sonnet reviewer APPROVED PR #7 at f57e08b (posted as a PR comment; details ../bm-runs/V3-followup-review.md). All 4 nits and the weekly audit fix verified (size-limit 118 kB of 200, frozen install OK, `pnpm audit --audit-level high` exits 0). 2 non-blocking nits: 09-TESTING.md and docs/overview/repo-map.md say gzip but size-limit reports brotli; a failed `install_bin` in deploy housekeeping is only a WARN.
+Tokens: reviewer 56k.
+Next: squash merge #7 (merge main first if behind), check the staging deploy runs the new deploy.sh cleanup, run `weekly` once (expect audit green), remove worktree D:/Projects/bm-wt/V3-followup, fix the gzip/brotli wording. Then #4 V2 review, #5 V4.
+
+### 2026-11-09 — Claude (lead) — V3 follow-up merged
+Did: `gh pr merge 7 --squash` -> a2f17a7 on main (CI 8/8 on f57e08b, CLEAN). Local main had diverged on PROGRESS-only commits; reset to origin/main and re-applied PROGRESS.md.
+Next: check staging deploy 42518261355 green, run `weekly` once (expect audit green), remove worktree D:/Projects/bm-wt/V3-followup, gzip/brotli wording fix. Then #4 V2 review, #5 V4.
+
+### 2026-11-09 — Claude (lead) — V3 follow-up staging verified
+Did: staging deploy run 42518261355 (a2f17a7) all jobs green (meta, 4 image builds, sentry-release, deploy). The ci run 42518261300 shows cancelled (superseded/concurrency, not a failure).
+Next: run `weekly` once (expect audit green), remove worktree D:/Projects/bm-wt/V3-followup, gzip/brotli wording fix (09-TESTING.md, docs/overview/repo-map.md). Then #4 V2 review, #5 V4.
+
+### 2026-11-09 — Claude (lead) — V3 follow-up closed
+Did: ran `weekly` (run 42518815701): `audit` and `restore-drill` both GREEN. Removed worktree D:/Projects/bm-wt/V3-followup and local branch fix/V3-followup.
+Next: fix gzip/brotli wording (09-TESTING.md, docs/overview/repo-map.md). Then #4 V2 review, #5 V4 (merge main first).
+
+### 2026-11-09 — Claude (lead) — gzip/brotli wording
+Did: 09-TESTING.md:83 and docs/overview/repo-map.md:82 now say brotli (size-limit default), matching what size-limit measures.
+Next: #4 V2 design review (designer reviews, fix, merge), then #5 V4 (debugger fixes the integration test, merge main, Opus review, merge).

@@ -25,26 +25,26 @@ The codes live in `packages/shared/src/errors.ts` (`ErrorCode` and `errorStatus`
 one status. Adding a code means editing both objects and the list in `.agent/04-API.md`; the test
 `packages/shared/src/errors.test.ts` fails if the two objects get out of step.
 
-| Code                          | Status | Meaning                                                                                     |
-| ----------------------------- | ------ | ------------------------------------------------------------------------------------------- |
-| `VALIDATION_FAILED`           | 400    | The input did not match its Zod schema. `details` lists the fields.                         |
-| `TOKEN_INVALID`               | 400    | A verify, reset or invite token is expired, used or unknown (one code for all three).       |
-| `READING_LOWER_THAN_PREVIOUS` | 400    | A meter reading is lower than the last one.                                                 |
-| `UNAUTHENTICATED`             | 401    | No valid session. The web client tries one token refresh, and only for this code.           |
-| `INVALID_CREDENTIALS`         | 401    | Wrong email or password. Never triggers a refresh.                                          |
-| `SESSION_REVOKED`             | 401    | The refresh token was reused or the session was ended. Never triggers a refresh.            |
-| `FORBIDDEN`                   | 403    | Signed in, but this role may not do this.                                                   |
-| `INVITE_EMAIL_MISMATCH`       | 403    | A signed-in user opened an invite for a different email.                                    |
-| `NOT_FOUND`                   | 404    | Missing, **or exists but not yours**. The API never reveals that something exists.          |
-| `CONFLICT`                    | 409    | Generic clash with current state.                                                           |
-| `LANDLORD_MUST_TRANSFER`      | 409    | A landlord tried to delete their account while still owning an organisation.                |
-| `READING_REQUIRED`            | 409    | A bill that needs a meter reading cannot be issued yet.                                     |
-| `DUPLICATE_REFERENCE`         | 409    | The same payment reference (for example a bKash TrxID) was already used.                    |
-| `INVALID_TRANSITION`          | 409    | A state change that is not allowed (for example a maintenance request jumping to closed).   |
-| `ORG_SUSPENDED`               | 423    | The organisation is suspended by an admin.                                                  |
-| `ACCOUNT_LOCKED`              | 423    | Too many wrong passwords; the account is temporarily locked.                                |
-| `RATE_LIMITED`                | 429    | Too many requests.                                                                          |
-| `INTERNAL`                    | 500    | Anything unexpected. The body is always the generic "Something went wrong"; no stack trace. |
+| Code                          | Status | Meaning                                                                                                                                          |
+| ----------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `VALIDATION_FAILED`           | 400    | The input did not match its Zod schema (`details` lists the fields), or the request was malformed (bad JSON, bad `%` path, unsupported charset). |
+| `TOKEN_INVALID`               | 400    | A verify, reset or invite token is expired, used or unknown (one code for all three).                                                            |
+| `READING_LOWER_THAN_PREVIOUS` | 400    | A meter reading is lower than the last one.                                                                                                      |
+| `UNAUTHENTICATED`             | 401    | No valid session. The web client tries one token refresh, and only for this code.                                                                |
+| `INVALID_CREDENTIALS`         | 401    | Wrong email or password. Never triggers a refresh.                                                                                               |
+| `SESSION_REVOKED`             | 401    | The refresh token was reused or the session was ended. Never triggers a refresh.                                                                 |
+| `FORBIDDEN`                   | 403    | Signed in, but this role may not do this.                                                                                                        |
+| `INVITE_EMAIL_MISMATCH`       | 403    | A signed-in user opened an invite for a different email.                                                                                         |
+| `NOT_FOUND`                   | 404    | Missing, **or exists but not yours**. The API never reveals that something exists.                                                               |
+| `CONFLICT`                    | 409    | Generic clash with current state.                                                                                                                |
+| `LANDLORD_MUST_TRANSFER`      | 409    | A landlord tried to delete their account while still owning an organisation.                                                                     |
+| `READING_REQUIRED`            | 409    | A bill that needs a meter reading cannot be issued yet.                                                                                          |
+| `DUPLICATE_REFERENCE`         | 409    | The same payment reference (for example a bKash TrxID) was already used.                                                                         |
+| `INVALID_TRANSITION`          | 409    | A state change that is not allowed (for example a maintenance request jumping to closed).                                                        |
+| `ORG_SUSPENDED`               | 423    | The organisation is suspended by an admin.                                                                                                       |
+| `ACCOUNT_LOCKED`              | 423    | Too many wrong passwords; the account is temporarily locked.                                                                                     |
+| `RATE_LIMITED`                | 429    | Too many requests.                                                                                                                               |
+| `INTERNAL`                    | 500    | Anything unexpected. The body is always the generic "Something went wrong"; no stack trace.                                                      |
 
 Most of these are produced by features that do not exist yet (V5 onwards). Today only `VALIDATION_FAILED`,
 `NOT_FOUND` and `INTERNAL` can actually be returned: see [Request lifecycle](/overview/request-lifecycle).

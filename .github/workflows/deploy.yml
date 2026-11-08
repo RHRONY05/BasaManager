@@ -1,0 +1,262 @@
+name: deploy
+# main -> staging (automatic).  tag v* -> production (only if staging already runs that commit).
+# workflow_dispatch -> redeploy staging by hand, optionally with a deliberately failing smoke test
+# (used once to prove the automatic rollback).
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      force_smoke_fail:
+        description: 'Make the smoke test fail on purpose (proves the automatic rollback)'
+        type: boolean
+        default: false
+      fail_deploy_step:
+        description: 'Staging only: make deploy.sh itself fail on purpose (proves the rollback of a failed deploy step)'
+        type: boolean
+        default: false
+      env_only:
+        description: 'Only re-render and upload the env files for this environment (e.g. after renewing a secret). Starts no containers. For production run it on the v* tag.'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/rhrony05/basamanager
+  NODE_VERSION: '22'
+
+jobs:
+  meta:
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.m.outputs.sha }}
+      gh_env: ${{ steps.m.outputs.gh_env }}
+      target: ${{ steps.m.outputs.target }}
+      url: ${{ steps.m.outputs.url }}
+      app_env: ${{ steps.m.outputs.app_env }}
+    steps:
+      - id: m
+        run: |
+          # Only main (staging) and v* tags (production) may deploy. Other branches never reach the secrets.
+          if [[ "${GITHUB_REF}" != "refs/heads/main" && "${GITHUB_REF}" != refs/tags/v* ]]; then
+            echo "::error::Deploys run only from main or a v* tag (this is ${GITHUB_REF})."; exit 1
+          fi
+          echo "sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            echo "gh_env=production" >> "$GITHUB_OUTPUT"
+            echo "target=prod" >> "$GITHUB_OUTPUT"
+            echo "app_env=prod" >> "$GITHUB_OUTPUT"
+            echo "url=https://basamanager.rhrony05.me" >> "$GITHUB_OUTPUT"
+          else
+            echo "gh_env=staging" >> "$GITHUB_OUTPUT"
+            echo "target=staging" >> "$GITHUB_OUTPUT"
+            echo "app_env=staging" >> "$GITHUB_OUTPUT"
+            echo "url=https://staging.basamanager.rhrony05.me" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    needs: meta
+    if: ${{ !inputs.env_only }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: true
+      matrix:
+        image: [api, worker, web, docs]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Does this commit already have an image?
+        id: exists
+        run: |
+          if docker buildx imagetools inspect "${IMAGE_PREFIX}-${{ matrix.image }}:${{ needs.meta.outputs.sha }}" >/dev/null 2>&1; then
+            echo "found=true" >> "$GITHUB_OUTPUT"; echo "image already built for this commit, skipping"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: docker/build-push-action@v6
+        if: steps.exists.outputs.found != 'true'
+        with:
+          context: .
+          file: infra/docker/${{ matrix.image }}.Dockerfile
+          push: true
+          tags: ${{ env.IMAGE_PREFIX }}-${{ matrix.image }}:${{ needs.meta.outputs.sha }}
+          build-args: |
+            GIT_SHA=${{ needs.meta.outputs.sha }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ needs.meta.outputs.sha }}
+
+  sentry-release:
+    # Creates the Sentry release (name = git SHA) and uploads the web source maps. The maps come from the SAME
+    # Dockerfile stage the image is built from (same cache, same hashes) and are never served to browsers.
+    needs: [meta, build]
+    if: ${{ !inputs.env_only }}
+    runs-on: ubuntu-latest
+    environment: ${{ needs.meta.outputs.gh_env }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Extract the web build with its source maps
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/web.Dockerfile
+          target: web-build
+          build-args: |
+            GIT_SHA=${{ needs.meta.outputs.sha }}
+          outputs: type=local,dest=web-out
+          cache-from: type=gha,scope=web
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Create release and upload source maps
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SHA: ${{ needs.meta.outputs.sha }}
+        run: |
+          CLI="npx --yes @sentry/cli@3.8.2"
+          $CLI releases new "$SHA" -p basamanager-web -p basamanager-api -p basamanager-worker
+          $CLI sourcemaps upload --release "$SHA" --project basamanager-web --url-prefix '~/' web-out/repo/apps/web/dist
+          $CLI releases finalize "$SHA"
+
+  deploy:
+    needs: [meta, build, sentry-release]
+    # env_only skips the build jobs, so this job must run even though its needs were skipped.
+    if: ${{ always() && needs.meta.result == 'success' && (inputs.env_only || (needs.build.result == 'success' && needs.sentry-release.result == 'success')) }}
+    runs-on: ubuntu-latest
+    environment: ${{ needs.meta.outputs.gh_env }}
+    concurrency:
+      group: deploy-${{ needs.meta.outputs.target }}
+      cancel-in-progress: false
+    env:
+      TARGET: ${{ needs.meta.outputs.target }}
+      SHA: ${{ needs.meta.outputs.sha }}
+      URL: ${{ needs.meta.outputs.url }}
+      APP_ENV: ${{ needs.meta.outputs.app_env }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Production gate - this commit must be on main and already deployed to staging
+        if: needs.meta.outputs.target == 'prod'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ENV_ONLY: ${{ inputs.env_only && '1' || '0' }}
+        run: |
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor "$SHA" origin/main || { echo "::error::Tag $SHA is not on main. Production only gets commits that were reviewed and merged."; exit 1; }
+          # An env-only run changes no code, so the staging-deploy checks do not apply; the on-main check above does.
+          if [ "$ENV_ONLY" = "1" ]; then exit 0; fi
+          OK="$(gh run list -w deploy.yml -b main -c "$SHA" -s success -L 1 --json databaseId -q length)"
+          [ "$OK" = "1" ] || { echo "::error::No successful staging deploy of $SHA on main. Merge it, let the staging deploy and smoke test pass, then tag."; exit 1; }
+          RELEASE="$(curl -fsS https://staging.basamanager.rhrony05.me/api/health | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).release))')"
+          echo "staging runs: ${RELEASE:0:8}   tag points to: ${SHA:0:8}"
+          [ "$RELEASE" = "$SHA" ] || { echo "::error::Staging does not run this commit (it may have rolled back). Fix staging first, then tag."; exit 1; }
+
+      - name: SSH setup
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf 'Host vm\n  HostName %s\n  User deploy\n  IdentityFile ~/.ssh/id_deploy\n  StrictHostKeyChecking yes\n  ServerAliveInterval 30\n' "${{ secrets.DEPLOY_HOST }}" > ~/.ssh/config
+
+      - name: Upload infra files and env files to the VM
+        env:
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          BM_APP_PASSWORD: ${{ secrets.BM_APP_PASSWORD }}
+          BM_WORKER_PASSWORD: ${{ secrets.BM_WORKER_PASSWORD }}
+          BM_READONLY_PASSWORD: ${{ secrets.BM_READONLY_PASSWORD }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          STORAGE_URL_SECRET: ${{ secrets.STORAGE_URL_SECRET }}
+          SEED_PASSWORD: ${{ secrets.SEED_PASSWORD }}
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+          GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
+          SSLCOMMERZ_STORE_ID: ${{ secrets.SSLCOMMERZ_STORE_ID }}
+          SSLCOMMERZ_STORE_PASSWORD: ${{ secrets.SSLCOMMERZ_STORE_PASSWORD }}
+          SENTRY_DSN_API: ${{ secrets.SENTRY_DSN_API }}
+          SENTRY_DSN_WORKER: ${{ secrets.SENTRY_DSN_WORKER }}
+          SENTRY_DSN_WEB: ${{ secrets.SENTRY_DSN_WEB }}
+          AZURE_BACKUP_ACCOUNT: ${{ secrets.AZURE_BACKUP_ACCOUNT }}
+          AZURE_BACKUP_SAS: ${{ secrets.AZURE_BACKUP_SAS }}
+        run: |
+          ssh vm "mkdir -p /opt/basamanager/releases/$SHA"
+          tar czf - infra | ssh vm "tar xzf - -C /opt/basamanager/releases/$SHA"
+          bash infra/scripts/render-env.sh "$TARGET" | ssh vm "umask 077; cat > /opt/basamanager/env/$TARGET.env.new && mv /opt/basamanager/env/$TARGET.env.new /opt/basamanager/env/$TARGET.env"
+          bash infra/scripts/render-env.sh edge | ssh vm "umask 077; cat > /opt/basamanager/env/edge.env"
+
+      - name: Let the VM pull the images from GHCR (the packages are private)
+        if: ${{ !inputs.env_only }}
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | ssh vm "docker login ghcr.io -u '${{ github.actor }}' --password-stdin"
+
+      - name: Deploy edge (Caddy + docs) - staging runs only
+        if: needs.meta.outputs.target == 'staging' && !inputs.env_only
+        run: ssh vm "/opt/basamanager/releases/$SHA/infra/scripts/deploy.sh edge $SHA"
+
+      - name: Deploy ${{ needs.meta.outputs.target }}
+        id: deploy
+        if: ${{ !inputs.env_only }}
+        env:
+          FAIL_DEPLOY: ${{ needs.meta.outputs.target == 'staging' && inputs.fail_deploy_step && '--fail-before-up' || '' }}
+        run: ssh vm "/opt/basamanager/releases/$SHA/infra/scripts/deploy.sh $TARGET $SHA $FAIL_DEPLOY"
+
+      - name: Smoke test
+        id: smoke
+        if: ${{ !inputs.env_only }}
+        env:
+          SMOKE_EXPECT_SHA: ${{ needs.meta.outputs.sha }}
+          SMOKE_EXPECT_ENV: ${{ needs.meta.outputs.app_env }}
+          SMOKE_DOCS_URL: ${{ needs.meta.outputs.target == 'staging' && 'https://docs.basamanager.rhrony05.me' || '' }}
+          SMOKE_FORCE_FAIL: ${{ needs.meta.outputs.target == 'staging' && inputs.force_smoke_fail && '1' || '0' }}
+        run: node tests/smoke.ts "$URL"
+
+      - name: Roll back to the previous version
+        id: rollback
+        if: failure() && (steps.deploy.outcome == 'failure' || steps.smoke.outcome == 'failure')
+        run: |
+          echo "::warning::Deploy or smoke test failed - rolling back $TARGET"
+          STEP=deploy; [ "${{ steps.smoke.outcome }}" = "failure" ] && STEP=smoke
+          ssh vm "/opt/basamanager/bin/rollback.sh $TARGET $SHA $STEP"
+
+      - name: Smoke test the rolled-back version
+        if: failure() && steps.rollback.outcome == 'success'
+        run: |
+          PREV="$(ssh vm "cat /opt/basamanager/state/$TARGET.current")"
+          echo "now running: $PREV"
+          SMOKE_EXPECT_SHA="$PREV" SMOKE_EXPECT_ENV="$APP_ENV" node tests/smoke.ts "$URL"
+          echo "::error::Release $SHA FAILED and was rolled back to $PREV (service is healthy again)."
+
+      - name: Remove the registry token from the VM
+        # The token is short-lived, but it should not sit unencrypted in ~/.docker/config.json.
+        if: ${{ always() && !inputs.env_only }}
+        run: ssh vm "docker logout ghcr.io" || true

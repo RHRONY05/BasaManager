@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { ROUTE_PATHS } from '../../apps/web/src/lib/router/preload';
 
 async function startClsObserver(page: Page) {
   await page.evaluate(() => {
@@ -29,10 +30,12 @@ async function getClsScore(page: Page): Promise<number> {
 }
 
 test.describe('UI States Specs', () => {
-  test('check 1: slow API - landlord navigation updates URL and renders within 300ms, CLS < 0.05', async ({
-    page,
-  }) => {
-    await page.goto('/l');
+  /**
+   * Slow API: from the shell at `start`, every nav link changes the URL and shows skeleton or content within
+   * 300 ms, then the page renders with CLS < 0.05.
+   */
+  async function expectInstantNavigation(page: Page, start: string, links: { href: string; name: string }[]) {
+    await page.goto(start);
     await page.locator('h1').waitFor({ state: 'visible' });
 
     // Delay API responses by 2s
@@ -41,14 +44,7 @@ test.describe('UI States Specs', () => {
       await route.continue();
     });
 
-    const landlordLinks = [
-      { href: '/l/buildings', name: 'Buildings' },
-      { href: '/l/billing', name: 'Billing' },
-      { href: '/l/payments', name: 'Payments' },
-      { href: '/l/maintenance', name: 'Maintenance' },
-    ];
-
-    for (const item of landlordLinks) {
+    for (const item of links) {
       await startClsObserver(page);
       const link = page.locator(`a[href="${item.href}"]`).filter({ visible: true }).first();
       await expect(link).toBeVisible();
@@ -68,45 +64,54 @@ test.describe('UI States Specs', () => {
       const cls = await getClsScore(page);
       expect(cls).toBeLessThan(0.05);
     }
+  }
+
+  const LANDLORD_LINKS = [
+    { href: '/l/buildings', name: 'Buildings' },
+    { href: '/l/billing', name: 'Billing' },
+    { href: '/l/payments', name: 'Payments' },
+    { href: '/l/maintenance', name: 'Maintenance' },
+  ];
+  const CARETAKER_LINKS = [
+    { href: '/c/billing', name: 'Billing' },
+    { href: '/c/payments', name: 'Payments' },
+    { href: '/c/maintenance', name: 'Maintenance' },
+    { href: '/c/notices', name: 'Notices' },
+  ];
+  const TENANT_LINKS = [
+    { href: '/t/bills', name: 'Bills' },
+    { href: '/t/requests', name: 'Requests' },
+    { href: '/t/notices', name: 'Notices' },
+    { href: '/t/account', name: 'Account' },
+  ];
+
+  test('every routed role page is reached by a nav link checked below', () => {
+    const covered = new Set([
+      '/l',
+      '/c',
+      '/t',
+      ...[...LANDLORD_LINKS, ...CARETAKER_LINKS, ...TENANT_LINKS].map((l) => l.href),
+    ]);
+    const roleRoutes = ROUTE_PATHS.filter((p) => /^\/(l|c|t)(\/|$)/.test(p));
+    expect(roleRoutes.filter((p) => !covered.has(p))).toEqual([]);
+  });
+
+  test('check 1: slow API - landlord navigation updates URL and renders within 300ms, CLS < 0.05', async ({
+    page,
+  }) => {
+    await expectInstantNavigation(page, '/l', LANDLORD_LINKS);
   });
 
   test('check 1b: slow API - tenant navigation updates URL and renders within 300ms, CLS < 0.05', async ({
     page,
   }) => {
-    await page.goto('/t');
-    await page.locator('h1').waitFor({ state: 'visible' });
+    await expectInstantNavigation(page, '/t', TENANT_LINKS);
+  });
 
-    // Delay API responses by 2s
-    await page.route('**/api/**', async (route) => {
-      await new Promise((r) => setTimeout(r, 2000));
-      await route.continue();
-    });
-
-    const tenantLinks = [
-      { href: '/t/bills', name: 'Bills' },
-      { href: '/t/requests', name: 'Requests' },
-      { href: '/t/notices', name: 'Notices' },
-      { href: '/t/account', name: 'Account' },
-    ];
-
-    for (const item of tenantLinks) {
-      await startClsObserver(page);
-      const link = page.locator(`a[href="${item.href}"]`).filter({ visible: true }).first();
-      await expect(link).toBeVisible();
-
-      const startTime = Date.now();
-      await link.click();
-
-      await expect(page).toHaveURL(new RegExp(item.href), { timeout: 300 });
-      expect(Date.now() - startTime).toBeLessThanOrEqual(400);
-
-      const mainContent = page.locator('main [data-skeleton], main .rounded-lg');
-      await expect(mainContent.first()).toBeVisible({ timeout: 300 });
-
-      await expect(page.locator('h1')).toBeVisible({ timeout: 3000 });
-      const cls = await getClsScore(page);
-      expect(cls).toBeLessThan(0.05);
-    }
+  test('check 1c: slow API - caretaker navigation updates URL and renders within 300ms, CLS < 0.05', async ({
+    page,
+  }) => {
+    await expectInstantNavigation(page, '/c', CARETAKER_LINKS);
   });
 
   test('check 2: slow chunks - shell stays, skeleton and progress bar visible', async ({ page }) => {

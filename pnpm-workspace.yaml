@@ -13,3 +13,6 @@ minimumReleaseAgeExclude:
   - i18next@27.0.1
   - react-i18next@18.0.0
   - supertest@7.3.2
+# Security: vitepress 1.6 pins vite 5 (vulnerable, no 5.x fix); docs is a build-time tool, vite 6.4.5 builds it fine.
+overrides:
+  'vitepress>vite': 6.4.5

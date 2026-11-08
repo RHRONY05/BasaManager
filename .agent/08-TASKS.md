@@ -25,7 +25,7 @@ V0 Preflight ─▶ V1 Monorepo + CI ─▶ V2 Design ─▶ V3 Infra walking sk
   - Check Azure B2s availability in Southeast Asia / Central India / East Asia; record the region.
   - **AC:** Preflight table in PROGRESS.md all ✅ (or ❌ with a Human step); agy loop proof recorded in METRICS.md.
 
-- [ ] **V1 Monorepo, tooling, CI, docs skeleton**
+- [x] **V1 Monorepo, tooling, CI, docs skeleton** — 2026-11-08: PR #1 + review follow-up; all layers green in CI.
   - pnpm workspace per the folder tree in 02; TS configs; ESLint (flat) + Prettier; token-lint script from `frontend-implementation`; Vitest configs (unit + `vitest.int.config.ts`), Playwright config (`desktop`, `mobile`, setup project), `infra/compose.dev.yml` + `compose.test.yml`.
   - `apps/api` minimal: env.ts (Zod), logger with redaction, error handler + shared error format, `/health`, `/ready`, graceful shutdown. `apps/web` minimal Vite app + `/api/public-config` fetch. `apps/worker` boots and logs. `apps/docs` VitePress with the site structure from `10-LEARNING.md` (stub pages) and the mermaid plugin.
   - Private repo `RHRONY05/BasaManager`, branch protection on `main` (CI + 1 review), `ci.yml` from 09-TESTING, PR template with the evidence checklist.
@@ -41,7 +41,7 @@ V0 Preflight ─▶ V1 Monorepo + CI ─▶ V2 Design ─▶ V3 Infra walking sk
   - Critique loop on every screen (score ≥ threshold in `design-canvas/references/critique.md`), then a **design review by the reviewer agent** (Opus) against 06-UI behaviour + accessibility (contrast AA, 44 px targets). Fix until approved.
   - **AC:** gallery opens; every screen at both sizes, light + dark; `shoot.mjs` report and `auditLayout()` have 0 errors at 390/360/320; stress variants clean; design review approved; no lorem ipsum.
 
-- [ ] **V3 Infra walking skeleton** (DevOps)
+- [x] **V3 Infra walking skeleton** (DevOps) — merged feddf21, staging deploy green 2026-11-09 (prod tag v0.1.0 pending)
   - `infra/azure/create-vm.sh` → VM up; `bootstrap.sh`; Caddyfile for prod, staging, docs; Cloudflare DNS records via API (only new records named `basamanager*`); read the zone SSL mode and choose proxied vs DNS-only per 02 (never change zone settings); Caddy automatic HTTPS.
   - Dockerfiles (multi-stage, non-root); `compose.server.yml`; `deploy.yml` (main → staging, tag → prod, smoke + auto-rollback); `deploy.sh`, `rollback.sh`, `backup.sh` (+ VM cron), `restore.sh`, `weekly.yml` restore drill.
   - Azure storage account + private `backups` container + 30-day lifecycle rule + container SAS (60 days) via `az`. Cloudinary: verify the account; test `private_download_url` with expiry on the free plan for an image and a raw PDF.
@@ -138,6 +138,8 @@ V0 Preflight ─▶ V1 Monorepo + CI ─▶ V2 Design ─▶ V3 Infra walking sk
 
 ## Changes outside tasks
 Fixes and changes made outside a task above. One line each, newest last: date · what changed · which docs were updated, or "no doc change: <why>".
+- 2026-11-08 · V1 review follow-up (fix/V1-review): logging self-check, client-4xx error mapping, CLOCK_OVERRIDE ISO, `?lng=` gate, all routes in layout/states specs, worker imports `@bm/api` exports + Redis fail-fast, dev script `--wait`/`--raw` · docs: 02, 04, 09, ADR-001, repo-map, logging, request-lifecycle, testing-strategy, error-codes
+- 2026-11-09 · V3 follow-up (fix/V3-followup): ci images step `shell: bash`, deploy.sh housekeeping non-fatal, rollback.sh usage + unknown-step error, weekly audit green (`@size-limit/file` replaces `preset-app` to drop estimo/puppeteer chain; override `vitepress>vite` 6.4.5; `--audit-level high` unchanged) · docs: rollback.md
 
 ## Questions for the human
 (The build never waits on these; the lead decides and logs. The owner may answer later.)
