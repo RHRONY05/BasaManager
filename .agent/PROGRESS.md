@@ -314,3 +314,7 @@ Next: when e2e is green, `gh pr merge 5 --squash`, check staging deploy, tick V4
 ### 2026-11-09 — Claude (lead) — V4 e2e wait
 Did: checked PR #5 at e766ebf: all checks green except e2e, which started 23:10Z and was still in progress at 23:13Z (run 42533841375). Normal duration, not stuck. No code change.
 Next: when e2e is green, `gh pr merge 5 --squash`, check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
+
+### 2026-11-09 — Claude (lead) — V4 e2e wait 2
+Did: rechecked PR #5 at e766ebf: all checks green except e2e (run 42533841375, started 23:10Z, still running at 23:13Z, normal duration). No code change.
+Next: when e2e is green, `gh pr merge 5 --squash`, check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
