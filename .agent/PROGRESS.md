@@ -374,3 +374,7 @@ Next: when e2e is green, `gh pr merge 5 --squash` (merge main first if behind), 
 ### 2026-11-09 — Claude (lead) — V4 CI wait 8 (head 489e14e)
 Did: PR #5 head is now 489e14e (main merged again); lint-typecheck and unit green, docs, e2e, images, integration, security pending (run 42535222279). State BLOCKED only on pending checks. No code change.
 Next: when CI is 8/8 on 489e14e, `gh pr merge 5 --squash` (merge main first if behind; to stop the chase, merge as soon as green), check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
+
+### 2026-11-09 — Claude (lead) — V4 CI wait 9 (head 489e14e)
+Did: rechecked PR #5 at 489e14e: lint-typecheck, unit, integration, docs, security, CodeQL green; e2e and images (build + migrate) still in progress. No code change.
+Next: when CI is 8/8 on 489e14e, `gh pr merge 5 --squash` right away (merge main first only if GitHub refuses), check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
