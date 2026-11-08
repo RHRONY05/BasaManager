@@ -16,6 +16,7 @@ Claude numbers from the session usage where available (else "—").
 | 2026-11-08 | V1 | debug: docs-found defects + coverage | debugger (Sonnet 5.5) | 2 | — | — | ~115k+ total | 7 min + ~10 min | 0 | — |
 | 2026-11-08 | V1 | docs | docs (Sonnet 5.5) | 1 | — | — | 294k total | 17 min | 0 | — |
 | 2026-11-09 | V3 | infra (VM, Docker, Caddy, deploy, backups, Sentry) | devops (Sonnet 5.5) | initial build + 2 fix rounds | 3 (Opus: CHANGES REQUESTED ×2, then APPROVE) | 1 (openssl missing in image, found by review, not CI; CI `images` job added) | devops 337k + 91k; reviewers 137k + 67k | — (PR #3 merged feddf21; staging green; v0.1.0 prod green) | 0 | weekly `audit` job red (17 vulns, 8 high, dev-only deps) |
+| 2026-11-09 | V2 | visual system + 24 screens (design) | designer (Opus) | 1 build + review fix | 1 (designer review: APPROVE, 0 blockers) | 0 | designer 571k + 101k | — (PR #4 merged afe9217; staging + main ci green) | 0 | settlement-preview artboard missing; caretaker nav label mismatch |
 
 ## Totals (updated at each milestone)
 | Milestone | Tasks | Agy sessions | Claude subagent runs | Human interventions | Escaped bugs |
