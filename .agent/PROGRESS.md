@@ -12,7 +12,7 @@
 | **Next task** | #3 V3 is **MERGED** (squash feddf21, 2026-11-09, CI 8/8 on bb93001). Staging deploy run 42515537657 on feddf21 is GREEN and V3 is ticked. **v0.1.0 tagged on 38ebb32 (2026-11-09); prod deploy run 42516300840 GREEN; https://basamanager.rhrony05.me/api/health = 200.** `weekly` run once 2026-11-09 (run 42516601364): restore-drill **RESTORE OK** (backups/staging/2026-11-08.dump); `audit` job RED (see below). V3 METRICS row added and worktree `V3-infra` removed (2026-11-09). Follow-up PR #7 (`fix/V3-followup`, worktree `D:/Projects/bm-wt/V3-followup`) is open with CI 8/8, not merged: 3 nits + weekly `audit` green. Reviewer (Sonnet) APPROVED #7 at f57e08b (2026-11-09, 0 blockers, CI 8/8, mergeState CLEAN). **#7 MERGED (squash a2f17a7, 2026-11-09); staging deploy run 42518261355 + ci 42518261300 running.** `weekly` re-run 42518815701: audit + restore-drill both GREEN; worktree V3-followup removed. gzip/brotli wording fixed (2026-11-09). **#4 V2 MERGED (squash afe9217, 2026-11-09); staging deploy run 42521236153 + ci 42521236160 GREEN (ci 42521236160 green too); V2 ticked, METRICS row added, worktree V2-design removed.** **#5 V4: debugger fixed the integration test (c93b669); main merged into feat/V4 (4d62878, pushed, typecheck green, CI running).** CI 8/8 on 4d62878. **Opus review of #5: CHANGES REQUESTED (1 blocker, 3 shoulds, 3 nits; ../bm-runs/V4-review.md).** **Architect fixed all 7 items (b326c43, pushed, local tests green; CI not yet seen).** **Merged main into feat/V4 (8735126, pushed; main only changed docs/scripts) so strict checks pass; CI on b326c43 was 5/8 green with e2e + security still running.** **CI 8/8 on 8735126; Opus re-review of #5: APPROVE (0 blockers, 1 should, 2 nits; ../bm-runs/V4-rereview.md).** Next: squash merge #5 (merge main first if behind), then fix the should as a small follow-up (onUpdate: NoAction on composite FKs, regenerate 0100, add test) plus nits (org_id-first unique indexes or doc note; add db:drift to CI); tick V4, METRICS row, remove worktree, then V5 |
 | **Blocked on** | — |
 | **Production URL** | — (will be https://basamanager.rhrony05.me) |
-| **Last updated** | 2026-11-09 by Claude (lead): V4 re-review APPROVED, ready to merge |
+| **Last updated** | 2026-11-09 by Claude (lead): V4 waiting on e2e for 489e14e (7 of 8 green), then squash merge |
 
 ## Resume here (written at the 2026-11-08 pause)
 **First item:** ✅ done 2026-11-08: VM `vm-basamanager` started (public IP 172.198.71.173, SSH with the deploy key works). The ssh user cannot run `docker ps` (permission denied on the socket), so staging container state is unchecked; devops should check with sudo when finishing #3. **2026-11-09: devops finished all 25 V3 review items (head `fed9bc2`, CI green, blocker proved on staging, runs 42507019561 / 42507429890). Next item: devops fixes the 2026-11-09 Opus re-review of #3 (CHANGES REQUESTED, https://github.com/RHRONY05/BasaManager/pull/3#pullrequestreview-5819099087): (1) BLOCKER: install openssl in the `base` stage of `infra/docker/api.Dockerfile` and `worker.Dockerfile` (migrate fails "Can't write to @prisma/engines" on every new image); prove with a clean build + green migrate on staging. (2) Re-run both rollback drills (migrate/early failure and smoke failure) with the new scripts and record them. (3) Correct PROGRESS and `docs/operations/rollback.md`: runs 42507019561/42507429890 failed at migrate, not at a forced hook. (4) Add a CI step that builds the api image and runs migrate. (5) Nits: deploy.yml:160-161, rollback.sh:566, sentry.test.ts:215-217, provision-secrets.sh:26. Then Opus re-review, squash merge, lead tags `v0.1.0`, checks prod `/api/health`, runs `weekly` once. Environment branch policies are still unset (deployment_branch_policy null on staging and production): set via `gh api` if the token allows, else keep as an owner Human step.**
@@ -371,6 +371,34 @@ Next: when e2e is green, `gh pr merge 5 --squash` (merge main first if behind), 
 Did: rechecked PR #5 at 268a1a0: 7 of 8 checks green; only e2e still in progress. No code change.
 Next: when e2e is green, `gh pr merge 5 --squash` (merge main first if behind), check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
 
-### 2026-11-09 — Claude (lead) — V4 merge main (4th), note kept on the branch
-Did: CI was 8/8 on 268a1a0 but `gh pr merge 5` refused (main moved again: only PROGRESS-only commits). Each PROGRESS commit on main puts the branch behind, so this entry is committed on feat/V4 instead, after merging origin/main (docs-only change). Pushed; CI re-running.
-Next: when CI is 8/8 on the new head, `gh pr merge 5 --squash` right away (do NOT push to main first), then check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
+### 2026-11-09 — Claude (lead) — V4 CI wait 8 (head 489e14e)
+Did: PR #5 head is now 489e14e (main merged again); lint-typecheck and unit green, docs, e2e, images, integration, security pending (run 42535222279). State BLOCKED only on pending checks. No code change.
+Next: when CI is 8/8 on 489e14e, `gh pr merge 5 --squash` (merge main first if behind; to stop the chase, merge as soon as green), check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
+
+### 2026-11-09 — Claude (lead) — V4 CI wait 9 (head 489e14e)
+Did: rechecked PR #5 at 489e14e: lint-typecheck, unit, integration, docs, security, CodeQL green; e2e and images (build + migrate) still in progress. No code change.
+Next: when CI is 8/8 on 489e14e, `gh pr merge 5 --squash` right away (merge main first only if GitHub refuses), check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
+
+### 2026-11-09 — Claude (lead) — V4 CI wait 10 (head 489e14e)
+Did: rechecked PR #5 at 489e14e: 7 of 8 checks green (incl. images build + migrate); only e2e still in progress. No code change.
+Next: when e2e is green, `gh pr merge 5 --squash` right away (merge main first only if GitHub refuses), check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
+
+### 2026-11-09 — Claude (lead) — V4 CI wait 11 (head 489e14e)
+Did: rechecked PR #5 at 489e14e: 7 of 8 checks green; only e2e (run 42535222279) still pending. No code change.
+Next: when e2e is green, `gh pr merge 5 --squash` right away (merge main first only if GitHub refuses), check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
+
+### 2026-11-09 — Claude (lead) — V4 CI wait 12 (head 489e14e)
+Did: rechecked PR #5 at 489e14e: 7 of 8 checks green; only e2e still in progress. No code change.
+Next: when e2e is green, `gh pr merge 5 --squash` right away (merge main first only if GitHub refuses), check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
+
+### 2026-11-09 — Claude (lead) — V4 CI wait 13 (head 489e14e)
+Did: rechecked PR #5 at 489e14e: 7 of 8 checks green; only e2e still in progress. No code change.
+Next: when e2e is green, `gh pr merge 5 --squash` right away (merge main first only if GitHub refuses), check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
+
+### 2026-11-09 — Claude (lead) — V4 CI wait 14 (head 489e14e)
+Did: rechecked PR #5 at 489e14e: 7 of 8 checks green; only e2e still in progress. No code change.
+Next: when e2e is green, `gh pr merge 5 --squash` right away (merge main first only if GitHub refuses), check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
+
+### 2026-11-09 — Claude (lead) — V4 CI wait 15 (head 489e14e)
+Did: rechecked PR #5 at 489e14e: 7 of 8 checks green; only e2e still in progress. Tried `gh pr merge 5 --squash --auto`: refused, auto-merge is not enabled on the repo (owner setting; do not retry).
+Next: when e2e is green, `gh pr merge 5 --squash` right away (merge main first only if GitHub refuses), check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
