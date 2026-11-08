@@ -1,0 +1,48 @@
+<!--meta {"title": "D11 · Billing — readings grid", "shell": "staff-d", "active": "billing", "crumbs": ["Billing", "Readings"], "bell": "3"} -->
+<style>
+  .filters { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+  .filters .select-wrap { width: 240px; }
+  .toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }
+  .readings td .input { width: 132px; margin-left: auto; }
+  .readings .err-row td { padding-top: 0; border-bottom: 1px solid var(--border-muted); background: var(--danger-soft); }
+  .readings .is-invalid td { border-bottom: 0; }
+</style>
+<div class="page">
+  <section class="page-head">
+    <div class="page-head__text">
+      <h1 class="t-title">Billing</h1>
+      <p class="secondary">Karnaphuli View · electricity ৳9.00 per unit</p>
+    </div>
+    <div class="filters">
+      <div class="select-wrap"><select class="select" aria-label="Building"><option>Karnaphuli View</option></select><i data-lucide="chevron-down"></i></div>
+      <div class="month-picker"><button class="icon-btn" type="button" aria-label="Previous month"><i data-lucide="chevron-left"></i></button><span class="month-picker__label">November 2026</span><button class="icon-btn" type="button" aria-label="Next month" disabled><i data-lucide="chevron-right"></i></button></div>
+    </div>
+  </section>
+
+  <div class="tabs" role="tablist" aria-label="Billing" data-proto="tabs">
+    <button class="tab" role="tab" aria-selected="false" type="button">Drafts <span class="tab__count">7</span></button>
+    <button class="tab" role="tab" aria-selected="false" type="button">Issued <span class="tab__count">0</span></button>
+    <button class="tab" role="tab" aria-selected="true" type="button">Readings <span class="tab__count">2 missing</span></button>
+  </div>
+
+  <div class="toolbar">
+    <p class="t-sm secondary">Readings taken on 5 Nov for October's use. <span class="kbd">Tab</span> moves down the Current column. A lower number than last month is refused unless the meter was replaced.</p>
+    <button class="btn btn--primary" type="button"><i data-lucide="save"></i>Save 4 readings</button>
+  </div>
+
+  <div class="table-wrap">
+    <table class="table readings">
+      <thead><tr><th>Unit</th><th>Tenant</th><th class="r">Previous · 5 Oct</th><th class="r">Current · 5 Nov</th><th class="r">Units</th><th class="r">Amount</th><th>Meter replaced</th></tr></thead>
+      <tbody>
+        <tr><td class="t-strong">1A</td><td>Sharmin Akter</td><td class="r mono">3,412</td><td class="r"><input class="input input--num input--mono" value="3,584" aria-label="Current reading 1A"></td><td class="r num">172</td><td class="r num t-strong">৳1,548</td><td><label class="check"><input type="checkbox"><span class="muted">No</span></label></td></tr>
+        <tr><td class="t-strong">1B</td><td>Mahmudul Hasan</td><td class="r mono">2,905</td><td class="r"><input class="input input--num input--mono" value="3,043" aria-label="Current reading 1B"></td><td class="r num">138</td><td class="r num t-strong">৳1,242</td><td><label class="check"><input type="checkbox"><span class="muted">No</span></label></td></tr>
+        <tr aria-selected="true"><td class="t-strong">2A</td><td>Farzana Rahman</td><td class="r mono">4,120</td><td class="r"><input class="input input--num input--mono" placeholder="e.g. 4,290" aria-label="Current reading 2A" autofocus></td><td class="r muted">—</td><td class="r muted">—</td><td><label class="check"><input type="checkbox"><span class="muted">No</span></label></td></tr>
+        <tr><td class="t-strong">3A</td><td>Shakil Ahmed</td><td class="r mono">1,877</td><td class="r"><input class="input input--num input--mono" value="2,078" aria-label="Current reading 3A"></td><td class="r num">201</td><td class="r num t-strong">৳1,809</td><td><label class="check"><input type="checkbox"><span class="muted">No</span></label></td></tr>
+        <tr class="is-invalid"><td class="t-strong">3B</td><td>Tahmina Begum</td><td class="r mono">3,105</td><td class="r"><input class="input input--num input--mono" value="2,980" aria-invalid="true" aria-describedby="e3b" aria-label="Current reading 3B"></td><td class="r t-neg t-strong">−125</td><td class="r muted">—</td><td><label class="check"><input type="checkbox"><span>Replaced?</span></label></td></tr>
+        <tr class="err-row"><td colspan="7"><span class="field-error" id="e3b"><i data-lucide="circle-alert"></i>2,980 is lower than last month (3,105). Check the meter, or tick "Replaced?" and enter the new meter's start reading.</span></td></tr>
+        <tr><td class="t-strong">4B</td><td>Nazmul Huda</td><td class="r mono">2,640</td><td class="r"><input class="input input--num input--mono" value="2,804" aria-label="Current reading 4B"></td><td class="r num">164</td><td class="r num t-strong">৳1,476</td><td><label class="check"><input type="checkbox"><span class="muted">No</span></label></td></tr>
+      </tbody>
+    </table>
+    <div class="table-foot"><span>4A uses a prepaid meter, so it is not listed.</span><span>Last saved 5 Nov, 10:42 AM by Jamal Uddin</span></div>
+  </div>
+</div>
