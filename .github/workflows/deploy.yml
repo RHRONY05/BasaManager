@@ -212,6 +212,10 @@ jobs:
           bash infra/scripts/render-env.sh "$TARGET" | ssh vm "umask 077; cat > /opt/basamanager/env/$TARGET.env.new && mv /opt/basamanager/env/$TARGET.env.new /opt/basamanager/env/$TARGET.env"
           bash infra/scripts/render-env.sh edge | ssh vm "umask 077; cat > /opt/basamanager/env/edge.env"
 
+      - name: Let the VM pull the images from GHCR (the packages are private)
+        if: ${{ !inputs.env_only }}
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | ssh vm "docker login ghcr.io -u '${{ github.actor }}' --password-stdin"
+
       - name: Deploy edge (Caddy + docs) - staging runs only
         if: needs.meta.outputs.target == 'staging' && !inputs.env_only
         run: ssh vm "/opt/basamanager/releases/$SHA/infra/scripts/deploy.sh edge $SHA"
@@ -247,3 +251,8 @@ jobs:
           echo "now running: $PREV"
           SMOKE_EXPECT_SHA="$PREV" SMOKE_EXPECT_ENV="$APP_ENV" node tests/smoke.ts "$URL"
           echo "::error::Release $SHA FAILED and was rolled back to $PREV (service is healthy again)."
+
+      - name: Remove the registry token from the VM
+        # The token is short-lived, but it should not sit unencrypted in ~/.docker/config.json.
+        if: ${{ always() && !inputs.env_only }}
+        run: ssh vm "docker logout ghcr.io" || true
