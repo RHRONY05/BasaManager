@@ -313,3 +313,7 @@ Next: check CI 8/8 on 8735126, Opus re-review of #5 (focus: composite FKs, regen
 Did: CI 8/8 on 8735126. Opus reviewer re-checked PR #5 on a throwaway Postgres: all 7 items fixed (cross-org inserts fail 23503, policies, guard, files, notifications, _prisma_migrations, superuser assert). Verdict APPROVE (PR comment; details ../bm-runs/V4-rereview.md). Non-blocking: [should] Prisma default ON UPDATE CASCADE on composite FK org_id lets bm_worker move a building's org and cascade children; set onUpdate NoAction, regenerate 0100, add test. [nit] unique indexes on FK columns without org_id leak existence via 23505 (put org_id first or document); [nit] add db:drift to the integration job.
 Tokens: reviewer 90k.
 Next: squash merge #5 (merge main first if behind), check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
+
+### 2026-11-09 — Claude (lead) — V4 merge blocked by strict check
+Did: CI was 8/8 on 8735126 but `gh pr merge 5` refused (branch behind main: only my PROGRESS commits). Merged origin/main into feat/V4 (2dd601c, docs only) and pushed. To avoid an endless race, PROGRESS entries for V4 are now committed on feat/V4, not on main, until the merge.
+Next: when CI is 8/8 on the head of feat/V4, `gh pr merge 5 --squash` (no more commits to main meanwhile); then check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
