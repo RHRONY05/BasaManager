@@ -205,7 +205,7 @@ jobs:
           SMOKE_EXPECT_SHA: ${{ needs.meta.outputs.sha }}
           SMOKE_EXPECT_ENV: ${{ needs.meta.outputs.app_env }}
           SMOKE_DOCS_URL: ${{ needs.meta.outputs.target == 'staging' && 'https://docs.basamanager.rhrony05.me' || '' }}
-          SMOKE_FORCE_FAIL: ${{ inputs.force_smoke_fail && '1' || '0' }}
+          SMOKE_FORCE_FAIL: ${{ (inputs.force_smoke_fail || contains(github.event.head_commit.message, '[force-smoke-fail]')) && '1' || '0' }}
         run: node tests/smoke.ts "$URL"
 
       - name: Roll back to the previous version
