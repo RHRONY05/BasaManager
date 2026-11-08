@@ -104,12 +104,12 @@ select set_config('app.org_id',   <orgId or ''>,      true),
 
 then runs your function with the transaction client, then commits (or rolls back if your function throws).
 
-| Setting        | Value                                      | Read by                                                           |
-| -------------- | ------------------------------------------ | ----------------------------------------------------------------- |
-| `app.org_id`   | the current organisation (or empty)        | `org_isolation` on every org table; `org_self`; the outbox policy |
-| `app.user_id`  | the signed-in user                         | `own_rows` on `notifications`                                     |
-| `app.role`     | `landlord`, `caretaker`, `tenant` or empty | `no_caretaker` on `documents`                                     |
-| `app.is_admin` | `'true'` only on `/api/admin` routes       | `org_self` and the two admin views                                |
+| Setting        | Value                                      | Read by                                                                          |
+| -------------- | ------------------------------------------ | -------------------------------------------------------------------------------- |
+| `app.org_id`   | the current organisation (or empty)        | `org_isolation` on every org table; the `org_self_*` policies; the outbox policy |
+| `app.user_id`  | the signed-in user                         | `own_rows` on `notifications`; `own_memberships`; `member_orgs`                  |
+| `app.role`     | `landlord`, `caretaker`, `tenant` or empty | `no_caretaker` on `documents`; `org_self_update` (landlord only)                 |
+| `app.is_admin` | `'true'` only on `/api/admin` routes       | `org_self_select`, `org_self_update` and the two admin views                     |
 
 `ctx` (type `TenantCtx`) must be built from the **authenticated session only**, never from request input.
 `assertCtx` rejects any id that is not a uuid with a `TypeError` before a connection is used.
@@ -160,15 +160,23 @@ queries again on the same connection and expects 0 rows and no error.
 
 ### The policies, table by table
 
-All in `apps/api/prisma/migrations/20261108000200_rls/migration.sql`.
+In `apps/api/prisma/migrations/20261108000200_rls/migration.sql`, plus the user-scoped additions of
+`20261108000400_user_scoped_access/migration.sql` (`own_memberships`, the split `organizations` policies and
+the `app_find_invitation` function).
 
-| Where                                           | Policy                       | Rule                                                                               |
-| ----------------------------------------------- | ---------------------------- | ---------------------------------------------------------------------------------- |
-| 24 org-owned tables (`buildings`, `bills`, ...) | `org_isolation`              | `org_id` equals `app.org_id`, for reading **and** writing (`using` + `with check`) |
-| `documents` (extra)                             | `no_caretaker` (restrictive) | invisible when `app.role = 'caretaker'`                                            |
-| `notifications`                                 | `own_rows`                   | `user_id` equals `app.user_id` (no org rule at all)                                |
-| `organizations`                                 | `org_self`                   | `id` equals `app.org_id`, **or** `app.is_admin = 'true'`                           |
-| `outbox`                                        | `app_insert` (insert only)   | `bm_app` may insert rows with its own org or no org; nothing else                  |
+| Where                                           | Policy                         | Rule                                                                               |
+| ----------------------------------------------- | ------------------------------ | ---------------------------------------------------------------------------------- |
+| 24 org-owned tables (`buildings`, `bills`, ...) | `org_isolation`                | `org_id` equals `app.org_id`, for reading **and** writing (`using` + `with check`) |
+| `documents` (extra)                             | `no_caretaker` (restrictive)   | invisible when `app.role = 'caretaker'`                                            |
+| `notifications`                                 | `own_rows`                     | `user_id` equals `app.user_id` (no org rule at all)                                |
+| `memberships` (extra)                           | `own_memberships` (select)     | the user can **read** their own memberships in every org                           |
+| `organizations`                                 | `org_self_select`              | read: `id` equals `app.org_id`, **or** `app.is_admin = 'true'`                     |
+| `organizations`                                 | `member_orgs` (select)         | read: any org the user (`app.user_id`) has a membership in                         |
+| `organizations`                                 | `org_self_insert`              | insert: the new row's `id` equals `app.org_id`                                     |
+| `organizations`                                 | `org_self_update`              | update: own org **and** `app.role = 'landlord'`, or the admin context              |
+| `organizations`                                 | no delete policy               | organisations are never deleted (suspended instead)                                |
+| `outbox`                                        | `app_insert` (insert only)     | `bm_app` may insert rows with its own org or no org; nothing else                  |
+| `invitations` (lookup)                          | function `app_find_invitation` | one row by token hash, with no org context (see below)                             |
 
 #### `org_isolation`: the normal case
 
@@ -204,12 +212,21 @@ A notification belongs to a person, and `org_id` may be empty (platform messages
 notifications. So it has **only** `own_rows`, keyed on `app.user_id`. That is why `$tx` needs a `userId` even
 for work that has no organisation.
 
-#### `organizations`: keyed by `id`, and why the id is generated first
+#### `organizations`: keyed by `id`, one policy per command, and why the id is generated first
 
-`organizations` has no `org_id` column; its own `id` is the key. `org_self` says "this row is mine if its `id`
-is my `app.org_id`, or I am in the admin context". The policy has no separate `with check`, so Postgres applies
-its `using` expression to inserts too. That creates a chicken-and-egg problem: to insert a new organisation,
-the transaction's `app.org_id` must already equal the new row's `id`.
+`organizations` has no `org_id` column; its own `id` is the key. It has one policy per command, so each kind
+of access is spelled out:
+
+- **Read** (`org_self_select`): "this row is mine if its `id` is my `app.org_id`, or I am in the admin context".
+- **Read** (`member_orgs`): "or I (`app.user_id`) have a membership in it". This is what lets the login page,
+  `GET /api/me` and the org switcher list a user's organisations **before** any org is chosen.
+- **Update** (`org_self_update`): only the org's **landlord** context (or the admin context, which suspends and
+  reactivates orgs). A caretaker or tenant context updates 0 rows, even in its own org.
+- **Insert** (`org_self_insert`): the new row's `id` must equal `app.org_id`.
+- **Delete**: no policy at all, so a delete matches no rows. Organisations are suspended, never deleted.
+
+The insert rule creates a chicken-and-egg problem: to insert a new organisation, the transaction's
+`app.org_id` must already equal the new row's `id`.
 
 The fix is how organisations are created: generate the id **first**, then use it as the context:
 
@@ -224,6 +241,33 @@ await db.$tx({ orgId, userId, role: 'landlord' }, async (tx) => {
 `apps/api/prisma/seed.ts` does exactly this for the demo organisation. (It also shows the admin context: to
 ask "does the demo org already exist?" it runs `db.$tx({ orgId: null, ..., isAdmin: true }, ...)`, because only
 that context may look across organisations.)
+
+#### Without an org context: my memberships, my orgs, an invitation
+
+Some work happens **before** an organisation is chosen, with `ctx = { orgId: null, userId }`:
+
+- **"Which organisations am I in?"** `memberships` has an extra _permissive_ policy `own_memberships`, for
+  `select` only: `user_id = app.user_id`. Permissive policies are OR-ed with `org_isolation`, so a signed-in
+  user can read **their own** membership rows in every org, and nothing else: other people's memberships stay
+  hidden, and writing a membership still needs the org context. `member_orgs` on `organizations` then lets them
+  read those orgs. Its `exists (select 1 from memberships ...)` subquery runs under the memberships policies
+  (so it sees exactly the user's own rows) and cannot loop, because no memberships policy refers back to
+  organizations. A membership does **not** open the org's other tables: buildings, bills and so on still need
+  `app.org_id`.
+- **"Show / accept this invite link."** The invite token's hash is all we have, and the invitation belongs to
+  an org we are not in yet. `invitations` stays strictly org-isolated; instead a small `security definer`
+  function, `app_find_invitation(token_hash)`, runs as its owner (`bm_owner`, so RLS does not apply inside it)
+  with a fixed `search_path`, and returns **at most the one row** whose hash matches, and only the columns the
+  invite flow needs (never the hash). Only `bm_app` may execute it. `findInvitationByTokenHash(db, hash)` in
+  `apps/api/src/config/db.ts` wraps it. The service checks expiry, acceptance and revocation, then accepts inside
+  `db.$tx({ orgId: invitation.orgId, ... })`. Guessing a hash is hopeless (sha-256 of a random token), so the
+  function reveals nothing to someone without the link.
+
+Proved in `apps/api/test/cross-org-user.int.test.ts`: a user who is a tenant in org A and landlord in org B sees
+exactly those 2 memberships and those 2 orgs (not org C); another user sees none; the function finds the right
+hash, nothing for a wrong one, works without org context, while `select * from invitations` still returns 0
+rows; a caretaker or tenant context cannot update the organization row; the landlord and admin contexts can;
+nobody can delete it.
 
 #### `outbox`: insert-only, and why `createMany`
 
@@ -332,17 +376,19 @@ sequenceDiagram
 - **Inserts with a foreign `orgId` fail loudly** (`with check`).
 - **Never run the app as `bm_owner` or any superuser.** Every policy would be silently ignored. Test fixtures
   use the owner on purpose; the app must not.
-- **Creating an organisation needs the id first** (see `org_self`). Forgetting this gives a "violates row-level
+- **Creating an organisation needs the id first** (see `org_self_insert`). Forgetting this gives a "violates row-level
   security policy" error on insert.
 - **`createMany` for the outbox**, never `create`.
 - **A `create` also has to be able to read the row it made** (Prisma returns it with `RETURNING`). A policy that
   allowed an insert but hid the row afterwards would make `create` fail.
 - **Do not do slow work inside `$tx`.** A transaction holds one pooled connection; see
   [Transactions & locking](/concepts/transactions-and-locking).
-- **Open design question for V5.** `memberships` and `invitations` are also org-isolated, but "list my
-  organisations" at login (before any org is chosen) and "accept an invite by token" happen with no org
-  context. They will need a defined, reviewed path (for example a narrow `security definer` function). It does
-  not exist yet, so do not work around it with the owner or worker login.
+- **No org context is not "no access" for everything.** With `{ orgId: null, userId }` a user still reads their
+  own memberships and the orgs behind them (`own_memberships`, `member_orgs`), and the invite flow reads one
+  invitation through `app_find_invitation`. Nothing else: never work around a missing context with the owner or
+  worker login.
+- **Membership is read-only without the org.** `own_memberships` is `select` only; accepting an invite, leaving
+  an org or changing a role runs in that org's `db.$tx`.
 - **Identity tables have no RLS.** `users`, `sessions`, `auth_tokens`, `oauth_accounts`,
   `notification_preferences`, `push_subscriptions` and `job_runs` have no policy: only the services that own
   them may touch them.
@@ -374,7 +420,7 @@ Run the tests with `pnpm test:int` (see [Testing strategy](/concepts/testing-str
 4. What happens if `set_config` were called with `is_local = false` on a pooled connection? <details><summary>Answer</summary>The setting would stay on the connection after the request. The next request to reuse it would run with the previous landlord's org: a cross-organisation leak. <code>true</code> ties it to the transaction, and the "settings do not leak" test guards it.</details>
 5. Why is the check `nullif(current_setting('app.org_id', true), '')::uuid` and not just `current_setting(...)::uuid`? <details><summary>Answer</summary>After a transaction that used <code>set_config(..., true)</code>, a pooled connection reads the setting as an empty string, not NULL. <code>''::uuid</code> raises error 22P02. <code>nullif</code> turns it into NULL, so the comparison is "unknown" and returns no rows instead of crashing.</details>
 6. Why is `no_caretaker` on `documents` declared `restrictive`? <details><summary>Answer</summary>Permissive policies are OR-ed, so a second ordinary policy would widen access instead of narrowing it. A restrictive policy is AND-ed with <code>org_isolation</code>: the row must be in the org <em>and</em> the role must not be caretaker.</details>
-7. What happens if you create an organisation inside `db.$tx` with `orgId: null`? <details><summary>Answer</summary>Postgres rejects the insert with a row-level security violation: <code>org_self</code> applies its <code>using</code> check to inserts, and the new row's <code>id</code> must equal <code>app.org_id</code>. Generate the id with <code>newId()</code> first and use it as <code>orgId</code> in the context.</details>
+7. What happens if you create an organisation inside `db.$tx` with `orgId: null`? <details><summary>Answer</summary>Postgres rejects the insert with a row-level security violation: <code>org_self_insert</code> requires the new row's <code>id</code> to equal <code>app.org_id</code>. Generate the id with <code>newId()</code> first and use it as <code>orgId</code> in the context.</details>
 8. What happens if a service forgets `where: { orgId }` on a bill lookup? <details><summary>Answer</summary>Inside <code>db.$tx</code> the policy still limits the query to the current org, so another org's bill is never returned (it looks like "not found"). The service filter is the first line of defence; RLS is the net. That is why the same rule is enforced twice.</details>
 9. Why does the outbox insert use `createMany` rather than `create`? <details><summary>Answer</summary><code>bm_app</code> may only <code>insert</code> into the outbox. <code>create</code> adds <code>RETURNING</code>, which needs <code>select</code> and fails with 42501. <code>createMany</code> sends a plain insert.</details>
 10. Can RLS stop one tenant (renter) of Org A from reading another renter's bills in the same org? <details><summary>Answer</summary>No. RLS separates organisations (and hides documents from caretakers). Rules like "a tenant sees only their own lease" are enforced in the service layer. Know which layer owns which rule.</details>
