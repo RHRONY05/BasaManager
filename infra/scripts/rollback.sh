@@ -24,4 +24,10 @@ if [ -n "$CUR" ] && [ "$CUR" != "$FAILED" ]; then GOTO="$CUR"; else GOTO="$PREV"
 [ -x "$BASE/releases/$GOTO/infra/scripts/deploy.sh" ] || die "release folder for $GOTO is gone ($BASE/releases/$GOTO)"
 
 log "$TARGET: rolling back (failed $FAILED, current $CUR) -> $GOTO"
-exec "$BASE/releases/$GOTO/infra/scripts/deploy.sh" "$TARGET" "$GOTO" --rollback --failed "$FAILED"
+TARGET_DEPLOY="$BASE/releases/$GOTO/infra/scripts/deploy.sh"
+# Releases made before the --failed flag existed do not know it: for those, record the failed SHA here.
+if grep -q -- '--failed' "$TARGET_DEPLOY"; then
+  exec "$TARGET_DEPLOY" "$TARGET" "$GOTO" --rollback --failed "$FAILED"
+fi
+"$TARGET_DEPLOY" "$TARGET" "$GOTO" --rollback
+echo "$FAILED" > "$STATE/$TARGET.bad"
