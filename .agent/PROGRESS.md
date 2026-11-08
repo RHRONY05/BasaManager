@@ -8,14 +8,14 @@
 ## Now
 | | |
 |---|---|
-| **Phase** | Running autonomously via `scripts/autonomous.sh` (started 2026-11-08). V0 ✅, V1 ✅. V2, V3, V4 built, not merged |
+| **Phase** | **PAUSED by the owner on 2026-11-08** (weekly Claude limit). Setup is done; the owner starts the relay later. V0 ✅, V1 ✅. V2, V3, V4 built, not merged |
 | **Next task** | Merge the relay PR if still open, then the first row of the table in "Resume here" (#3 V3), then V5 |
 | **Blocked on** | — |
 | **Production URL** | — (will be https://basamanager.rhrony05.me) |
 | **Last updated** | 2026-11-08 by Claude (lead), at the pause |
 
 ## Resume here (written at the 2026-11-08 pause)
-**First item:** ✅ relay files committed on `chore/relay` (PR open; merge when CI is green, then `git pull` main). Next: the table below, in order.
+**First item:** the relay setup is in PR #6 (`chore/relay`), and the main checkout is on that branch. Merge it when CI is green, then `git switch main` and `git pull`. Then start the VM through devops: `az vm start -g rg-basamanager -n vm-basamanager` (deallocated for the pause; staging is offline until then).
 
 Work in order. One task at a time, no parallel Opus runs (three at once used up the 5-hour window). Everything below is in git or on disk; nothing depends on the old session.
 
@@ -29,7 +29,7 @@ Then V5: `.agent/briefs/V5-tests.md` and `V5-backend.md` are written (untracked 
 
 Add METRICS.md rows for V2, V3 and V4 when they merge. Token use reported by subagents: designer 571k; devops 337k (V3, before the review fixes); architect 354k (V4); V4 docs 212k; test-designer 127k.
 
-The Azure VM was restarted when the relay launched. Prod has not been deployed.
+The Azure VM is deallocated for the pause. Prod has not been deployed.
 
 ## Human steps
 Things only the human can do. Agents add to this list; the human ticks them.
