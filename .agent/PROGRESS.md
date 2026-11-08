@@ -306,3 +306,7 @@ Next: squash merge #5 (merge main first if behind), check staging deploy, tick V
 ### 2026-11-09 — Claude (lead) — V4 merge wait
 Did: tried to merge #5: state BLOCKED because CI is re-running on the new head e766ebf (main was merged into feat/V4 with docs-only changes, run 42533841375, all 7 checks pending). No code changed since the 8/8 on 8735126.
 Next: when CI is 8/8 on e766ebf, `gh pr merge 5 --squash` (merge main first if behind), check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
+
+### 2026-11-09 — Claude (lead) — V4 CI wait
+Did: checked PR #5 at e766ebf: lint-typecheck, unit, integration, images, docs, security, CodeQL green; only e2e still pending (run 42533841375). No code changed since the 8/8 on 8735126, so nothing to fix.
+Next: when e2e is green, `gh pr merge 5 --squash`, check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
