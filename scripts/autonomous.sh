@@ -12,7 +12,7 @@ while :; do
   grep -q '^- \[ \] \*\*V' .agent/08-TASKS.md || { echo "All tasks are ticked. Done."; exit 0; }
   log="$RUNS/$(date +%Y%m%d-%H%M%S).log"
   echo "[$(date)] new lead session -> $log"
-  claude -p "$PROMPT" --model sonnet --effort medium --permission-mode bypassPermissions > "$log" 2>&1
+  BASH_MAX_TIMEOUT_MS=3000000 claude -p "$PROMPT" --model sonnet --effort medium --permission-mode bypassPermissions > "$log" 2>&1
   if grep -qiE "hit your .*limit|usage limit|rate.?limit|429|ENOTFOUND|overloaded" "$log"; then echo "[$(date)] limit or network; retrying in 15 min"; sleep 900; continue; fi
   git fetch -q origin
   now=$(fingerprint)

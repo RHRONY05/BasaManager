@@ -43,7 +43,7 @@ lead reads 08-TASKS (next task) + PROGRESS
   │       each brief = goal, files allowed to change, contracts to use, tests that must pass, AC, "do not" list
   ├─ 2. contracts: architect updates schema/contracts if the task needs it → merged first
   ├─ 3. tests first: test-designer writes failing tests for critical logic → committed on the task branch
-  ├─ 4. implement: lead creates a worktree and dispatches agy (command below), in the background
+  ├─ 4. implement: lead creates a worktree and dispatches agy (command below) in the foreground and waits for it
   ├─ 5. verify: lead runs typecheck, lint, unit, integration, e2e for the area itself; failures go back
   │       to the same agy conversation (--conversation <id>) with the exact failing output, max 3 rounds,
   │       then the debugger takes over
@@ -61,6 +61,8 @@ cd ../bm-wt/<task>-<part>
 agy -p "$(cat .agent/briefs/<task>-<part>.md)" --model gemini-3.8-flash-high   --dangerously-skip-permissions --output-format json --print-timeout 45m > ../bm-runs/<task>-<part>-1.json
 # follow-up: same flags plus --conversation <conversation_id from the JSON>
 ```
+- The lead runs this as a foreground Bash call with `timeout: 3000000` (50 min) and never ends its session while agy runs, so the JSON result always comes back to it. `scripts/autonomous.sh` sets `BASH_MAX_TIMEOUT_MS=3000000` to allow this; a headless session waited 640 s this way on 2026-11-08.
+- Turbo probe, 2026-11-08, throwaway worktree, launched by a Claude session outside the relay: agy installed dependencies, ran Vitest, ran a Playwright test against localhost and opened localhost with its Chrome DevTools tool, with no permission prompt (185 s).
 - agy runs commands itself (install, typecheck, lint, tests) and fixes its own failures; briefs say so. The lead checks the final result only.
 - A worktree does not confine agy: it runs as the owner's Windows user. The owner accepted this to make the build fully autonomous. Briefs still keep agy to its task: no `gh`, `az`, `ssh`, `git push`, deploy scripts or the credentials folder (rules: Secrets).
 - Antigravity reads `AGENTS.md` itself; every brief still starts with "Read AGENTS.md, rules/basamanager.md and these docs: …".
