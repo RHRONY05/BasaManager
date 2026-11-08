@@ -346,3 +346,7 @@ Next: when CI is 8/8 on 268a1a0, `gh pr merge 5 --squash` (merge main first if b
 ### 2026-11-09 — Claude (lead) — V4 CI wait on 268a1a0
 Did: checked PR #5 at 268a1a0: lint-typecheck and unit green; integration, e2e, images, docs, security still running. No code change.
 Next: when CI is 8/8 on 268a1a0, `gh pr merge 5 --squash` (merge main first if behind), check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
+
+### 2026-11-09 — Claude (lead) — V4 CI wait 2 on 268a1a0
+Did: rechecked PR #5 at 268a1a0: 7 of 8 checks green (lint-typecheck, unit, integration, images, docs, security, CodeQL); only e2e still in progress. No code change.
+Next: when e2e is green, `gh pr merge 5 --squash` (merge main first if behind), check staging deploy, tick V4, METRICS row, remove worktree D:/Projects/bm-wt/V4; follow-up PR for the should + nits (architect); then V5.
