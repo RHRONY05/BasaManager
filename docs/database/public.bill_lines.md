@@ -22,22 +22,21 @@ History. Rent, charges, electricity, adjustments, at most one late fee.
 
 ## Constraints
 
-| Name                           | Type        | Definition                                                                                      |
-| ------------------------------ | ----------- | ----------------------------------------------------------------------------------------------- |
-| bill_lines_created_by_fkey     | FOREIGN KEY | FOREIGN KEY (created_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL              |
-| bill_lines_org_id_fkey         | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT          |
-| bill_lines_pkey                | PRIMARY KEY | PRIMARY KEY (id)                                                                                |
-| bill_lines_org_id_bill_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, bill_id) REFERENCES bills(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT |
+| Name                           | Type        | Definition                                                                             |
+| ------------------------------ | ----------- | -------------------------------------------------------------------------------------- |
+| bill_lines_created_by_fkey     | FOREIGN KEY | FOREIGN KEY (created_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL     |
+| bill_lines_org_id_fkey         | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT |
+| bill_lines_pkey                | PRIMARY KEY | PRIMARY KEY (id)                                                                       |
+| bill_lines_org_id_bill_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, bill_id) REFERENCES bills(org_id, id) ON DELETE RESTRICT          |
 
 ## Indexes
 
-| Name                      | Definition                                                                                                                       |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| bill_lines_pkey           | CREATE UNIQUE INDEX bill_lines_pkey ON public.bill_lines USING btree (id)                                                        |
-| bill_lines_org_id_idx     | CREATE INDEX bill_lines_org_id_idx ON public.bill_lines USING btree (org_id)                                                     |
-| bill_lines_bill_id_idx    | CREATE INDEX bill_lines_bill_id_idx ON public.bill_lines USING btree (bill_id)                                                   |
-| bill_lines_created_by_idx | CREATE INDEX bill_lines_created_by_idx ON public.bill_lines USING btree (created_by)                                             |
-| bill_lines_one_late_fee   | CREATE UNIQUE INDEX bill_lines_one_late_fee ON public.bill_lines USING btree (bill_id) WHERE (kind = 'late_fee'::bill_line_kind) |
+| Name                      | Definition                                                                                                                               |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| bill_lines_pkey           | CREATE UNIQUE INDEX bill_lines_pkey ON public.bill_lines USING btree (id)                                                                |
+| bill_lines_bill_id_idx    | CREATE INDEX bill_lines_bill_id_idx ON public.bill_lines USING btree (bill_id)                                                           |
+| bill_lines_created_by_idx | CREATE INDEX bill_lines_created_by_idx ON public.bill_lines USING btree (created_by)                                                     |
+| bill_lines_one_late_fee   | CREATE UNIQUE INDEX bill_lines_one_late_fee ON public.bill_lines USING btree (org_id, bill_id) WHERE (kind = 'late_fee'::bill_line_kind) |
 
 ## Relations
 

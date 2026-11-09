@@ -28,15 +28,15 @@ Tenant repair requests and their state.
 
 ## Constraints
 
-| Name                                         | Type        | Definition                                                                                                |
-| -------------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------- |
-| maintenance_requests_created_by_fkey         | FOREIGN KEY | FOREIGN KEY (created_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE RESTRICT                        |
-| maintenance_requests_org_id_fkey             | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT                    |
-| maintenance_requests_pkey                    | PRIMARY KEY | PRIMARY KEY (id)                                                                                          |
-| maintenance_requests_org_id_assigned_to_fkey | FOREIGN KEY | FOREIGN KEY (org_id, assigned_to) REFERENCES memberships(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT |
-| maintenance_requests_org_id_building_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, building_id) REFERENCES buildings(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT   |
-| maintenance_requests_org_id_unit_id_fkey     | FOREIGN KEY | FOREIGN KEY (org_id, unit_id) REFERENCES units(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT           |
-| maintenance_requests_org_id_lease_id_fkey    | FOREIGN KEY | FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT         |
+| Name                                         | Type        | Definition                                                                              |
+| -------------------------------------------- | ----------- | --------------------------------------------------------------------------------------- |
+| maintenance_requests_created_by_fkey         | FOREIGN KEY | FOREIGN KEY (created_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE RESTRICT      |
+| maintenance_requests_org_id_fkey             | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT  |
+| maintenance_requests_pkey                    | PRIMARY KEY | PRIMARY KEY (id)                                                                        |
+| maintenance_requests_org_id_assigned_to_fkey | FOREIGN KEY | FOREIGN KEY (org_id, assigned_to) REFERENCES memberships(org_id, id) ON DELETE RESTRICT |
+| maintenance_requests_org_id_building_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, building_id) REFERENCES buildings(org_id, id) ON DELETE RESTRICT   |
+| maintenance_requests_org_id_unit_id_fkey     | FOREIGN KEY | FOREIGN KEY (org_id, unit_id) REFERENCES units(org_id, id) ON DELETE RESTRICT           |
+| maintenance_requests_org_id_lease_id_fkey    | FOREIGN KEY | FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON DELETE RESTRICT         |
 
 ## Indexes
 

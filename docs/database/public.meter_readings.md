@@ -28,16 +28,15 @@ Monthly submeter readings (period_month = 1st of month).
 | meter_readings_entered_by_fkey     | FOREIGN KEY | FOREIGN KEY (entered_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE RESTRICT                   |
 | meter_readings_org_id_fkey         | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT               |
 | meter_readings_pkey                | PRIMARY KEY | PRIMARY KEY (id)                                                                                     |
-| meter_readings_org_id_unit_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, unit_id) REFERENCES units(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT      |
+| meter_readings_org_id_unit_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, unit_id) REFERENCES units(org_id, id) ON DELETE RESTRICT                        |
 
 ## Indexes
 
-| Name                                    | Definition                                                                                                               |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| meter_readings_pkey                     | CREATE UNIQUE INDEX meter_readings_pkey ON public.meter_readings USING btree (id)                                        |
-| meter_readings_org_id_idx               | CREATE INDEX meter_readings_org_id_idx ON public.meter_readings USING btree (org_id)                                     |
-| meter_readings_entered_by_idx           | CREATE INDEX meter_readings_entered_by_idx ON public.meter_readings USING btree (entered_by)                             |
-| meter_readings_unit_id_period_month_key | CREATE UNIQUE INDEX meter_readings_unit_id_period_month_key ON public.meter_readings USING btree (unit_id, period_month) |
+| Name                                           | Definition                                                                                                                              |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| meter_readings_pkey                            | CREATE UNIQUE INDEX meter_readings_pkey ON public.meter_readings USING btree (id)                                                       |
+| meter_readings_entered_by_idx                  | CREATE INDEX meter_readings_entered_by_idx ON public.meter_readings USING btree (entered_by)                                            |
+| meter_readings_org_id_unit_id_period_month_key | CREATE UNIQUE INDEX meter_readings_org_id_unit_id_period_month_key ON public.meter_readings USING btree (org_id, unit_id, period_month) |
 
 ## Relations
 

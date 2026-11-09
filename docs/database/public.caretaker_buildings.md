@@ -16,20 +16,19 @@ Which buildings a caretaker membership may act on.
 
 ## Constraints
 
-| Name                                          | Type        | Definition                                                                                                 |
-| --------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------- |
-| caretaker_buildings_org_id_fkey               | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT                     |
-| caretaker_buildings_pkey                      | PRIMARY KEY | PRIMARY KEY (membership_id, building_id)                                                                   |
-| caretaker_buildings_org_id_membership_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, membership_id) REFERENCES memberships(org_id, id) ON UPDATE CASCADE ON DELETE CASCADE |
-| caretaker_buildings_org_id_building_id_fkey   | FOREIGN KEY | FOREIGN KEY (org_id, building_id) REFERENCES buildings(org_id, id) ON UPDATE CASCADE ON DELETE CASCADE     |
+| Name                                          | Type        | Definition                                                                               |
+| --------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------- |
+| caretaker_buildings_org_id_fkey               | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT   |
+| caretaker_buildings_pkey                      | PRIMARY KEY | PRIMARY KEY (org_id, membership_id, building_id)                                         |
+| caretaker_buildings_org_id_membership_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, membership_id) REFERENCES memberships(org_id, id) ON DELETE CASCADE |
+| caretaker_buildings_org_id_building_id_fkey   | FOREIGN KEY | FOREIGN KEY (org_id, building_id) REFERENCES buildings(org_id, id) ON DELETE CASCADE     |
 
 ## Indexes
 
-| Name                                | Definition                                                                                                          |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| caretaker_buildings_pkey            | CREATE UNIQUE INDEX caretaker_buildings_pkey ON public.caretaker_buildings USING btree (membership_id, building_id) |
-| caretaker_buildings_org_id_idx      | CREATE INDEX caretaker_buildings_org_id_idx ON public.caretaker_buildings USING btree (org_id)                      |
-| caretaker_buildings_building_id_idx | CREATE INDEX caretaker_buildings_building_id_idx ON public.caretaker_buildings USING btree (building_id)            |
+| Name                                | Definition                                                                                                                  |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| caretaker_buildings_pkey            | CREATE UNIQUE INDEX caretaker_buildings_pkey ON public.caretaker_buildings USING btree (org_id, membership_id, building_id) |
+| caretaker_buildings_building_id_idx | CREATE INDEX caretaker_buildings_building_id_idx ON public.caretaker_buildings USING btree (building_id)                    |
 
 ## Relations
 

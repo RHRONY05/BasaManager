@@ -24,14 +24,14 @@ SSLCommerz sessions; only the validated IPN or the re-check job changes them.
 
 ## Constraints
 
-| Name                                   | Type        | Definition                                                                                            |
-| -------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------- |
-| payment_intents_amount_check           | CHECK       | CHECK ((amount_poisha > 0))                                                                           |
-| payment_intents_created_by_fkey        | FOREIGN KEY | FOREIGN KEY (created_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE RESTRICT                    |
-| payment_intents_org_id_fkey            | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT                |
-| payment_intents_pkey                   | PRIMARY KEY | PRIMARY KEY (id)                                                                                      |
-| payment_intents_org_id_lease_id_fkey   | FOREIGN KEY | FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT     |
-| payment_intents_org_id_payment_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, payment_id) REFERENCES payments(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT |
+| Name                                   | Type        | Definition                                                                             |
+| -------------------------------------- | ----------- | -------------------------------------------------------------------------------------- |
+| payment_intents_amount_check           | CHECK       | CHECK ((amount_poisha > 0))                                                            |
+| payment_intents_created_by_fkey        | FOREIGN KEY | FOREIGN KEY (created_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE RESTRICT     |
+| payment_intents_org_id_fkey            | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT |
+| payment_intents_pkey                   | PRIMARY KEY | PRIMARY KEY (id)                                                                       |
+| payment_intents_org_id_lease_id_fkey   | FOREIGN KEY | FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON DELETE RESTRICT        |
+| payment_intents_org_id_payment_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, payment_id) REFERENCES payments(org_id, id) ON DELETE RESTRICT    |
 
 ## Indexes
 

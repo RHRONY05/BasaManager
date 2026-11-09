@@ -20,13 +20,13 @@ Deposit ledger (received, refunded, applied to dues).
 
 ## Constraints
 
-| Name                                 | Type        | Definition                                                                                        |
-| ------------------------------------ | ----------- | ------------------------------------------------------------------------------------------------- |
-| deposit_entries_amount_check         | CHECK       | CHECK ((amount_poisha >= 0))                                                                      |
-| deposit_entries_recorded_by_fkey     | FOREIGN KEY | FOREIGN KEY (recorded_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE RESTRICT               |
-| deposit_entries_org_id_fkey          | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT            |
-| deposit_entries_pkey                 | PRIMARY KEY | PRIMARY KEY (id)                                                                                  |
-| deposit_entries_org_id_lease_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT |
+| Name                                 | Type        | Definition                                                                             |
+| ------------------------------------ | ----------- | -------------------------------------------------------------------------------------- |
+| deposit_entries_amount_check         | CHECK       | CHECK ((amount_poisha >= 0))                                                           |
+| deposit_entries_recorded_by_fkey     | FOREIGN KEY | FOREIGN KEY (recorded_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE RESTRICT    |
+| deposit_entries_org_id_fkey          | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT |
+| deposit_entries_pkey                 | PRIMARY KEY | PRIMARY KEY (id)                                                                       |
+| deposit_entries_org_id_lease_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON DELETE RESTRICT        |
 
 ## Indexes
 

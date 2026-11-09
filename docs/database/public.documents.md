@@ -19,13 +19,13 @@ Tenant documents. Extra RLS no_caretaker.
 
 ## Constraints
 
-| Name                           | Type        | Definition                                                                                        |
-| ------------------------------ | ----------- | ------------------------------------------------------------------------------------------------- |
-| documents_uploaded_by_fkey     | FOREIGN KEY | FOREIGN KEY (uploaded_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE RESTRICT               |
-| documents_org_id_fkey          | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT            |
-| documents_pkey                 | PRIMARY KEY | PRIMARY KEY (id)                                                                                  |
-| documents_org_id_lease_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT |
-| documents_org_id_file_id_fkey  | FOREIGN KEY | FOREIGN KEY (org_id, file_id) REFERENCES files(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT   |
+| Name                           | Type        | Definition                                                                             |
+| ------------------------------ | ----------- | -------------------------------------------------------------------------------------- |
+| documents_uploaded_by_fkey     | FOREIGN KEY | FOREIGN KEY (uploaded_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE RESTRICT    |
+| documents_org_id_fkey          | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT |
+| documents_pkey                 | PRIMARY KEY | PRIMARY KEY (id)                                                                       |
+| documents_org_id_lease_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON DELETE RESTRICT        |
+| documents_org_id_file_id_fkey  | FOREIGN KEY | FOREIGN KEY (org_id, file_id) REFERENCES files(org_id, id) ON DELETE RESTRICT          |
 
 ## Indexes
 

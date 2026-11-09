@@ -27,25 +27,25 @@ A tenancy of one unit. One live (pending/active/notice) lease per unit.
 
 ## Constraints
 
-| Name                       | Type        | Definition                                                                                      |
-| -------------------------- | ----------- | ----------------------------------------------------------------------------------------------- |
-| leases_deposit_check       | CHECK       | CHECK ((deposit_poisha >= 0))                                                                   |
-| leases_monthly_rent_check  | CHECK       | CHECK ((monthly_rent_poisha >= 0))                                                              |
-| leases_created_by_fkey     | FOREIGN KEY | FOREIGN KEY (created_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE RESTRICT              |
-| leases_org_id_fkey         | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT          |
-| leases_pkey                | PRIMARY KEY | PRIMARY KEY (id)                                                                                |
-| leases_org_id_unit_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, unit_id) REFERENCES units(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT |
+| Name                       | Type        | Definition                                                                             |
+| -------------------------- | ----------- | -------------------------------------------------------------------------------------- |
+| leases_deposit_check       | CHECK       | CHECK ((deposit_poisha >= 0))                                                          |
+| leases_monthly_rent_check  | CHECK       | CHECK ((monthly_rent_poisha >= 0))                                                     |
+| leases_created_by_fkey     | FOREIGN KEY | FOREIGN KEY (created_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE RESTRICT     |
+| leases_org_id_fkey         | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT |
+| leases_pkey                | PRIMARY KEY | PRIMARY KEY (id)                                                                       |
+| leases_org_id_unit_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, unit_id) REFERENCES units(org_id, id) ON DELETE RESTRICT          |
 
 ## Indexes
 
-| Name                     | Definition                                                                                                                                                                                |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| leases_pkey              | CREATE UNIQUE INDEX leases_pkey ON public.leases USING btree (id)                                                                                                                         |
-| leases_org_id_status_idx | CREATE INDEX leases_org_id_status_idx ON public.leases USING btree (org_id, status)                                                                                                       |
-| leases_unit_id_idx       | CREATE INDEX leases_unit_id_idx ON public.leases USING btree (unit_id)                                                                                                                    |
-| leases_created_by_idx    | CREATE INDEX leases_created_by_idx ON public.leases USING btree (created_by)                                                                                                              |
-| leases_one_live_per_unit | CREATE UNIQUE INDEX leases_one_live_per_unit ON public.leases USING btree (unit_id) WHERE (status = ANY (ARRAY['pending'::lease_status, 'active'::lease_status, 'notice'::lease_status])) |
-| leases_org_id_id_key     | CREATE UNIQUE INDEX leases_org_id_id_key ON public.leases USING btree (org_id, id)                                                                                                        |
+| Name                     | Definition                                                                                                                                                                                        |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| leases_pkey              | CREATE UNIQUE INDEX leases_pkey ON public.leases USING btree (id)                                                                                                                                 |
+| leases_org_id_status_idx | CREATE INDEX leases_org_id_status_idx ON public.leases USING btree (org_id, status)                                                                                                               |
+| leases_unit_id_idx       | CREATE INDEX leases_unit_id_idx ON public.leases USING btree (unit_id)                                                                                                                            |
+| leases_created_by_idx    | CREATE INDEX leases_created_by_idx ON public.leases USING btree (created_by)                                                                                                                      |
+| leases_one_live_per_unit | CREATE UNIQUE INDEX leases_one_live_per_unit ON public.leases USING btree (org_id, unit_id) WHERE (status = ANY (ARRAY['pending'::lease_status, 'active'::lease_status, 'notice'::lease_status])) |
+| leases_org_id_id_key     | CREATE UNIQUE INDEX leases_org_id_id_key ON public.leases USING btree (org_id, id)                                                                                                                |
 
 ## Relations
 

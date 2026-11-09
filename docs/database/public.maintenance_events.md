@@ -22,13 +22,13 @@ History. Append-only request timeline.
 
 ## Constraints
 
-| Name                                      | Type        | Definition                                                                                                        |
-| ----------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------- |
-| maintenance_events_actor_id_fkey          | FOREIGN KEY | FOREIGN KEY (actor_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE RESTRICT                                  |
-| maintenance_events_org_id_fkey            | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT                            |
-| maintenance_events_pkey                   | PRIMARY KEY | PRIMARY KEY (id)                                                                                                  |
-| maintenance_events_org_id_request_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, request_id) REFERENCES maintenance_requests(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT |
-| maintenance_events_org_id_file_id_fkey    | FOREIGN KEY | FOREIGN KEY (org_id, file_id) REFERENCES files(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT                   |
+| Name                                      | Type        | Definition                                                                                      |
+| ----------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------- |
+| maintenance_events_actor_id_fkey          | FOREIGN KEY | FOREIGN KEY (actor_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE RESTRICT                |
+| maintenance_events_org_id_fkey            | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT          |
+| maintenance_events_pkey                   | PRIMARY KEY | PRIMARY KEY (id)                                                                                |
+| maintenance_events_org_id_request_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, request_id) REFERENCES maintenance_requests(org_id, id) ON DELETE RESTRICT |
+| maintenance_events_org_id_file_id_fkey    | FOREIGN KEY | FOREIGN KEY (org_id, file_id) REFERENCES files(org_id, id) ON DELETE RESTRICT                   |
 
 ## Indexes
 

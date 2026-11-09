@@ -16,11 +16,22 @@ The architect owns this file and the schema; implementers never change the schem
   A's live lease). Every FK from an org-owned table to another org-owned table is
   `(org_id, x_id) → parent(org_id, id)` (Prisma `@relation(fields: [orgId, xId], references: [orgId, id])`), and
   every referenced parent (`memberships`, `buildings`, `units`, `leases`, `bills`, `payments`, `files`,
-  `maintenance_requests`) has `@@unique([orgId, id])`; `receipts` also has `unique(org_id, payment_id)` (Prisma
-  needs it for the 1:1 `Payment.receipt`). Nullable links use `on delete restrict`, never `set null` (it would
+  `maintenance_requests`) has `@@unique([orgId, id])`; `receipts` has `unique(org_id, payment_id)` (one receipt per payment; also what Prisma
+  needs for the 1:1 `Payment.receipt`). Nullable links use `on delete restrict`, never `set null` (it would
   null `org_id` too; those parents are soft-deleted or `removed`, never deleted). Links to `users` and
-  `organizations` stay single-column. `rls.int.test.ts` reads `pg_constraint` and fails on any org → org FK
-  without the `org_id = org_id` pair or with `set null`.
+  `organizations` stay single-column. Composite FKs are `on update no action` (Prisma `onUpdate: NoAction`;
+  Prisma's default `Cascade` would let a BYPASSRLS role re-home a parent's `org_id` and silently drag the whole
+  subtree into another org; ids and `org_id` never change). `rls.int.test.ts` reads `pg_constraint` and fails
+  on any org → org FK without the `org_id = org_id` pair, with `set null`, or with an update action other
+  than `no action`/`restrict`.
+- **Uniques on FK columns lead with `org_id`** (`unique(org_id, building_id, label)`, PK
+  `(org_id, lease_id, membership_id)`, partial `(org_id, unit_id) where live` …). The meaning is the same (the
+  composite FK pins the parent's org), but a unique check runs before the FK check, so `unique(unit_id)` would
+  answer an org-A insert that names org B's unit with `23505` ("taken") instead of `23503`, leaking that the row
+  exists. With `org_id` first the keys never collide across orgs and the FK refuses it. Global uniques
+  (`users.email`, `organizations.slug`, token hashes, `payment_intents.tran_id`, `files.public_id`,
+  `push_subscriptions.endpoint`, `payments (method, reference)`) are global by design and don't involve another
+  org's ids; services still check ownership before writing and answer `NOT_FOUND`.
 - Money `bigint` poisha (Prisma `BigInt`, JS `bigint`: convert at the API boundary, `JSON.stringify` throws on
   it), `check (x >= 0)` unless the column says signed; amounts that must be positive say `> 0`.
   `buildings.late_fee_value` and `electricity_rate_poisha` are `int`. Dates of the billing calendar are
@@ -113,36 +124,36 @@ the staging smoke).
 | `auth_tokens` | `kind ('email_verify','password_reset')`, `user_id`, `token_hash bytea unique`, `expires_at`, `used_at null` | Single use: `update … set used_at=now() where token_hash=$1 and used_at is null and expires_at>now() returning *` |
 | `organizations` | `name`, `slug unique`, `status ('active','suspended')`, `is_demo bool`, `created_by → users` | RLS: members see their own org; admin context may read |
 | `memberships` | `org_id`, `user_id`, `role ('landlord','caretaker','tenant')`, `status ('active','removed')`, `removed_at` | `unique(org_id, user_id)`. Exactly one active landlord per org (partial unique index `(org_id) where role='landlord' and status='active'`) |
-| `caretaker_buildings` | `org_id`, `membership_id`, `building_id` | PK `(membership_id, building_id)` |
+| `caretaker_buildings` | `org_id`, `membership_id`, `building_id` | PK `(org_id, membership_id, building_id)` |
 | `invitations` | `org_id`, `email citext`, `role ('caretaker','tenant')`, `building_ids uuid[] default '{}'` (caretaker), `lease_id null` (tenant), `token_hash bytea unique`, `expires_at`, `accepted_at null`, `revoked_at null`, `invited_by` | Partial unique `(org_id, email, role) where accepted_at is null and revoked_at is null` |
 
 ### Property
 | Table | Columns | Constraints / notes |
 |---|---|---|
 | `buildings` | `org_id`, `name`, `address`, `area`, `city`, `lat numeric(9,6) null`, `lng numeric(9,6) null`, `bill_day smallint default 1`, `due_day smallint default 10`, `grace_days smallint default 0`, `late_fee_type ('none','flat','percent')`, `late_fee_value int` (poisha for flat, basis points for percent: 500 = 5%), `electricity_rate_poisha int default 0`, `archived_at null` | `check (bill_day between 1 and 28)`, `check (due_day between 1 and 28)`, `check (grace_days between 0 and 15)` |
-| `units` | `org_id`, `building_id`, `label`, `floor smallint`, `type ('family_flat','bachelor_flat','room','shop')`, `default_rent_poisha bigint`, `electricity_mode ('none','prepaid','submeter')`, `archived_at null` | `unique(building_id, label)`. Can't archive while a lease is active |
-| `unit_charges` | `org_id`, `unit_id`, `name`, `amount_poisha bigint` | `unique(unit_id, name)` |
+| `units` | `org_id`, `building_id`, `label`, `floor smallint`, `type ('family_flat','bachelor_flat','room','shop')`, `default_rent_poisha bigint`, `electricity_mode ('none','prepaid','submeter')`, `archived_at null` | `unique(org_id, building_id, label)`. Can't archive while a lease is active |
+| `unit_charges` | `org_id`, `unit_id`, `name`, `amount_poisha bigint` | `unique(org_id, unit_id, name)` |
 
 ### Leases
 | Table | Columns | Constraints / notes |
 |---|---|---|
-| `leases` | `org_id`, `unit_id`, `start_date date`, `end_date date null`, `notice_date null`, `monthly_rent_poisha`, `deposit_poisha`, `household_size smallint`, `status ('pending','active','notice','ended','ended_with_dues')`, `move_in_reading int null`, `move_out_reading int null`, `settlement_json jsonb null`, `created_by` | Partial unique `(unit_id) where status in ('pending','active','notice')` = one live lease per unit. `pending` = invited but tenant hasn't accepted yet |
-| `lease_tenants` | `org_id`, `lease_id`, `membership_id`, `is_primary bool` | PK `(lease_id, membership_id)`; one primary per lease (partial unique) |
-| `lease_charges` | `org_id`, `lease_id`, `name`, `amount_poisha` | Copied from `unit_charges` at lease start; editable before the first bill |
+| `leases` | `org_id`, `unit_id`, `start_date date`, `end_date date null`, `notice_date null`, `monthly_rent_poisha`, `deposit_poisha`, `household_size smallint`, `status ('pending','active','notice','ended','ended_with_dues')`, `move_in_reading int null`, `move_out_reading int null`, `settlement_json jsonb null`, `created_by` | Partial unique `(org_id, unit_id) where status in ('pending','active','notice')` = one live lease per unit. `pending` = invited but tenant hasn't accepted yet |
+| `lease_tenants` | `org_id`, `lease_id`, `membership_id`, `is_primary bool` | PK `(org_id, lease_id, membership_id)`; one primary per lease (partial unique `(org_id, lease_id) where is_primary`) |
+| `lease_charges` | `org_id`, `lease_id`, `name`, `amount_poisha` | `unique(org_id, lease_id, name)`. Copied from `unit_charges` at lease start; editable before the first bill |
 | `deposit_entries` | `org_id`, `lease_id`, `kind ('received','refunded','applied_to_dues')`, `amount_poisha`, `note`, `recorded_by` | Deposit held = Σ received − refunded − applied |
 
 ### Billing & payments
 | Table | Columns | Constraints / notes |
 |---|---|---|
-| `meter_readings` | `org_id`, `unit_id`, `period_month date`, `reading int`, `meter_replaced bool`, `new_meter_start int null`, `entered_by` | `unique(unit_id, period_month)`; `check (period_month = date_trunc('month', period_month))` |
-| `bills` | `org_id`, `lease_id`, `period_month date`, `due_date date`, `status ('draft','issued','partially_paid','paid','void')`, `needs_reading bool`, `total_poisha bigint`, `paid_poisha bigint default 0`, `issued_at`, `issued_by`, `late_fee_applied_at null`, `void_reason null` | `unique(lease_id, period_month)` (idempotent generation). `check (paid_poisha <= total_poisha)`; `period_month` is the 1st of a month (check). Index `(org_id, status, due_date)` |
-| `bill_lines` | `org_id`, `bill_id`, `kind ('rent','fixed_charge','electricity','adjustment','late_fee')`, `label`, `amount_poisha bigint` (signed: discounts negative), `meta jsonb` (factor, prev, curr, rate…), `reason null`, `created_by null` | Partial unique `(bill_id) where kind='late_fee'` = never two late fees. Lines are frozen once the bill is issued, except: adjustment add (B7) and late-fee waive (B6) |
+| `meter_readings` | `org_id`, `unit_id`, `period_month date`, `reading int`, `meter_replaced bool`, `new_meter_start int null`, `entered_by` | `unique(org_id, unit_id, period_month)`; `check (period_month = date_trunc('month', period_month))` |
+| `bills` | `org_id`, `lease_id`, `period_month date`, `due_date date`, `status ('draft','issued','partially_paid','paid','void')`, `needs_reading bool`, `total_poisha bigint`, `paid_poisha bigint default 0`, `issued_at`, `issued_by`, `late_fee_applied_at null`, `void_reason null` | `unique(org_id, lease_id, period_month)` (idempotent generation). `check (paid_poisha <= total_poisha)`; `period_month` is the 1st of a month (check). Index `(org_id, status, due_date)` |
+| `bill_lines` | `org_id`, `bill_id`, `kind ('rent','fixed_charge','electricity','adjustment','late_fee')`, `label`, `amount_poisha bigint` (signed: discounts negative), `meta jsonb` (factor, prev, curr, rate…), `reason null`, `created_by null` | Partial unique `(org_id, bill_id) where kind='late_fee'` = never two late fees. Lines are frozen once the bill is issued, except: adjustment add (B7) and late-fee waive (B6) |
 | `payments` | `org_id`, `lease_id`, `amount_poisha > 0`, `method ('cash','bkash','nagad','bank','sslcommerz')`, `status ('pending_claim','confirmed','rejected','void')`, `reference null`, `proof_file_id null`, `paid_on date`, `submitted_by`, `confirmed_by null`, `confirmed_at null`, `rejected_reason null`, `void_reason null`, `voided_by null` | Partial unique `(method, reference) where method in ('bkash','nagad') and status <> 'rejected'` = the same TrxID can't be claimed twice |
 | `payment_allocations` | `org_id`, `payment_id`, `bill_id`, `amount_poisha > 0` | Sum per bill = `bills.paid_poisha` (asserted in tests) |
 | `credit_entries` | `org_id`, `lease_id`, `amount_poisha` (signed), `payment_id null`, `bill_id null`, `kind ('overpayment','applied','reversed')` | Lease credit = Σ amount, never negative (checked in service + test) |
 | `payment_intents` | `org_id`, `lease_id`, `tran_id text unique`, `amount_poisha > 0`, `status ('initiated','confirmed','failed','cancelled','expired','flagged')`, `session_key`, `val_id null`, `gateway_response jsonb null`, `payment_id null`, `created_by` | Index `(status, created_at)` for the re-check job |
 | `receipt_counters` | `org_id`, `year smallint`, `last_seq int` | PK `(org_id, year)`. Allocation: `insert … on conflict (org_id, year) do update set last_seq = receipt_counters.last_seq + 1 returning last_seq` **inside** the payment transaction = gapless, no duplicates |
-| `receipts` | `org_id`, `payment_id unique`, `number text`, `status ('valid','void')`, `file_id null` | `unique(org_id, number)`. Format `BM-<year>-<seq 6 digits>` |
+| `receipts` | `org_id`, `payment_id`, `number text`, `status ('valid','void')`, `file_id null` | `unique(org_id, payment_id)` (one receipt per payment), `unique(org_id, number)`. Format `BM-<year>-<seq 6 digits>` |
 
 ### Operations
 | Table | Columns | Constraints / notes |

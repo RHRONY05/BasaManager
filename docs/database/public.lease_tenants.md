@@ -17,21 +17,20 @@ Tenant memberships on a lease; one primary.
 
 ## Constraints
 
-| Name                                    | Type        | Definition                                                                                                  |
-| --------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------- |
-| lease_tenants_org_id_fkey               | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT                      |
-| lease_tenants_pkey                      | PRIMARY KEY | PRIMARY KEY (lease_id, membership_id)                                                                       |
-| lease_tenants_org_id_membership_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, membership_id) REFERENCES memberships(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT |
-| lease_tenants_org_id_lease_id_fkey      | FOREIGN KEY | FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON UPDATE CASCADE ON DELETE CASCADE            |
+| Name                                    | Type        | Definition                                                                                |
+| --------------------------------------- | ----------- | ----------------------------------------------------------------------------------------- |
+| lease_tenants_org_id_fkey               | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT    |
+| lease_tenants_pkey                      | PRIMARY KEY | PRIMARY KEY (org_id, lease_id, membership_id)                                             |
+| lease_tenants_org_id_membership_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, membership_id) REFERENCES memberships(org_id, id) ON DELETE RESTRICT |
+| lease_tenants_org_id_lease_id_fkey      | FOREIGN KEY | FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON DELETE CASCADE            |
 
 ## Indexes
 
-| Name                            | Definition                                                                                                    |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| lease_tenants_pkey              | CREATE UNIQUE INDEX lease_tenants_pkey ON public.lease_tenants USING btree (lease_id, membership_id)          |
-| lease_tenants_org_id_idx        | CREATE INDEX lease_tenants_org_id_idx ON public.lease_tenants USING btree (org_id)                            |
-| lease_tenants_membership_id_idx | CREATE INDEX lease_tenants_membership_id_idx ON public.lease_tenants USING btree (membership_id)              |
-| lease_tenants_one_primary       | CREATE UNIQUE INDEX lease_tenants_one_primary ON public.lease_tenants USING btree (lease_id) WHERE is_primary |
+| Name                            | Definition                                                                                                            |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| lease_tenants_pkey              | CREATE UNIQUE INDEX lease_tenants_pkey ON public.lease_tenants USING btree (org_id, lease_id, membership_id)          |
+| lease_tenants_membership_id_idx | CREATE INDEX lease_tenants_membership_id_idx ON public.lease_tenants USING btree (membership_id)                      |
+| lease_tenants_one_primary       | CREATE UNIQUE INDEX lease_tenants_one_primary ON public.lease_tenants USING btree (org_id, lease_id) WHERE is_primary |
 
 ## Relations
 

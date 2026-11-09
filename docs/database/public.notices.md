@@ -22,12 +22,12 @@ Building notices (soft delete).
 
 ## Constraints
 
-| Name                            | Type        | Definition                                                                                              |
-| ------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------- |
-| notices_created_by_fkey         | FOREIGN KEY | FOREIGN KEY (created_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE RESTRICT                      |
-| notices_org_id_fkey             | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT                  |
-| notices_pkey                    | PRIMARY KEY | PRIMARY KEY (id)                                                                                        |
-| notices_org_id_building_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, building_id) REFERENCES buildings(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT |
+| Name                            | Type        | Definition                                                                             |
+| ------------------------------- | ----------- | -------------------------------------------------------------------------------------- |
+| notices_created_by_fkey         | FOREIGN KEY | FOREIGN KEY (created_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE RESTRICT     |
+| notices_org_id_fkey             | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT |
+| notices_pkey                    | PRIMARY KEY | PRIMARY KEY (id)                                                                       |
+| notices_org_id_building_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, building_id) REFERENCES buildings(org_id, id) ON DELETE RESTRICT  |
 
 ## Indexes
 

@@ -186,7 +186,7 @@ CREATE TABLE "caretaker_buildings" (
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "caretaker_buildings_pkey" PRIMARY KEY ("membership_id","building_id")
+    CONSTRAINT "caretaker_buildings_pkey" PRIMARY KEY ("org_id","membership_id","building_id")
 );
 
 -- CreateTable
@@ -292,7 +292,7 @@ CREATE TABLE "lease_tenants" (
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "lease_tenants_pkey" PRIMARY KEY ("lease_id","membership_id")
+    CONSTRAINT "lease_tenants_pkey" PRIMARY KEY ("org_id","lease_id","membership_id")
 );
 
 -- CreateTable
@@ -682,9 +682,6 @@ CREATE UNIQUE INDEX "memberships_one_active_landlord" ON "memberships"("org_id")
 CREATE UNIQUE INDEX "memberships_org_id_id_key" ON "memberships"("org_id", "id");
 
 -- CreateIndex
-CREATE INDEX "caretaker_buildings_org_id_idx" ON "caretaker_buildings"("org_id");
-
--- CreateIndex
 CREATE INDEX "caretaker_buildings_building_id_idx" ON "caretaker_buildings"("building_id");
 
 -- CreateIndex
@@ -709,19 +706,13 @@ CREATE INDEX "buildings_org_id_idx" ON "buildings"("org_id");
 CREATE UNIQUE INDEX "buildings_org_id_id_key" ON "buildings"("org_id", "id");
 
 -- CreateIndex
-CREATE INDEX "units_org_id_idx" ON "units"("org_id");
-
--- CreateIndex
-CREATE UNIQUE INDEX "units_building_id_label_key" ON "units"("building_id", "label");
+CREATE UNIQUE INDEX "units_org_id_building_id_label_key" ON "units"("org_id", "building_id", "label");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "units_org_id_id_key" ON "units"("org_id", "id");
 
 -- CreateIndex
-CREATE INDEX "unit_charges_org_id_idx" ON "unit_charges"("org_id");
-
--- CreateIndex
-CREATE UNIQUE INDEX "unit_charges_unit_id_name_key" ON "unit_charges"("unit_id", "name");
+CREATE UNIQUE INDEX "unit_charges_org_id_unit_id_name_key" ON "unit_charges"("org_id", "unit_id", "name");
 
 -- CreateIndex
 CREATE INDEX "leases_org_id_status_idx" ON "leases"("org_id", "status");
@@ -733,25 +724,19 @@ CREATE INDEX "leases_unit_id_idx" ON "leases"("unit_id");
 CREATE INDEX "leases_created_by_idx" ON "leases"("created_by");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "leases_one_live_per_unit" ON "leases"("unit_id") WHERE (status = ANY (ARRAY['pending'::lease_status, 'active'::lease_status, 'notice'::lease_status]));
+CREATE UNIQUE INDEX "leases_one_live_per_unit" ON "leases"("org_id", "unit_id") WHERE (status = ANY (ARRAY['pending'::lease_status, 'active'::lease_status, 'notice'::lease_status]));
 
 -- CreateIndex
 CREATE UNIQUE INDEX "leases_org_id_id_key" ON "leases"("org_id", "id");
 
 -- CreateIndex
-CREATE INDEX "lease_tenants_org_id_idx" ON "lease_tenants"("org_id");
-
--- CreateIndex
 CREATE INDEX "lease_tenants_membership_id_idx" ON "lease_tenants"("membership_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "lease_tenants_one_primary" ON "lease_tenants"("lease_id") WHERE (is_primary);
+CREATE UNIQUE INDEX "lease_tenants_one_primary" ON "lease_tenants"("org_id", "lease_id") WHERE (is_primary);
 
 -- CreateIndex
-CREATE INDEX "lease_charges_org_id_idx" ON "lease_charges"("org_id");
-
--- CreateIndex
-CREATE UNIQUE INDEX "lease_charges_lease_id_name_key" ON "lease_charges"("lease_id", "name");
+CREATE UNIQUE INDEX "lease_charges_org_id_lease_id_name_key" ON "lease_charges"("org_id", "lease_id", "name");
 
 -- CreateIndex
 CREATE INDEX "deposit_entries_org_id_idx" ON "deposit_entries"("org_id");
@@ -763,13 +748,10 @@ CREATE INDEX "deposit_entries_lease_id_idx" ON "deposit_entries"("lease_id");
 CREATE INDEX "deposit_entries_recorded_by_idx" ON "deposit_entries"("recorded_by");
 
 -- CreateIndex
-CREATE INDEX "meter_readings_org_id_idx" ON "meter_readings"("org_id");
-
--- CreateIndex
 CREATE INDEX "meter_readings_entered_by_idx" ON "meter_readings"("entered_by");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "meter_readings_unit_id_period_month_key" ON "meter_readings"("unit_id", "period_month");
+CREATE UNIQUE INDEX "meter_readings_org_id_unit_id_period_month_key" ON "meter_readings"("org_id", "unit_id", "period_month");
 
 -- CreateIndex
 CREATE INDEX "bills_org_id_status_due_date_idx" ON "bills"("org_id", "status", "due_date");
@@ -778,13 +760,10 @@ CREATE INDEX "bills_org_id_status_due_date_idx" ON "bills"("org_id", "status", "
 CREATE INDEX "bills_issued_by_idx" ON "bills"("issued_by");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "bills_lease_id_period_month_key" ON "bills"("lease_id", "period_month");
+CREATE UNIQUE INDEX "bills_org_id_lease_id_period_month_key" ON "bills"("org_id", "lease_id", "period_month");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "bills_org_id_id_key" ON "bills"("org_id", "id");
-
--- CreateIndex
-CREATE INDEX "bill_lines_org_id_idx" ON "bill_lines"("org_id");
 
 -- CreateIndex
 CREATE INDEX "bill_lines_bill_id_idx" ON "bill_lines"("bill_id");
@@ -793,7 +772,7 @@ CREATE INDEX "bill_lines_bill_id_idx" ON "bill_lines"("bill_id");
 CREATE INDEX "bill_lines_created_by_idx" ON "bill_lines"("created_by");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "bill_lines_one_late_fee" ON "bill_lines"("bill_id") WHERE (kind = 'late_fee'::bill_line_kind);
+CREATE UNIQUE INDEX "bill_lines_one_late_fee" ON "bill_lines"("org_id", "bill_id") WHERE (kind = 'late_fee'::bill_line_kind);
 
 -- CreateIndex
 CREATE INDEX "payments_org_id_status_idx" ON "payments"("org_id", "status");
@@ -857,9 +836,6 @@ CREATE INDEX "payment_intents_payment_id_idx" ON "payment_intents"("payment_id")
 
 -- CreateIndex
 CREATE INDEX "payment_intents_created_by_idx" ON "payment_intents"("created_by");
-
--- CreateIndex
-CREATE UNIQUE INDEX "receipts_payment_id_key" ON "receipts"("payment_id");
 
 -- CreateIndex
 CREATE INDEX "receipts_file_id_idx" ON "receipts"("file_id");
@@ -979,16 +955,16 @@ ALTER TABLE "memberships" ADD CONSTRAINT "memberships_user_id_fkey" FOREIGN KEY 
 ALTER TABLE "caretaker_buildings" ADD CONSTRAINT "caretaker_buildings_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "organizations"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "caretaker_buildings" ADD CONSTRAINT "caretaker_buildings_org_id_membership_id_fkey" FOREIGN KEY ("org_id", "membership_id") REFERENCES "memberships"("org_id", "id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "caretaker_buildings" ADD CONSTRAINT "caretaker_buildings_org_id_membership_id_fkey" FOREIGN KEY ("org_id", "membership_id") REFERENCES "memberships"("org_id", "id") ON DELETE CASCADE ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE "caretaker_buildings" ADD CONSTRAINT "caretaker_buildings_org_id_building_id_fkey" FOREIGN KEY ("org_id", "building_id") REFERENCES "buildings"("org_id", "id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "caretaker_buildings" ADD CONSTRAINT "caretaker_buildings_org_id_building_id_fkey" FOREIGN KEY ("org_id", "building_id") REFERENCES "buildings"("org_id", "id") ON DELETE CASCADE ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "invitations" ADD CONSTRAINT "invitations_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "organizations"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "invitations" ADD CONSTRAINT "invitations_org_id_lease_id_fkey" FOREIGN KEY ("org_id", "lease_id") REFERENCES "leases"("org_id", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "invitations" ADD CONSTRAINT "invitations_org_id_lease_id_fkey" FOREIGN KEY ("org_id", "lease_id") REFERENCES "leases"("org_id", "id") ON DELETE RESTRICT ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "invitations" ADD CONSTRAINT "invitations_invited_by_fkey" FOREIGN KEY ("invited_by") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -1000,19 +976,19 @@ ALTER TABLE "buildings" ADD CONSTRAINT "buildings_org_id_fkey" FOREIGN KEY ("org
 ALTER TABLE "units" ADD CONSTRAINT "units_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "organizations"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "units" ADD CONSTRAINT "units_org_id_building_id_fkey" FOREIGN KEY ("org_id", "building_id") REFERENCES "buildings"("org_id", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "units" ADD CONSTRAINT "units_org_id_building_id_fkey" FOREIGN KEY ("org_id", "building_id") REFERENCES "buildings"("org_id", "id") ON DELETE RESTRICT ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "unit_charges" ADD CONSTRAINT "unit_charges_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "organizations"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "unit_charges" ADD CONSTRAINT "unit_charges_org_id_unit_id_fkey" FOREIGN KEY ("org_id", "unit_id") REFERENCES "units"("org_id", "id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "unit_charges" ADD CONSTRAINT "unit_charges_org_id_unit_id_fkey" FOREIGN KEY ("org_id", "unit_id") REFERENCES "units"("org_id", "id") ON DELETE CASCADE ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "leases" ADD CONSTRAINT "leases_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "organizations"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "leases" ADD CONSTRAINT "leases_org_id_unit_id_fkey" FOREIGN KEY ("org_id", "unit_id") REFERENCES "units"("org_id", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "leases" ADD CONSTRAINT "leases_org_id_unit_id_fkey" FOREIGN KEY ("org_id", "unit_id") REFERENCES "units"("org_id", "id") ON DELETE RESTRICT ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "leases" ADD CONSTRAINT "leases_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -1021,22 +997,22 @@ ALTER TABLE "leases" ADD CONSTRAINT "leases_created_by_fkey" FOREIGN KEY ("creat
 ALTER TABLE "lease_tenants" ADD CONSTRAINT "lease_tenants_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "organizations"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "lease_tenants" ADD CONSTRAINT "lease_tenants_org_id_lease_id_fkey" FOREIGN KEY ("org_id", "lease_id") REFERENCES "leases"("org_id", "id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "lease_tenants" ADD CONSTRAINT "lease_tenants_org_id_lease_id_fkey" FOREIGN KEY ("org_id", "lease_id") REFERENCES "leases"("org_id", "id") ON DELETE CASCADE ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE "lease_tenants" ADD CONSTRAINT "lease_tenants_org_id_membership_id_fkey" FOREIGN KEY ("org_id", "membership_id") REFERENCES "memberships"("org_id", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "lease_tenants" ADD CONSTRAINT "lease_tenants_org_id_membership_id_fkey" FOREIGN KEY ("org_id", "membership_id") REFERENCES "memberships"("org_id", "id") ON DELETE RESTRICT ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "lease_charges" ADD CONSTRAINT "lease_charges_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "organizations"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "lease_charges" ADD CONSTRAINT "lease_charges_org_id_lease_id_fkey" FOREIGN KEY ("org_id", "lease_id") REFERENCES "leases"("org_id", "id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "lease_charges" ADD CONSTRAINT "lease_charges_org_id_lease_id_fkey" FOREIGN KEY ("org_id", "lease_id") REFERENCES "leases"("org_id", "id") ON DELETE CASCADE ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "deposit_entries" ADD CONSTRAINT "deposit_entries_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "organizations"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "deposit_entries" ADD CONSTRAINT "deposit_entries_org_id_lease_id_fkey" FOREIGN KEY ("org_id", "lease_id") REFERENCES "leases"("org_id", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "deposit_entries" ADD CONSTRAINT "deposit_entries_org_id_lease_id_fkey" FOREIGN KEY ("org_id", "lease_id") REFERENCES "leases"("org_id", "id") ON DELETE RESTRICT ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "deposit_entries" ADD CONSTRAINT "deposit_entries_recorded_by_fkey" FOREIGN KEY ("recorded_by") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -1045,7 +1021,7 @@ ALTER TABLE "deposit_entries" ADD CONSTRAINT "deposit_entries_recorded_by_fkey" 
 ALTER TABLE "meter_readings" ADD CONSTRAINT "meter_readings_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "organizations"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "meter_readings" ADD CONSTRAINT "meter_readings_org_id_unit_id_fkey" FOREIGN KEY ("org_id", "unit_id") REFERENCES "units"("org_id", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "meter_readings" ADD CONSTRAINT "meter_readings_org_id_unit_id_fkey" FOREIGN KEY ("org_id", "unit_id") REFERENCES "units"("org_id", "id") ON DELETE RESTRICT ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "meter_readings" ADD CONSTRAINT "meter_readings_entered_by_fkey" FOREIGN KEY ("entered_by") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -1054,7 +1030,7 @@ ALTER TABLE "meter_readings" ADD CONSTRAINT "meter_readings_entered_by_fkey" FOR
 ALTER TABLE "bills" ADD CONSTRAINT "bills_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "organizations"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "bills" ADD CONSTRAINT "bills_org_id_lease_id_fkey" FOREIGN KEY ("org_id", "lease_id") REFERENCES "leases"("org_id", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "bills" ADD CONSTRAINT "bills_org_id_lease_id_fkey" FOREIGN KEY ("org_id", "lease_id") REFERENCES "leases"("org_id", "id") ON DELETE RESTRICT ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "bills" ADD CONSTRAINT "bills_issued_by_fkey" FOREIGN KEY ("issued_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -1063,7 +1039,7 @@ ALTER TABLE "bills" ADD CONSTRAINT "bills_issued_by_fkey" FOREIGN KEY ("issued_b
 ALTER TABLE "bill_lines" ADD CONSTRAINT "bill_lines_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "organizations"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "bill_lines" ADD CONSTRAINT "bill_lines_org_id_bill_id_fkey" FOREIGN KEY ("org_id", "bill_id") REFERENCES "bills"("org_id", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "bill_lines" ADD CONSTRAINT "bill_lines_org_id_bill_id_fkey" FOREIGN KEY ("org_id", "bill_id") REFERENCES "bills"("org_id", "id") ON DELETE RESTRICT ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "bill_lines" ADD CONSTRAINT "bill_lines_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -1072,10 +1048,10 @@ ALTER TABLE "bill_lines" ADD CONSTRAINT "bill_lines_created_by_fkey" FOREIGN KEY
 ALTER TABLE "payments" ADD CONSTRAINT "payments_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "organizations"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "payments" ADD CONSTRAINT "payments_org_id_lease_id_fkey" FOREIGN KEY ("org_id", "lease_id") REFERENCES "leases"("org_id", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "payments" ADD CONSTRAINT "payments_org_id_lease_id_fkey" FOREIGN KEY ("org_id", "lease_id") REFERENCES "leases"("org_id", "id") ON DELETE RESTRICT ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE "payments" ADD CONSTRAINT "payments_org_id_proof_file_id_fkey" FOREIGN KEY ("org_id", "proof_file_id") REFERENCES "files"("org_id", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "payments" ADD CONSTRAINT "payments_org_id_proof_file_id_fkey" FOREIGN KEY ("org_id", "proof_file_id") REFERENCES "files"("org_id", "id") ON DELETE RESTRICT ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "payments" ADD CONSTRAINT "payments_submitted_by_fkey" FOREIGN KEY ("submitted_by") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -1090,31 +1066,31 @@ ALTER TABLE "payments" ADD CONSTRAINT "payments_voided_by_fkey" FOREIGN KEY ("vo
 ALTER TABLE "payment_allocations" ADD CONSTRAINT "payment_allocations_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "organizations"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "payment_allocations" ADD CONSTRAINT "payment_allocations_org_id_payment_id_fkey" FOREIGN KEY ("org_id", "payment_id") REFERENCES "payments"("org_id", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "payment_allocations" ADD CONSTRAINT "payment_allocations_org_id_payment_id_fkey" FOREIGN KEY ("org_id", "payment_id") REFERENCES "payments"("org_id", "id") ON DELETE RESTRICT ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE "payment_allocations" ADD CONSTRAINT "payment_allocations_org_id_bill_id_fkey" FOREIGN KEY ("org_id", "bill_id") REFERENCES "bills"("org_id", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "payment_allocations" ADD CONSTRAINT "payment_allocations_org_id_bill_id_fkey" FOREIGN KEY ("org_id", "bill_id") REFERENCES "bills"("org_id", "id") ON DELETE RESTRICT ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "credit_entries" ADD CONSTRAINT "credit_entries_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "organizations"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "credit_entries" ADD CONSTRAINT "credit_entries_org_id_lease_id_fkey" FOREIGN KEY ("org_id", "lease_id") REFERENCES "leases"("org_id", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "credit_entries" ADD CONSTRAINT "credit_entries_org_id_lease_id_fkey" FOREIGN KEY ("org_id", "lease_id") REFERENCES "leases"("org_id", "id") ON DELETE RESTRICT ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE "credit_entries" ADD CONSTRAINT "credit_entries_org_id_payment_id_fkey" FOREIGN KEY ("org_id", "payment_id") REFERENCES "payments"("org_id", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "credit_entries" ADD CONSTRAINT "credit_entries_org_id_payment_id_fkey" FOREIGN KEY ("org_id", "payment_id") REFERENCES "payments"("org_id", "id") ON DELETE RESTRICT ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE "credit_entries" ADD CONSTRAINT "credit_entries_org_id_bill_id_fkey" FOREIGN KEY ("org_id", "bill_id") REFERENCES "bills"("org_id", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "credit_entries" ADD CONSTRAINT "credit_entries_org_id_bill_id_fkey" FOREIGN KEY ("org_id", "bill_id") REFERENCES "bills"("org_id", "id") ON DELETE RESTRICT ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "payment_intents" ADD CONSTRAINT "payment_intents_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "organizations"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "payment_intents" ADD CONSTRAINT "payment_intents_org_id_lease_id_fkey" FOREIGN KEY ("org_id", "lease_id") REFERENCES "leases"("org_id", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "payment_intents" ADD CONSTRAINT "payment_intents_org_id_lease_id_fkey" FOREIGN KEY ("org_id", "lease_id") REFERENCES "leases"("org_id", "id") ON DELETE RESTRICT ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE "payment_intents" ADD CONSTRAINT "payment_intents_org_id_payment_id_fkey" FOREIGN KEY ("org_id", "payment_id") REFERENCES "payments"("org_id", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "payment_intents" ADD CONSTRAINT "payment_intents_org_id_payment_id_fkey" FOREIGN KEY ("org_id", "payment_id") REFERENCES "payments"("org_id", "id") ON DELETE RESTRICT ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "payment_intents" ADD CONSTRAINT "payment_intents_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -1126,46 +1102,46 @@ ALTER TABLE "receipt_counters" ADD CONSTRAINT "receipt_counters_org_id_fkey" FOR
 ALTER TABLE "receipts" ADD CONSTRAINT "receipts_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "organizations"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "receipts" ADD CONSTRAINT "receipts_org_id_payment_id_fkey" FOREIGN KEY ("org_id", "payment_id") REFERENCES "payments"("org_id", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "receipts" ADD CONSTRAINT "receipts_org_id_payment_id_fkey" FOREIGN KEY ("org_id", "payment_id") REFERENCES "payments"("org_id", "id") ON DELETE RESTRICT ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE "receipts" ADD CONSTRAINT "receipts_org_id_file_id_fkey" FOREIGN KEY ("org_id", "file_id") REFERENCES "files"("org_id", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "receipts" ADD CONSTRAINT "receipts_org_id_file_id_fkey" FOREIGN KEY ("org_id", "file_id") REFERENCES "files"("org_id", "id") ON DELETE RESTRICT ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "maintenance_requests" ADD CONSTRAINT "maintenance_requests_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "organizations"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "maintenance_requests" ADD CONSTRAINT "maintenance_requests_org_id_building_id_fkey" FOREIGN KEY ("org_id", "building_id") REFERENCES "buildings"("org_id", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "maintenance_requests" ADD CONSTRAINT "maintenance_requests_org_id_building_id_fkey" FOREIGN KEY ("org_id", "building_id") REFERENCES "buildings"("org_id", "id") ON DELETE RESTRICT ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE "maintenance_requests" ADD CONSTRAINT "maintenance_requests_org_id_unit_id_fkey" FOREIGN KEY ("org_id", "unit_id") REFERENCES "units"("org_id", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "maintenance_requests" ADD CONSTRAINT "maintenance_requests_org_id_unit_id_fkey" FOREIGN KEY ("org_id", "unit_id") REFERENCES "units"("org_id", "id") ON DELETE RESTRICT ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE "maintenance_requests" ADD CONSTRAINT "maintenance_requests_org_id_lease_id_fkey" FOREIGN KEY ("org_id", "lease_id") REFERENCES "leases"("org_id", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "maintenance_requests" ADD CONSTRAINT "maintenance_requests_org_id_lease_id_fkey" FOREIGN KEY ("org_id", "lease_id") REFERENCES "leases"("org_id", "id") ON DELETE RESTRICT ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "maintenance_requests" ADD CONSTRAINT "maintenance_requests_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "maintenance_requests" ADD CONSTRAINT "maintenance_requests_org_id_assigned_to_fkey" FOREIGN KEY ("org_id", "assigned_to") REFERENCES "memberships"("org_id", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "maintenance_requests" ADD CONSTRAINT "maintenance_requests_org_id_assigned_to_fkey" FOREIGN KEY ("org_id", "assigned_to") REFERENCES "memberships"("org_id", "id") ON DELETE RESTRICT ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "maintenance_events" ADD CONSTRAINT "maintenance_events_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "organizations"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "maintenance_events" ADD CONSTRAINT "maintenance_events_org_id_request_id_fkey" FOREIGN KEY ("org_id", "request_id") REFERENCES "maintenance_requests"("org_id", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "maintenance_events" ADD CONSTRAINT "maintenance_events_org_id_request_id_fkey" FOREIGN KEY ("org_id", "request_id") REFERENCES "maintenance_requests"("org_id", "id") ON DELETE RESTRICT ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "maintenance_events" ADD CONSTRAINT "maintenance_events_actor_id_fkey" FOREIGN KEY ("actor_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "maintenance_events" ADD CONSTRAINT "maintenance_events_org_id_file_id_fkey" FOREIGN KEY ("org_id", "file_id") REFERENCES "files"("org_id", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "maintenance_events" ADD CONSTRAINT "maintenance_events_org_id_file_id_fkey" FOREIGN KEY ("org_id", "file_id") REFERENCES "files"("org_id", "id") ON DELETE RESTRICT ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "notices" ADD CONSTRAINT "notices_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "organizations"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "notices" ADD CONSTRAINT "notices_org_id_building_id_fkey" FOREIGN KEY ("org_id", "building_id") REFERENCES "buildings"("org_id", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "notices" ADD CONSTRAINT "notices_org_id_building_id_fkey" FOREIGN KEY ("org_id", "building_id") REFERENCES "buildings"("org_id", "id") ON DELETE RESTRICT ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "notices" ADD CONSTRAINT "notices_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -1180,10 +1156,10 @@ ALTER TABLE "files" ADD CONSTRAINT "files_uploaded_by_fkey" FOREIGN KEY ("upload
 ALTER TABLE "documents" ADD CONSTRAINT "documents_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "organizations"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "documents" ADD CONSTRAINT "documents_org_id_lease_id_fkey" FOREIGN KEY ("org_id", "lease_id") REFERENCES "leases"("org_id", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "documents" ADD CONSTRAINT "documents_org_id_lease_id_fkey" FOREIGN KEY ("org_id", "lease_id") REFERENCES "leases"("org_id", "id") ON DELETE RESTRICT ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE "documents" ADD CONSTRAINT "documents_org_id_file_id_fkey" FOREIGN KEY ("org_id", "file_id") REFERENCES "files"("org_id", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "documents" ADD CONSTRAINT "documents_org_id_file_id_fkey" FOREIGN KEY ("org_id", "file_id") REFERENCES "files"("org_id", "id") ON DELETE RESTRICT ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "documents" ADD CONSTRAINT "documents_uploaded_by_fkey" FOREIGN KEY ("uploaded_by") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

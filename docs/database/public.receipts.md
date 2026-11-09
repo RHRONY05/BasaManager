@@ -19,19 +19,18 @@ History. One receipt per payment, numbered BM-YYYY-NNNNNN.
 
 ## Constraints
 
-| Name                            | Type        | Definition                                                                                            |
-| ------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------- |
-| receipts_org_id_fkey            | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT                |
-| receipts_pkey                   | PRIMARY KEY | PRIMARY KEY (id)                                                                                      |
-| receipts_org_id_payment_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, payment_id) REFERENCES payments(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT |
-| receipts_org_id_file_id_fkey    | FOREIGN KEY | FOREIGN KEY (org_id, file_id) REFERENCES files(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT       |
+| Name                            | Type        | Definition                                                                             |
+| ------------------------------- | ----------- | -------------------------------------------------------------------------------------- |
+| receipts_org_id_fkey            | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT |
+| receipts_pkey                   | PRIMARY KEY | PRIMARY KEY (id)                                                                       |
+| receipts_org_id_payment_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, payment_id) REFERENCES payments(org_id, id) ON DELETE RESTRICT    |
+| receipts_org_id_file_id_fkey    | FOREIGN KEY | FOREIGN KEY (org_id, file_id) REFERENCES files(org_id, id) ON DELETE RESTRICT          |
 
 ## Indexes
 
 | Name                           | Definition                                                                                             |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------ |
 | receipts_pkey                  | CREATE UNIQUE INDEX receipts_pkey ON public.receipts USING btree (id)                                  |
-| receipts_payment_id_key        | CREATE UNIQUE INDEX receipts_payment_id_key ON public.receipts USING btree (payment_id)                |
 | receipts_file_id_idx           | CREATE INDEX receipts_file_id_idx ON public.receipts USING btree (file_id)                             |
 | receipts_org_id_number_key     | CREATE UNIQUE INDEX receipts_org_id_number_key ON public.receipts USING btree (org_id, number)         |
 | receipts_org_id_payment_id_key | CREATE UNIQUE INDEX receipts_org_id_payment_id_key ON public.receipts USING btree (org_id, payment_id) |

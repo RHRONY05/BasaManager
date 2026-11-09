@@ -18,13 +18,13 @@ History. How a payment is spread over bills.
 
 ## Constraints
 
-| Name                                       | Type        | Definition                                                                                            |
-| ------------------------------------------ | ----------- | ----------------------------------------------------------------------------------------------------- |
-| payment_allocations_amount_check           | CHECK       | CHECK ((amount_poisha > 0))                                                                           |
-| payment_allocations_org_id_fkey            | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT                |
-| payment_allocations_pkey                   | PRIMARY KEY | PRIMARY KEY (id)                                                                                      |
-| payment_allocations_org_id_bill_id_fkey    | FOREIGN KEY | FOREIGN KEY (org_id, bill_id) REFERENCES bills(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT       |
-| payment_allocations_org_id_payment_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, payment_id) REFERENCES payments(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT |
+| Name                                       | Type        | Definition                                                                             |
+| ------------------------------------------ | ----------- | -------------------------------------------------------------------------------------- |
+| payment_allocations_amount_check           | CHECK       | CHECK ((amount_poisha > 0))                                                            |
+| payment_allocations_org_id_fkey            | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT |
+| payment_allocations_pkey                   | PRIMARY KEY | PRIMARY KEY (id)                                                                       |
+| payment_allocations_org_id_bill_id_fkey    | FOREIGN KEY | FOREIGN KEY (org_id, bill_id) REFERENCES bills(org_id, id) ON DELETE RESTRICT          |
+| payment_allocations_org_id_payment_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, payment_id) REFERENCES payments(org_id, id) ON DELETE RESTRICT    |
 
 ## Indexes
 
