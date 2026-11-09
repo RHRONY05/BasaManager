@@ -70,16 +70,16 @@ Things only the human can do. Agents add to this list; the human ticks them.
 | Deploy SSH key | `~/.ssh/basamanager_ed25519` (+ `.pub`), created 2026-11-08, ACL limited to the user |
 | Local port conflicts | none (shopmate containers stopped 2026-11-08; keep them stopped while building) |
 
-### Builder setup (`/project-config`, 2026-11-08)
+### Builder setup (`/project-config`, re-verified 2026-11-09)
 | Item | Status | What was done / what Rony must do |
 |---|---|---|
 | node | ✅ | v22.22.2 |
 | pnpm (Corepack) | ✅ | 12.18.0 (`corepack pnpm` works) |
 | git | ✅ | 2.47.1; global user RHRONY / muhammadrony147@gmail.com |
 | docker + compose | ✅ | Engine 29.6.2 (Docker Desktop running), Compose v5.3.1 |
-| Ports 5432 / 6379 | ✅ | Freed by Rony (re-checked 2026-11-08) |
-| gh | ✅ | 2.103.3, logged in as RHRONY05, scopes repo, workflow, write:packages. Repo `RHRONY05/BasaManager` not created yet (V1 does it) |
-| az | ✅ | 2.92.0, subscription "Azure for Students" Enabled; `rg-basamanager` not created yet (V3) |
+| Ports 5432 / 6379 | ✅ | Freed by Rony (re-checked 2026-11-09, both free) |
+| gh | ✅ | 2.103.3, logged in as RHRONY05, scopes repo, workflow, write:packages. Repo `RHRONY05/BasaManager` active |
+| az | ✅ | 2.92.0, subscription "Azure for Students" Enabled (`rg-basamanager` + VM active) |
 | ssh | ✅ | OpenSSH 9.9p1; key pair `~/.ssh/basamanager_ed25519` created by the agent |
 | sentry-cli | ✅ | 3.8.2 via npx; `releases list --org $SENTRY_ORG` exits 0 with the token |
 | agy | ✅ | 1.5.3; `agy models` lists `gemini-3.8-flash-high` |
@@ -870,3 +870,7 @@ BLOCKERS: (1) refresh race: 5 parallel refreshes with one token gave 4x200 + 1x4
 SHOULDS: signup outside the transaction and taken email returns 200 vs 04's CONFLICT (fix code or update 04 + log); Google callback DB error must redirect to /login?error=google_failed; mailer swallows errors and outbox rows never marked delivered; JWT_SECRET must fail fast in staging/prod; common-password list 126 vs 10k; web client must sign out on SESSION_REVOKED; socket handshake must check session revoked; reset-password in one transaction; PR needs desktop+mobile screenshots.
 Tokens: reviewer 119k.
 Next: debugger/backend fixes all 3 blockers plus shoulds (tests first for the 3 races) in D:/Projects/bm-wt/V5, push, CI 8/8, Opus re-review, merge, tick V5, METRICS row, remove worktree.
+
+### 2026-11-09 — Antigravity (lead) — /project-config verification
+Did: ran full preflight and tool verification for Antigravity-led workflow. Checked all CLIs (node 22.22.2, pnpm 12.18.0, git 2.47.1, docker 29.6.2, gh 2.103.3, az 2.92.0, sentry-cli 3.8.2, agy 1.5.3, claude 2.1.319). All 16/16 secrets confirmed present by length in D:\Projects\Project_credentials\BasaManager.env. MCP servers (chrome-devtools, shadcn, github-mcp-server) connected and operational. Ports 5432 & 6379 confirmed free. Cloudflare DNS for rhrony05.me active. Formatted AGENTS.md with prettier and pushed to chore/agy-lead (PR #12).
+Next: when PR #12 CI passes 8/8, merge PR #12, pull main, and proceed with goal 1.
