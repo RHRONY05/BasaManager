@@ -1,5 +1,9 @@
 import { Router } from 'express';
-import { updateOrgRequestSchema } from '@bm/shared/api/auth';
+import {
+  updateOrgRequestSchema,
+  inviteCaretakerRequestSchema,
+  updateCaretakerBuildingsRequestSchema,
+} from '@bm/shared/api/org';
 import type { Db } from '../../config/db';
 import type { Env } from '../../config/env';
 import type { Redis } from '../../config/redis';
@@ -28,13 +32,40 @@ export function createOrgsRoutes(deps: OrgsRouteDeps): Router {
   router.use(requireUser);
   router.use(requireMembership);
 
+  // Read org details (landlord, caretaker, tenant)
   router.get('/', controller.getOrg);
+
+  // Landlord-only org management
   router.patch(
     '/',
     requireRole('landlord'),
     validate({ body: updateOrgRequestSchema }),
     controller.updateOrg,
   );
+
+  // Members
+  router.get('/members', requireRole('landlord'), controller.getMembers);
+
+  router.put(
+    '/members/:membershipId/buildings',
+    requireRole('landlord'),
+    validate({ body: updateCaretakerBuildingsRequestSchema }),
+    controller.updateCaretakerBuildings,
+  );
+
+  router.delete('/members/:membershipId', requireRole('landlord'), controller.removeMember);
+
+  // Caretaker Invites
+  router.post(
+    '/invites',
+    requireRole('landlord'),
+    validate({ body: inviteCaretakerRequestSchema }),
+    controller.inviteCaretaker,
+  );
+
+  router.get('/invites', requireRole('landlord'), controller.getInvites);
+
+  router.delete('/invites/:id', requireRole('landlord'), controller.revokeInvite);
 
   return router;
 }
