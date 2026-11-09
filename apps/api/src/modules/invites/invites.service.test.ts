@@ -50,15 +50,9 @@ describe('InvitesService', () => {
     } as unknown as Db;
 
     const service = new InvitesService(mockDb, mockEnv);
-    const currentUser = { id: 'u-1', email: 'matching@test.local' } as any;
+    const currentUser = { id: 'u-1', email: 'matching@test.local' } as never;
 
-    const res = await service.accept(
-      'token-123',
-      {} as any,
-      currentUser,
-      {} as Request,
-      {} as Response,
-    );
+    const res = await service.accept('token-123', {} as never, currentUser, {} as Request, {} as Response);
     expect(res.accepted).toBe(true);
   });
 
@@ -79,10 +73,10 @@ describe('InvitesService', () => {
     } as unknown as Db;
 
     const service = new InvitesService(mockDb, mockEnv);
-    const currentUser = { id: 'u-1', email: 'different@test.local' } as any;
+    const currentUser = { id: 'u-1', email: 'different@test.local' } as never;
 
     await expect(
-      service.accept('token-123', {} as any, currentUser, {} as Request, {} as Response),
+      service.accept('token-123', {} as never, currentUser, {} as Request, {} as Response),
     ).rejects.toThrow(ApiError);
   });
 });

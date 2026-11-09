@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import type { Db } from '../../config/db';
@@ -6,12 +6,15 @@ import type { Env } from '../../config/env';
 import { ApiError } from '../../lib/ApiError';
 import { hashPassword } from '../../lib/passwords';
 
+type Table = Record<'findFirst' | 'findUnique' | 'create' | 'update' | 'updateMany', Mock>;
+type MockDb = { user: Table; session: Table; authToken: Table; oauthAccount: Table; $queryRaw: Mock };
+
 describe('AuthService unit tests', () => {
   let service: AuthService;
-  let mockDb: any;
-  let mockEnv: any;
-  let mockReq: any;
-  let mockRes: any;
+  let mockDb: MockDb;
+  let mockEnv: Record<string, unknown>;
+  let mockReq: Record<string, unknown>;
+  let mockRes: { cookie: Mock; clearCookie: Mock };
   const originalEnv = { ...process.env };
 
   beforeEach(() => {
@@ -50,7 +53,7 @@ describe('AuthService unit tests', () => {
         });
       }),
       $queryRaw: vi.fn(),
-    };
+    } as unknown as MockDb;
 
     mockEnv = {
       APP_URL: 'http://localhost:5173',
@@ -71,7 +74,7 @@ describe('AuthService unit tests', () => {
       clearCookie: vi.fn(),
     };
 
-    service = new AuthService(mockDb as Db, mockEnv as Env);
+    service = new AuthService(mockDb as unknown as Db, mockEnv as unknown as Env);
   });
 
   afterEach(() => {
@@ -82,9 +85,14 @@ describe('AuthService unit tests', () => {
     it('returns generic message without creating if email exists (anti-enumeration)', async () => {
       mockDb.user.findFirst.mockResolvedValue({ id: 'existing-u1' });
       const res = await service.signup(
-        { email: 'taken@test.com', password: 'Strong-Password-123', fullName: 'John Doe', orgName: 'Acme Org' },
-        mockReq as Request,
-        mockRes as Response,
+        {
+          email: 'taken@test.com',
+          password: 'Strong-Password-123',
+          fullName: 'John Doe',
+          orgName: 'Acme Org',
+        },
+        mockReq as unknown as Request,
+        mockRes as unknown as Response,
       );
       expect(res.message).toContain('Check your email');
       expect(mockDb.user.create).not.toHaveBeenCalled();
@@ -97,9 +105,14 @@ describe('AuthService unit tests', () => {
       mockDb.session.create.mockResolvedValue({ id: 'new-s1', familyId: 'fam-1' });
 
       const res = await service.signup(
-        { email: 'fresh@test.com', password: 'Strong-Password-123', fullName: 'John Doe', orgName: 'Acme Org' },
-        mockReq as Request,
-        mockRes as Response,
+        {
+          email: 'fresh@test.com',
+          password: 'Strong-Password-123',
+          fullName: 'John Doe',
+          orgName: 'Acme Org',
+        },
+        mockReq as unknown as Request,
+        mockRes as unknown as Response,
       );
       expect(res.message).toContain('Check your email');
       expect(mockDb.user.create).toHaveBeenCalled();
@@ -119,9 +132,7 @@ describe('AuthService unit tests', () => {
       mockDb.user.update.mockResolvedValue({});
       const res = await service.verifyEmail({ token: 'valid-token' });
       expect(res.verified).toBe(true);
-      expect(mockDb.user.update).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { id: 'u1' } }),
-      );
+      expect(mockDb.user.update).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'u1' } }));
     });
   });
 
@@ -129,7 +140,11 @@ describe('AuthService unit tests', () => {
     it('rejects unknown user without leaking existence', async () => {
       mockDb.user.findFirst.mockResolvedValue(null);
       await expect(
-        service.login({ email: 'unknown@test.com', password: 'Password-12345' }, mockReq as Request, mockRes as Response),
+        service.login(
+          { email: 'unknown@test.com', password: 'Password-12345' },
+          mockReq as unknown as Request,
+          mockRes as unknown as Response,
+        ),
       ).rejects.toThrow(ApiError);
     });
 
@@ -141,7 +156,11 @@ describe('AuthService unit tests', () => {
         lockedUntil: new Date(Date.now() + 600_000),
       });
       await expect(
-        service.login({ email: 'locked@test.com', password: 'Password-12345' }, mockReq as Request, mockRes as Response),
+        service.login(
+          { email: 'locked@test.com', password: 'Password-12345' },
+          mockReq as unknown as Request,
+          mockRes as unknown as Response,
+        ),
       ).rejects.toThrow(ApiError);
     });
 
@@ -157,7 +176,11 @@ describe('AuthService unit tests', () => {
       });
 
       await expect(
-        service.login({ email: 'user@test.com', password: 'Wrong-Password-123' }, mockReq as Request, mockRes as Response),
+        service.login(
+          { email: 'user@test.com', password: 'Wrong-Password-123' },
+          mockReq as unknown as Request,
+          mockRes as unknown as Response,
+        ),
       ).rejects.toThrow(ApiError);
 
       expect(mockDb.user.update).toHaveBeenCalledWith(
@@ -182,8 +205,8 @@ describe('AuthService unit tests', () => {
 
       const res = await service.login(
         { email: 'user@test.com', password: 'Correct-Password-123' },
-        mockReq as Request,
-        mockRes as Response,
+        mockReq as unknown as Request,
+        mockRes as unknown as Response,
       );
       expect(res.user.id).toBe('u1');
       expect(mockRes.cookie).toHaveBeenCalled();
@@ -192,15 +215,18 @@ describe('AuthService unit tests', () => {
 
   describe('logout and logoutAll', () => {
     it('logout revokes current session and clears cookies', async () => {
-      await service.logout('s1', mockRes as Response);
+      await service.logout('s1', mockRes as unknown as Response);
       expect(mockDb.session.update).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { id: 's1' }, data: expect.objectContaining({ revokeReason: 'logout' }) }),
+        expect.objectContaining({
+          where: { id: 's1' },
+          data: expect.objectContaining({ revokeReason: 'logout' }),
+        }),
       );
       expect(mockRes.clearCookie).toHaveBeenCalled();
     });
 
     it('logoutAll revokes all sessions for user, emits realtime event, and clears cookies', async () => {
-      await service.logoutAll('u1', mockRes as Response);
+      await service.logoutAll('u1', mockRes as unknown as Response);
       expect(mockDb.session.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({ where: { userId: 'u1', revokedAt: null } }),
       );
@@ -211,13 +237,17 @@ describe('AuthService unit tests', () => {
   describe('refresh', () => {
     it('throws UNAUTHENTICATED if refresh token cookie is missing', async () => {
       mockReq.cookies = {};
-      await expect(service.refresh(mockReq as Request, mockRes as Response)).rejects.toThrow(ApiError);
+      await expect(
+        service.refresh(mockReq as unknown as Request, mockRes as unknown as Response),
+      ).rejects.toThrow(ApiError);
     });
 
     it('throws SESSION_REVOKED if session not found', async () => {
       mockReq.cookies = { bm_rt: 'some-refresh-token' };
       mockDb.session.findUnique.mockResolvedValue(null);
-      await expect(service.refresh(mockReq as Request, mockRes as Response)).rejects.toThrow(ApiError);
+      await expect(
+        service.refresh(mockReq as unknown as Request, mockRes as unknown as Response),
+      ).rejects.toThrow(ApiError);
     });
 
     it('detects token reuse and kills session family', async () => {
@@ -232,7 +262,9 @@ describe('AuthService unit tests', () => {
       });
       mockDb.user.findUnique.mockResolvedValue({ id: 'u1', email: 'u1@test.com' });
 
-      await expect(service.refresh(mockReq as Request, mockRes as Response)).rejects.toThrow(ApiError);
+      await expect(
+        service.refresh(mockReq as unknown as Request, mockRes as unknown as Response),
+      ).rejects.toThrow(ApiError);
       expect(mockDb.session.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({ where: { familyId: 'fam-1', revokedAt: null } }),
       );
@@ -252,10 +284,13 @@ describe('AuthService unit tests', () => {
       mockDb.user.findUnique.mockResolvedValue({ id: 'u1', email: 'u1@test.com', isPlatformAdmin: false });
       mockDb.session.create.mockResolvedValue({ id: 's2', familyId: 'fam-1' });
 
-      const res = await service.refresh(mockReq as Request, mockRes as Response);
+      const res = await service.refresh(mockReq as unknown as Request, mockRes as unknown as Response);
       expect(res.ok).toBe(true);
       expect(mockDb.session.update).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { id: 's1' }, data: expect.objectContaining({ rotatedAt: expect.any(Date) }) }),
+        expect.objectContaining({
+          where: { id: 's1' },
+          data: expect.objectContaining({ rotatedAt: expect.any(Date) }),
+        }),
       );
       expect(mockDb.session.create).toHaveBeenCalled();
       expect(mockRes.cookie).toHaveBeenCalled();
@@ -281,8 +316,8 @@ describe('AuthService unit tests', () => {
 
       const res = await service.resetPassword(
         { token: 'valid-reset-tok', password: 'Brand-New-Secure-Pass-123' },
-        mockReq as Request,
-        mockRes as Response,
+        mockReq as unknown as Request,
+        mockRes as unknown as Response,
       );
       expect(res.user.id).toBe('u1');
       expect(mockDb.user.update).toHaveBeenCalled();
