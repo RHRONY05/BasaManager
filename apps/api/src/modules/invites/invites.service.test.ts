@@ -43,7 +43,13 @@ describe('InvitesService', () => {
             updateMany: vi.fn().mockResolvedValue({ count: 1 }),
           },
           membership: {
+            findFirst: vi.fn().mockResolvedValue(null),
             create: vi.fn().mockResolvedValue({ id: 'm-1' }),
+            update: vi.fn().mockResolvedValue({ id: 'm-1' }),
+          },
+          caretakerBuilding: {
+            create: vi.fn().mockResolvedValue({}),
+            deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
           },
         });
       }),

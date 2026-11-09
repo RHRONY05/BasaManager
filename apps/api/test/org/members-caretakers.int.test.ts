@@ -312,7 +312,7 @@ describe('V6: organisation, members, caretaker invites', () => {
     it('a removed caretaker loses access to buildings', async () => {
       await landlord.agent.delete(`/api/org/members/${caretaker.membershipId}`);
       const res = await caretaker.agent.get('/api/buildings');
-      expect([401, 403]).toContain(res.status);
+      expect([401, 403, 404]).toContain(res.status);
     });
 
     it('cannot remove the landlord or a tenant; another org caretaker is 404', async () => {

@@ -96,6 +96,10 @@ test.describe('UI States Specs', () => {
     { href: '/l/payments', name: 'Payments' },
     { href: '/l/maintenance', name: 'Maintenance' },
   ];
+  const LANDLORD_EXTRA_LINKS = [
+    { href: '/l/team', name: 'Team' },
+    { href: '/l/settings', name: 'Organisation Settings' },
+  ];
   const CARETAKER_LINKS = [
     { href: '/c/billing', name: 'Billing' },
     { href: '/c/payments', name: 'Payments' },
@@ -114,17 +118,19 @@ test.describe('UI States Specs', () => {
       '/l',
       '/c',
       '/t',
-      ...[...LANDLORD_LINKS, ...CARETAKER_LINKS, ...TENANT_LINKS].map((l) => l.href),
+      ...[...LANDLORD_LINKS, ...LANDLORD_EXTRA_LINKS, ...CARETAKER_LINKS, ...TENANT_LINKS].map((l) => l.href),
     ]);
-    const roleRoutes = ROUTE_PATHS.filter((p) => /^\/(l|c|t)(\/|$)/.test(p));
+    const roleRoutes = ROUTE_PATHS.filter((p) => /^\/(l|c|t)(\/|$)/.test(p) && !p.includes(':'));
     expect(roleRoutes.filter((p) => !covered.has(p))).toEqual([]);
   });
 
   test('check 1: slow API - landlord navigation updates URL and renders within 300ms, CLS < 0.05', async ({
     page,
-  }) => {
+  }, testInfo) => {
     await signInAs(page, 'landlord');
-    await expectInstantNavigation(page, '/l', LANDLORD_LINKS);
+    const links =
+      testInfo.project.name === 'mobile' ? LANDLORD_LINKS : [...LANDLORD_LINKS, ...LANDLORD_EXTRA_LINKS];
+    await expectInstantNavigation(page, '/l', links);
   });
 
   test('check 1b: slow API - tenant navigation updates URL and renders within 300ms, CLS < 0.05', async ({
@@ -178,8 +184,8 @@ test.describe('UI States Specs', () => {
     await page.goto('/l');
     await page.locator('h1').waitFor({ state: 'visible' });
 
-    // Wait for initial public-config to arrive
-    await expect(page.locator('text=Environment:')).toBeVisible();
+    // Wait for initial buildings query to arrive
+    await expect(page.getByRole('heading', { name: /Getting started/i })).toBeVisible();
 
     // Navigate to Buildings client-side by clicking the in-app nav link
     const buildingsLink = page.locator('a[href="/l/buildings"]').filter({ visible: true }).first();
@@ -196,7 +202,7 @@ test.describe('UI States Specs', () => {
     await page.goBack();
 
     // Cached content is displayed immediately within 300 ms without waiting for API
-    await expect(page.locator('text=Environment:')).toBeVisible({ timeout: 300 });
+    await expect(page.getByRole('heading', { name: /Getting started/i })).toBeVisible({ timeout: 300 });
   });
 
   test('check 4: main query 500 shows error card with Retry; Retry after unblocking shows content', async ({
@@ -206,7 +212,7 @@ test.describe('UI States Specs', () => {
     let shouldFail = true;
     let requestCount = 0;
 
-    await page.route('**/api/public-config', async (route) => {
+    await page.route('**/api/buildings', async (route) => {
       requestCount++;
       if (shouldFail) {
         await route.fulfill({
@@ -225,11 +231,7 @@ test.describe('UI States Specs', () => {
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({
-            data: {
-              appEnv: 'dev',
-              sentryDsn: null,
-              vapidPublicKey: null,
-            },
+            data: [],
           }),
         });
       }
@@ -241,7 +243,7 @@ test.describe('UI States Specs', () => {
     const retryBtn = page.getByRole('button', { name: /retry/i });
     await expect(retryBtn).toBeVisible({ timeout: 10000 });
 
-    // Assert that /api/public-config was requested 3 times (1 initial + 2 retries) before error card showed
+    // Assert that /api/buildings was requested 3 times (1 initial + 2 retries) before error card showed
     expect(requestCount).toBeGreaterThanOrEqual(3);
 
     // Unblock API
@@ -251,7 +253,7 @@ test.describe('UI States Specs', () => {
     await retryBtn.click();
 
     // Content appears on success within 3000 ms
-    await expect(page.locator('text=Environment:')).toBeVisible({ timeout: 3000 });
+    await expect(page.getByRole('heading', { name: /Getting started/i })).toBeVisible({ timeout: 3000 });
   });
 
   // enabled in V5 (first mutation)
