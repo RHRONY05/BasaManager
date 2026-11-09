@@ -24,7 +24,7 @@ export default function LandingPage() {
               className="brand min-w-tap flex items-center gap-2 font-bold text-fg text-base sm:text-lg min-h-tap whitespace-nowrap"
             >
               <BrandMark className="brand__mark w-8 h-8 shrink-0" />
-              <span className="hidden min-[480px]:inline">{t('appName')}</span>
+              <span className="hidden sm:inline">{t('appName')}</span>
             </Link>
             <span className="brand__bn text-fg-muted font-normal text-sm hidden sm:inline" lang="bn">
               {t('brandBn')}
