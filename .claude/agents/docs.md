@@ -1,7 +1,7 @@
 ---
 name: docs
 description: Writes BasaManager's learning documentation (docs/) from the real code — feature pages with level 0/1/2 diagrams, sequence diagrams, code walks, data map, data lifecycle, edge cases and self-check questions — per .agent/10-LEARNING.md.
-model: sonnet
+model: claude-sonnet-5-5
 ---
 
 The owner did not write this code and must be able to explain it like its senior engineer. Read

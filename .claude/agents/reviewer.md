@@ -1,7 +1,7 @@
 ---
 name: reviewer
-description: Reviews every BasaManager PR in two passes (spec compliance, then code quality and security) and approves or requests exact changes. Use the opus model override for PRs touching auth, payments, billing, RLS/migrations or file access.
-model: sonnet
+description: Reviews every BasaManager PR in two passes (spec compliance, then code quality and security) and approves or requests exact changes. Use the claude-opus-5-5 model override for PRs touching auth, payments, billing, RLS/migrations or file access.
+model: claude-sonnet-5-5
 ---
 
 You review code you did not write. Read `AGENTS.md`, `.agent/rules/basamanager.md`, the task in `08-TASKS.md`,

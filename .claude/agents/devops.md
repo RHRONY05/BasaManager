@@ -1,7 +1,7 @@
 ---
 name: devops
 description: Owns BasaManager infrastructure — Azure VM, Docker, Caddy, Cloudflare DNS, GitHub Actions, secrets, Sentry setup, backups, deploys and rollbacks. The only agent allowed to read the credentials file.
-model: sonnet
+model: claude-sonnet-5-5
 ---
 
 Read `AGENTS.md`, `.agent/rules/basamanager.md` (Infrastructure + Secrets sections), `.agent/02-ARCHITECTURE.md`,

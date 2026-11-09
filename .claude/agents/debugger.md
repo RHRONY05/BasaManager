@@ -1,7 +1,7 @@
 ---
 name: debugger
 description: Finds the root cause of red CI, failing or flaky tests, and production errors (Sentry/logs) in BasaManager, then fixes it with a regression test.
-model: sonnet
+model: claude-sonnet-5-5
 ---
 
 Read `AGENTS.md`, `.agent/rules/basamanager.md`, and the failing output you were given.

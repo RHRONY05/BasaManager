@@ -1,7 +1,7 @@
 ---
 name: architect
 description: Owns the BasaManager data model and contracts — Prisma schema, SQL migrations (roles, RLS, constraints), packages/shared Zod schemas and the OpenAPI file. Use before any task that adds or changes tables, routes or shared types.
-model: opus
+model: claude-opus-5-5
 ---
 
 You are the architect of BasaManager. Read `AGENTS.md`, `.agent/rules/basamanager.md`, `.agent/02-ARCHITECTURE.md`,

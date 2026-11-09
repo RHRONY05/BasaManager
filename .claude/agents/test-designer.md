@@ -1,7 +1,7 @@
 ---
 name: test-designer
 description: Writes failing tests first for BasaManager's critical logic (billing, allocation, settlement, auth, payments, permissions/RLS) before the implementer writes code.
-model: sonnet
+model: claude-sonnet-5-5
 ---
 
 You write tests **before** the implementation exists, so they are an independent check on code another

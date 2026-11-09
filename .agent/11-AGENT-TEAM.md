@@ -39,18 +39,24 @@ The lead may run up to **3 Gemini agents at once** when it saves time. It decide
 Run the `claude` command in the task's worktree, in the terminal, one call at a time. It starts fresh and knows nothing of this session, so name the task, PR and docs in the prompt. Save the output to a file and read that file; don't paste it into the conversation.
 
 ```bash
-claude -p "<prompt>" --model <sonnet|opus> --effort medium --permission-mode bypassPermissions > D:/Projects/bm-runs/<task>-<job>.md 2>&1
+# Explicit Opus 5.5 (medium effort):
+"" | claude -p "<prompt>" --model claude-opus-5-5 --effort medium --permission-mode bypassPermissions > D:/Projects/bm-runs/<task>-<job>.md 2>&1
+
+# Explicit Sonnet 5.5 (medium effort):
+"" | claude -p "<prompt>" --model claude-sonnet-5-5 --effort medium --permission-mode bypassPermissions > D:/Projects/bm-runs/<task>-<job>.md 2>&1
+
+# Note: Omitting --model defaults directly to claude-opus-5-5. In PowerShell, piping empty stdin ("" | claude ...) prevents stdin wait delays.
 ```
 
 A call can take 30 minutes or more, so give the terminal command a timeout of at least 60 minutes. If it runs in the background, wait for it to finish; never start a second copy of the same job.
 
 | Job | When | Model | Prompt |
 |---|---|---|---|
-| Tests first | Critical task, before the code | sonnet | `Follow .claude/agents/test-designer.md for task <V#>. Commit the failing tests on this branch and push. Report under 15 lines.` |
-| Review | PR is CI-green | opus if the diff touches a critical area, else sonnet | `Follow .claude/agents/reviewer.md and review PR #<n> for task <V#>. On critical areas also try to break it, with a throwaway probe you delete afterwards. Post the result with gh pr review --comment. Do not change code or merge. The last line of your final message must be exactly VERDICT: APPROVE or VERDICT: CHANGES.` |
-| Bug hunt | Last task of a goal is merged | opus for goals 1 and 3, else sonnet | `Bug hunt for BasaManager goal <n>, tasks <V#–V#>. Read AGENTS.md and .agent/rules/basamanager.md, then the code merged for those tasks. Look for real defects: broken authorisation or tenant isolation, wrong money maths, missing error handling, tests that prove nothing. Change no code. Open one GitHub issue per confirmed bug, labelled bug-hunt, with file, line, how it fails and the fix, at most 10. Report under 15 lines.` |
-| Debug | Same failure after 3 rounds | sonnet | `Follow .claude/agents/debugger.md. <Exact failing output and what was tried.> Find the root cause and fix it on this branch, with a regression test. Report under 15 lines.` |
-| DevOps | Needs secrets, VM or a failed deploy | sonnet | `Follow .claude/agents/devops.md. <Exact request.> Open a PR for any repo change and do not merge it. Report under 15 lines.` |
+| Tests first | Critical task, before the code | claude-sonnet-5-5 | `Follow .claude/agents/test-designer.md for task <V#>. Commit the failing tests on this branch and push. Report under 15 lines.` |
+| Review | PR is CI-green | claude-opus-5-5 if the diff touches a critical area, else claude-sonnet-5-5 | `Follow .claude/agents/reviewer.md and review PR #<n> for task <V#>. On critical areas also try to break it, with a throwaway probe you delete afterwards. Post the result with gh pr review --comment. Do not change code or merge. The last line of your final message must be exactly VERDICT: APPROVE or VERDICT: CHANGES.` |
+| Bug hunt | Last task of a goal is merged | claude-opus-5-5 for goals 1 and 3, else claude-sonnet-5-5 | `Bug hunt for BasaManager goal <n>, tasks <V#–V#>. Read AGENTS.md and .agent/rules/basamanager.md, then the code merged for those tasks. Look for real defects: broken authorisation or tenant isolation, wrong money maths, missing error handling, tests that prove nothing. Change no code. Open one GitHub issue per confirmed bug, labelled bug-hunt, with file, line, how it fails and the fix, at most 10. Report under 15 lines.` |
+| Debug | Same failure after 3 rounds | claude-sonnet-5-5 | `Follow .claude/agents/debugger.md. <Exact failing output and what was tried.> Find the root cause and fix it on this branch, with a regression test. Report under 15 lines.` |
+| DevOps | Needs secrets, VM or a failed deploy | claude-sonnet-5-5 | `Follow .claude/agents/devops.md. <Exact request.> Open a PR for any repo change and do not merge it. Report under 15 lines.` |
 
 **If Claude is unavailable.** If the file ends with "You've hit your … limit · resets <time>", no Claude review can happen until then. Carry on with work that doesn't need Claude, and don't merge anything that needs its approval. When nothing else is left, wait until the reset time and call it again. If it says "Not logged in", add a Human step and tell the owner. Never replace a Claude check with your own opinion, or with an Antigravity Claude model.
 

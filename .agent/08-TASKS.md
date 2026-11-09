@@ -56,7 +56,7 @@ V0 Preflight ─▶ V1 Monorepo + CI ─▶ V2 Design ─▶ V3 Infra walking sk
   - **Tests:** `rls.int.test.ts`, cross-org isolation on a sample table, role grants (bm_app can't delete payments).
   - **AC:** migrations apply from zero on a clean DB in CI and on staging; RLS test green; ER diagram generated.
 
-- [ ] **V5 Auth & accounts** — A1–A7 (A8 in V15) — in progress: lead
+- [x] **V5 Auth & accounts** — A1–A7 (A8 in V15) — merged (#10)
   - ∥ test-designer: auth integration tests from 09 first. ∥ backend (agy): routes in 04 Auth. ∥ frontend (agy): auth pages + `AuthProvider`, refresh-on-401 single-flight, org switcher, route guards per role.
   - Google OAuth with arctic; email templates (verify, reset, security alert); rate limits; lockout; socket handshake auth. Landing page `/`; `/account` (profile, change password, sessions/devices; preferences come in V11, deletion in V15).
   - Docs: `features/auth.md` (all 15 sections — the flagship page: signup, login, refresh rotation + reuse detection, logout-all, reset, Google, invites; where each token lives; every edge case), `concepts/authentication-and-sessions.md`, `concepts/authorization.md`, `concepts/validation-with-zod.md`, `concepts/caching-and-rate-limiting.md`.
