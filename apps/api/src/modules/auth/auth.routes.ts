@@ -42,6 +42,7 @@ export function createAuthRoutes(deps: AuthRouteDeps): Router {
   );
   router.post(
     '/resend-verification',
+    rateLimiters.generalLimiter,
     requireUser,
     rateLimiters.resendVerificationLimiter,
     controller.resendVerification,

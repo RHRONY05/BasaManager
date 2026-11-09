@@ -68,16 +68,16 @@ export default function LandingPage() {
               <p className="text-base sm:text-lg text-fg-secondary leading-relaxed max-w-xl">
                 {t('auth.landing.lead')}
               </p>
-              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 pt-2">
                 <Link
                   to="/signup"
-                  className="btn btn--primary btn--lg text-base text-center justify-center font-semibold bg-accent text-accent-fg hover:bg-accent-hover rounded-md px-4 min-h-control whitespace-nowrap"
+                  className="btn btn--primary btn--lg text-base text-center justify-center font-semibold bg-accent text-accent-fg hover:bg-accent-hover rounded-md px-4 min-h-control whitespace-nowrap shrink-0"
                 >
                   {t('auth.createAccount')}
                 </Link>
                 <Link
                   to="/login"
-                  className="btn btn--secondary btn--lg text-base text-center justify-center font-semibold bg-surface border border-border-strong text-fg hover:bg-surface-hover rounded-md px-4 min-h-control whitespace-nowrap"
+                  className="btn btn--secondary btn--lg text-base text-center justify-center font-semibold bg-surface border border-border-strong text-fg hover:bg-surface-hover rounded-md px-4 min-h-control whitespace-nowrap shrink-0"
                 >
                   {t('auth.signIn')}
                 </Link>
