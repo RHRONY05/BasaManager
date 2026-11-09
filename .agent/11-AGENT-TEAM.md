@@ -31,7 +31,7 @@ Antigravity uses Gemini 3.8 Flash (High) for its own work. Schema and migration 
 The lead may run up to **3 Gemini agents at once** when it saves time. It decides this per task, and one agent is fine when the work is small or tightly connected.
 
 - **When:** parts that don't touch the same files, such as backend, frontend and e2e, once the shared contracts (schema, `packages/shared`) are committed on the task branch. Tasks in a goal stay in order unless they don't depend on each other.
-- **Setup:** each part gets `git worktree add ../bm-wt/<task>-<part> -b feat/<task>-<part>` from the task branch, its own test database (`basamanager_test_<task>_<part>`) and its own dev ports (`scripts/ports.mjs`), so they never collide.
+- **Setup:** each part gets `git worktree add ../bm-wt/<task>-<part> -b feat/<task>-<part>` from the task branch. `scripts/ports.mjs` gives each worktree its own test database and dev ports, so they never collide.
 - **Finish:** the lead merges the parts into the task branch, removes their worktrees, and runs the full verify itself. Each task still ends in one PR with one Claude review.
 - **Claude stays one call at a time.** Three Opus runs at once used up a 5-hour window on 2026-11-08.
 
