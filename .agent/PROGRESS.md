@@ -442,3 +442,7 @@ Next: when deploy and ci on main are green, tick V4 in 08-TASKS and update the M
 ### 2026-11-09 — Claude (lead) — V4 staging wait
 Did: checked main: deploy runs 42555133421 (8bb7967), 42555154378 (8ce8685), 42555292569 (9651a1c) and ci 42555292735 all still in progress (earlier ci runs cancelled by newer pushes). V4 not ticked yet. No code change.
 Next: when deploy on the latest main head and its ci are green, tick V4 in 08-TASKS (line 52) and update the METRICS row. Then the V4 follow-up PR (architect): onUpdate NoAction on composite FKs + regenerate 0100 + test, org_id-first unique indexes or doc note, db:drift in the CI integration job. Then V5. Note: each PROGRESS push to main restarts deploy/ci; batch doc commits.
+
+### 2026-11-09 — Claude (lead) — V4 staging wait 2
+Did: checked main: deploy runs 42555133421, 42555154378, 42555292569 in progress, 42555383664 (98eea0b) queued; ci 42555383647 in progress. Each PROGRESS push to main restarts deploy/ci, which is why they never settle. This entry is committed locally and NOT pushed, so the deploy on 98eea0b can finish.
+Next: when deploy on 98eea0b and its ci are green, tick V4 in 08-TASKS (line 52), update the METRICS row, then push all doc commits in one go. Then the V4 follow-up PR (architect): onUpdate NoAction on composite FKs + regenerate 0100 + test, org_id-first unique indexes or doc note, db:drift in the CI integration job. Then V5.
