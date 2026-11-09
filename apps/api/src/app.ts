@@ -74,6 +74,7 @@ export function createApp(deps: AppDeps): Express {
     createUsersRoutes({
       env: deps.env,
       prisma: deps.prisma,
+      redis: deps.redis,
     }),
   );
   app.use(
@@ -81,6 +82,7 @@ export function createApp(deps: AppDeps): Express {
     createInvitesRoutes({
       env: deps.env,
       prisma: deps.prisma,
+      redis: deps.redis,
     }),
   );
   app.use(
@@ -88,6 +90,7 @@ export function createApp(deps: AppDeps): Express {
     createOrgsRoutes({
       env: deps.env,
       prisma: deps.prisma,
+      redis: deps.redis,
     }),
   );
 

@@ -28,8 +28,18 @@ export function createAuthRoutes(deps: AuthRouteDeps): Router {
   const requireUser = createRequireUser(deps.prisma, deps.env);
   const rateLimiters = createRateLimiters(deps.redis);
 
-  router.post('/signup', validate({ body: signupRequestSchema }), controller.signup);
-  router.post('/verify-email', validate({ body: verifyEmailRequestSchema }), controller.verifyEmail);
+  router.post(
+    '/signup',
+    rateLimiters.authSensitiveLimiter,
+    validate({ body: signupRequestSchema }),
+    controller.signup,
+  );
+  router.post(
+    '/verify-email',
+    rateLimiters.authSensitiveLimiter,
+    validate({ body: verifyEmailRequestSchema }),
+    controller.verifyEmail,
+  );
   router.post(
     '/resend-verification',
     requireUser,
@@ -37,18 +47,23 @@ export function createAuthRoutes(deps: AuthRouteDeps): Router {
     controller.resendVerification,
   );
   router.post('/login', rateLimiters.loginLimiter, validate({ body: loginRequestSchema }), controller.login);
-  router.post('/refresh', controller.refresh);
-  router.post('/logout', requireUser, controller.logout);
-  router.post('/logout-all', requireUser, controller.logoutAll);
+  router.post('/refresh', rateLimiters.authSensitiveLimiter, controller.refresh);
+  router.post('/logout', rateLimiters.generalLimiter, requireUser, controller.logout);
+  router.post('/logout-all', rateLimiters.generalLimiter, requireUser, controller.logoutAll);
   router.post(
     '/forgot-password',
     rateLimiters.forgotPasswordLimiter,
     validate({ body: forgotPasswordRequestSchema }),
     controller.forgotPassword,
   );
-  router.post('/reset-password', validate({ body: resetPasswordRequestSchema }), controller.resetPassword);
-  router.get('/google/start', controller.googleStart);
-  router.get('/google/callback', controller.googleCallback);
+  router.post(
+    '/reset-password',
+    rateLimiters.authSensitiveLimiter,
+    validate({ body: resetPasswordRequestSchema }),
+    controller.resetPassword,
+  );
+  router.get('/google/start', rateLimiters.generalLimiter, controller.googleStart);
+  router.get('/google/callback', rateLimiters.generalLimiter, controller.googleCallback);
 
   return router;
 }

@@ -9,12 +9,21 @@ export interface RateLimiters {
   loginLimiter: RequestHandler;
   forgotPasswordLimiter: RequestHandler;
   resendVerificationLimiter: RequestHandler;
+  /** Strict per-IP limiter for token-consuming endpoints (signup, verify-email, reset-password, refresh). */
+  authSensitiveLimiter: RequestHandler;
+  /** Generous per-IP limiter for every other authenticated or session endpoint. */
+  generalLimiter: RequestHandler;
+}
+
+export interface RateLimitOptions {
+  authSensitiveLimit?: number;
+  generalLimit?: number;
 }
 
 /**
  * Creates Redis-backed rate limiters for auth endpoints.
  */
-export function createRateLimiters(redis: Redis): RateLimiters {
+export function createRateLimiters(redis: Redis, options: RateLimitOptions = {}): RateLimiters {
   const sendCommand = (async (...args: string[]) => {
     // ioredis accepts command name as first arg, followed by parameters
     const [command, ...rest] = args;
@@ -73,7 +82,31 @@ export function createRateLimiters(redis: Redis): RateLimiters {
     },
   });
 
+  const authSensitiveLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    limit: options.authSensitiveLimit ?? 30,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    store: new RedisStore({ sendCommand, prefix: 'rl:auth_sensitive:' }),
+    handler: (_req, _res, next) => {
+      next(new ApiError(ErrorCode.RATE_LIMITED, 'Too many requests. Please try again later.'));
+    },
+  });
+
+  const generalLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    limit: options.generalLimit ?? 300,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    store: new RedisStore({ sendCommand, prefix: 'rl:general:' }),
+    handler: (_req, _res, next) => {
+      next(new ApiError(ErrorCode.RATE_LIMITED, 'Too many requests. Please try again later.'));
+    },
+  });
+
   return {
+    authSensitiveLimiter,
+    generalLimiter,
     loginLimiter,
     forgotPasswordLimiter,
     resendVerificationLimiter,
