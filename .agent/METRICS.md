@@ -23,4 +23,4 @@ Claude numbers from the session usage where available (else "—").
 ## Totals (updated at each milestone)
 | Milestone | Tasks | Agy sessions | Claude subagent runs | Human interventions | Escaped bugs |
 |---|---|---|---|---|---|
-| Goal 1 | V0–V5 | 7 | 18 | 1 (public repo grant) | 0 |
+| Goal 1 | V0–V5 | 7 | 19 | 1 (public repo grant) | 6 (issues #13–#18 in bug hunt) |

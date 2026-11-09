@@ -879,7 +879,14 @@ Did: ran full preflight and tool verification for Antigravity-led workflow. Chec
 Next: merge PR #12, pull main, and proceed with goal 1.
 
 ### 2026-11-09 — Antigravity (lead) — V5 fixes, Opus re-review, merge & Goal 1 wrap-up
-Did: Fixed all Claude Opus review findings on PR #10 (feat/V5). Generated full matrix of 42 desktop & mobile screenshots across light/dark themes, stored in docs/public/screenshots/auth/ and embedded in PR body. Fixed Google button icon scaling (.google-g width/height var(--size-icon), brand colors) with regression unit and e2e tests. Fixed auth divider double lines to match token design. Fixed client refresh handler to clear session on 401 UNAUTHENTICATED. Documented V11 outbox delivery cutover and V6 invite edge cases. CI 8/8 green (run 42661118359). Claude Opus 5.5 re-reviewed commit 144e692 and returned VERDICT: APPROVE (0 blockers, all findings verified). Merged PR #10 via squash merge (commit 44be437). Staging deploy (run 42663240592) GREEN across all 7 jobs. Goal 1 bug hunt initiated.
+Did: Fixed all Claude Opus review findings on PR #10 (feat/V5). Generated full matrix of 42 desktop & mobile screenshots across light/dark themes, stored in docs/public/screenshots/auth/ and embedded in PR body. Fixed Google button icon scaling (.google-g width/height var(--size-icon), brand colors) with regression unit and e2e tests. Fixed auth divider double lines to match token design. Fixed client refresh handler to clear session on 401 UNAUTHENTICATED. Documented V11 outbox delivery cutover and V6 invite edge cases. CI 8/8 green (run 42661118359). Claude Opus 5.5 re-reviewed commit 144e692 and returned VERDICT: APPROVE (0 blockers, all findings verified). Merged PR #10 via squash merge (commit 44be437). Staging deploy (run 42663240592) GREEN across all 7 jobs.
+Goal 1 bug hunt executed with Claude Opus 5.5 (`claude-opus-5-5` --effort medium, details in `D:/Projects/bm-runs/goal1-bughunt.md`). 6 confirmed bugs logged as GitHub issues (#13 to #18):
+- #13 (high): Caretaker invite acceptance via Google skips building assignment (`auth.service.ts:785`).
+- #14 (high, tenant isolation): `requireMembership` sets `isAdmin=true` on org routes for platform admins, weakening Postgres RLS isolation.
+- #15 (medium): Forgot-password response timing leak on existing accounts.
+- #16 (medium): Concurrent duplicate email signup throws unhandled Prisma P2002 -> 500.
+- #17 (medium): Google signup creates user, OAuth link, and org in three non-atomic writes.
+- #18 (low): Devices list displays sessions older than 30 days as active sign-ins.
 Tests: typecheck ✅ lint ✅ unit ✅ (384 passed) int ✅ (181 passed) e2e ✅ (44 passed) build ✅ docs ✅ (97 checked)
-Commits / PR: PR #10 merged into main (44be437); staging deployed.
-Next: Execute Goal 1 bug hunt using Claude Opus 5.5, review issues, proceed to Goal 2 (V6 Landlords & buildings).
+Commits / PR: PR #10 merged into main (44be437); staging deployed (42663240592).
+Next: Goal 1 complete. Proceed to Goal 2 via `/goal Complete goal 2 from .agent/GOAL.md`. Issues #13-#14 will be resolved during V6 (landlords & buildings onboarding).
