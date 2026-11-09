@@ -338,5 +338,45 @@ describe('auth: Google OAuth (A6)', () => {
         expect(res.headers['location']).toBe(`${ctx.env.APP_URL}${failed}`);
       }
     });
+
+    it('rolls back user and oauth creation if invitation was accepted concurrently during callback', async () => {
+      const { token } = await insertInvitation({
+        orgId: org.id,
+        invitedBy: org.landlordUserId,
+        email: profile.email,
+      });
+
+      // Simulate a concurrent accept by setting accepted_at via trigger when user row is inserted
+      await q(`
+        create or replace function accept_inv_race() returns trigger as $$
+        begin
+          update invitations set accepted_at = now();
+          return new;
+        end;
+        $$ language plpgsql;
+      `);
+      await q(`
+        create trigger trg_test_concurrent_accept
+        after insert on users
+        for each row execute function accept_inv_race();
+      `);
+
+      try {
+        const res = await viaGoogle(newAgent(ctx), { invite: token });
+        expect(res.headers['location']).toBe(`${ctx.env.APP_URL}${failed}`);
+
+        // Entire transaction must have rolled back: no user, no oauth account, no membership
+        expect(await q(`select 1 from users where email=$1`, [profile.email])).toHaveLength(0);
+        expect(await q(`select 1 from oauth_accounts where provider_user_id=$1`, [profile.sub])).toHaveLength(
+          0,
+        );
+        expect(await q(`select 1 from memberships where org_id=$1 and role='tenant'`, [org.id])).toHaveLength(
+          0,
+        );
+      } finally {
+        await q(`drop trigger if exists trg_test_concurrent_accept on users;`);
+        await q(`drop function if exists accept_inv_race();`);
+      }
+    });
   });
 });

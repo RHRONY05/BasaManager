@@ -26,6 +26,9 @@ import { deliverOutboxNow } from '../../config/mailer';
 import { emitSessionRevoked } from '../../realtime/emit';
 import { getGoogleClient, encryptOAuthState, decryptOAuthState } from './google';
 import { findInvitationByTokenHash } from '../../config/db';
+import { createLogger } from '../../lib/logger';
+
+const logger = createLogger({ level: 'info' });
 
 export class AuthService {
   constructor(
@@ -52,76 +55,113 @@ export class AuthService {
 
     const userId = randomUUID();
     const orgId = randomUUID();
-    const orgSlug = generateSlug(data.orgName);
     const passwordHash = await hashPassword(data.password);
     const now = clock.now();
     const verifyToken = generateRandomToken(32);
 
-    try {
-      await this.prisma.$tx({ orgId, userId, role: 'landlord' }, async (tx) => {
-        await tx.user.create({
-          data: {
-            id: userId,
-            email,
-            fullName: data.fullName.trim(),
-            passwordHash,
-            emailVerifiedAt: null,
-          },
-        });
+    const MAX_SLUG_ATTEMPTS = 3;
+    let registered = false;
 
-        await tx.organization.create({
-          data: {
-            id: orgId,
-            name: data.orgName.trim(),
-            slug: orgSlug,
-            createdBy: userId,
-          },
-        });
-
-        await tx.membership.create({
-          data: {
-            orgId,
-            userId,
-            role: 'landlord',
-            status: 'active',
-          },
-        });
-
-        await tx.authToken.create({
-          data: {
-            kind: 'email_verify',
-            userId,
-            tokenHash: sha256(verifyToken),
-            expiresAt: new Date(now.getTime() + 24 * 3600 * 1000), // 24 hours
-          },
-        });
-
-        await tx.outboxMessage.createMany({
-          data: [
-            {
-              orgId,
-              type: 'user.verify_email',
-              payload: {
-                userId,
-                email,
-                token: verifyToken,
-              },
+    for (let attempt = 0; attempt < MAX_SLUG_ATTEMPTS; attempt++) {
+      const orgSlug = generateSlug(data.orgName);
+      try {
+        await this.prisma.$tx({ orgId, userId, role: 'landlord' }, async (tx) => {
+          await tx.user.create({
+            data: {
+              id: userId,
+              email,
+              fullName: data.fullName.trim(),
+              passwordHash,
+              emailVerifiedAt: null,
             },
-          ],
+          });
+
+          await tx.organization.create({
+            data: {
+              id: orgId,
+              name: data.orgName.trim(),
+              slug: orgSlug,
+              createdBy: userId,
+            },
+          });
+
+          await tx.membership.create({
+            data: {
+              orgId,
+              userId,
+              role: 'landlord',
+              status: 'active',
+            },
+          });
+
+          await tx.authToken.create({
+            data: {
+              kind: 'email_verify',
+              userId,
+              tokenHash: sha256(verifyToken),
+              expiresAt: new Date(now.getTime() + 24 * 3600 * 1000), // 24 hours
+            },
+          });
+
+          await tx.outboxMessage.createMany({
+            data: [
+              {
+                orgId,
+                type: 'user.verify_email',
+                payload: {
+                  userId,
+                  email,
+                  token: verifyToken,
+                },
+              },
+            ],
+          });
         });
-      });
-    } catch (err) {
-      // Prisma P2002 is unique constraint violation (concurrent duplicate email or slug collision)
-      if (
-        (typeof err === 'object' &&
+        registered = true;
+        break;
+      } catch (err: unknown) {
+        // Prisma P2002 is unique constraint violation (concurrent duplicate email or slug collision)
+        const isP2002 =
+          typeof err === 'object' &&
           err !== null &&
           'code' in err &&
-          (err as { code: string }).code === 'P2002') ||
-        (err instanceof Error && err.message.includes('Unique constraint failed'))
-      ) {
-        return { message: 'Check your email to verify your account' };
+          (err as { code: string }).code === 'P2002';
+
+        if (isP2002) {
+          const meta = (err as { meta?: { target?: string[] | string } }).meta;
+          const targets = Array.isArray(meta?.target)
+            ? meta.target
+            : typeof meta?.target === 'string'
+              ? [meta.target]
+              : [];
+
+          const isEmailCollision = targets.some((t) => t.includes('email'));
+          const isSlugCollision = targets.some((t) => t.includes('slug'));
+
+          if (isEmailCollision) {
+            return { message: 'Check your email to verify your account' };
+          }
+
+          if (isSlugCollision && attempt < MAX_SLUG_ATTEMPTS - 1) {
+            continue;
+          }
+
+          // If target is ambiguous, check if a user with this email exists in DB
+          const existingUser = await this.prisma.user.findFirst({ where: { email } });
+          if (existingUser) {
+            return { message: 'Check your email to verify your account' };
+          }
+
+          if (attempt < MAX_SLUG_ATTEMPTS - 1) {
+            continue;
+          }
+        }
+        throw err;
       }
-      throw err;
+    }
+
+    if (!registered) {
+      throw ApiError.internal('Failed to create organization due to slug collision');
     }
 
     await deliverOutboxNow([
@@ -521,6 +561,7 @@ export class AuthService {
 
   /**
    * Sends password reset link. Always answers 200 with identical body to prevent user enumeration.
+   * Runs token persistence and email dispatch off the critical path to prevent timing side channels.
    */
   async forgotPassword(data: ForgotPasswordRequest) {
     const email = data.email.toLowerCase().trim();
@@ -529,37 +570,40 @@ export class AuthService {
     });
 
     if (user && !user.deletedAt) {
-      const token = generateRandomToken(32);
-      const now = clock.now();
+      void (async () => {
+        const token = generateRandomToken(32);
+        const now = clock.now();
 
-      await this.prisma.$tx({ orgId: null, userId: user.id, role: null }, async (tx) => {
-        await tx.authToken.create({
-          data: {
-            kind: 'password_reset',
-            userId: user.id,
-            tokenHash: sha256(token),
-            expiresAt: new Date(now.getTime() + 30 * 60 * 1000), // 30 minutes
-          },
-        });
-
-        await tx.outboxMessage.createMany({
-          data: [
-            {
-              orgId: null,
-              type: 'user.password_reset',
-              payload: { userId: user.id, email: user.email, token },
+        await this.prisma.$tx({ orgId: null, userId: user.id, role: null }, async (tx) => {
+          await tx.authToken.create({
+            data: {
+              kind: 'password_reset',
+              userId: user.id,
+              tokenHash: sha256(token),
+              expiresAt: new Date(now.getTime() + 30 * 60 * 1000), // 30 minutes
             },
-          ],
-        });
-      });
+          });
 
-      // Fire-and-forget delivery so response timing is not delayed by SMTP send
-      void deliverOutboxNow([
-        {
-          type: 'user.password_reset',
-          payload: { userId: user.id, email: user.email, token },
-        },
-      ]).catch(() => {});
+          await tx.outboxMessage.createMany({
+            data: [
+              {
+                orgId: null,
+                type: 'user.password_reset',
+                payload: { userId: user.id, email: user.email, token },
+              },
+            ],
+          });
+        });
+
+        await deliverOutboxNow([
+          {
+            type: 'user.password_reset',
+            payload: { userId: user.id, email: user.email, token },
+          },
+        ]);
+      })().catch((err: unknown) => {
+        logger.warn({ err, email }, 'forgot-password background dispatch failed');
+      });
     }
 
     return { message: 'If that email exists, we sent a password reset link.' };
@@ -734,106 +778,111 @@ export class AuthService {
         const isUnverifiedLocal = Boolean(matchedUser && !matchedUser.emailVerifiedAt);
         const targetUserId = matchedUser?.id || randomUUID();
 
-        const result = await this.prisma.$tx(
-          { orgId: inv.orgId, userId: targetUserId, role: inv.role },
-          async (tx) => {
-            let u: { id: string; isPlatformAdmin: boolean };
-            if (matchedUser) {
-              if (!matchedUser.emailVerifiedAt) {
-                u = await tx.user.update({
-                  where: { id: matchedUser.id },
+        let user: { id: string; isPlatformAdmin: boolean };
+        try {
+          user = await this.prisma.$tx(
+            { orgId: inv.orgId, userId: targetUserId, role: inv.role },
+            async (tx) => {
+              let u: { id: string; isPlatformAdmin: boolean };
+              if (matchedUser) {
+                if (!matchedUser.emailVerifiedAt) {
+                  u = await tx.user.update({
+                    where: { id: matchedUser.id },
+                    data: {
+                      emailVerifiedAt: now,
+                      fullName: matchedUser.fullName || profile.name,
+                      passwordHash: null,
+                    },
+                    select: { id: true, isPlatformAdmin: true },
+                  });
+                  await tx.session.updateMany({
+                    where: { userId: matchedUser.id, revokedAt: null },
+                    data: {
+                      revokedAt: now,
+                      revokeReason: 'google_claimed_unverified',
+                    },
+                  });
+                  await tx.authToken.updateMany({
+                    where: { userId: matchedUser.id, kind: 'email_verify', usedAt: null },
+                    data: { usedAt: now },
+                  });
+                } else {
+                  u = matchedUser;
+                }
+              } else {
+                u = await tx.user.create({
                   data: {
+                    id: targetUserId,
+                    email,
+                    fullName: profile.name,
                     emailVerifiedAt: now,
-                    passwordHash: null,
                   },
                   select: { id: true, isPlatformAdmin: true },
                 });
-                await tx.session.updateMany({
-                  where: { userId: matchedUser.id, revokedAt: null },
-                  data: {
-                    revokedAt: now,
-                    revokeReason: 'google_claimed_unverified',
-                  },
-                });
-                await tx.authToken.updateMany({
-                  where: { userId: matchedUser.id, kind: 'email_verify', usedAt: null },
-                  data: { usedAt: now },
-                });
-              } else {
-                u = matchedUser;
               }
-            } else {
-              u = await tx.user.create({
-                data: {
-                  id: targetUserId,
-                  email,
-                  fullName: profile.name,
-                  emailVerifiedAt: now,
-                },
-                select: { id: true, isPlatformAdmin: true },
-              });
-            }
 
-            // Link OAuth account
-            await tx.oauthAccount.upsert({
-              where: {
-                provider_providerUserId: {
+              // Link OAuth account
+              await tx.oauthAccount.upsert({
+                where: {
+                  provider_providerUserId: {
+                    provider: 'google',
+                    providerUserId: profile.sub,
+                  },
+                },
+                update: {},
+                create: {
+                  userId: u.id,
                   provider: 'google',
                   providerUserId: profile.sub,
                 },
-              },
-              update: {},
-              create: {
-                userId: u.id,
-                provider: 'google',
-                providerUserId: profile.sub,
-              },
-            });
+              });
 
-            // Accept invitation under org transaction
-            const updated = await tx.invitation.updateMany({
-              where: {
-                id: inv.id,
-                acceptedAt: null,
-                revokedAt: null,
-                expiresAt: { gt: now },
-              },
-              data: { acceptedAt: now },
-            });
+              // Accept invitation under org transaction
+              const updated = await tx.invitation.updateMany({
+                where: {
+                  id: inv.id,
+                  acceptedAt: null,
+                  revokedAt: null,
+                  expiresAt: { gt: now },
+                },
+                data: { acceptedAt: now },
+              });
 
-            if (updated.count === 0) return { success: false, user: null };
-
-            const m = await tx.membership.create({
-              data: {
-                orgId: inv.orgId,
-                userId: u.id,
-                role: inv.role,
-                status: 'active',
-              },
-            });
-
-            // Issue #13 fix: Assign caretaker buildings on Google acceptance
-            if (inv.role === 'caretaker' && inv.buildingIds && inv.buildingIds.length > 0) {
-              for (const buildingId of inv.buildingIds) {
-                await tx.caretakerBuilding.create({
-                  data: {
-                    orgId: inv.orgId,
-                    membershipId: m.id,
-                    buildingId,
-                  },
-                });
+              if (updated.count === 0) {
+                throw new ApiError(ErrorCode.TOKEN_INVALID, 'Invitation already accepted or expired');
               }
-            }
 
-            return { success: true, user: u };
-          },
-        );
+              const m = await tx.membership.create({
+                data: {
+                  orgId: inv.orgId,
+                  userId: u.id,
+                  role: inv.role,
+                  status: 'active',
+                },
+              });
 
-        if (!result.success || !result.user) {
-          return failedUrl;
+              // Issue #13 fix: Assign caretaker buildings on Google acceptance
+              if (inv.role === 'caretaker' && inv.buildingIds && inv.buildingIds.length > 0) {
+                for (const buildingId of inv.buildingIds) {
+                  await tx.caretakerBuilding.create({
+                    data: {
+                      orgId: inv.orgId,
+                      membershipId: m.id,
+                      buildingId,
+                    },
+                  });
+                }
+              }
+
+              return u;
+            },
+          );
+        } catch (err: unknown) {
+          if (err instanceof ApiError && err.code === ErrorCode.TOKEN_INVALID) {
+            return failedUrl;
+          }
+          throw err;
         }
-
-        const user = result.user;
 
         if (isUnverifiedLocal && matchedUser) {
           await emitSessionRevoked(matchedUser.id);
@@ -927,46 +976,71 @@ export class AuthService {
           const userId = randomUUID();
           const orgId = randomUUID();
           const orgName = `${profile.name}'s properties`;
-          const orgSlug = generateSlug(orgName);
 
-          user = await this.prisma.$tx({ orgId, userId, role: 'landlord' }, async (tx) => {
-            const newUser = await tx.user.create({
-              data: {
-                id: userId,
-                email,
-                fullName: profile.name,
-                emailVerifiedAt: now,
-              },
-            });
+          const MAX_SLUG_ATTEMPTS = 3;
+          let created = false;
+          for (let attempt = 0; attempt < MAX_SLUG_ATTEMPTS; attempt++) {
+            const orgSlug = generateSlug(orgName);
+            try {
+              user = await this.prisma.$tx({ orgId, userId, role: 'landlord' }, async (tx) => {
+                const newUser = await tx.user.create({
+                  data: {
+                    id: userId,
+                    email,
+                    fullName: profile.name,
+                    emailVerifiedAt: now,
+                  },
+                });
 
-            await tx.oauthAccount.create({
-              data: {
-                userId,
-                provider: 'google',
-                providerUserId: profile.sub,
-              },
-            });
+                await tx.oauthAccount.create({
+                  data: {
+                    userId,
+                    provider: 'google',
+                    providerUserId: profile.sub,
+                  },
+                });
 
-            await tx.organization.create({
-              data: {
-                id: orgId,
-                name: orgName,
-                slug: orgSlug,
-                createdBy: userId,
-              },
-            });
+                await tx.organization.create({
+                  data: {
+                    id: orgId,
+                    name: orgName,
+                    slug: orgSlug,
+                    createdBy: userId,
+                  },
+                });
 
-            await tx.membership.create({
-              data: {
-                orgId,
-                userId,
-                role: 'landlord',
-                status: 'active',
-              },
-            });
+                await tx.membership.create({
+                  data: {
+                    orgId,
+                    userId,
+                    role: 'landlord',
+                    status: 'active',
+                  },
+                });
 
-            return newUser;
-          });
+                return newUser;
+              });
+              created = true;
+              break;
+            } catch (err: unknown) {
+              const isP2002 =
+                typeof err === 'object' &&
+                err !== null &&
+                'code' in err &&
+                (err as { code: string }).code === 'P2002';
+              if (isP2002 && attempt < MAX_SLUG_ATTEMPTS - 1) {
+                const existingUser = await this.prisma.user.findFirst({ where: { email } });
+                if (!existingUser) {
+                  continue;
+                }
+              }
+              throw err;
+            }
+          }
+
+          if (!created || !user) {
+            throw ApiError.internal('Failed to create organization due to slug collision');
+          }
         }
       }
 
