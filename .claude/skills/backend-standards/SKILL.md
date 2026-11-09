@@ -5,7 +5,7 @@ description: Enforces industry-standard production backend architecture and prov
 
 ## BasaManager override (read first — wins over everything below)
 - Validate env with **Zod** in `apps/api/src/config/env.ts` (not hand-written getEnvOrThrow).
-- Tests use `prisma migrate reset --force` against migrations. **Never `prisma db push`**: it skips the SQL migrations that create roles and RLS, so tests would pass on a database unlike prod.
+- Tests run against migrations: a fresh database per run + `prisma migrate deploy` (`apps/api/test/global-setup.ts`, 09-TESTING). Never `prisma migrate reset`/`dev`. **Never `prisma db push`**: it skips the SQL migrations that create roles and RLS, so tests would pass on a database unlike prod.
 - **Redact** cookies, auth headers, passwords, tokens, file URLs. Do **not** capture response bodies for `/api/auth/*`, `/api/files/*`, `/api/payments/sslcommerz/*`.
 - Error responses use the shared format in `.agent/04-API.md`; **no stack traces** outside dev/test.
 - Express 5 forwards rejected promises to the error handler, so skip `asyncHandler`.

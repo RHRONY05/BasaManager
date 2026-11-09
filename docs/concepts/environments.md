@@ -63,13 +63,18 @@ test container starts; the owner is created by the container itself (`POSTGRES_U
 | `bm_owner`    | migrations only (`DATABASE_OWNER_URL`) | Superuser, **owns** the database and the tables                           |
 | `bm_app`      | the running API (`DATABASE_URL`)       | `NOBYPASSRLS`: can read and write rows but is bound by row-level security |
 | `bm_worker`   | the worker (`DATABASE_WORKER_URL`)     | `BYPASSRLS`: jobs span every organisation                                 |
-| `bm_readonly` | reports and debugging                  | `SELECT` only on new tables                                               |
+| `bm_readonly` | `pnpm db:docs`, backup checks          | `SELECT` only, and still bound by row-level security (sees no org rows)   |
 
 **Why the app is not the owner.** Postgres does not apply row-level security to a table's owner or to a
 superuser. If the API connected as the owner, the security rules that keep landlord A away from landlord B's
 rows would silently not apply. So the app logs in as `bm_app`, which is subject to them. This is the core of
-[multi-tenancy](/concepts/multi-tenancy-and-rls) (written in V4); here you only need to know why there are
-four logins.
+[multi-tenancy](/concepts/multi-tenancy-and-rls); here you only need to know why there are four logins.
+
+Since V4 the roles also come from the first database migration
+(`apps/api/prisma/migrations/20261108000000_roles/migration.sql`), which creates them if missing, **without
+passwords**, and sets their grants. So a database built by `prisma migrate deploy` always has them. The
+container script above only adds the dev/test passwords; staging and production get generated passwords from
+DevOps.
 
 The passwords (`bm_owner_dev`, `bm_app_dev`, ...) are **dev and test only** and are public in this repo.
 Staging and production use the **same role names** but **generated passwords**, one set per environment,
@@ -88,7 +93,8 @@ How each is loaded:
 
 - `pnpm --filter @bm/api dev` and `@bm/worker dev` start with `tsx watch --env-file-if-exists=../../.env`.
 - `playwright.config.ts` calls `process.loadEnvFile('.env.test')` and the servers it spawns inherit it.
-- `apps/api/test/global-setup.ts` loads `.env.test` for integration tests.
+- `apps/api/test/global-setup.ts` loads `.env.test` for integration tests, then creates a fresh database for
+  that run and migrates it (next section).
 
 Every variable and its rules are in [Environment variables](/reference/env-vars).
 
@@ -98,6 +104,27 @@ Every variable and its rules are in [Environment variables](/reference/env-vars)
 produces one readable list and exit code 1. On top of that it enforces safety rules that depend on
 `APP_ENV`: fake payments, a frozen clock and insecure cookies are all refused in staging and production.
 `NODE_ENV` only tells tooling whether to optimise; **`APP_ENV` decides behaviour**.
+
+### The database of one integration run (from V4)
+
+The test Postgres container holds the `basamanager_test` database, but integration tests do **not** run in it.
+`global-setup.ts` creates a new database for each `pnpm test:int` run, named
+`<base>_<timestamp>_<random>`, applies every migration with `prisma migrate deploy`, points `DATABASE_URL`,
+`DATABASE_OWNER_URL` and `DATABASE_WORKER_URL` at it, and drops it at the end. There is no `prisma migrate
+reset` anywhere: Prisma refuses it for AI agents without a human's consent, and this project never bypasses
+that guard. Migrations are also written with `prisma migrate diff`, not `migrate dev`. Details and the reasons
+are in [Testing strategy](/concepts/testing-strategy).
+
+The same idea is used by `pnpm db:docs` (`scripts/db-docs.mjs`): it builds a scratch database from the
+migrations, documents it as `bm_readonly`, and drops it, so the generated schema docs describe the committed
+migrations and never leftover dev data. The commands that touch the schema, and which database each one uses:
+
+| Command           | Database                                                      |
+| ----------------- | ------------------------------------------------------------- |
+| `pnpm db:migrate` | the one behind `DATABASE_OWNER_URL` (`prisma migrate deploy`) |
+| `pnpm db:seed`    | the one behind `DATABASE_URL`, as `bm_app` (dev/staging only) |
+| `pnpm test:int`   | a fresh database per run, dropped after                       |
+| `pnpm db:docs`    | a scratch database on the test Postgres, dropped after        |
 
 ### Staging and production (V3)
 
@@ -130,7 +157,8 @@ See the flowchart above: two independent stacks, one for dev data and one for th
 - **Port clashes.** Another project's Postgres on 5432 or Redis on 6379 stops `pnpm dev` from starting its
   own. Stop the other containers or change the port mapping.
 - **Test data vanishes on purpose.** The test Postgres keeps its data in RAM; `docker compose ... down` wipes
-  it. Dev data lives in the `pgdata` volume and survives restarts.
+  it. Dev data lives in the `pgdata` volume and survives restarts. Within the test container each integration
+  run also drops its own database.
 - **The role script runs once.** `01-roles.sql` only runs on a container's first start (Docker's init
   directory). To re-run it on an existing volume, run the file with `psql`, as CI does. The script is safe to
   run twice.
@@ -152,3 +180,4 @@ See the flowchart above: two independent stacks, one for dev data and one for th
 2. What happens if you start the API with `PAYMENTS_MOCK=true` and `APP_ENV=prod`? <details><summary>Answer</summary>It prints a config error and exits with code 1 before opening a port. <code>env.ts</code> refuses that combination, and <code>env.test.ts</code> proves it.</details>
 3. Your integration tests wiped something you cared about. How could that have happened, and what prevents it? <details><summary>Answer</summary>Only by pointing <code>DATABASE_URL</code> at the dev database. Tests use <code>.env.test</code> with port 5433 and the <code>basamanager_test</code> database, kept in RAM and separate from dev.</details>
 4. What is the difference between `NODE_ENV` and `APP_ENV`? <details><summary>Answer</summary><code>NODE_ENV</code> (development/test/production) is for tooling such as bundlers. <code>APP_ENV</code> (dev/test/staging/prod) decides which environment the app thinks it is in, and drives the safety rules.</details>
+5. Which database does `pnpm test:int` use? <details><summary>Answer</summary>A brand-new one, created for that run inside the test Postgres, migrated with <code>prisma migrate deploy</code> and dropped at the end. Never <code>prisma migrate reset</code> (Prisma refuses it for AI agents without a human's consent), and never the dev database.</details>

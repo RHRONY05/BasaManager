@@ -1,0 +1,99 @@
+# tbls config: ER diagram + per-table docs generated from the live database (skill `db-docs`).
+# The connection string is NOT stored here: scripts/db-docs.mjs passes it in as TBLS_DSN.
+# Generate with `pnpm db:docs` after every migration; never hand-edit docs/database/.
+
+name: BasaManager
+docPath: docs/database
+
+er:
+  format: svg
+  comment: true
+  distance: 1
+  hideDef: true
+
+format:
+  adjust: true
+
+exclude:
+  - public._prisma_migrations
+
+lint:
+  requireForeignKeyIndex:
+    enabled: true
+  duplicateRelations:
+    enabled: true
+  unrelatedTable:
+    enabled: true
+    exclude:
+      - public.job_runs # standalone worker log
+      - public.admin_org_overview
+      - public.admin_health
+
+# Prisma doesn't write COMMENT ON, so descriptions live here (03-DATABASE.md is the source).
+comments:
+  - table: public.users
+    tableComment: People who can sign in. Not org-owned (no RLS); anonymised on account deletion.
+  - table: public.organizations
+    tableComment: A landlord's organisation. Readable in its own context, by its members and by admin; updated only by its landlord or admin.
+  - table: public.memberships
+    tableComment: A user's role in one org. Exactly one active landlord per org.
+  - table: public.caretaker_buildings
+    tableComment: Which buildings a caretaker membership may act on.
+  - table: public.invitations
+    tableComment: Caretaker/tenant invites (hashed single-use token).
+  - table: public.buildings
+    tableComment: A building with its billing calendar and late-fee rule.
+  - table: public.units
+    tableComment: A rentable flat, room or shop in a building.
+  - table: public.unit_charges
+    tableComment: Fixed monthly charges of a unit (service, water, gas...).
+  - table: public.leases
+    tableComment: A tenancy of one unit. One live (pending/active/notice) lease per unit.
+  - table: public.lease_tenants
+    tableComment: Tenant memberships on a lease; one primary.
+  - table: public.lease_charges
+    tableComment: Fixed charges copied from the unit at lease start.
+  - table: public.deposit_entries
+    tableComment: Deposit ledger (received, refunded, applied to dues).
+  - table: public.meter_readings
+    tableComment: Monthly submeter readings (period_month = 1st of month).
+  - table: public.bills
+    tableComment: One bill per lease and month. total = sum of lines, paid = sum of allocations.
+  - table: public.bill_lines
+    tableComment: History. Rent, charges, electricity, adjustments, at most one late fee.
+  - table: public.payments
+    tableComment: History (void, never delete). Cash, bKash, Nagad, bank, SSLCommerz.
+  - table: public.payment_allocations
+    tableComment: History. How a payment is spread over bills.
+  - table: public.credit_entries
+    tableComment: History. Lease credit ledger (signed).
+  - table: public.payment_intents
+    tableComment: SSLCommerz sessions; only the validated IPN or the re-check job changes them.
+  - table: public.receipt_counters
+    tableComment: Gapless receipt sequence per org and year.
+  - table: public.receipts
+    tableComment: History. One receipt per payment, numbered BM-YYYY-NNNNNN.
+  - table: public.maintenance_requests
+    tableComment: Tenant repair requests and their state.
+  - table: public.maintenance_events
+    tableComment: History. Append-only request timeline.
+  - table: public.notices
+    tableComment: Building notices (soft delete).
+  - table: public.files
+    tableComment: Private stored objects (Cloudinary authenticated / local driver).
+  - table: public.documents
+    tableComment: Tenant documents. Extra RLS no_caretaker.
+  - table: public.notifications
+    tableComment: In-app notifications. RLS own_rows (by app.user_id).
+  - table: public.notification_preferences
+    tableComment: Per user, type and channel opt-outs.
+  - table: public.push_subscriptions
+    tableComment: Web Push endpoints of a user's devices.
+  - table: public.outbox
+    tableComment: Notification delivery queue. bm_app may only insert; the worker delivers.
+  - table: public.job_runs
+    tableComment: Worker job history for the admin health screen.
+  - table: public.admin_org_overview
+    tableComment: Admin view. Orgs with counts; rows only when app.is_admin = 'true'.
+  - table: public.admin_health
+    tableComment: Admin view. Job runs, failed outbox, flagged/stuck intents; admin context only.

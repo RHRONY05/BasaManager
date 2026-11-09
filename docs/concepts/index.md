@@ -10,6 +10,11 @@ where in code, and a self-check.
 - [Environments & config](/concepts/environments): dev and test as they exist today (ports, database roles, env files).
 - [Logging (Pino)](/concepts/logging): structured logs, request ids, and exactly what is redacted.
 
+## Written in task V4
+
+- [Multi-tenancy & row-level security](/concepts/multi-tenancy-and-rls): **new to the owner.** One shared database, `org_id` on every row, enforced by the service and by Postgres policies; the four database roles; `db.$tx`.
+- [Transactions & locking](/concepts/transactions-and-locking): first version. `db.$tx`, rollback, isolation level, why history cannot be deleted. Row locks around money arrive in V9.
+
 ## Coming
 
 | Concept                                                                  | Written in |
@@ -18,8 +23,6 @@ where in code, and a self-check.
 | [CI/CD pipeline](/concepts/ci-cd)                                        | V3         |
 | [Docker & the VPS](/concepts/docker-and-vps)                             | V3         |
 | [Backups](/concepts/backups)                                             | V3         |
-| [Multi-tenancy & row-level security](/concepts/multi-tenancy-and-rls)    | V4         |
-| [Transactions & locking](/concepts/transactions-and-locking)             | V4, V9     |
 | [Authentication & sessions](/concepts/authentication-and-sessions)       | V5         |
 | [Authorization](/concepts/authorization)                                 | V5         |
 | [Validation with Zod](/concepts/validation-with-zod)                     | V5         |

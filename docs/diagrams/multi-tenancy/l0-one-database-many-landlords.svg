@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 660" width="1500" height="660" font-family="'Segoe UI', Inter, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1f1f1f"/>
+    </marker>
+  </defs>
+  <rect width="1500" height="660" fill="#ffffff"/>
+
+  <text x="40" y="52" font-size="28" font-weight="700" fill="#1f1f1f">Multi-tenancy, level 0: one database, many landlords</text>
+  <text x="40" y="82" font-size="16" fill="#3a3a3a">Every request reaches the same Postgres, but only ever sees the rows of the organisation it belongs to.</text>
+  <g font-size="15" fill="#3a3a3a">
+    <line x1="1010" y1="36" x2="1070" y2="36" stroke="#1f1f1f" stroke-width="2.4" marker-end="url(#arrow)"/>
+    <text x="1082" y="41">call / read</text>
+    <line x1="1010" y1="62" x2="1070" y2="62" stroke="#1f1f1f" stroke-width="2.4" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <text x="1082" y="67">return / response</text>
+    <rect x="1230" y="24" width="26" height="18" rx="3" fill="#FEC8C3"/><text x="1266" y="39">people</text>
+    <rect x="1340" y="24" width="26" height="18" rx="7" fill="#BFE3FD"/><text x="1376" y="39">our code</text>
+    <circle cx="1243" cy="62" r="9" fill="#E3CCFD"/><text x="1266" y="67">data store</text>
+    <rect x="1340" y="53" width="26" height="18" rx="3" fill="#C9F2D6"/><text x="1376" y="67">output</text>
+    <rect x="1230" y="80" width="26" height="18" rx="3" fill="#FFF1B8"/><text x="1266" y="95">warning</text>
+  </g>
+
+  <!-- Arrows first -->
+  <g fill="none" stroke="#1f1f1f" stroke-width="2.4">
+    <path d="M260,240 H416" marker-end="url(#arrow)"/>
+    <path d="M416,268 H264" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <path d="M260,420 H416" marker-end="url(#arrow)"/>
+    <path d="M416,448 H264" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <path d="M840,320 H1049" marker-end="url(#arrow)"/>
+    <path d="M1054,380 H844" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <path d="M1180,477 V516" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+  </g>
+
+  <!-- People -->
+  <rect x="40" y="200" width="220" height="90" rx="6" fill="#FEC8C3"/>
+  <text x="150" y="238" font-size="20" font-weight="700" fill="#1f1f1f" text-anchor="middle">Landlord</text>
+  <text x="150" y="263" font-size="15" fill="#3a3a3a" text-anchor="middle">of Org A</text>
+  <rect x="40" y="380" width="220" height="90" rx="6" fill="#FEC8C3"/>
+  <text x="150" y="418" font-size="20" font-weight="700" fill="#1f1f1f" text-anchor="middle">Tenant</text>
+  <text x="150" y="443" font-size="15" fill="#3a3a3a" text-anchor="middle">of Org B</text>
+  <text x="338" y="228" font-size="16" fill="#1f1f1f" text-anchor="middle">request</text>
+  <text x="338" y="290" font-size="16" fill="#1f1f1f" text-anchor="middle">own data</text>
+  <text x="338" y="408" font-size="16" fill="#1f1f1f" text-anchor="middle">request</text>
+  <text x="338" y="470" font-size="16" fill="#1f1f1f" text-anchor="middle">own data</text>
+
+  <!-- API -->
+  <rect x="420" y="160" width="420" height="380" rx="56" fill="#BFE3FD"/>
+  <text x="630" y="210" font-size="24" font-weight="700" fill="#1f1f1f" text-anchor="middle">API (logs in as bm_app)</text>
+  <g font-size="16" fill="#1f1f1f">
+    <text x="470" y="262" font-weight="700">① Read the session</text>
+    <text x="490" y="285" font-size="15" fill="#3a3a3a">who, which org, which role</text>
+    <text x="470" y="328" font-weight="700">② Open a transaction</text>
+    <text x="490" y="351" font-size="15" fill="#3a3a3a">db.$tx(ctx, fn)</text>
+    <text x="470" y="394" font-weight="700">③ Tell Postgres who is asking</text>
+    <text x="490" y="417" font-size="15" fill="#3a3a3a">set_config('app.org_id', ...)</text>
+    <text x="470" y="460" font-weight="700">④ Run the queries</text>
+    <text x="490" y="483" font-size="15" fill="#3a3a3a">and filter by org_id in the service too</text>
+  </g>
+
+  <!-- Postgres -->
+  <circle cx="1180" cy="350" r="127" fill="#E3CCFD"/>
+  <text x="1180" y="322" font-size="24" font-weight="700" fill="#1f1f1f" text-anchor="middle">Postgres</text>
+  <text x="1180" y="352" font-size="16" fill="#3a3a3a" text-anchor="middle">one shared schema</text>
+  <text x="1180" y="376" font-size="16" fill="#3a3a3a" text-anchor="middle">rows of Org A, Org B...</text>
+  <text x="1180" y="400" font-size="16" fill="#3a3a3a" text-anchor="middle">row-level security</text>
+  <text x="945" y="306" font-size="16" fill="#1f1f1f" text-anchor="middle">org + SQL</text>
+  <text x="945" y="408" font-size="16" fill="#1f1f1f" text-anchor="middle">that org's rows only</text>
+
+  <!-- Output + warning -->
+  <rect x="1050" y="520" width="260" height="64" rx="6" fill="#C9F2D6"/>
+  <text x="1180" y="548" font-size="18" font-weight="700" fill="#1f1f1f" text-anchor="middle">Org A's rows only</text>
+  <text x="1180" y="570" font-size="14" fill="#3a3a3a" text-anchor="middle">Org B's rows do not exist for this query</text>
+  <rect x="420" y="570" width="420" height="64" rx="6" fill="#FFF1B8"/>
+  <text x="630" y="598" font-size="16" font-weight="700" fill="#1f1f1f" text-anchor="middle">Forget a WHERE in the code?</text>
+  <text x="630" y="620" font-size="15" fill="#3a3a3a" text-anchor="middle">Postgres still hides the other orgs' rows.</text>
+</svg>
