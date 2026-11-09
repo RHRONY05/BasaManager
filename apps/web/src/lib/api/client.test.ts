@@ -258,6 +258,49 @@ describe('apiFetch', () => {
     expect(callCount).toBe(2);
   });
 
+  it('clears session and navigates to /login when refresh returns 401 UNAUTHENTICATED', async () => {
+    setActiveOrgId('org-789');
+    const mockNavigate = vi.fn();
+    setNavigateHandler(mockNavigate);
+
+    const mockFetch = vi.fn().mockImplementation(async (url: string) => {
+      if (url === '/api/auth/refresh') {
+        return {
+          ok: false,
+          status: 401,
+          statusText: 'Unauthorized',
+          json: async () => ({
+            error: {
+              code: 'UNAUTHENTICATED',
+              message: 'Refresh token expired or invalid',
+              requestId: 'req-refresh-expired',
+            },
+          }),
+        };
+      }
+
+      return {
+        ok: false,
+        status: 401,
+        statusText: 'Unauthorized',
+        json: async () => ({
+          error: {
+            code: 'UNAUTHENTICATED',
+            message: 'Token expired',
+            requestId: 'req-first-fail',
+          },
+        }),
+      };
+    });
+
+    vi.stubGlobal('fetch', mockFetch);
+
+    await expect(apiFetch('/api/protected-res')).rejects.toThrow();
+
+    expect(getActiveOrgId()).toBeNull();
+    expect(mockNavigate).toHaveBeenCalledWith('/login');
+  });
+
   it('clears session and navigates to /login when refresh fails', async () => {
     setActiveOrgId('org-789');
     const mockNavigate = vi.fn();

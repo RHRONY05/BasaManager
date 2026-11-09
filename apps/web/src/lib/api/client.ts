@@ -104,7 +104,7 @@ function runSingleFlightRefresh(requestPath: string): Promise<void> {
           await doRefresh();
         }
       } catch (err) {
-        if (err instanceof ApiRequestError && err.code === 'SESSION_REVOKED') {
+        if (err instanceof ApiRequestError && (err.status === 401 || err.code === 'SESSION_REVOKED')) {
           clearSessionAndRedirect(requestPath);
         }
         throw err;

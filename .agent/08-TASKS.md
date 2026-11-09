@@ -65,6 +65,7 @@ V0 Preflight ─▶ V1 Monorepo + CI ─▶ V2 Design ─▶ V3 Infra walking sk
 
 - [ ] **V6 Organisation, buildings, units, staff** — O1–O5
   - Routes + pages (landlord buildings, building detail tabs, unit drawer, team). Caretaker invites + assignment. Leaflet map.
+  - Deferred from V5 review: invitation acceptance to handle re-invite of removed members with membership upsert (active status) and signed-out existing user prompt.
   - Docs: `features/organisations-and-staff.md`, `features/buildings-and-units.md`.
   - **Tests:** integration for every route incl. caretaker scope; `onboarding.spec.ts`.
   - **AC:** landlord creates 2 buildings with units/charges; caretaker invited, assigned to one building, sees only it.
@@ -95,6 +96,7 @@ V0 Preflight ─▶ V1 Monorepo + CI ─▶ V2 Design ─▶ V3 Infra walking sk
 
 - [ ] **V11 Notifications** — N1–N4, B5
   - Outbox + worker delivery, in-app bell (live), email templates (React Email), web push (VAPID, service worker, opt-in UX, iOS guidance), preferences, reminder + late-fee jobs wired to outbox, `/notifications`.
+  - Outbox worker delivery: mark pre-V11 pending auth rows sent or skip rows older than worker cut-over.
   - Docs: `features/notifications.md`, `concepts/realtime-socketio.md`, `concepts/notification-pipeline-outbox.md`, `concepts/web-push-from-zero.md`.
   - **Tests:** outbox integration list; push sender mock; preference rules; reminders dedup; e2e bell updates.
   - **AC:** issuing a bill on staging delivers in-app + email + push (desktop Chrome) to the tenant within 30 s.
