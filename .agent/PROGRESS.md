@@ -583,3 +583,7 @@ Next: CI 8/8 on 6e6f9a5, then Opus reviewer on auth (fix the gaps listed in the 
 ### 2026-11-09 — Claude (lead) — V5 CI wait 2
 Did: checked PR #10 at 6e6f9a5: all 7 checks pending (run 42584554356), state BLOCKED on pending checks only. No code change. Committed locally, NOT pushed (a push to main makes #10 behind under strict checks).
 Next: CI 8/8 on 6e6f9a5, then Opus reviewer on auth (fix the gaps listed in the V5 docs entry or justify them), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5. Do not push PROGRESS commits to main until #10 is merged.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 3
+Did: checked PR #10 at 6e6f9a5: lint-typecheck and unit green; integration, e2e, images, docs, security still in progress. No code change. Committed locally, NOT pushed (a push to main makes #10 behind under strict checks).
+Next: CI 8/8 on 6e6f9a5, then Opus reviewer on auth (fix the gaps listed in the V5 docs entry or justify them), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5. Do not push PROGRESS commits to main until #10 is merged.
