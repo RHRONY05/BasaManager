@@ -4,6 +4,19 @@ How BasaManager is built without a human after planning: who does what, on which
 handed over, and what must be true before anything merges. This doc is also the **experiment**:
 the lead records metrics so the owner can judge what the agents could and couldn't do.
 
+## Current setup: Antigravity builds, Claude reviews (owner decision 2026-11-09)
+This replaces the Claude lead, the Claude implementer roles and the dispatch steps wherever the sections below disagree. Two days with a Claude lead used 4-5 five-hour windows without finishing V5, mostly on repeated session start-up and CI waiting.
+
+| Who | Does what | When |
+|---|---|---|
+| **`scripts/autonomous.sh`** | Manager: starts sessions, waits for CI, requests the review, merges, watches the staging deploy, removes worktrees | Always; uses no model |
+| **Antigravity** (`agy -p`, Gemini 3.8 Flash High) | All task work: tests, code, docs, fixes, PRs, CI waiting. One session per task, following `.agent/workflows/next-task.md` | Every task |
+| **Claude reviewer** (Sonnet; Opus when the diff touches auth, payments, billing, migrations/RLS or documents) | One review per ready PR. Only an APPROVE gets a merge; after 3 failed reviews the script stops | PR is CI-green |
+| **Claude bug hunt** (Sonnet) | Files `bug-hunt` issues for real defects; Antigravity fixes them first in the next goal | End of each goal |
+| **Claude DevOps / debugger** (Sonnet) | Secrets, VM, releases and failed deploys; unsticks Antigravity after 3 sessions with no change | On request only |
+
+Antigravity may use `gh` and push task branches. It never merges, pushes to `main`, tags, reads the credentials or runs deploys: the script merges, and only after Claude's APPROVE. Antigravity now writes its own tests, so principle 2's independent tests no longer apply; the reviewer's check that tests would fail on wrong code carries that weight.
+
 ## Principles
 1. **The plan is the contract.** Agents build what `.agent/` says. A gap in the docs is fixed in the
    docs first (by the lead or architect), then built. Nobody improvises product or design decisions.
@@ -64,7 +77,7 @@ agy -p "$(cat .agent/briefs/<task>-<part>.md)" --model gemini-3.8-flash-high   -
 - The lead runs this as a foreground Bash call with `timeout: 3000000` (50 min) and never ends its session while agy runs, so the JSON result always comes back to it. `scripts/autonomous.sh` sets `BASH_MAX_TIMEOUT_MS=3000000` to allow this; a headless session waited 640 s this way on 2026-11-08.
 - Turbo probe, 2026-11-08, throwaway worktree, launched by a Claude session outside the relay: agy installed dependencies, ran Vitest, ran a Playwright test against localhost and opened localhost with its Chrome DevTools tool, with no permission prompt (185 s).
 - agy runs commands itself (install, typecheck, lint, tests) and fixes its own failures; briefs say so. The lead checks the final result only.
-- A worktree does not confine agy: it runs as the owner's Windows user. The owner accepted this to make the build fully autonomous. Briefs still keep agy to its task: no `gh`, `az`, `ssh`, `git push`, deploy scripts or the credentials folder (rules: Secrets).
+- A worktree does not confine agy: it runs as the owner's Windows user. The owner accepted this to make the build fully autonomous. Antigravity stays away from `az`, `ssh`, deploy scripts, merges and the credentials folder (rules: Secrets).
 - Antigravity reads `AGENTS.md` itself; every brief still starts with "Read AGENTS.md, rules/basamanager.md and these docs: …".
 - Parallel limit: **3 agy sessions at once**. Each worktree uses its own test database
   (`basamanager_test_<task>`) and its own dev ports (from `scripts/ports.mjs`) so they never collide.
@@ -72,8 +85,8 @@ agy -p "$(cat .agent/briefs/<task>-<part>.md)" --model gemini-3.8-flash-high   -
 - V0 Preflight proved the whole loop on a throwaway task (create worktree → agy edits files → lead runs the
   test → JSON parsed → follow-up with `--conversation` → worktree removed), 2026-11-08.
 
-## Running without a human (relay, owner decision 2026-11-08)
-The owner plans, grants permissions once and checks in; the agents do the rest. One long lead session can't finish the build, because every request re-sends its whole context. So `scripts/autonomous.sh` starts a fresh lead session (Sonnet 5.5 at medium effort, owner decision to save usage; permissions bypassed by the owner's choice) per step until the goal is reached: `scripts/autonomous.sh V5` stops once every task up to V5 is ticked, and with no argument the goal is V17 (everything). The owner can run it in stages (for example V5, then V7, then V10) and start the next stage later. A usage limit only pauses it. The files are the lead's memory: PROGRESS.md, 08-TASKS.md, briefs, git. Opus also stays for the reviews listed above and the architect and designer roles.
+## Running without a human
+`scripts/autonomous.sh V5` runs until every task up to V5 is ticked, and with no argument the goal is V17 (everything). The owner can run it in stages and start the next stage later. A usage limit on either side only pauses it. The files are the memory: PROGRESS.md, 08-TASKS.md, git. See "Current setup" at the top.
 
 ## Merge gates (branch protection on `main`)
 CI green (lint, typecheck, unit, integration, e2e desktop + mobile, docs build, audit, gitleaks, CodeQL)
