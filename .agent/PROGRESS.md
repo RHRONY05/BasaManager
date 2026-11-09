@@ -669,3 +669,7 @@ Next: CI 8/8 on 27ed4d4 (PR is BEHIND main with PROGRESS-only commits; merge mai
 ### 2026-11-09 — Claude (lead) — V5 CI wait on 27ed4d4
 Did: checked PR #10 at 27ed4d4: all 7 checks IN_PROGRESS (just started). BEHIND main (PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change. Committed locally, NOT pushed.
 Next: CI 8/8 on 27ed4d4 (if e2e red, debugger reads the failing logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 2 on 27ed4d4
+Did: rechecked PR #10 at 27ed4d4: lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e still IN_PROGRESS. Still BEHIND main (PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change. Committed locally, NOT pushed.
+Next: CI 8/8 on 27ed4d4 (if e2e red, debugger reads the failing logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
