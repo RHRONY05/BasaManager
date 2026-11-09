@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1700 800" width="1700" height="800" font-family="'Segoe UI', Inter, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1f1f1f"/>
+    </marker>
+  </defs>
+  <rect width="1700" height="800" fill="#ffffff"/>
+  <text x="40" y="52" font-size="28" font-weight="700" fill="#1f1f1f">Buildings &amp; units, level 0</text>
+  <text x="40" y="82" font-size="16" fill="#3a3a3a">Property hierarchy: landlords and caretakers manage buildings, floors, units, and recurring utility charge templates under RLS isolation.</text>
+  <g font-size="15" fill="#3a3a3a">
+    <line x1="1130" y1="36" x2="1190" y2="36" stroke="#1f1f1f" stroke-width="2.4" marker-end="url(#arrow)"/>
+    <text x="1202" y="41">call / read</text>
+    <line x1="1130" y1="62" x2="1190" y2="62" stroke="#1f1f1f" stroke-width="2.4" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <text x="1202" y="67">write / return</text>
+    <rect x="1370" y="24" width="26" height="18" rx="3" fill="#FEC8C3"/><text x="1406" y="39">people / external</text>
+    <rect x="1530" y="24" width="26" height="18" rx="7" fill="#BFE3FD"/><text x="1566" y="39">our code</text>
+    <circle cx="1383" cy="62" r="9" fill="#E3CCFD"/><text x="1406" y="67">data store</text>
+    <rect x="1530" y="53" width="26" height="18" rx="3" fill="#C9F2D6"/><text x="1566" y="67">output</text>
+  </g>
+  <g fill="none" stroke="#1f1f1f" stroke-width="2.4">
+    <path d="M250,400 H514" marker-end="url(#arrow)"/>
+    <path d="M514,440 H254" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <path d="M1084,400 H1374" marker-end="url(#arrow)"/>
+    <path d="M740,562 V632" marker-end="url(#arrow)"/>
+    <path d="M860,632 V564" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+  </g>
+  <rect x="40" y="330" width="210" height="150" rx="6" fill="#FEC8C3"/>
+  <text x="145" y="375" font-size="20" font-weight="700" fill="#1f1f1f" text-anchor="middle">Landlord &amp; Caretaker</text>
+  <text x="145" y="405" font-size="15" fill="#3a3a3a" text-anchor="middle">web client / PWA</text>
+  <text x="145" y="427" font-size="15" fill="#3a3a3a" text-anchor="middle">X-Org-Id header</text>
+  <text x="145" y="449" font-size="14" fill="#666666" text-anchor="middle">(caretakers scoped)</text>
+  <text x="382" y="388" font-size="16" fill="#1f1f1f" text-anchor="middle">CRUD buildings &amp; units</text>
+  <text x="382" y="466" font-size="16" fill="#1f1f1f" text-anchor="middle">JSON responses &amp; stats</text>
+  <rect x="520" y="240" width="560" height="320" rx="56" fill="#BFE3FD"/>
+  <text x="800" y="315" font-size="24" font-weight="700" fill="#1f1f1f" text-anchor="middle">Buildings &amp; Units Service</text>
+  <text x="800" y="350" font-size="15" fill="#3a3a3a" text-anchor="middle">enforce org ownership &amp; caretaker building scope</text>
+  <text x="800" y="375" font-size="15" fill="#3a3a3a" text-anchor="middle">manage building address, coordinates &amp; geo map</text>
+  <text x="800" y="400" font-size="15" fill="#3a3a3a" text-anchor="middle">maintain floor, unit number &amp; status (vacant/occupied)</text>
+  <text x="800" y="425" font-size="15" fill="#3a3a3a" text-anchor="middle">configure recurring charge templates (fixed &amp; metered)</text>
+  <text x="800" y="450" font-size="15" fill="#3a3a3a" text-anchor="middle">compute building occupancy &amp; unit counts</text>
+  <text x="800" y="475" font-size="15" fill="#3a3a3a" text-anchor="middle">prevent unit deletion when active lease exists</text>
+  <text x="800" y="500" font-size="15" fill="#3a3a3a" text-anchor="middle">prevent building deletion when units remain</text>
+  <rect x="1380" y="340" width="220" height="120" rx="6" fill="#C9F2D6"/>
+  <text x="1490" y="380" font-size="18" font-weight="700" fill="#1f1f1f" text-anchor="middle">Downstream Consumers</text>
+  <text x="1490" y="410" font-size="14" fill="#3a3a3a" text-anchor="middle">Leasing engine (V7)</text>
+  <text x="1490" y="430" font-size="14" fill="#3a3a3a" text-anchor="middle">Billing monthly run (V8)</text>
+  <text x="1490" y="450" font-size="14" fill="#3a3a3a" text-anchor="middle">Maintenance tickets (V10)</text>
+  <text x="1232" y="390" font-size="16" fill="#1f1f1f" text-anchor="middle">charges &amp; units</text>
+  <circle cx="800" cy="700" r="68" fill="#E3CCFD"/>
+  <text x="800" y="692" font-size="18" font-weight="700" fill="#1f1f1f" text-anchor="middle">Postgres 17</text>
+  <text x="800" y="715" font-size="14" fill="#3a3a3a" text-anchor="middle">buildings, units,</text>
+  <text x="800" y="733" font-size="14" fill="#3a3a3a" text-anchor="middle">unit_charges, leases</text>
+</svg>

@@ -63,11 +63,11 @@ V0 Preflight ─▶ V1 Monorepo + CI ─▶ V2 Design ─▶ V3 Infra walking sk
   - **Tests:** auth integration list (09); `auth.spec.ts`.
   - **AC:** all auth e2e green both projects; old refresh token reuse visibly signs out the other session; Google login works on staging with the owner's test Gmail.
 
-- [ ] **V6 Organisation, buildings, units, staff** — O1–O5
+- [x] **V6 Organisation, buildings, units, staff** — O1–O5
   - Routes + pages (landlord buildings, building detail tabs, unit drawer, team). Caretaker invites + assignment. Leaflet map.
   - Deferred from V5 review: invitation acceptance to handle re-invite of removed members with membership upsert (active status) and signed-out existing user prompt.
   - Docs: `features/organisations-and-staff.md`, `features/buildings-and-units.md`.
-  - **Tests:** integration for every route incl. caretaker scope; `onboarding.spec.ts`.
+  - **Tests:** integration for every route incl. caretaker scope; `buildings-units.spec.ts`.
   - **AC:** landlord creates 2 buildings with units/charges; caretaker invited, assigned to one building, sees only it.
 
 - [ ] **V7 Tenants & leases** — T1, T2, T4, T5

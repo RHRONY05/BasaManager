@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1700 850" width="1700" height="850" font-family="'Segoe UI', Inter, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1f1f1f"/>
+    </marker>
+  </defs>
+  <rect width="1700" height="850" fill="#ffffff"/>
+  <text x="40" y="52" font-size="28" font-weight="700" fill="#1f1f1f">Organisations &amp; staff, level 1: Guards and Subsystems</text>
+  <text x="40" y="82" font-size="16" fill="#3a3a3a">Flow of control: HTTP headers and cookies are authenticated, tenant scope is locked in RLS, and operations hit isolated domain services.</text>
+  <g font-size="15" fill="#3a3a3a">
+    <line x1="1130" y1="36" x2="1190" y2="36" stroke="#1f1f1f" stroke-width="2.4" marker-end="url(#arrow)"/>
+    <text x="1202" y="41">request</text>
+    <rect x="1370" y="24" width="26" height="18" rx="3" fill="#FFF1B8"/><text x="1406" y="39">middleware guard</text>
+    <rect x="1530" y="24" width="26" height="18" rx="7" fill="#BFE3FD"/><text x="1566" y="39">controller &amp; service</text>
+    <circle cx="1383" cy="62" r="9" fill="#E3CCFD"/><text x="1406" y="67">Postgres RLS</text>
+  </g>
+  <g fill="none" stroke="#1f1f1f" stroke-width="2.4">
+    <path d="M220,380 H300" marker-end="url(#arrow)"/>
+    <path d="M500,380 H580" marker-end="url(#arrow)"/>
+    <path d="M780,380 H860" marker-end="url(#arrow)"/>
+    <path d="M1060,250 H1160" marker-end="url(#arrow)"/>
+    <path d="M1060,380 H1160" marker-end="url(#arrow)"/>
+    <path d="M1060,510 H1160" marker-end="url(#arrow)"/>
+    <path d="M1420,250 H1500" marker-end="url(#arrow)"/>
+    <path d="M1420,380 H1500" marker-end="url(#arrow)"/>
+    <path d="M1420,510 H1500" marker-end="url(#arrow)"/>
+  </g>
+  <rect x="40" y="330" width="180" height="100" rx="6" fill="#FEC8C3"/>
+  <text x="130" y="375" font-size="18" font-weight="700" fill="#1f1f1f" text-anchor="middle">Client</text>
+  <text x="130" y="405" font-size="14" fill="#3a3a3a" text-anchor="middle">HTTP + X-Org-Id</text>
+  <rect x="300" y="330" width="200" height="100" rx="6" fill="#FFF1B8"/>
+  <text x="400" y="375" font-size="18" font-weight="700" fill="#1f1f1f" text-anchor="middle">requireUser</text>
+  <text x="400" y="405" font-size="14" fill="#3a3a3a" text-anchor="middle">JWT session verify</text>
+  <rect x="580" y="330" width="200" height="100" rx="6" fill="#FFF1B8"/>
+  <text x="680" y="370" font-size="18" font-weight="700" fill="#1f1f1f" text-anchor="middle">requireMembership</text>
+  <text x="680" y="395" font-size="13" fill="#3a3a3a" text-anchor="middle">check active member</text>
+  <text x="680" y="415" font-size="13" fill="#3a3a3a" text-anchor="middle">set app.org_id / user_id</text>
+  <rect x="860" y="330" width="200" height="100" rx="6" fill="#FFF1B8"/>
+  <text x="960" y="375" font-size="18" font-weight="700" fill="#1f1f1f" text-anchor="middle">requireRole</text>
+  <text x="960" y="405" font-size="14" fill="#3a3a3a" text-anchor="middle">landlord authorization</text>
+  <rect x="1160" y="200" width="260" height="100" rx="6" fill="#BFE3FD"/>
+  <text x="1290" y="245" font-size="18" font-weight="700" fill="#1f1f1f" text-anchor="middle">Org Management</text>
+  <text x="1290" y="275" font-size="14" fill="#3a3a3a" text-anchor="middle">getOrg, updateOrg</text>
+  <rect x="1160" y="330" width="260" height="100" rx="6" fill="#BFE3FD"/>
+  <text x="1290" y="375" font-size="18" font-weight="700" fill="#1f1f1f" text-anchor="middle">Members &amp; Caretakers</text>
+  <text x="1290" y="405" font-size="14" fill="#3a3a3a" text-anchor="middle">getMembers, updateBuildings</text>
+  <rect x="1160" y="460" width="260" height="100" rx="6" fill="#BFE3FD"/>
+  <text x="1290" y="505" font-size="18" font-weight="700" fill="#1f1f1f" text-anchor="middle">Invitations &amp; Outbox</text>
+  <text x="1290" y="535" font-size="14" fill="#3a3a3a" text-anchor="middle">inviteCaretaker, revoke</text>
+  <circle cx="1570" cy="380" r="70" fill="#E3CCFD"/>
+  <text x="1570" y="375" font-size="18" font-weight="700" fill="#1f1f1f" text-anchor="middle">Postgres 17</text>
+  <text x="1570" y="398" font-size="13" fill="#3a3a3a" text-anchor="middle">Tenant RLS enforced</text>
+</svg>

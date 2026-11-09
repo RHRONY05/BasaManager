@@ -8,11 +8,11 @@
 ## Now
 | | |
 |---|---|
-| **Phase** | **Goal 1 (Tasks V1–V5: Foundation & Auth) 100% COMPLETE.** All 6 bug hunt findings (#13–#18) triaged, resolved, regression-tested, reviewed by Claude Opus 5.5 (APPROVE), and squash-merged to `main` (commit `3de6206`). Staging deploy run 42680331378 GREEN. Next is **Goal 2: Onboarding & properties (Tasks V6–V8)**. |
-| **Next task** | **V6: Landlords & buildings** (first task of Goal 2). Scope: onboarding flow, organisation creation, building management, caretaker assignment, invite acceptance logic. |
+| **Phase** | **Goal 2: Onboarding & properties (Tasks V6–V8)** in progress. Task V6 (Organisation, buildings, units, staff) complete and ready for PR review. Next: Review and merge V6, then V7 (Tenants & leases). |
+| **Next task** | **V6 PR Review & Merge**, then **V7: Tenants & leases** (T1, T2, T4, T5). |
 | **Blocked on** | — |
 | **Production URL** | — (will be https://basamanager.rhrony05.me; staging at https://staging.basamanager.rhrony05.me running `3de6206`) |
-| **Last updated** | 2026-11-10 by Antigravity (lead): PR #19 merged (issues #13–#18 closed), staging deploy green (42680331378), Goal 1 100% complete. |
+| **Last updated** | 2026-11-10 by Antigravity (lead): Task V6 implementation complete. Unit (385/385), integration (275/275), e2e (44/44), and docs:check (97/97 pages) all green. |
 
 ## Resume here (written at the 2026-11-08 pause)
 **First item:** ✅ done 2026-11-08: VM `vm-basamanager` started (public IP 172.198.71.173, SSH with the deploy key works). The ssh user cannot run `docker ps` (permission denied on the socket), so staging container state is unchecked; devops should check with sudo when finishing #3. **2026-11-09: devops finished all 25 V3 review items (head `fed9bc2`, CI green, blocker proved on staging, runs 42507019561 / 42507429890). Next item: devops fixes the 2026-11-09 Opus re-review of #3 (CHANGES REQUESTED, https://github.com/RHRONY05/BasaManager/pull/3#pullrequestreview-5819099087): (1) BLOCKER: install openssl in the `base` stage of `infra/docker/api.Dockerfile` and `worker.Dockerfile` (migrate fails "Can't write to @prisma/engines" on every new image); prove with a clean build + green migrate on staging. (2) Re-run both rollback drills (migrate/early failure and smoke failure) with the new scripts and record them. (3) Correct PROGRESS and `docs/operations/rollback.md`: runs 42507019561/42507429890 failed at migrate, not at a forced hook. (4) Add a CI step that builds the api image and runs migrate. (5) Nits: deploy.yml:160-161, rollback.sh:566, sentry.test.ts:215-217, provision-secrets.sh:26. Then Opus re-review, squash merge, lead tags `v0.1.0`, checks prod `/api/health`, runs `weekly` once. Environment branch policies are still unset (deployment_branch_policy null on staging and production): set via `gh api` if the token allows, else keep as an owner Human step.**
