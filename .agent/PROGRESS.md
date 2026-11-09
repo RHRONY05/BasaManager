@@ -12,7 +12,7 @@
 | **Next task** | #3 V3 is **MERGED** (squash feddf21, 2026-11-09, CI 8/8 on bb93001). Staging deploy run 42515537657 on feddf21 is GREEN and V3 is ticked. **v0.1.0 tagged on 38ebb32 (2026-11-09); prod deploy run 42516300840 GREEN; https://basamanager.rhrony05.me/api/health = 200.** `weekly` run once 2026-11-09 (run 42516601364): restore-drill **RESTORE OK** (backups/staging/2026-11-08.dump); `audit` job RED (see below). V3 METRICS row added and worktree `V3-infra` removed (2026-11-09). Follow-up PR #7 (`fix/V3-followup`, worktree `D:/Projects/bm-wt/V3-followup`) is open with CI 8/8, not merged: 3 nits + weekly `audit` green. Reviewer (Sonnet) APPROVED #7 at f57e08b (2026-11-09, 0 blockers, CI 8/8, mergeState CLEAN). **#7 MERGED (squash a2f17a7, 2026-11-09); staging deploy run 42518261355 + ci 42518261300 running.** `weekly` re-run 42518815701: audit + restore-drill both GREEN; worktree V3-followup removed. gzip/brotli wording fixed (2026-11-09). **#4 V2 MERGED (squash afe9217, 2026-11-09); staging deploy run 42521236153 + ci 42521236160 GREEN (ci 42521236160 green too); V2 ticked, METRICS row added, worktree V2-design removed.** **#5 V4: debugger fixed the integration test (c93b669); main merged into feat/V4 (4d62878, pushed, typecheck green, CI running).** CI 8/8 on 4d62878. **Opus review of #5: CHANGES REQUESTED (1 blocker, 3 shoulds, 3 nits; ../bm-runs/V4-review.md).** **Architect fixed all 7 items (b326c43, pushed, local tests green; CI not yet seen).** **Merged main into feat/V4 (8735126, pushed; main only changed docs/scripts) so strict checks pass; CI on b326c43 was 5/8 green with e2e + security still running.** **CI 8/8 on 8735126; Opus re-review of #5: APPROVE (0 blockers, 1 should, 2 nits; ../bm-runs/V4-rereview.md).** Next: squash merge #5 (merge main first if behind), then fix the should as a small follow-up (onUpdate: NoAction on composite FKs, regenerate 0100, add test) plus nits (org_id-first unique indexes or doc note; add db:drift to CI); tick V4, METRICS row, remove worktree, then V5 |
 | **Blocked on** | — |
 | **Production URL** | — (will be https://basamanager.rhrony05.me) |
-| **Last updated** | 2026-11-09 by Claude (lead): V5 PR #10 opened; CI then Opus auth review next |
+| **Last updated** | 2026-11-09 by Claude (lead): V5 CI wait 13 on 10b6d43 (e2e pending, 12:14Z) |
 
 ## Resume here (written at the 2026-11-08 pause)
 **First item:** ✅ done 2026-11-08: VM `vm-basamanager` started (public IP 172.198.71.173, SSH with the deploy key works). The ssh user cannot run `docker ps` (permission denied on the socket), so staging container state is unchecked; devops should check with sudo when finishing #3. **2026-11-09: devops finished all 25 V3 review items (head `fed9bc2`, CI green, blocker proved on staging, runs 42507019561 / 42507429890). Next item: devops fixes the 2026-11-09 Opus re-review of #3 (CHANGES REQUESTED, https://github.com/RHRONY05/BasaManager/pull/3#pullrequestreview-5819099087): (1) BLOCKER: install openssl in the `base` stage of `infra/docker/api.Dockerfile` and `worker.Dockerfile` (migrate fails "Can't write to @prisma/engines" on every new image); prove with a clean build + green migrate on staging. (2) Re-run both rollback drills (migrate/early failure and smoke failure) with the new scripts and record them. (3) Correct PROGRESS and `docs/operations/rollback.md`: runs 42507019561/42507429890 failed at migrate, not at a forced hook. (4) Add a CI step that builds the api image and runs migrate. (5) Nits: deploy.yml:160-161, rollback.sh:566, sentry.test.ts:215-217, provision-secrets.sh:26. Then Opus re-review, squash merge, lead tags `v0.1.0`, checks prod `/api/health`, runs `weekly` once. Environment branch policies are still unset (deployment_branch_policy null on staging and production): set via `gh api` if the token allows, else keep as an owner Human step.**
@@ -571,3 +571,231 @@ Next: run full `pnpm lint` + web tests in D:/Projects/bm-wt/V5, open the V5 PR, 
 ### 2026-11-09 — Claude (lead) — V5 PR opened
 Did: in D:/Projects/bm-wt/V5 ran full `pnpm lint` (fixed Prettier on 6 files and a token-lint error: landing brand text now `hidden sm:inline`), web tests 73 ✅, mobile layout audit 644 passed / 0 failed. Pushed feat/V5 and opened PR #10 (https://github.com/RHRONY05/BasaManager/pull/10). CI not yet seen.
 Next: CI 8/8 on #10 (merge main first if behind), Opus reviewer on auth (fix the gaps listed in the V5 docs entry or justify them), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI: gitleaks fix
+Did: CI on PR #10 at 3612b0b: unit green, `security` RED at the gitleaks step (pnpm audit passed). 4 generic-api-key false positives, all fake test values: `JWT_SECRET` in invites.service(.flows).test.ts, `secret` in middleware/auth.test.ts, a password in test/auth/realtime.int.test.ts. Added `^apps/api/(src|test)/.*\.test\.ts$` to `.gitleaks.toml` allowlist; pushed 6d03a03 on feat/V5. CI re-running.
+Next: CI 8/8 on 6d03a03 (merge main first if behind), Opus reviewer on auth (fix the gaps listed in the V5 docs entry or justify them), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5. Do not push PROGRESS commits to main until #10 is merged.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait / merge main
+Did: PR #10 at 6d03a03 had all 7 checks pending and was BEHIND main (docs-only changes). Merged origin/main into feat/V5 (clean) and pushed 6e6f9a5. CI re-running.
+Next: CI 8/8 on 6e6f9a5, then Opus reviewer on auth (fix the gaps listed in the V5 docs entry or justify them), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5. Do not push PROGRESS commits to main until #10 is merged.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 2
+Did: checked PR #10 at 6e6f9a5: all 7 checks pending (run 42584554356), state BLOCKED on pending checks only. No code change. Committed locally, NOT pushed (a push to main makes #10 behind under strict checks).
+Next: CI 8/8 on 6e6f9a5, then Opus reviewer on auth (fix the gaps listed in the V5 docs entry or justify them), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5. Do not push PROGRESS commits to main until #10 is merged.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 3
+Did: checked PR #10 at 6e6f9a5: lint-typecheck and unit green; integration, e2e, images, docs, security still in progress. No code change. Committed locally, NOT pushed (a push to main makes #10 behind under strict checks).
+Next: CI 8/8 on 6e6f9a5, then Opus reviewer on auth (fix the gaps listed in the V5 docs entry or justify them), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5. Do not push PROGRESS commits to main until #10 is merged.
+
+### 2026-11-09 — Claude (lead) — V5 CodeQL red
+Did: checked PR #10 at 6e6f9a5: lint-typecheck, unit, integration, images, docs, security green; e2e still in progress; **CodeQL FAILED: 8 new high alerts** (run 129051772559). They are real findings, not noise: `js/polynomial-redos` apps/api/src/lib/slug.ts:8 (regex on uncontrolled data); `js/missing-rate-limiting` on routes at auth.routes.ts:32,35,41,42, users.routes.ts:21, orgs.routes.ts:23, invites.routes.ts:24 (these match the gaps the V5 docs list: no limiter on signup, verify-email, reset-password, refresh, and the authenticated routes). No code change this session. Committed locally, NOT pushed.
+Next: fix in D:/Projects/bm-wt/V5 (debugger or architect, Sonnet): rewrite the slug regex without backtracking (or cap input length first); add a rate limiter (existing rateLimit middleware) to the flagged routes, with integration tests; push, CI 8/8 incl. CodeQL, then Opus reviewer on auth, merge, tick V5, METRICS row, remove worktree. Do not push PROGRESS commits to main until #10 is merged.
+
+### 2026-11-09 — Claude (lead) — V5 CodeQL fixes
+Did: debugger fixed all 8 CodeQL alerts in D:/Projects/bm-wt/V5, commit 099e521 (pushed on feat/V5): slug.ts caps input at 200 chars and trims hyphens with a loop (no backtracking regex); new Redis limiters `authSensitiveLimiter` (30/min/IP: signup, verify-email, refresh, reset-password) and `generalLimiter` (300/min/IP: logout, logout-all, Google, /me, /org, invites); users/orgs/invites routes take `redis`. Tests: slug unit, rateLimit unit, `test/auth/rate-limit.int.test.ts` (429 RATE_LIMITED). Local: api typecheck/eslint/prettier clean, unit 378/378, integration 178/178. docs/features/auth.md gaps row updated. CodeQL not yet re-run (CI pending on 099e521). Details ../bm-runs/V5-codeql.md.
+Tokens: debugger 57k.
+Next: CI 8/8 incl. CodeQL on 099e521 (merge main first if behind), Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry: refresh rotation race, socket handshake vs session row, no retention job, DELETE /api/me), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5. Do not push PROGRESS commits to main until #10 is merged.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait on 099e521
+Did: checked PR #10: head is 099e521 (CodeQL fixes), not behind main. CI run 42585432659 just started (pending); the older run 42584554356 on 6e6f9a5 is superseded (e2e was still running, ignore it). No code change. Committed locally, NOT pushed.
+Next: CI 8/8 incl. CodeQL on 099e521, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry: refresh rotation race, socket handshake vs session row, no retention job, DELETE /api/me), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5. Do not push PROGRESS commits to main until #10 is merged.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait on 099e521 (2)
+Did: rechecked PR #10 at 099e521: all 7 checks IN_PROGRESS, state BLOCKED on pending checks only. No code change. Committed locally, NOT pushed.
+Next: CI 8/8 incl. CodeQL on 099e521, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry: refresh rotation race, socket handshake vs session row, no retention job, DELETE /api/me), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5. Do not push PROGRESS commits to main until #10 is merged.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait on 099e521 (3)
+Did: rechecked PR #10 at 099e521: lint-typecheck, unit, docs green; integration, e2e, images, security still IN_PROGRESS (state BLOCKED on pending checks only; CodeQL not listed yet). No code change. Committed locally, NOT pushed.
+Next: CI 8/8 incl. CodeQL on 099e521, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry: refresh rotation race, socket handshake vs session row, no retention job, DELETE /api/me), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5. Do not push PROGRESS commits to main until #10 is merged.
+
+### 2026-11-09 — Claude (lead) — V5 CI red on 099e521 (e2e + CodeQL), fix in progress
+Did: PR #10 at 099e521: 6 checks green, **e2e RED** and **CodeQL RED**. CodeQL: 1 high `js/missing-rate-limiting` at apps/api/src/modules/auth/auth.routes.ts:45 (one route the last fix missed). e2e: widespread failures on desktop+mobile: home.spec.ts:4, auth.spec.ts (signup "Check your email" heading not found, login, forgot, invite, logout, redirect, account, sessions, reuse), states.spec.ts checks 1/1b/1c/2/3/4 (6 s timeouts), layout `/` 768 en-XA and `/reset-password` 320 en-XA. Suspects: new 30/min/IP limiters hit by e2e sharing one IP (fix via test env config, not prod limits), stale specs, CI-only env.
+Debugger (a1cc5199b8934bc26, 99k tokens) ran out before finishing; left UNCOMMITTED edits in D:/Projects/bm-wt/V5: ci.yml (+4), auth.routes.ts (+1 limiter), LandingPage.tsx, tests/e2e/home.spec.ts, tests/e2e/states.spec.ts (+30). Its last full e2e run (all four specs, both projects) had not reported. Not verified, not pushed.
+Next: in D:/Projects/bm-wt/V5 review `git diff`, re-run the failing e2e specs locally on both projects, `pnpm lint` + typecheck + integration, commit and push; CI 8/8 incl. CodeQL on the new head; then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree. Do not push PROGRESS commits to main until #10 is merged.
+
+### 2026-11-09 — Claude (lead) — V5 e2e/CodeQL fix pushed
+Did: reviewed the debugger's uncommitted diff in D:/Projects/bm-wt/V5 and committed + pushed 680dba5 on feat/V5: `generalLimiter` on `/resend-verification` (the last CodeQL `missing-rate-limiting` alert, auth.routes.ts:45); ci.yml e2e job now runs `pnpm --filter @bm/api db:migrate` against the test DB (the compose DB only has roles, so the API had no schema: likely the cause of the widespread e2e failures); `states.spec.ts` signs a real user in per role (role pages are behind auth since V5); `home.spec.ts` ignores the expected 401 console errors of a signed-out visit; landing CTA buttons `shrink-0` + `sm:flex-wrap`. Local: typecheck ✅ (web, api, worker), Prettier ✅ on the 5 files. Full local e2e NOT re-run, so the fix is unproven until CI.
+Next: CI 8/8 incl. CodeQL and e2e on 680dba5 (merge main first if behind); if e2e is still red read the failing logs (debugger), else Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5. Do not push PROGRESS commits to main until #10 is merged.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait on 680dba5
+Did: checked PR #10 at 680dba5: all 7 checks IN_PROGRESS (CodeQL not listed yet); mergeState BEHIND main (PROGRESS-only commits). Did not merge main yet, because that would cancel the running CI. No code change.
+Next: when CI finishes on 680dba5: if e2e/CodeQL are green, merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5. If e2e is still red, debugger reads the failing logs.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 2 on 680dba5
+Did: checked PR #10 at 680dba5: lint-typecheck, unit, integration, docs, security and **CodeQL green** (the missing-rate-limiting alert is fixed); e2e and images still IN_PROGRESS. Still BEHIND main (PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change. Committed locally, NOT pushed.
+Next: when e2e + images finish green on 680dba5, merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5. If e2e is red, debugger reads the failing logs.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 3 on 680dba5
+Did: rechecked PR #10 at 680dba5: lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e still IN_PROGRESS. Still BEHIND main (PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change. Committed locally, NOT pushed.
+Next: when e2e is green on 680dba5, merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5. If e2e is red, debugger reads the failing logs.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 4 on 680dba5
+Did: rechecked PR #10 at 680dba5: lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e still IN_PROGRESS. Still BEHIND main (PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change. Committed locally, NOT pushed.
+Next: when e2e is green on 680dba5, merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5. If e2e is red, debugger reads the failing logs.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 5 on 680dba5
+Did: rechecked PR #10 at 680dba5: lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e (run 42598626596) started 10:08Z, in progress at 10:12Z (normal duration). Still BEHIND main (PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change. Committed locally, NOT pushed.
+Next: when e2e is green on 680dba5, merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5. If e2e is red, debugger reads the failing logs.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 6 on 680dba5
+Did: rechecked PR #10 at 680dba5: lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e (run 42598626596) started 10:08Z, in progress at 10:13Z (normal duration). Still BEHIND main (PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change. Committed locally, NOT pushed.
+Next: when e2e is green on 680dba5, merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5. If e2e is red, debugger reads the failing logs.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 7 on 680dba5
+Did: rechecked PR #10 at 680dba5: lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e (run 42598626596) started 10:08Z, in progress at 10:14Z (normal duration). Still BEHIND main (PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change. Committed locally, NOT pushed.
+Next: when e2e is green on 680dba5, merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5. If e2e is red, debugger reads the failing logs.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 8 on 680dba5
+Did: rechecked PR #10 at 680dba5: lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e (run 42598626596) started 10:08Z, in progress at 10:14Z. Still BEHIND main (PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change. Committed locally, NOT pushed.
+Next: when e2e is green on 680dba5, merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5. If e2e is red, debugger reads the failing logs.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 9 on 680dba5
+Did: rechecked PR #10 at 680dba5: lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e (run 42598626596) started 10:08Z, in progress at 10:15Z. Still BEHIND main (PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change. Committed locally, NOT pushed.
+Next: when e2e is green on 680dba5, merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5. If e2e is red, debugger reads the failing logs.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 10 on 680dba5
+Did: rechecked PR #10 at 680dba5: lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e (run 42598626596) started 10:08Z, at step "Run pnpm test:e2e" and still in progress at 10:16Z (earlier e2e runs took 10-12 min). Still BEHIND main (PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change. Committed locally, NOT pushed.
+Next: when e2e is green on 680dba5, merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5. If e2e is red, debugger reads the failing logs.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 11 on 680dba5
+Did: rechecked PR #10 at 680dba5: lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e (run 42598626596) started 10:08Z, still IN_PROGRESS at 10:17Z. Still BEHIND main (PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change. Committed locally, NOT pushed.
+Next: when e2e is green on 680dba5, merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5. If e2e is red, debugger reads the failing logs.
+
+### 2026-11-09 — Claude (lead) — V5 e2e red on 680dba5, fixed in 27ed4d4
+Did: e2e on 680dba5 was RED but down to 2 causes (1235 passed, 6 failed, 1 flaky; all other checks green incl. CodeQL): (1) layout stress `beforeAll` signup got 429 because `createVerifiedLandlord` ran before any `clearRateLimits()`; (2) `/reset-password` "request new link" button overflowed at 320 px en-XA (scroll 224 > client 220). The flaky auth.spec signup was a `page.goto('/login')` interruption. Fixed in D:/Projects/bm-wt/V5, pushed 27ed4d4 on feat/V5: `createVerifiedLandlord` calls `clearRateLimits()` first; button gets `px-2 text-sm sm:px-4 sm:text-base`. Web typecheck ✅, Prettier ✅. Not run locally in e2e, so unproven until CI. Main commits NOT pushed.
+Next: CI 8/8 on 27ed4d4 (PR is BEHIND main with PROGRESS-only commits; merge main into feat/V5 only after CI finishes), then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait on 27ed4d4
+Did: checked PR #10 at 27ed4d4: all 7 checks IN_PROGRESS (just started). BEHIND main (PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change. Committed locally, NOT pushed.
+Next: CI 8/8 on 27ed4d4 (if e2e red, debugger reads the failing logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 2 on 27ed4d4
+Did: rechecked PR #10 at 27ed4d4: lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e still IN_PROGRESS. Still BEHIND main (PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change. Committed locally, NOT pushed.
+Next: CI 8/8 on 27ed4d4 (if e2e red, debugger reads the failing logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 3 on 27ed4d4
+Did: rechecked PR #10 at 27ed4d4: lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e still IN_PROGRESS. Still BEHIND main (PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change. Committed locally, NOT pushed.
+Next: CI 8/8 on 27ed4d4 (if e2e red, debugger reads the failing logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 4 on 27ed4d4
+Did: rechecked PR #10 at 27ed4d4: lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e still IN_PROGRESS. Still BEHIND main (PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change. Committed locally, NOT pushed.
+Next: CI 8/8 on 27ed4d4 (if e2e red, debugger reads the failing logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 5 on 27ed4d4
+Did: rechecked PR #10 at 27ed4d4: lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e still IN_PROGRESS. Still BEHIND main (PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change. Committed locally, NOT pushed.
+Next: CI 8/8 on 27ed4d4 (if e2e red, debugger reads the failing logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 e2e red on 27ed4d4, fixed in ba615ed
+Did: e2e on 27ed4d4 RED (1307 passed, 20 failed, 1 flaky; all other checks green incl. CodeQL). Causes: en-XA pseudo-locale padding was one unbreakable run of dots (overflow at 320 px on login banner, check-your-email card, reset-password, account page); `.btn--block` and two AccountPage buttons were nowrap; `uiLogin` raced the app's own redirect to /login (flaky auth.spec:30). Debugger fixed in D:/Projects/bm-wt/V5, pushed ba615ed on feat/V5: pseudo-locale padding in space-separated runs of 5 (+unit test), `.btn--block` wraps, `data-allow-wrap` on auth/account buttons, `uiLogin` reuses the page when already on /login. Local layout spec 88/88 (with Verdana injected to mimic CI's wider fonts), auth.spec 22/22, lint + web typecheck ✅. Unproven in CI until it runs. Main commits NOT pushed.
+Tokens: debugger 100k. Details: ../bm-runs/V5-e2e-2.md.
+Next: CI 8/8 on ba615ed (if e2e still red, debugger reads the logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait on ba615ed
+Did: checked PR #10 at ba615ed: lint-typecheck and unit green; integration, e2e, images, docs, security IN_PROGRESS. BEHIND main (PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change. Committed locally, NOT pushed.
+Next: CI 8/8 on ba615ed (if e2e red, debugger reads the failing logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 2 on ba615ed
+Did: rechecked PR #10 at ba615ed: lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e still IN_PROGRESS. Still BEHIND main (PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change.
+Next: CI 8/8 on ba615ed (if e2e red, debugger reads the failing logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 3 on ba615ed
+Did: rechecked PR #10 at ba615ed: lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e still IN_PROGRESS. Still BEHIND main (PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change. Committed locally, NOT pushed.
+Next: CI 8/8 on ba615ed (if e2e red, debugger reads the failing logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 4 on ba615ed
+Did: rechecked PR #10 at ba615ed: lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e still IN_PROGRESS. Still BEHIND main (PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change. Committed locally, NOT pushed.
+Next: CI 8/8 on ba615ed (if e2e red, debugger reads the failing logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 5 on ba615ed
+Did: rechecked PR #10 at ba615ed: lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e still IN_PROGRESS. Still BEHIND main (PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change. Committed locally, NOT pushed.
+Next: CI 8/8 on ba615ed (if e2e red, debugger reads the failing logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 6 on ba615ed
+Did: rechecked PR #10 at ba615ed: lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e still IN_PROGRESS. Still BEHIND main (PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change.
+Next: CI 8/8 on ba615ed (if e2e red, debugger reads the failing logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 7 on ba615ed
+Did: rechecked PR #10 at ba615ed: lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e (run 42611990527) started 11:48Z, still IN_PROGRESS at 11:55Z (normal duration). mergeState UNKNOWN (still behind main with PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change. Committed locally, NOT pushed.
+Next: CI 8/8 on ba615ed (if e2e red, debugger reads the failing logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 8 on ba615ed
+Did: rechecked PR #10 at ba615ed: lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e still IN_PROGRESS. mergeState BEHIND main (PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change. Committed locally, NOT pushed.
+Next: CI 8/8 on ba615ed (if e2e red, debugger reads the failing logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 9 on ba615ed
+Did: rechecked PR #10 at ba615ed: lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e still IN_PROGRESS. mergeState BEHIND main (PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change.
+Next: CI 8/8 on ba615ed (if e2e red, debugger reads the failing logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 10 on ba615ed
+Did: rechecked PR #10 at ba615ed: lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e (run 42611990527) started 11:48Z, still IN_PROGRESS at 11:57Z (normal duration, 10-12 min). mergeState UNKNOWN/BEHIND main (PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change.
+Next: CI 8/8 on ba615ed (if e2e red, debugger reads the failing logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 11 on ba615ed
+Did: rechecked PR #10 at ba615ed: lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e (run 42611990527) started 11:48Z, still IN_PROGRESS at 11:58Z (normal duration, 10-12 min). mergeState BEHIND main (PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change. Committed locally, NOT pushed.
+Next: CI 8/8 on ba615ed (if e2e red, debugger reads the failing logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 12 on ba615ed
+Did: rechecked PR #10 at ba615ed: lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e (run 42611990527) still IN_PROGRESS. mergeState BEHIND main (PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change.
+Next: CI 8/8 on ba615ed (if e2e red, debugger reads the failing logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 13 on ba615ed
+Did: rechecked PR #10 at ba615ed: lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e (run 42611990527) started 11:48Z, still pending at 12:00Z (12 min, at the upper end of the usual 10-12). mergeState UNKNOWN (behind main, PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change.
+Next: CI 8/8 on ba615ed (if e2e red, or still running past ~12:20Z, debugger reads the logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth, merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 e2e red on ba615ed, fixed in 10b6d43
+Did: e2e on ba615ed RED, only 4 of 1324 failing (all other checks green incl. CodeQL): `layout.spec.ts` "/ audit 320px light" and "dark lng=en-XA" (desktop + mobile projects). Cause: landing hero CTAs `whitespace-nowrap shrink-0`; en-XA "Create account" is 289 px wide in a 286 px column. Debugger fixed in D:/Projects/bm-wt/V5, pushed 10b6d43 on feat/V5: both hero CTAs wrap below `sm` (`whitespace-normal sm:whitespace-nowrap py-2`, no `shrink-0`). Local: layout audit 320 px en-XA 100 passed on both projects, Prettier + ESLint clean. Unproven in CI until it runs. Details: ../bm-runs/V5-e2e-3.md.
+Tokens: debugger 50k.
+Next: CI 8/8 on 10b6d43 (if e2e red, debugger reads the logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth, merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait on 10b6d43
+Did: checked PR #10 at 10b6d43 (12:03Z): unit green; lint-typecheck, integration, e2e, images, docs, security just started (IN_PROGRESS). mergeState UNKNOWN (behind main, PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change.
+Next: CI 8/8 on 10b6d43 (if e2e red, debugger reads the logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth, merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 2 on 10b6d43
+Did: rechecked PR #10 at 10b6d43 (12:04Z): lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e (run 42613745958) just started, pending. mergeState UNKNOWN (behind main, PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change.
+Next: CI 8/8 on 10b6d43 (if e2e red, debugger reads the logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth, merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 3 on 10b6d43
+Did: rechecked PR #10 at 10b6d43 (12:05Z): lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e (run 42613745958) still pending. mergeState UNKNOWN (behind main, PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change.
+Next: CI 8/8 on 10b6d43 (if e2e red, debugger reads the logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth, merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 4 on 10b6d43
+Did: rechecked PR #10 at 10b6d43 (12:06Z): lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e (run 42613745958) still pending (started ~12:04Z, usual 10-12 min). mergeState UNKNOWN (behind main, PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change.
+Next: CI 8/8 on 10b6d43 (if e2e red, debugger reads the logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth, merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 5 on 10b6d43
+Did: rechecked PR #10 at 10b6d43 (12:07Z): lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e (run 42613745958) still IN_PROGRESS (started ~12:04Z, usual 10-12 min). mergeState UNKNOWN (behind main, PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change.
+Next: CI 8/8 on 10b6d43 (if e2e red, debugger reads the logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth, merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 6 on 10b6d43
+Did: rechecked PR #10 at 10b6d43 (12:08Z): lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e (run 42613745958) still pending (started ~12:04Z, usual 10-12 min). mergeState UNKNOWN (behind main, PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change.
+Next: CI 8/8 on 10b6d43 (if e2e red, debugger reads the logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth, merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 7 on 10b6d43
+Did: rechecked PR #10 at 10b6d43 (12:09Z): lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e (run 42613745958) still pending (started ~12:04Z, usual 10-12 min). mergeState UNKNOWN (behind main, PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change.
+Next: CI 8/8 on 10b6d43 (if e2e red, debugger reads the logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth, merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 8 on 10b6d43
+Did: rechecked PR #10 at 10b6d43 (12:10Z): lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e (run 42613745958) still IN_PROGRESS (started ~12:04Z, usual 10-12 min). mergeState UNKNOWN (behind main, PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change.
+Next: CI 8/8 on 10b6d43 (if e2e red, debugger reads the logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth, merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 9 on 10b6d43
+Did: rechecked PR #10 at 10b6d43 (12:10Z): lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e (run 42613745958) still pending (started ~12:04Z, usual 10-12 min). mergeState UNKNOWN (behind main, PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change.
+Next: CI 8/8 on 10b6d43 (if e2e red, debugger reads the logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth, merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 10 on 10b6d43
+Did: rechecked PR #10 at 10b6d43 (12:11Z): lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e (run 42613745958) in progress for 9 min (started 12:02Z, usual 10-12 min). Behind main (PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change.
+Next: CI 8/8 on 10b6d43 (if e2e red, debugger reads the logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth, merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 11 on 10b6d43
+Did: rechecked PR #10 at 10b6d43 (12:12Z): lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e (run 42613745958) still pending (started ~12:04Z, usual 10-12 min). Behind main (PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change.
+Next: CI 8/8 on 10b6d43 (if e2e red, debugger reads the logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth, merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 12 on 10b6d43
+Did: rechecked PR #10 at 10b6d43 (12:13Z): lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e (run 42613745958) still pending (started ~12:04Z, usual 10-12 min). Behind main (PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change.
+Next: CI 8/8 on 10b6d43 (if e2e red, debugger reads the logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth, merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 13 on 10b6d43
+Did: rechecked PR #10 at 10b6d43 (12:14Z): lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e (run 42613745958) still pending (started ~12:04Z, 10 min, usual 10-12). Behind main (PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change.
+Next: CI 8/8 on 10b6d43 (if e2e red, or still running past ~12:25Z, debugger reads the logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth, merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
