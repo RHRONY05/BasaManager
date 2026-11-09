@@ -8,11 +8,11 @@
 ## Now
 | | |
 |---|---|
-| **Phase** | **Running autonomously via `scripts/autonomous.sh`** (resumed 2026-11-08 on a new account). V0, V1, V2, V3 ✅. V4 (#5) merged with main, awaiting Opus review. 2026-11-09: relay now waits only on the CLI's own limit or network error at the end of a log, and leads push after every commit |
+| **Phase** | **Antigravity leads, one session per goal; Claude does critical tests, reviews, bug hunts (owner decision 2026-11-09).** See `.agent/GOAL.md` and `.agent/11-AGENT-TEAM.md`. V0–V4 done. **First:** if PR #12 is still open, wait for its CI, merge it (`gh pr merge 12 --squash`, a process change with no app code, owner-approved), then `git switch main` and `git pull --ff-only origin main`. **Then goal 1:** PR #10 (V5) has CI green and an Opus review with CHANGES REQUESTED: 3 blockers, 10 shoulds, posted on the PR. Fix them on `feat/V5` in `D:/Projects/bm-wt/V5`, tick V5, add the METRICS row, wait for CI, then call the Opus reviewer again |
 | **Next task** | #3 V3 is **MERGED** (squash feddf21, 2026-11-09, CI 8/8 on bb93001). Staging deploy run 42515537657 on feddf21 is GREEN and V3 is ticked. **v0.1.0 tagged on 38ebb32 (2026-11-09); prod deploy run 42516300840 GREEN; https://basamanager.rhrony05.me/api/health = 200.** `weekly` run once 2026-11-09 (run 42516601364): restore-drill **RESTORE OK** (backups/staging/2026-11-08.dump); `audit` job RED (see below). V3 METRICS row added and worktree `V3-infra` removed (2026-11-09). Follow-up PR #7 (`fix/V3-followup`, worktree `D:/Projects/bm-wt/V3-followup`) is open with CI 8/8, not merged: 3 nits + weekly `audit` green. Reviewer (Sonnet) APPROVED #7 at f57e08b (2026-11-09, 0 blockers, CI 8/8, mergeState CLEAN). **#7 MERGED (squash a2f17a7, 2026-11-09); staging deploy run 42518261355 + ci 42518261300 running.** `weekly` re-run 42518815701: audit + restore-drill both GREEN; worktree V3-followup removed. gzip/brotli wording fixed (2026-11-09). **#4 V2 MERGED (squash afe9217, 2026-11-09); staging deploy run 42521236153 + ci 42521236160 GREEN (ci 42521236160 green too); V2 ticked, METRICS row added, worktree V2-design removed.** **#5 V4: debugger fixed the integration test (c93b669); main merged into feat/V4 (4d62878, pushed, typecheck green, CI running).** CI 8/8 on 4d62878. **Opus review of #5: CHANGES REQUESTED (1 blocker, 3 shoulds, 3 nits; ../bm-runs/V4-review.md).** **Architect fixed all 7 items (b326c43, pushed, local tests green; CI not yet seen).** **Merged main into feat/V4 (8735126, pushed; main only changed docs/scripts) so strict checks pass; CI on b326c43 was 5/8 green with e2e + security still running.** **CI 8/8 on 8735126; Opus re-review of #5: APPROVE (0 blockers, 1 should, 2 nits; ../bm-runs/V4-rereview.md).** Next: squash merge #5 (merge main first if behind), then fix the should as a small follow-up (onUpdate: NoAction on composite FKs, regenerate 0100, add test) plus nits (org_id-first unique indexes or doc note; add db:drift to CI); tick V4, METRICS row, remove worktree, then V5 |
 | **Blocked on** | — |
 | **Production URL** | — (will be https://basamanager.rhrony05.me) |
-| **Last updated** | 2026-11-09 by Claude (lead): V5 CI wait 13 on 10b6d43 (e2e pending, 12:14Z) |
+| **Last updated** | 2026-11-09 by Claude (lead): V5 Opus review of #10: CHANGES REQUESTED (3 blockers); next is the fixes (12:40Z) |
 
 ## Resume here (written at the 2026-11-08 pause)
 **First item:** ✅ done 2026-11-08: VM `vm-basamanager` started (public IP 172.198.71.173, SSH with the deploy key works). The ssh user cannot run `docker ps` (permission denied on the socket), so staging container state is unchecked; devops should check with sudo when finishing #3. **2026-11-09: devops finished all 25 V3 review items (head `fed9bc2`, CI green, blocker proved on staging, runs 42507019561 / 42507429890). Next item: devops fixes the 2026-11-09 Opus re-review of #3 (CHANGES REQUESTED, https://github.com/RHRONY05/BasaManager/pull/3#pullrequestreview-5819099087): (1) BLOCKER: install openssl in the `base` stage of `infra/docker/api.Dockerfile` and `worker.Dockerfile` (migrate fails "Can't write to @prisma/engines" on every new image); prove with a clean build + green migrate on staging. (2) Re-run both rollback drills (migrate/early failure and smoke failure) with the new scripts and record them. (3) Correct PROGRESS and `docs/operations/rollback.md`: runs 42507019561/42507429890 failed at migrate, not at a forced hook. (4) Add a CI step that builds the api image and runs migrate. (5) Nits: deploy.yml:160-161, rollback.sh:566, sentry.test.ts:215-217, provision-secrets.sh:26. Then Opus re-review, squash merge, lead tags `v0.1.0`, checks prod `/api/health`, runs `weekly` once. Environment branch policies are still unset (deployment_branch_policy null on staging and production): set via `gh api` if the token allows, else keep as an owner Human step.**
@@ -70,16 +70,16 @@ Things only the human can do. Agents add to this list; the human ticks them.
 | Deploy SSH key | `~/.ssh/basamanager_ed25519` (+ `.pub`), created 2026-11-08, ACL limited to the user |
 | Local port conflicts | none (shopmate containers stopped 2026-11-08; keep them stopped while building) |
 
-### Builder setup (`/project-config`, 2026-11-08)
+### Builder setup (`/project-config`, re-verified 2026-11-09)
 | Item | Status | What was done / what Rony must do |
 |---|---|---|
 | node | ✅ | v22.22.2 |
 | pnpm (Corepack) | ✅ | 12.18.0 (`corepack pnpm` works) |
 | git | ✅ | 2.47.1; global user RHRONY / muhammadrony147@gmail.com |
 | docker + compose | ✅ | Engine 29.6.2 (Docker Desktop running), Compose v5.3.1 |
-| Ports 5432 / 6379 | ✅ | Freed by Rony (re-checked 2026-11-08) |
-| gh | ✅ | 2.103.3, logged in as RHRONY05, scopes repo, workflow, write:packages. Repo `RHRONY05/BasaManager` not created yet (V1 does it) |
-| az | ✅ | 2.92.0, subscription "Azure for Students" Enabled; `rg-basamanager` not created yet (V3) |
+| Ports 5432 / 6379 | ✅ | Freed by Rony (re-checked 2026-11-09, both free) |
+| gh | ✅ | 2.103.3, logged in as RHRONY05, scopes repo, workflow, write:packages. Repo `RHRONY05/BasaManager` active |
+| az | ✅ | 2.92.0, subscription "Azure for Students" Enabled (`rg-basamanager` + VM active) |
 | ssh | ✅ | OpenSSH 9.9p1; key pair `~/.ssh/basamanager_ed25519` created by the agent |
 | sentry-cli | ✅ | 3.8.2 via npx; `releases list --org $SENTRY_ORG` exits 0 with the token |
 | agy | ✅ | 1.5.3; `agy models` lists `gemini-3.8-flash-high` |
@@ -799,3 +799,78 @@ Next: CI 8/8 on 10b6d43 (if e2e red, debugger reads the logs); then merge main i
 ### 2026-11-09 — Claude (lead) — V5 CI wait 13 on 10b6d43
 Did: rechecked PR #10 at 10b6d43 (12:14Z): lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e (run 42613745958) still pending (started ~12:04Z, 10 min, usual 10-12). Behind main (PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change.
 Next: CI 8/8 on 10b6d43 (if e2e red, or still running past ~12:25Z, debugger reads the logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth, merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI green on 10b6d43, main merged
+Did: PR #10 at 10b6d43 CI 8/8 (e2e run 42613745958 green after the landing CTA wrap fix). Merged origin/main into feat/V5 (docs/scripts only), pushed 6c35b43; CI re-running.
+Next: CI 8/8 on 6c35b43 (if e2e red, debugger reads the logs); then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait on 6c35b43
+Did: checked PR #10 at 6c35b43: lint-typecheck green; unit, integration, e2e, images, docs, security still IN_PROGRESS (just started after the main merge). No code change.
+Next: CI 8/8 on 6c35b43 (if e2e red, debugger reads the logs); then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 2 on 6c35b43
+Did: rechecked PR #10 at 6c35b43: lint-typecheck, unit, integration, images, docs, security, CodeQL green; only e2e (run 42615537606) still pending. No code change.
+Next: when e2e is green (CI 8/8 on 6c35b43; if red, debugger reads the logs), Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 3 on 6c35b43
+Did: rechecked PR #10 at 6c35b43: lint-typecheck, unit, integration, images, docs, security, CodeQL green; only e2e still IN_PROGRESS. No code change.
+Next: when e2e is green (CI 8/8 on 6c35b43; if red, debugger reads the logs), Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 4 on 6c35b43
+Did: rechecked PR #10 at 6c35b43: lint-typecheck, unit, integration, images, docs, security, CodeQL green; only e2e still IN_PROGRESS. No code change.
+Next: when e2e is green (CI 8/8 on 6c35b43; if red, debugger reads the logs), Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 5 on 6c35b43
+Did: rechecked PR #10 at 6c35b43: lint-typecheck, unit, integration, images, docs, security, CodeQL green; only e2e still IN_PROGRESS. No code change.
+Next: when e2e is green (CI 8/8 on 6c35b43; if red, debugger reads the logs), Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 6 on 6c35b43
+Did: rechecked PR #10 at 6c35b43: lint-typecheck, unit, integration, images, docs, security, CodeQL green; only e2e (run 42615537606) still pending. No code change.
+Next: when e2e is green (CI 8/8 on 6c35b43; if red, debugger reads the logs), Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 7 on 6c35b43
+Did: rechecked PR #10 at 6c35b43 (12:21Z): lint-typecheck, unit, integration, images, docs, security, CodeQL green; only e2e (run 42615537606, started 12:15Z, 6 min in, usual 10-12) still IN_PROGRESS. No code change.
+Next: when e2e is green (CI 8/8 on 6c35b43; if red, debugger reads the logs), Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 8 on 6c35b43
+Did: rechecked PR #10 at 6c35b43 (12:22Z): lint-typecheck, unit, integration, images, docs, security, CodeQL green; only e2e (run 42615537606, started ~12:15Z, usual 10-12 min) still pending. No code change.
+Next: when e2e is green (CI 8/8 on 6c35b43; if red, debugger reads the logs), Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 9 on 6c35b43
+Did: rechecked PR #10 at 6c35b43 (12:23Z): lint-typecheck, unit, integration, images, docs, security, CodeQL green; only e2e (run 42615537606, started ~12:15Z, usual 10-12 min) still pending. No code change.
+Next: when e2e is green (CI 8/8 on 6c35b43; if red, debugger reads the logs), Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 10 on 6c35b43
+Did: rechecked PR #10 at 6c35b43 (12:24Z): lint-typecheck, unit, integration, images, docs, security, CodeQL green; only e2e (run 42615537606, started ~12:15Z, 9 min, usual 10-12) still pending. No code change.
+Next: when e2e is green (CI 8/8 on 6c35b43; if red, or still running past ~12:30Z, debugger reads the logs), Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 11 on 6c35b43
+Did: rechecked PR #10 at 6c35b43 (12:25Z): lint-typecheck, unit, integration, images, docs, security, CodeQL green; only e2e (run 42615537606, started ~12:15Z) still pending. No code change.
+Next: when e2e is green (CI 8/8 on 6c35b43; if red, or still running past ~12:35Z, debugger reads the logs), Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 12 on 6c35b43
+Did: rechecked PR #10 at 6c35b43 (12:26Z): lint-typecheck, unit, integration, images, docs, security, CodeQL green; only e2e (run 42615537606, started ~12:15Z, 11 min, usual 10-12) still pending. No code change.
+Next: when e2e is green (CI 8/8 on 6c35b43; if red, or still running past ~12:35Z, debugger reads the logs), Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 13 on 6c35b43
+Did: rechecked PR #10 at 6c35b43 (12:27Z): lint-typecheck, unit, integration, images, docs, security, CodeQL green; only e2e (run 42615537606, started ~12:15Z, 12 min, top of the usual 10-12) still pending. No code change.
+Next: when e2e is green (CI 8/8 on 6c35b43; if red, or still running past ~12:40Z, debugger reads the logs), Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 14 on 6c35b43
+Did: rechecked PR #10 at 6c35b43 (12:28Z): lint-typecheck, unit, integration, images, docs, security, CodeQL green; only e2e (run 42615537606, started ~12:15Z, 13 min) still pending. No code change.
+Next: when e2e is green (CI 8/8 on 6c35b43; if red, or still running past ~12:40Z, debugger reads the logs), Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 15 on 6c35b43
+Did: rechecked PR #10 at 6c35b43 (12:29Z): lint-typecheck, unit, integration, images, docs, security, CodeQL green; only e2e (run 42615537606, started 12:15Z, 14 min, step "Run pnpm test:e2e" in progress) still pending. No code change.
+Next: when e2e is green (CI 8/8 on 6c35b43; if red, or still running past ~12:40Z, debugger reads the logs), Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 Opus review
+Did: CI 8/8 on 6c35b43 (e2e run 42615537606 green). Opus reviewer attacked auth on the test Postgres/Redis. Verdict CHANGES REQUESTED (PR comment https://github.com/RHRONY05/BasaManager/pull/10#issuecomment-6740181902; details ../bm-runs/V5-review.md): 3 blockers, 10 shoulds, 5 nits.
+BLOCKERS: (1) refresh race: 5 parallel refreshes with one token gave 4x200 + 1x401, leaving a live session in the revoked family (auth.service.ts:316-392); fix with one conditional update marking the old token rotated + new session in the same transaction. (2) Google pre-hijack: unverified local account gets linked on Google login and its password still works (auth.service.ts:744-757, invite path ~644); fix: mark verified, remove password, revoke sessions, kick sockets. (3) lockout never triggers under parallel attempts (auth.service.ts:248-258); fix: atomic SQL increment.
+SHOULDS: signup outside the transaction and taken email returns 200 vs 04's CONFLICT (fix code or update 04 + log); Google callback DB error must redirect to /login?error=google_failed; mailer swallows errors and outbox rows never marked delivered; JWT_SECRET must fail fast in staging/prod; common-password list 126 vs 10k; web client must sign out on SESSION_REVOKED; socket handshake must check session revoked; reset-password in one transaction; PR needs desktop+mobile screenshots.
+Tokens: reviewer 119k.
+Next: debugger/backend fixes all 3 blockers plus shoulds (tests first for the 3 races) in D:/Projects/bm-wt/V5, push, CI 8/8, Opus re-review, merge, tick V5, METRICS row, remove worktree.
+
+### 2026-11-09 — Antigravity (lead) — /project-config verification
+Did: ran full preflight and tool verification for Antigravity-led workflow. Checked all CLIs (node 22.22.2, pnpm 12.18.0, git 2.47.1, docker 29.6.2, gh 2.103.3, az 2.92.0, sentry-cli 3.8.2, agy 1.5.3, claude 2.1.319). All 16/16 secrets confirmed present by length in D:\Projects\Project_credentials\BasaManager.env. MCP servers (chrome-devtools, shadcn, github-mcp-server) connected and operational. Ports 5432 & 6379 confirmed free. Cloudflare DNS for rhrony05.me active. Formatted AGENTS.md with prettier and pushed to chore/agy-lead (PR #12).
+Next: when PR #12 CI passes 8/8, merge PR #12, pull main, and proceed with goal 1.
