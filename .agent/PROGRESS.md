@@ -530,3 +530,8 @@ Next: implementer (per .agent/briefs/V5-backend.md): add dev dep `socket.io-clie
 Did: agy (turbo, 45 min print timeout hit, 1.1M tokens) wrote the auth backend in D:/Projects/bm-wt/V5 (modules auth/users/invites/orgs, middleware, realtime, mailer, emails, shared auth schemas). I fixed 3 typecheck errors in rateLimit.ts (rate-limit-redis SendCommandFn). Typecheck ✅, integration 175/175 ✅ (all 70 auth tests now pass), unit 254 ✅. Committed + pushed to feat/V5.
 Still red: `pnpm lint` (8 `no-explicit-any` in modules/auth/auth.service.test.ts and modules/invites/invites.service.test.ts), `pnpm test:cov` api lines 66.5% < 80% (add unit tests for modules/auth, users, invites, orgs, realtime).
 Next: fix lint, raise coverage (agy follow-up with --conversation 0ba7b9e7-9de3-4f82-b5d9-909e421bee37 or debugger), then frontend auth pages, docs, PR, Opus review (auth), merge.
+
+### 2026-11-09 — Claude (lead) — V5 lint fixed
+Did: removed the 8 `no-explicit-any` in `auth.service.test.ts` (typed `MockDb`) and `invites.service.test.ts` (`as never`) in D:/Projects/bm-wt/V5; eslint on modules clean, api typecheck clean, 37 unit tests in modules pass; pushed to feat/V5.
+Still red: api coverage 66.5% < 80% (full `pnpm lint` not re-run).
+Next: raise api coverage with unit tests for modules/auth, users, invites, orgs, realtime (agy `--conversation 0ba7b9e7-9de3-4f82-b5d9-909e421bee37` or debugger), then frontend auth pages, docs, PR, Opus review (auth), merge.
