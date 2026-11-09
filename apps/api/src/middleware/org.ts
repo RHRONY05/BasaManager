@@ -50,16 +50,16 @@ export function createRequireMembership(prisma: Db) {
           where: {
             orgId,
             userId: req.user!.id,
-            status: 'active',
           },
           select: {
             id: true,
             role: true,
+            status: true,
           },
         });
       });
 
-      if (!membership) {
+      if (!membership || membership.status === 'removed') {
         // Must return 404 NOT_FOUND for "exists but not yours" to never leak existence
         throw ApiError.notFound('Organization not found');
       }

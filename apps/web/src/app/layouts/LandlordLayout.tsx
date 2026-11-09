@@ -10,6 +10,8 @@ import {
   CheckSquare,
   Bell,
   User,
+  Users,
+  Settings,
 } from 'lucide-react';
 import { PrefetchLink } from '../../lib/router/PrefetchLink';
 import { idlePreloadRoutes } from '../../lib/router/preload';
@@ -43,9 +45,20 @@ export function LandlordLayout() {
     [isCaretaker, t],
   );
 
+  const orgNavItems = useMemo(
+    () =>
+      isCaretaker
+        ? []
+        : [
+            { to: '/l/team', label: t('nav.team'), icon: Users, end: false },
+            { to: '/l/settings', label: t('nav.settings'), icon: Settings, end: false },
+          ],
+    [isCaretaker, t],
+  );
+
   useEffect(() => {
-    idlePreloadRoutes(navItems.map((item) => item.to));
-  }, [navItems]);
+    idlePreloadRoutes([...navItems.map((item) => item.to), ...orgNavItems.map((item) => item.to)]);
+  }, [navItems, orgNavItems]);
 
   return (
     <div className="min-h-dvh flex flex-col md:flex-row bg-bg text-fg">
@@ -86,6 +99,38 @@ export function LandlordLayout() {
               </PrefetchLink>
             );
           })}
+
+          {!isCaretaker && orgNavItems.length > 0 && (
+            <div className="pt-4 mt-4 border-t border-border">
+              <p className="px-3 pb-2 text-xs font-semibold text-fg-muted uppercase tracking-wider">
+                {t('nav.organizations')}
+              </p>
+              <div className="space-y-1">
+                {orgNavItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <PrefetchLink
+                      key={item.to}
+                      to={item.to}
+                      end={item.end}
+                      className={({ isActive }) =>
+                        `flex items-center gap-3 px-3 py-2.5 min-h-tap rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
+                          isActive
+                            ? 'bg-accent text-accent-fg'
+                            : 'text-fg-muted hover:text-fg hover:bg-surface-hover'
+                        }`
+                      }
+                    >
+                      <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+                      <span title={item.label} className="truncate">
+                        {item.label}
+                      </span>
+                    </PrefetchLink>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </nav>
         <div className="p-4 border-t border-border">
           <PrefetchLink

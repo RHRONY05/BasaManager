@@ -78,6 +78,264 @@
         "type": "object",
         "properties": { "path": { "type": "string" }, "message": { "type": "string" } },
         "required": ["path", "message"]
+      },
+      "OrgDetailResponse": {
+        "type": "object",
+        "properties": { "data": { "$ref": "#/components/schemas/OrgDetail" } },
+        "required": ["data"]
+      },
+      "OrgDetail": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "slug": { "type": "string" },
+          "status": { "type": "string", "enum": ["active", "suspended"] }
+        },
+        "required": ["id", "name", "slug", "status"]
+      },
+      "UpdateOrgRequest": {
+        "type": "object",
+        "properties": { "name": { "type": "string", "minLength": 1, "maxLength": 200 } },
+        "required": ["name"]
+      },
+      "OrgMembersResponse": {
+        "type": "object",
+        "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/OrgMember" } } },
+        "required": ["data"]
+      },
+      "OrgMember": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "userId": { "type": "string", "format": "uuid" },
+          "role": { "type": "string", "enum": ["landlord", "caretaker", "tenant"] },
+          "status": { "type": "string", "enum": ["active", "removed"] },
+          "user": { "$ref": "#/components/schemas/MemberUser" },
+          "buildingIds": { "type": "array", "items": { "type": "string", "format": "uuid" } },
+          "createdAt": { "anyOf": [{ "type": "string" }, { "type": "string", "format": "date-time" }] }
+        },
+        "required": ["id", "userId", "role", "status", "user"]
+      },
+      "MemberUser": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "fullName": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "phone": { "type": ["string", "null"] }
+        },
+        "required": ["fullName", "email"]
+      },
+      "UpdateCaretakerBuildingsRequest": {
+        "type": "object",
+        "properties": { "buildingIds": { "type": "array", "items": { "type": "string", "format": "uuid" } } },
+        "required": ["buildingIds"]
+      },
+      "InviteCaretakerRequest": {
+        "type": "object",
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "role": { "type": "string", "enum": ["caretaker"] },
+          "buildingIds": { "type": "array", "items": { "type": "string", "format": "uuid" } }
+        },
+        "required": ["email", "role", "buildingIds"]
+      },
+      "OrgInvitesResponse": {
+        "type": "object",
+        "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/OrgInvite" } } },
+        "required": ["data"]
+      },
+      "OrgInvite": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "email": { "type": "string", "format": "email" },
+          "role": { "type": "string" },
+          "buildingIds": { "type": "array", "items": { "type": "string", "format": "uuid" } },
+          "expiresAt": { "anyOf": [{ "type": "string" }, { "type": "string", "format": "date-time" }] },
+          "createdAt": { "anyOf": [{ "type": "string" }, { "type": "string", "format": "date-time" }] }
+        },
+        "required": ["id", "email", "role", "buildingIds", "expiresAt", "createdAt"]
+      },
+      "BuildingsListResponse": {
+        "type": "object",
+        "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Building" } } },
+        "required": ["data"]
+      },
+      "Building": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "orgId": { "type": "string", "format": "uuid" },
+          "name": { "type": "string" },
+          "address": { "type": "string" },
+          "area": { "type": "string" },
+          "city": { "type": "string" },
+          "lat": { "type": ["number", "null"] },
+          "lng": { "type": ["number", "null"] },
+          "billDay": { "type": "number" },
+          "dueDay": { "type": "number" },
+          "graceDays": { "type": "number" },
+          "lateFeeType": { "type": "string", "enum": ["none", "flat", "percent"] },
+          "lateFeeValue": { "type": "number" },
+          "electricityRatePoisha": { "type": "number" },
+          "archivedAt": {
+            "anyOf": [{ "type": "string" }, { "type": "string", "format": "date-time" }, { "type": "null" }]
+          },
+          "createdAt": { "anyOf": [{ "type": "string" }, { "type": "string", "format": "date-time" }] },
+          "unitCount": { "type": "number" },
+          "occupiedCount": { "type": "number" },
+          "noticeCount": { "type": "number" }
+        },
+        "required": [
+          "id",
+          "name",
+          "address",
+          "area",
+          "city",
+          "billDay",
+          "dueDay",
+          "graceDays",
+          "lateFeeType",
+          "lateFeeValue",
+          "electricityRatePoisha"
+        ]
+      },
+      "BuildingResponse": {
+        "type": "object",
+        "properties": { "data": { "$ref": "#/components/schemas/Building" } },
+        "required": ["data"]
+      },
+      "CreateBuildingRequest": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "address": { "type": "string", "minLength": 1, "maxLength": 255 },
+          "area": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "city": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "lat": { "type": ["number", "null"], "minimum": -90, "maximum": 90 },
+          "lng": { "type": ["number", "null"], "minimum": -180, "maximum": 180 },
+          "billDay": { "type": "integer", "minimum": 1, "maximum": 28, "default": 1 },
+          "dueDay": { "type": "integer", "minimum": 1, "maximum": 28, "default": 10 },
+          "graceDays": { "type": "integer", "minimum": 0, "maximum": 15, "default": 0 },
+          "lateFeeType": { "type": "string", "enum": ["none", "flat", "percent"], "default": "none" },
+          "lateFeeValue": { "type": "integer", "minimum": 0, "default": 0 },
+          "electricityRatePoisha": { "type": "integer", "minimum": 0, "default": 0 }
+        },
+        "required": ["name", "address", "area", "city"]
+      },
+      "UpdateBuildingRequest": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "address": { "type": "string", "minLength": 1, "maxLength": 255 },
+          "area": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "city": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "lat": { "type": ["number", "null"], "minimum": -90, "maximum": 90 },
+          "lng": { "type": ["number", "null"], "minimum": -180, "maximum": 180 },
+          "billDay": { "type": "integer", "minimum": 1, "maximum": 28 },
+          "dueDay": { "type": "integer", "minimum": 1, "maximum": 28 },
+          "graceDays": { "type": "integer", "minimum": 0, "maximum": 15 },
+          "lateFeeType": { "type": "string", "enum": ["none", "flat", "percent"] },
+          "lateFeeValue": { "type": "integer", "minimum": 0 },
+          "electricityRatePoisha": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "UnitsListResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/UnitSummary" } }
+        },
+        "required": ["data"]
+      },
+      "UnitSummary": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "buildingId": { "type": "string", "format": "uuid" },
+          "label": { "type": "string" },
+          "floor": { "type": "number" },
+          "type": { "type": "string", "enum": ["family_flat", "bachelor_flat", "room", "shop"] },
+          "defaultRentPoisha": { "type": "number" },
+          "electricityMode": { "type": "string", "enum": ["none", "prepaid", "submeter"] },
+          "archivedAt": {
+            "anyOf": [{ "type": "string" }, { "type": "string", "format": "date-time" }, { "type": "null" }]
+          },
+          "charges": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/UnitCharge" },
+            "default": []
+          },
+          "lease": {
+            "type": ["object", "null"],
+            "properties": {
+              "id": { "type": "string", "format": "uuid" },
+              "status": { "type": "string" },
+              "tenantName": { "type": "string" },
+              "monthlyRentPoisha": { "type": "number" }
+            },
+            "required": ["status"]
+          }
+        },
+        "required": ["id", "label", "floor", "type", "defaultRentPoisha", "electricityMode"]
+      },
+      "UnitCharge": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "amountPoisha": { "type": "integer", "minimum": 0 }
+        },
+        "required": ["name", "amountPoisha"]
+      },
+      "UnitResponse": {
+        "type": "object",
+        "properties": { "data": { "$ref": "#/components/schemas/UnitSummary" } },
+        "required": ["data"]
+      },
+      "CreateUnitRequest": {
+        "type": "object",
+        "properties": {
+          "label": { "type": "string", "minLength": 1, "maxLength": 50 },
+          "floor": { "type": "integer", "minimum": -5, "maximum": 150 },
+          "type": { "type": "string", "enum": ["family_flat", "bachelor_flat", "room", "shop"] },
+          "defaultRentPoisha": { "type": "integer", "minimum": 0 },
+          "electricityMode": { "type": "string", "enum": ["none", "prepaid", "submeter"] },
+          "charges": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+                "amountPoisha": { "type": "integer", "minimum": 0 }
+              },
+              "required": ["name", "amountPoisha"]
+            }
+          }
+        },
+        "required": ["label", "floor", "type", "defaultRentPoisha", "electricityMode"]
+      },
+      "UpdateUnitRequest": {
+        "type": "object",
+        "properties": {
+          "label": { "type": "string", "minLength": 1, "maxLength": 50 },
+          "floor": { "type": "integer", "minimum": -5, "maximum": 150 },
+          "type": { "type": "string", "enum": ["family_flat", "bachelor_flat", "room", "shop"] },
+          "defaultRentPoisha": { "type": "integer", "minimum": 0 },
+          "electricityMode": { "type": "string", "enum": ["none", "prepaid", "submeter"] },
+          "charges": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+                "amountPoisha": { "type": "integer", "minimum": 0 }
+              },
+              "required": ["name", "amountPoisha"]
+            }
+          }
+        }
       }
     },
     "parameters": {}
@@ -133,6 +391,379 @@
           },
           "500": {
             "description": "Unexpected error.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          }
+        }
+      }
+    },
+    "/api/org": {
+      "get": {
+        "tags": ["Organization"],
+        "summary": "Get organization details",
+        "responses": {
+          "200": {
+            "description": "Organization details.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/OrgDetailResponse" } }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "404": {
+            "description": "Not found",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Organization"],
+        "summary": "Update organization name (Landlord only)",
+        "requestBody": {
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateOrgRequest" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated organization details.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/OrgDetailResponse" } }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          }
+        }
+      }
+    },
+    "/api/org/members": {
+      "get": {
+        "tags": ["Organization"],
+        "summary": "List organization members with caretaker buildings (Landlord only)",
+        "responses": {
+          "200": {
+            "description": "Member list.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/OrgMembersResponse" } }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          }
+        }
+      }
+    },
+    "/api/org/members/{membershipId}/buildings": {
+      "put": {
+        "tags": ["Organization"],
+        "summary": "Update caretaker assigned buildings (Landlord only)",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateCaretakerBuildingsRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Assigned buildings updated." },
+          "400": {
+            "description": "Validation failed",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "404": {
+            "description": "Member not found",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          }
+        }
+      }
+    },
+    "/api/org/members/{membershipId}": {
+      "delete": {
+        "tags": ["Organization"],
+        "summary": "Remove caretaker membership (Landlord only)",
+        "responses": {
+          "200": { "description": "Caretaker removed." },
+          "400": {
+            "description": "Cannot remove landlord or tenant",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "404": {
+            "description": "Member not found",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          }
+        }
+      }
+    },
+    "/api/org/invites": {
+      "post": {
+        "tags": ["Organization"],
+        "summary": "Invite a caretaker (Landlord only)",
+        "requestBody": {
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/InviteCaretakerRequest" } }
+          }
+        },
+        "responses": {
+          "201": { "description": "Invitation created." },
+          "400": {
+            "description": "Validation failed",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "409": {
+            "description": "Active invitation exists",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          }
+        }
+      },
+      "get": {
+        "tags": ["Organization"],
+        "summary": "List pending organization invites (Landlord only)",
+        "responses": {
+          "200": {
+            "description": "Pending invites list.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/OrgInvitesResponse" } }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          }
+        }
+      }
+    },
+    "/api/org/invites/{id}": {
+      "delete": {
+        "tags": ["Organization"],
+        "summary": "Revoke an invitation (Landlord only)",
+        "responses": {
+          "200": { "description": "Invitation revoked." },
+          "403": {
+            "description": "Forbidden",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "404": {
+            "description": "Invitation not found",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          }
+        }
+      }
+    },
+    "/api/buildings": {
+      "get": {
+        "tags": ["Buildings"],
+        "summary": "List buildings scoped by role",
+        "responses": {
+          "200": {
+            "description": "Buildings list.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/BuildingsListResponse" } }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Buildings"],
+        "summary": "Create building (Landlord only)",
+        "requestBody": {
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/CreateBuildingRequest" } }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Building created.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/BuildingResponse" } }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          }
+        }
+      }
+    },
+    "/api/buildings/{id}": {
+      "get": {
+        "tags": ["Buildings"],
+        "summary": "Get building details",
+        "responses": {
+          "200": {
+            "description": "Building details.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/BuildingResponse" } }
+            }
+          },
+          "404": {
+            "description": "Building not found",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Buildings"],
+        "summary": "Update building settings (Landlord only)",
+        "requestBody": {
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/UpdateBuildingRequest" } }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Building updated.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/BuildingResponse" } }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "404": {
+            "description": "Building not found",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          }
+        }
+      }
+    },
+    "/api/buildings/{id}/archive": {
+      "post": {
+        "tags": ["Buildings"],
+        "summary": "Archive building (Landlord only)",
+        "responses": {
+          "200": { "description": "Building archived." },
+          "403": {
+            "description": "Forbidden",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "409": {
+            "description": "Active leases exist",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          }
+        }
+      }
+    },
+    "/api/buildings/{id}/units": {
+      "get": {
+        "tags": ["Units"],
+        "summary": "List units for building (Landlord and assigned Caretakers)",
+        "responses": {
+          "200": {
+            "description": "Units list.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/UnitsListResponse" } }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "404": {
+            "description": "Building not found",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Units"],
+        "summary": "Create unit in building (Landlord only)",
+        "requestBody": {
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/CreateUnitRequest" } }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Unit created.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UnitResponse" } } }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "409": {
+            "description": "Duplicate label",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          }
+        }
+      }
+    },
+    "/api/units/{id}": {
+      "patch": {
+        "tags": ["Units"],
+        "summary": "Update unit (Landlord only)",
+        "requestBody": {
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/UpdateUnitRequest" } }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Unit updated.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UnitResponse" } } }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "404": {
+            "description": "Unit not found",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "409": {
+            "description": "Duplicate label",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          }
+        }
+      }
+    },
+    "/api/units/{id}/archive": {
+      "post": {
+        "tags": ["Units"],
+        "summary": "Archive unit (Landlord only)",
+        "responses": {
+          "200": { "description": "Unit archived." },
+          "403": {
+            "description": "Forbidden",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "409": {
+            "description": "Active lease exists",
             "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
           }
         }

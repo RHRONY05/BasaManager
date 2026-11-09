@@ -48,8 +48,15 @@ function mkDb(invRow: unknown, opts: { count?: number; userCreateErr?: unknown }
   };
   const tx = {
     invitation: { updateMany: s.updateMany },
-    membership: { create: s.membershipCreate },
-    caretakerBuilding: { create: s.cbCreate },
+    membership: {
+      create: s.membershipCreate,
+      findFirst: vi.fn().mockResolvedValue(null),
+      update: vi.fn().mockResolvedValue({ id: 'm-1' }),
+    },
+    caretakerBuilding: {
+      create: s.cbCreate,
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+    },
     organization: { findUnique: vi.fn().mockResolvedValue({ name: 'Acme' }) },
   };
   const db = {

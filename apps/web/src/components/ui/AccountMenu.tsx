@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { User, LogOut, ChevronDown } from 'lucide-react';
+import { User, LogOut, ChevronDown, Users, Settings } from 'lucide-react';
 import { useAuth } from '../../app/auth/AuthContext';
 import { PrefetchLink } from '../../lib/router/PrefetchLink';
 
@@ -23,7 +23,7 @@ function getInitials(name?: string | null): string {
 export function AccountMenu({ className = '' }: AccountMenuProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, memberships, signOut } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -93,6 +93,30 @@ export function AccountMenu({ className = '' }: AccountMenuProps) {
             <p className="text-sm font-semibold text-fg truncate">{user?.fullName || 'User'}</p>
             <p className="text-xs text-fg-muted truncate">{user?.email}</p>
           </div>
+
+          {/* Landlord Organisation Links */}
+          {memberships.some((m) => m.role === 'landlord') && (
+            <div className="py-1 border-b border-border">
+              <PrefetchLink
+                to="/l/team"
+                role="menuitem"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-2.5 px-3 py-2 text-sm text-fg hover:bg-surface-hover transition-colors whitespace-nowrap min-h-tap"
+              >
+                <Users className="h-4 w-4 shrink-0 text-fg-muted" aria-hidden="true" />
+                <span>{t('nav.team')}</span>
+              </PrefetchLink>
+              <PrefetchLink
+                to="/l/settings"
+                role="menuitem"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-2.5 px-3 py-2 text-sm text-fg hover:bg-surface-hover transition-colors whitespace-nowrap min-h-tap"
+              >
+                <Settings className="h-4 w-4 shrink-0 text-fg-muted" aria-hidden="true" />
+                <span>{t('nav.settings')}</span>
+              </PrefetchLink>
+            </div>
+          )}
 
           {/* Account Settings Link */}
           <div className="py-1">

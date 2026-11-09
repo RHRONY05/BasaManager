@@ -157,10 +157,4 @@ export const orgResponseSchema = dataEnvelope(
 
 export type OrgResponse = z.infer<typeof orgResponseSchema>;
 
-export const updateOrgRequestSchema = z
-  .object({
-    name: z.string().min(1, 'Name is required').max(200),
-  })
-  .meta({ id: 'UpdateOrgRequest' });
-
-export type UpdateOrgRequest = z.infer<typeof updateOrgRequestSchema>;
+export { updateOrgRequestSchema, type UpdateOrgRequest } from './org';

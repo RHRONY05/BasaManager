@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1700 800" width="1700" height="800" font-family="'Segoe UI', Inter, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1f1f1f"/>
+    </marker>
+  </defs>
+  <rect width="1700" height="800" fill="#ffffff"/>
+  <text x="40" y="52" font-size="28" font-weight="700" fill="#1f1f1f">Buildings &amp; units, level 2: Unit Charge Templates &amp; Metered Utilities</text>
+  <text x="40" y="82" font-size="16" fill="#3a3a3a">Atomic replacement of unit recurring charges: validating types, handling integer paisa amounts, and syncing template items for monthly billing.</text>
+  <g fill="none" stroke="#1f1f1f" stroke-width="2.4">
+    <path d="M260,380 H350" marker-end="url(#arrow)"/>
+    <path d="M630,380 H720" marker-end="url(#arrow)"/>
+    <path d="M1000,340 H1100" marker-end="url(#arrow)"/>
+    <path d="M1000,420 H1100" marker-end="url(#arrow)"/>
+  </g>
+  <rect x="40" y="320" width="220" height="120" rx="6" fill="#FEC8C3"/>
+  <text x="150" y="365" font-size="18" font-weight="700" fill="#1f1f1f" text-anchor="middle">Landlord / Caretaker</text>
+  <text x="150" y="395" font-size="14" fill="#3a3a3a" text-anchor="middle">PUT .../units/:id/charges</text>
+  <text x="150" y="415" font-size="13" fill="#666666" text-anchor="middle">Array of charge specs</text>
+  <rect x="350" y="290" width="280" height="180" rx="6" fill="#FFF1B8"/>
+  <text x="490" y="335" font-size="18" font-weight="700" fill="#1f1f1f" text-anchor="middle">Validation &amp; Schema</text>
+  <text x="490" y="365" font-size="13" fill="#3a3a3a" text-anchor="middle">1. amount_paisa: integer &gt;= 0</text>
+  <text x="490" y="390" font-size="13" fill="#3a3a3a" text-anchor="middle">2. charge_type: fixed | metered</text>
+  <text x="490" y="415" font-size="13" fill="#3a3a3a" text-anchor="middle">3. rate_per_kwh_paisa if metered</text>
+  <text x="490" y="440" font-size="13" fill="#3a3a3a" text-anchor="middle">4. Unit exists in building &amp; org</text>
+  <rect x="720" y="270" width="280" height="220" rx="6" fill="#BFE3FD"/>
+  <text x="860" y="315" font-size="18" font-weight="700" fill="#1f1f1f" text-anchor="middle">Atomic DB Transaction</text>
+  <text x="860" y="350" font-size="13" fill="#3a3a3a" text-anchor="middle">DELETE FROM unit_charges</text>
+  <text x="860" y="370" font-size="13" fill="#3a3a3a" text-anchor="middle">WHERE unit_id = $1</text>
+  <text x="860" y="400" font-size="13" fill="#3a3a3a" text-anchor="middle">INSERT INTO unit_charges (...)</text>
+  <text x="860" y="420" font-size="13" fill="#3a3a3a" text-anchor="middle">VALUES ($org_id, $unit_id, ...)</text>
+  <text x="860" y="450" font-size="13" fill="#3a3a3a" text-anchor="middle">Single transaction commit</text>
+  <rect x="1100" y="280" width="260" height="100" rx="6" fill="#C9F2D6"/>
+  <text x="1230" y="325" font-size="18" font-weight="700" fill="#1f1f1f" text-anchor="middle">Unit Drawer Response</text>
+  <text x="1230" y="355" font-size="13" fill="#3a3a3a" text-anchor="middle">Fresh recurring charges list</text>
+  <rect x="1100" y="400" width="260" height="100" rx="6" fill="#C9F2D6"/>
+  <text x="1230" y="445" font-size="18" font-weight="700" fill="#1f1f1f" text-anchor="middle">Billing Engine Ready</text>
+  <text x="1230" y="475" font-size="13" fill="#3a3a3a" text-anchor="middle">Templates for monthly invoices</text>
+</svg>

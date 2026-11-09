@@ -32,7 +32,26 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const outFile = resolve(root, 'docs/reference/openapi.json');
 
 const shared = await import('../packages/shared/src/index.ts');
-const { errorBodySchema, healthResponseSchema, readyResponseSchema, publicConfigResponseSchema } = shared;
+const {
+  errorBodySchema,
+  healthResponseSchema,
+  readyResponseSchema,
+  publicConfigResponseSchema,
+  orgDetailResponseSchema,
+  updateOrgRequestSchema,
+  orgMembersResponseSchema,
+  updateCaretakerBuildingsRequestSchema,
+  inviteCaretakerRequestSchema,
+  orgInvitesResponseSchema,
+  createBuildingRequestSchema,
+  updateBuildingRequestSchema,
+  buildingResponseSchema,
+  buildingsListResponseSchema,
+  createUnitRequestSchema,
+  updateUnitRequestSchema,
+  unitResponseSchema,
+  unitsListResponseSchema,
+} = shared;
 
 // Schemas with `.meta({ id })` in packages/shared become named components automatically.
 const registry = new OpenAPIRegistry();
@@ -76,6 +95,237 @@ registry.registerPath({
   responses: {
     200: { description: 'The config.', content: json(publicConfigResponseSchema) },
     500: errorResponse('Unexpected error.'),
+  },
+});
+
+// ── Organisation & Staff ─────────────────────────────────────────────────────
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/org',
+  tags: ['Organization'],
+  summary: 'Get organization details',
+  responses: {
+    200: { description: 'Organization details.', content: json(orgDetailResponseSchema) },
+    401: errorResponse('Unauthenticated'),
+    404: errorResponse('Not found'),
+  },
+});
+
+registry.registerPath({
+  method: 'patch',
+  path: '/api/org',
+  tags: ['Organization'],
+  summary: 'Update organization name (Landlord only)',
+  request: {
+    body: { content: json(updateOrgRequestSchema) },
+  },
+  responses: {
+    200: { description: 'Updated organization details.', content: json(orgDetailResponseSchema) },
+    400: errorResponse('Validation failed'),
+    403: errorResponse('Forbidden'),
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/org/members',
+  tags: ['Organization'],
+  summary: 'List organization members with caretaker buildings (Landlord only)',
+  responses: {
+    200: { description: 'Member list.', content: json(orgMembersResponseSchema) },
+    403: errorResponse('Forbidden'),
+  },
+});
+
+registry.registerPath({
+  method: 'put',
+  path: '/api/org/members/{membershipId}/buildings',
+  tags: ['Organization'],
+  summary: 'Update caretaker assigned buildings (Landlord only)',
+  request: {
+    body: { content: json(updateCaretakerBuildingsRequestSchema) },
+  },
+  responses: {
+    200: { description: 'Assigned buildings updated.' },
+    400: errorResponse('Validation failed'),
+    403: errorResponse('Forbidden'),
+    404: errorResponse('Member not found'),
+  },
+});
+
+registry.registerPath({
+  method: 'delete',
+  path: '/api/org/members/{membershipId}',
+  tags: ['Organization'],
+  summary: 'Remove caretaker membership (Landlord only)',
+  responses: {
+    200: { description: 'Caretaker removed.' },
+    400: errorResponse('Cannot remove landlord or tenant'),
+    403: errorResponse('Forbidden'),
+    404: errorResponse('Member not found'),
+  },
+});
+
+registry.registerPath({
+  method: 'post',
+  path: '/api/org/invites',
+  tags: ['Organization'],
+  summary: 'Invite a caretaker (Landlord only)',
+  request: {
+    body: { content: json(inviteCaretakerRequestSchema) },
+  },
+  responses: {
+    201: { description: 'Invitation created.' },
+    400: errorResponse('Validation failed'),
+    403: errorResponse('Forbidden'),
+    409: errorResponse('Active invitation exists'),
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/org/invites',
+  tags: ['Organization'],
+  summary: 'List pending organization invites (Landlord only)',
+  responses: {
+    200: { description: 'Pending invites list.', content: json(orgInvitesResponseSchema) },
+    403: errorResponse('Forbidden'),
+  },
+});
+
+registry.registerPath({
+  method: 'delete',
+  path: '/api/org/invites/{id}',
+  tags: ['Organization'],
+  summary: 'Revoke an invitation (Landlord only)',
+  responses: {
+    200: { description: 'Invitation revoked.' },
+    403: errorResponse('Forbidden'),
+    404: errorResponse('Invitation not found'),
+  },
+});
+
+// ── Buildings & Units ────────────────────────────────────────────────────────
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/buildings',
+  tags: ['Buildings'],
+  summary: 'List buildings scoped by role',
+  responses: {
+    200: { description: 'Buildings list.', content: json(buildingsListResponseSchema) },
+  },
+});
+
+registry.registerPath({
+  method: 'post',
+  path: '/api/buildings',
+  tags: ['Buildings'],
+  summary: 'Create building (Landlord only)',
+  request: {
+    body: { content: json(createBuildingRequestSchema) },
+  },
+  responses: {
+    201: { description: 'Building created.', content: json(buildingResponseSchema) },
+    400: errorResponse('Validation failed'),
+    403: errorResponse('Forbidden'),
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/buildings/{id}',
+  tags: ['Buildings'],
+  summary: 'Get building details',
+  responses: {
+    200: { description: 'Building details.', content: json(buildingResponseSchema) },
+    404: errorResponse('Building not found'),
+  },
+});
+
+registry.registerPath({
+  method: 'patch',
+  path: '/api/buildings/{id}',
+  tags: ['Buildings'],
+  summary: 'Update building settings (Landlord only)',
+  request: {
+    body: { content: json(updateBuildingRequestSchema) },
+  },
+  responses: {
+    200: { description: 'Building updated.', content: json(buildingResponseSchema) },
+    400: errorResponse('Validation failed'),
+    403: errorResponse('Forbidden'),
+    404: errorResponse('Building not found'),
+  },
+});
+
+registry.registerPath({
+  method: 'post',
+  path: '/api/buildings/{id}/archive',
+  tags: ['Buildings'],
+  summary: 'Archive building (Landlord only)',
+  responses: {
+    200: { description: 'Building archived.' },
+    403: errorResponse('Forbidden'),
+    409: errorResponse('Active leases exist'),
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/buildings/{id}/units',
+  tags: ['Units'],
+  summary: 'List units for building (Landlord and assigned Caretakers)',
+  responses: {
+    200: { description: 'Units list.', content: json(unitsListResponseSchema) },
+    403: errorResponse('Forbidden'),
+    404: errorResponse('Building not found'),
+  },
+});
+
+registry.registerPath({
+  method: 'post',
+  path: '/api/buildings/{id}/units',
+  tags: ['Units'],
+  summary: 'Create unit in building (Landlord only)',
+  request: {
+    body: { content: json(createUnitRequestSchema) },
+  },
+  responses: {
+    201: { description: 'Unit created.', content: json(unitResponseSchema) },
+    400: errorResponse('Validation failed'),
+    403: errorResponse('Forbidden'),
+    409: errorResponse('Duplicate label'),
+  },
+});
+
+registry.registerPath({
+  method: 'patch',
+  path: '/api/units/{id}',
+  tags: ['Units'],
+  summary: 'Update unit (Landlord only)',
+  request: {
+    body: { content: json(updateUnitRequestSchema) },
+  },
+  responses: {
+    200: { description: 'Unit updated.', content: json(unitResponseSchema) },
+    400: errorResponse('Validation failed'),
+    403: errorResponse('Forbidden'),
+    404: errorResponse('Unit not found'),
+    409: errorResponse('Duplicate label'),
+  },
+});
+
+registry.registerPath({
+  method: 'post',
+  path: '/api/units/{id}/archive',
+  tags: ['Units'],
+  summary: 'Archive unit (Landlord only)',
+  responses: {
+    200: { description: 'Unit archived.' },
+    403: errorResponse('Forbidden'),
+    409: errorResponse('Active lease exists'),
   },
 });
 

@@ -99,21 +99,45 @@ export class InvitesService {
           throw new ApiError(ErrorCode.TOKEN_INVALID, 'Invitation already accepted or expired');
         }
 
-        const m = await tx.membership.create({
-          data: {
+        const existingMembership = await tx.membership.findFirst({
+          where: {
             orgId: inv.orgId,
             userId: currentUser.id,
-            role: inv.role,
-            status: 'active',
           },
         });
+
+        let membershipId: string;
+        if (existingMembership) {
+          const updatedM = await tx.membership.update({
+            where: { id: existingMembership.id },
+            data: {
+              status: 'active',
+              removedAt: null,
+              role: inv.role,
+            },
+          });
+          membershipId = updatedM.id;
+          await tx.caretakerBuilding.deleteMany({
+            where: { orgId: inv.orgId, membershipId },
+          });
+        } else {
+          const m = await tx.membership.create({
+            data: {
+              orgId: inv.orgId,
+              userId: currentUser.id,
+              role: inv.role,
+              status: 'active',
+            },
+          });
+          membershipId = m.id;
+        }
 
         if (inv.role === 'caretaker' && inv.buildingIds && inv.buildingIds.length > 0) {
           for (const buildingId of inv.buildingIds) {
             await tx.caretakerBuilding.create({
               data: {
                 orgId: inv.orgId,
-                membershipId: m.id,
+                membershipId,
                 buildingId,
               },
             });
