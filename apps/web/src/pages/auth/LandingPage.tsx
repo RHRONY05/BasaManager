@@ -148,6 +148,7 @@ export default function LandingPage() {
                 </div>
 
                 <div
+                  data-allow-wrap
                   className="btn btn--primary btn--block font-semibold bg-accent text-accent-fg py-2.5 rounded-md text-center text-sm cursor-default"
                   aria-hidden="true"
                 >

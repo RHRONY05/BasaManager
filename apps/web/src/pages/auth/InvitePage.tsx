@@ -87,6 +87,7 @@ export default function InvitePage() {
         </div>
         <Link
           to="/login"
+          data-allow-wrap
           className="btn btn--secondary btn--block font-semibold border-border-strong text-fg hover:bg-surface-hover min-h-control rounded-md flex items-center justify-center"
         >
           {t('auth.backToSignIn')}
@@ -119,6 +120,7 @@ export default function InvitePage() {
         </div>
         <Link
           to="/login"
+          data-allow-wrap
           className="btn btn--secondary btn--block font-semibold border-border-strong text-fg hover:bg-surface-hover min-h-control rounded-md flex items-center justify-center"
         >
           {t('auth.backToSignIn')}
@@ -149,6 +151,7 @@ export default function InvitePage() {
         <button
           type="button"
           onClick={() => void signOut()}
+          data-allow-wrap
           className="btn btn--secondary btn--block font-semibold border-border-strong text-fg hover:bg-surface-hover min-h-control rounded-md flex items-center justify-center"
         >
           {t('auth.signOutAndContinue')}
@@ -229,6 +232,7 @@ export default function InvitePage() {
           type="button"
           onClick={handleAcceptExisting}
           disabled={acceptingExisting}
+          data-allow-wrap
           className="btn btn--primary btn--block btn--lg font-semibold bg-accent text-accent-fg hover:bg-accent-hover disabled:opacity-50 min-h-control rounded-md flex items-center justify-center gap-2"
         >
           {acceptingExisting && <span className="spinner" aria-hidden="true" />}
@@ -377,6 +381,7 @@ export default function InvitePage() {
         <button
           type="submit"
           disabled={isSubmitting}
+          data-allow-wrap
           className="btn btn--primary btn--block btn--lg font-semibold bg-accent text-accent-fg hover:bg-accent-hover disabled:opacity-50 min-h-control rounded-md flex items-center justify-center gap-2"
         >
           {isSubmitting && <span className="spinner" aria-hidden="true" />}

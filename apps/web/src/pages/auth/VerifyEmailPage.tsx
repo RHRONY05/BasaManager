@@ -75,6 +75,7 @@ export default function VerifyEmailPage() {
         <button
           type="button"
           onClick={handleContinue}
+          data-allow-wrap
           className="btn btn--primary btn--block font-semibold bg-accent text-accent-fg hover:bg-accent-hover min-h-control rounded-md flex items-center justify-center"
         >
           {t('auth.continue')}
@@ -99,6 +100,7 @@ export default function VerifyEmailPage() {
       </div>
       <Link
         to="/login"
+        data-allow-wrap
         className="btn btn--secondary btn--block font-semibold border-border-strong text-fg hover:bg-surface-hover min-h-control rounded-md flex items-center justify-center"
       >
         {t('auth.backToSignIn')}

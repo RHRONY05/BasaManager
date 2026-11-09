@@ -248,6 +248,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={isSubmitting}
+          data-allow-wrap
           className="btn btn--primary btn--block btn--lg font-semibold bg-accent text-accent-fg hover:bg-accent-hover disabled:opacity-50 min-h-control rounded-md flex items-center justify-center gap-2"
         >
           {isSubmitting && <span className="spinner" aria-hidden="true" />}

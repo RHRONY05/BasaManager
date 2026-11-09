@@ -146,7 +146,7 @@ function ProfileSection({ user }: { user: UserProfile | null }) {
       <form onSubmit={handleProfileSubmit} className="space-y-4" noValidate>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="field flex flex-col gap-1.5 min-w-0">
-            <label htmlFor="fullName" className="text-sm font-semibold text-fg whitespace-nowrap">
+            <label htmlFor="fullName" className="text-sm font-semibold text-fg break-words">
               {t('account.fullName')}
             </label>
             <input
@@ -160,7 +160,7 @@ function ProfileSection({ user }: { user: UserProfile | null }) {
           </div>
 
           <div className="field flex flex-col gap-1.5 min-w-0">
-            <label htmlFor="phone" className="text-sm font-semibold text-fg whitespace-nowrap">
+            <label htmlFor="phone" className="text-sm font-semibold text-fg break-words">
               {t('account.phoneOptional')}
             </label>
             <input
@@ -175,7 +175,7 @@ function ProfileSection({ user }: { user: UserProfile | null }) {
         </div>
 
         <div className="field flex flex-col gap-1.5 min-w-0">
-          <label htmlFor="email" className="text-sm font-semibold text-fg whitespace-nowrap">
+          <label htmlFor="email" className="text-sm font-semibold text-fg break-words">
             {t('account.email')}
           </label>
           <input
@@ -289,7 +289,7 @@ function ChangePasswordSection() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Current Password */}
           <div className="field flex flex-col gap-1.5 min-w-0">
-            <label htmlFor="currentPassword" className="text-sm font-semibold text-fg whitespace-nowrap">
+            <label htmlFor="currentPassword" className="text-sm font-semibold text-fg break-words">
               {t('account.currentPassword')}
             </label>
             <PasswordInput
@@ -318,7 +318,7 @@ function ChangePasswordSection() {
 
           {/* New Password */}
           <div className="field flex flex-col gap-1.5 min-w-0">
-            <label htmlFor="newPassword" className="text-sm font-semibold text-fg whitespace-nowrap">
+            <label htmlFor="newPassword" className="text-sm font-semibold text-fg break-words">
               {t('account.newPassword')}
             </label>
             <PasswordInput
@@ -427,7 +427,8 @@ function SessionsSection() {
           type="button"
           onClick={handleLogoutAll}
           disabled={isLoggingOutAll}
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-danger-border text-danger-text hover:bg-danger-soft text-sm font-medium min-h-tap cursor-pointer disabled:opacity-50 transition-colors whitespace-nowrap"
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-danger-border text-danger-text hover:bg-danger-soft text-sm font-medium min-h-tap cursor-pointer disabled:opacity-50 transition-colors text-left"
+          data-allow-wrap
         >
           <LogOut className="h-4 w-4 shrink-0" aria-hidden="true" />
           <span>
@@ -612,7 +613,8 @@ function DeleteAccountSection({ role, orgName }: { role: string | null; orgName:
             setDeleteError(null);
             setIsDeleteDialogOpen(true);
           }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-danger-border text-danger-text hover:bg-danger-soft font-medium min-h-tap cursor-pointer transition-colors whitespace-nowrap"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-danger-border text-danger-text hover:bg-danger-soft font-medium min-h-tap cursor-pointer transition-colors text-left"
+          data-allow-wrap
         >
           <Trash2 className="h-4 w-4 shrink-0" aria-hidden="true" />
           <span>{t('account.deleteAccountBtn')}</span>
@@ -645,10 +647,7 @@ function DeleteAccountSection({ role, orgName }: { role: string | null; orgName:
 
             <div className="space-y-3">
               <div className="field flex flex-col gap-1.5 min-w-0">
-                <label
-                  htmlFor="delete-confirm-text"
-                  className="text-sm font-semibold text-fg whitespace-nowrap"
-                >
+                <label htmlFor="delete-confirm-text" className="text-sm font-semibold text-fg break-words">
                   {t('account.deleteTypeConfirm')}
                 </label>
                 <input
@@ -664,7 +663,7 @@ function DeleteAccountSection({ role, orgName }: { role: string | null; orgName:
               <div className="field flex flex-col gap-1.5 min-w-0">
                 <label
                   htmlFor="delete-confirm-password"
-                  className="text-sm font-semibold text-fg whitespace-nowrap"
+                  className="text-sm font-semibold text-fg break-words"
                 >
                   {t('account.deletePasswordConfirm')}
                 </label>

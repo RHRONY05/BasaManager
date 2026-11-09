@@ -88,7 +88,13 @@ export async function createVerifiedLandlord(
 /** Signs `email` in through the UI login form and waits for the role home. */
 export async function uiLogin(page: Page, email: string, password: string, home = /\/l$/): Promise<void> {
   await clearRateLimits();
-  await page.goto('/login');
+  // After an in-app sign-out the browser is already on /login while the app's own redirect may still be
+  // settling; a second goto would be "interrupted by another navigation". Reuse the page in that case.
+  if (new URL(page.url(), BASE_URL).pathname === '/login') {
+    await page.getByLabel('Email').waitFor();
+  } else {
+    await page.goto('/login');
+  }
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();

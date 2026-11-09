@@ -57,7 +57,7 @@ const ACCENT_MAP: Record<string, string> = {
  * Transforms an English string into pseudo-locale (en-XA):
  * - Replaces Latin characters with accented counterparts
  * - Preserves {{interpolation}} placeholders untouched
- * - Padds +40% with middle-dots (·)
+ * - Pads +40% with middle-dots (·) in breakable groups of 5
  * - Wraps in square brackets [ ... ]
  */
 export function transformToPseudo(str: string): string {
@@ -80,7 +80,11 @@ export function transformToPseudo(str: string): string {
     .join('');
 
   const padCount = Math.max(1, Math.floor(str.length * 0.4));
-  const dots = '·'.repeat(padCount);
+  // Group the padding in runs of 5 separated by spaces: a single unbroken run of 40+ dots is wider than
+  // a 320px screen and can never wrap, which would flag false layout violations (real Bangla text wraps).
+  const dots = Array.from({ length: Math.ceil(padCount / 5) }, (_, i) =>
+    '·'.repeat(Math.min(5, padCount - i * 5)),
+  ).join(' ');
 
   return `[${transformed}${dots}]`;
 }

@@ -100,6 +100,9 @@
   .btn--block {
     display: flex;
     width: 100%;
+    /* Full-width buttons have room to wrap a long label (en-XA / Bangla at 320px) instead of overflowing. */
+    white-space: normal;
+    padding-block: var(--space-2);
   }
   .btn-row {
     display: flex;

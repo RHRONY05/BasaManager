@@ -146,6 +146,7 @@ export default function SignupPage() {
           type="button"
           onClick={handleResend}
           disabled={cooldown > 0 || resending}
+          data-allow-wrap
           className="btn btn--secondary btn--block font-semibold disabled:opacity-50 min-h-control rounded-md flex items-center justify-center gap-2"
         >
           {resending && <span className="spinner" aria-hidden="true" />}
@@ -304,6 +305,7 @@ export default function SignupPage() {
         <button
           type="submit"
           disabled={isSubmitting}
+          data-allow-wrap
           className="btn btn--primary btn--block btn--lg font-semibold bg-accent text-accent-fg hover:bg-accent-hover disabled:opacity-50 min-h-control rounded-md flex items-center justify-center gap-2"
         >
           {isSubmitting && <span className="spinner" aria-hidden="true" />}

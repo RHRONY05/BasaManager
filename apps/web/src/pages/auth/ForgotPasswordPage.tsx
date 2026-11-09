@@ -60,6 +60,7 @@ export default function ForgotPasswordPage() {
         </div>
         <Link
           to="/login"
+          data-allow-wrap
           className="btn btn--secondary btn--block font-semibold border-border-strong text-fg hover:bg-surface-hover min-h-control rounded-md flex items-center justify-center mt-2"
         >
           {t('auth.backToSignIn')}
@@ -115,6 +116,7 @@ export default function ForgotPasswordPage() {
         <button
           type="submit"
           disabled={isSubmitting}
+          data-allow-wrap
           className="btn btn--primary btn--block btn--lg font-semibold bg-accent text-accent-fg hover:bg-accent-hover disabled:opacity-50 min-h-control rounded-md flex items-center justify-center gap-2"
         >
           {isSubmitting && <span className="spinner" aria-hidden="true" />}
