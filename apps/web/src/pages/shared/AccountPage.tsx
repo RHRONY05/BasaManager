@@ -468,7 +468,10 @@ function SessionsSection() {
             const isCurrent = session.current;
 
             return (
-              <div key={session.id} className="session flex flex-wrap items-center justify-between gap-3 py-3">
+              <div
+                key={session.id}
+                className="session flex flex-wrap items-center justify-between gap-3 py-3"
+              >
                 <div className="flex flex-1 items-center gap-3 min-w-0">
                   <span className="session__icon inline-grid place-items-center w-10 h-10 rounded-md bg-muted text-fg-muted shrink-0">
                     <DeviceIcon className="h-5 w-5" aria-hidden="true" />

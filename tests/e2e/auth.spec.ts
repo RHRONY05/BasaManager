@@ -112,7 +112,9 @@ test.describe('Auth flows', () => {
     await page.goto(`/reset-password?token=${token}`);
     await page.getByLabel('New password').fill('Yet-Another-Pass-77');
     await page.getByRole('button', { name: 'Set password and sign in' }).click();
-    await expect(page.getByRole('alert').filter({ hasText: 'This link has expired or was used.' })).toBeVisible();
+    await expect(
+      page.getByRole('alert').filter({ hasText: 'This link has expired or was used.' }),
+    ).toBeVisible();
   });
 
   test('forgot password for an unknown email gives the same answer (no account enumeration)', async ({
