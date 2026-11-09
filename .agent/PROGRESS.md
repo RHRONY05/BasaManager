@@ -575,3 +575,7 @@ Next: CI 8/8 on #10 (merge main first if behind), Opus reviewer on auth (fix the
 ### 2026-11-09 — Claude (lead) — V5 CI: gitleaks fix
 Did: CI on PR #10 at 3612b0b: unit green, `security` RED at the gitleaks step (pnpm audit passed). 4 generic-api-key false positives, all fake test values: `JWT_SECRET` in invites.service(.flows).test.ts, `secret` in middleware/auth.test.ts, a password in test/auth/realtime.int.test.ts. Added `^apps/api/(src|test)/.*\.test\.ts$` to `.gitleaks.toml` allowlist; pushed 6d03a03 on feat/V5. CI re-running.
 Next: CI 8/8 on 6d03a03 (merge main first if behind), Opus reviewer on auth (fix the gaps listed in the V5 docs entry or justify them), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5. Do not push PROGRESS commits to main until #10 is merged.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait / merge main
+Did: PR #10 at 6d03a03 had all 7 checks pending and was BEHIND main (docs-only changes). Merged origin/main into feat/V5 (clean) and pushed 6e6f9a5. CI re-running.
+Next: CI 8/8 on 6e6f9a5, then Opus reviewer on auth (fix the gaps listed in the V5 docs entry or justify them), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5. Do not push PROGRESS commits to main until #10 is merged.
