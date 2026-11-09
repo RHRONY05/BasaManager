@@ -475,7 +475,7 @@ function SessionsSection() {
                   </span>
                   <div className="space-y-0.5 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-semibold text-fg truncate">{info.name}</span>
+                      <span className="text-sm font-semibold text-fg break-words">{info.name}</span>
                       {isCurrent && (
                         <span className="badge badge--success inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-[var(--success-soft)] text-[var(--success-text)] border border-[var(--success-border)] shrink-0">
                           <CircleCheck className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
@@ -483,7 +483,7 @@ function SessionsSection() {
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-fg-muted truncate">
+                    <p className="text-xs text-fg-muted break-words">
                       {isCurrent ? t('account.activeNow') : formatSessionDate(session.createdAt)}
                       {session.ip ? ` · ${session.ip}` : ''}
                     </p>

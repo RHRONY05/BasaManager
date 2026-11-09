@@ -14,13 +14,13 @@ export default function LandingPage() {
       {/* Main navigation */}
       <header className="border-b border-border bg-surface shrink-0">
         <nav
-          className="max-w-[var(--width-page)] mx-auto px-4 sm:px-8 h-16 flex items-center justify-between gap-3 min-w-0"
+          className="max-w-[var(--width-page)] mx-auto px-4 sm:px-8 h-16 flex items-center justify-between gap-2 min-w-0"
           aria-label={t('nav.home')}
         >
           <div className="flex items-center gap-2 min-w-0">
-            <Link to="/" className="brand flex items-center gap-2 font-bold text-fg text-lg min-h-tap">
+            <Link to="/" className="brand flex items-center gap-2 font-bold text-fg text-base sm:text-lg min-h-tap whitespace-nowrap">
               <BrandMark className="brand__mark w-8 h-8 shrink-0" />
-              <span className="truncate">{t('appName')}</span>
+              <span>{t('appName')}</span>
             </Link>
             <span className="brand__bn text-fg-muted font-normal text-sm hidden sm:inline" lang="bn">
               {t('brandBn')}
@@ -36,7 +36,7 @@ export default function LandingPage() {
             </Link>
             <Link
               to="/signup"
-              className="btn btn--primary text-sm min-h-tap px-3 py-1.5 font-medium bg-accent text-accent-fg hover:bg-accent-hover rounded-md transition-colors whitespace-nowrap"
+              className="btn btn--primary text-sm min-h-tap px-2.5 sm:px-3 py-1.5 font-medium bg-accent text-accent-fg hover:bg-accent-hover rounded-md transition-colors whitespace-nowrap"
             >
               {t('auth.createAccount')}
             </Link>
@@ -154,7 +154,7 @@ export default function LandingPage() {
                 aria-label={t('auth.landing.toastSample')}
               >
                 <CheckCircle2 className="w-4 h-4 text-success-primary shrink-0" aria-hidden="true" />
-                <span className="truncate">{t('auth.landing.toastSample')}</span>
+                <span className="min-w-0 break-words">{t('auth.landing.toastSample')}</span>
               </div>
             </div>
           </div>
