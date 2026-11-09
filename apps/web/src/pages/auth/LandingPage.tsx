@@ -30,13 +30,13 @@ export default function LandingPage() {
           <div className="flex items-center gap-2 shrink-0">
             <Link
               to="/login"
-              className="btn btn--ghost text-sm min-h-tap px-3 py-1.5 font-medium hover:bg-muted rounded-md transition-colors whitespace-nowrap"
+              className="btn btn--ghost hidden sm:inline-flex text-sm min-h-tap px-3 py-1.5 font-medium hover:bg-muted rounded-md transition-colors whitespace-nowrap"
             >
               {t('auth.signIn')}
             </Link>
             <Link
               to="/signup"
-              className="btn btn--primary text-sm min-h-tap px-4 py-1.5 font-medium bg-accent text-accent-fg hover:bg-accent-hover rounded-md transition-colors whitespace-nowrap"
+              className="btn btn--primary text-sm min-h-tap px-3 py-1.5 font-medium bg-accent text-accent-fg hover:bg-accent-hover rounded-md transition-colors whitespace-nowrap"
             >
               {t('auth.createAccount')}
             </Link>
@@ -50,7 +50,7 @@ export default function LandingPage() {
           className="max-w-[var(--width-page)] mx-auto px-4 sm:px-8 py-12 md:py-20 w-full"
           aria-labelledby="hero-h"
         >
-          <div className="grid md:grid-cols-2 gap-8 md:gap-12 items-center">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
             <div className="flex flex-col gap-5 min-w-0">
               <p className="text-xs uppercase tracking-wider font-semibold text-accent-text">
                 {t('auth.landing.eyebrow')}
@@ -67,13 +67,13 @@ export default function LandingPage() {
               <div className="flex flex-col sm:flex-row gap-3 pt-2">
                 <Link
                   to="/signup"
-                  className="btn btn--primary btn--lg text-center justify-center font-semibold bg-accent text-accent-fg hover:bg-accent-hover rounded-md px-6 min-h-control whitespace-nowrap"
+                  className="btn btn--primary btn--lg text-base text-center justify-center font-semibold bg-accent text-accent-fg hover:bg-accent-hover rounded-md px-4 min-h-control whitespace-nowrap"
                 >
                   {t('auth.createAccount')}
                 </Link>
                 <Link
                   to="/login"
-                  className="btn btn--secondary btn--lg text-center justify-center font-semibold bg-surface border border-border-strong text-fg hover:bg-surface-hover rounded-md px-6 min-h-control whitespace-nowrap"
+                  className="btn btn--secondary btn--lg text-base text-center justify-center font-semibold bg-surface border border-border-strong text-fg hover:bg-surface-hover rounded-md px-4 min-h-control whitespace-nowrap"
                 >
                   {t('auth.signIn')}
                 </Link>

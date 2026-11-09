@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @import './tokens.css';
+@import './components.css';
 
 @theme {
   --color-bg: var(--bg-app);
@@ -30,6 +31,7 @@
   --font-display: var(--font-display);
 
   --spacing-tap: var(--size-tap);
+  --spacing-control: var(--size-control);
   --spacing-bottom-nav: var(--size-bottom-nav);
   --spacing-content: var(--width-content);
   --container-content: var(--width-content);
