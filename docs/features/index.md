@@ -1,7 +1,6 @@
 # Features
 
-One page per feature, always with the same 15 sections (template in `.agent/10-LEARNING.md`). None of the
-features is built yet, so every page below is a stub that names the task which fills it in.
+One page per feature, always with the same 15 sections (template in `.agent/10-LEARNING.md`). Only Auth & accounts (V5) is written so far; every other page is a stub that names the task which fills it in.
 
 | Feature                                                    | Written in | Stories                    |
 | ---------------------------------------------------------- | ---------- | -------------------------- |

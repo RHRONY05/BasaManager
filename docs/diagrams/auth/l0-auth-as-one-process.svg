@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1700 800" width="1700" height="800" font-family="'Segoe UI', Inter, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1f1f1f"/>
+    </marker>
+  </defs>
+  <rect width="1700" height="800" fill="#ffffff"/>
+  <text x="40" y="52" font-size="28" font-weight="700" fill="#1f1f1f">Auth &amp; accounts, level 0</text>
+  <text x="40" y="82" font-size="16" fill="#3a3a3a">One process in the middle: who is allowed in. It talks to the browser, Google and the mail server, and keeps its facts in Postgres and Redis.</text>
+  <g font-size="15" fill="#3a3a3a">
+    <line x1="1130" y1="36" x2="1190" y2="36" stroke="#1f1f1f" stroke-width="2.4" marker-end="url(#arrow)"/>
+    <text x="1202" y="41">call / read</text>
+    <line x1="1130" y1="62" x2="1190" y2="62" stroke="#1f1f1f" stroke-width="2.4" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <text x="1202" y="67">write / return</text>
+    <rect x="1370" y="24" width="26" height="18" rx="3" fill="#FEC8C3"/><text x="1406" y="39">people / external</text>
+    <rect x="1530" y="24" width="26" height="18" rx="7" fill="#BFE3FD"/><text x="1566" y="39">our code</text>
+    <circle cx="1383" cy="62" r="9" fill="#E3CCFD"/><text x="1406" y="67">data store</text>
+    <rect x="1530" y="53" width="26" height="18" rx="3" fill="#C9F2D6"/><text x="1566" y="67">output</text>
+    <rect x="1370" y="80" width="26" height="18" rx="3" fill="#FFF1B8"/><text x="1406" y="95">guard / decision</text>
+  </g>
+  <g fill="none" stroke="#1f1f1f" stroke-width="2.4">
+    <path d="M240,400 H514" marker-end="url(#arrow)"/>
+    <path d="M514,440 H244" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <path d="M1084,320 H1374" marker-end="url(#arrow)"/>
+    <path d="M1374,355 H1090" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <path d="M1084,490 H1374" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <path d="M660,552 V622" marker-end="url(#arrow)"/>
+    <path d="M740,622 V554" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <path d="M940,552 V622" marker-end="url(#arrow)"/>
+    <path d="M1020,622 V554" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+  </g>
+  <rect x="40" y="340" width="200" height="130" rx="6" fill="#FEC8C3"/>
+  <text x="140" y="387" font-size="20" font-weight="700" fill="#1f1f1f" text-anchor="middle">Browser</text>
+  <text x="140" y="417" font-size="15" fill="#3a3a3a" text-anchor="middle">landlord, caretaker,</text>
+  <text x="140" y="439" font-size="15" fill="#3a3a3a" text-anchor="middle">tenant, admin</text>
+  <text x="377" y="388" font-size="16" fill="#1f1f1f" text-anchor="middle">credentials, cookies</text>
+  <text x="377" y="466" font-size="16" fill="#1f1f1f" text-anchor="middle">cookies, JSON</text>
+  <rect x="520" y="250" width="560" height="300" rx="56" fill="#BFE3FD"/>
+  <text x="800" y="340" font-size="24" font-weight="700" fill="#1f1f1f" text-anchor="middle">Auth &amp; accounts</text>
+  <text x="800" y="370" font-size="15" fill="#3a3a3a" text-anchor="middle">signup, verify email, login, lockout</text>
+  <text x="800" y="392" font-size="15" fill="#3a3a3a" text-anchor="middle">refresh rotation, logout, logout-all</text>
+  <text x="800" y="414" font-size="15" fill="#3a3a3a" text-anchor="middle">forgot / reset password, Google sign-in</text>
+  <text x="800" y="436" font-size="15" fill="#3a3a3a" text-anchor="middle">invites, profile, change password, devices</text>
+  <text x="800" y="458" font-size="15" fill="#3a3a3a" text-anchor="middle">CSRF + rate limits, socket handshake</text>
+  <text x="800" y="480" font-size="15" fill="#3a3a3a" text-anchor="middle">org membership check (X-Org-Id)</text>
+  <rect x="1380" y="290" width="220" height="90" rx="6" fill="#FEC8C3"/>
+  <text x="1490" y="328" font-size="20" font-weight="700" fill="#1f1f1f" text-anchor="middle">Google</text>
+  <text x="1490" y="358" font-size="15" fill="#3a3a3a" text-anchor="middle">OAuth + userinfo</text>
+  <text x="1230" y="308" font-size="16" fill="#1f1f1f" text-anchor="middle">code + PKCE</text>
+  <text x="1230" y="378" font-size="16" fill="#1f1f1f" text-anchor="middle">verified profile</text>
+  <rect x="1380" y="445" width="220" height="90" rx="6" fill="#FEC8C3"/>
+  <text x="1490" y="483" font-size="20" font-weight="700" fill="#1f1f1f" text-anchor="middle">Mail (SMTP)</text>
+  <text x="1490" y="513" font-size="15" fill="#3a3a3a" text-anchor="middle">verify, reset, alert</text>
+  <text x="1230" y="478" font-size="16" fill="#1f1f1f" text-anchor="middle">links by email</text>
+  <circle cx="700" cy="696" r="80" fill="#E3CCFD"/>
+  <text x="700" y="683" font-size="20" font-weight="700" fill="#1f1f1f" text-anchor="middle">Postgres</text>
+  <text x="700" y="707" font-size="14" fill="#3a3a3a" text-anchor="middle">users, sessions,</text>
+  <text x="700" y="725" font-size="14" fill="#3a3a3a" text-anchor="middle">tokens, invites</text>
+  <text x="650" y="590" font-size="16" fill="#1f1f1f" text-anchor="end">read</text>
+  <text x="750" y="590" font-size="16" fill="#1f1f1f" text-anchor="start">write</text>
+  <circle cx="980" cy="696" r="80" fill="#E3CCFD"/>
+  <text x="980" y="692" font-size="20" font-weight="700" fill="#1f1f1f" text-anchor="middle">Redis</text>
+  <text x="980" y="716" font-size="14" fill="#3a3a3a" text-anchor="middle">rate counters</text>
+  <text x="930" y="590" font-size="16" fill="#1f1f1f" text-anchor="end">count</text>
+  <text x="1030" y="590" font-size="16" fill="#1f1f1f" text-anchor="start">expire</text>
+</svg>

@@ -50,11 +50,11 @@ is new to you and almost every later page assumes it.
 
 ## Step 6: Who is using it (task V5)
 
-- [ ] [Auth & accounts](/features/auth) (stub, V5): the flagship page
-- [ ] [Authentication & sessions](/concepts/authentication-and-sessions) (stub, V5)
-- [ ] [Authorization](/concepts/authorization) (stub, V5)
-- [ ] [Validation with Zod](/concepts/validation-with-zod) (stub, V5)
-- [ ] [Caching & rate limiting](/concepts/caching-and-rate-limiting) (stub, V5)
+- [ ] [Auth & accounts](/features/auth) (V5): the flagship page
+- [ ] [Authentication & sessions](/concepts/authentication-and-sessions) (V5)
+- [ ] [Authorization](/concepts/authorization) (V5)
+- [ ] [Validation with Zod](/concepts/validation-with-zod) (V5)
+- [ ] [Caching & rate limiting](/concepts/caching-and-rate-limiting) (V5)
 
 ## Step 7: Landlords, buildings and leases (tasks V6 and V7)
 

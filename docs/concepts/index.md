@@ -15,6 +15,13 @@ where in code, and a self-check.
 - [Multi-tenancy & row-level security](/concepts/multi-tenancy-and-rls): **new to the owner.** One shared database, `org_id` on every row, enforced by the service and by Postgres policies; the four database roles; `db.$tx`.
 - [Transactions & locking](/concepts/transactions-and-locking): first version. `db.$tx`, rollback, isolation level, why history cannot be deleted. Row locks around money arrive in V9.
 
+## Written in task V5
+
+- [Authentication & sessions](/concepts/authentication-and-sessions): **new to the owner.** JWT access token, rotating refresh token with reuse detection, cookies, CSRF, Google OAuth with PKCE.
+- [Authorization](/concepts/authorization): user, membership via `X-Org-Id`, role, resource checks.
+- [Validation with Zod](/concepts/validation-with-zod): one shared schema checks the form and the API.
+- [Caching & rate limiting](/concepts/caching-and-rate-limiting): **new to the owner.** Redis rate limiters and the account lockout (cache rules come later).
+
 ## Coming
 
 | Concept                                                                  | Written in |
@@ -23,10 +30,6 @@ where in code, and a self-check.
 | [CI/CD pipeline](/concepts/ci-cd)                                        | V3         |
 | [Docker & the VPS](/concepts/docker-and-vps)                             | V3         |
 | [Backups](/concepts/backups)                                             | V3         |
-| [Authentication & sessions](/concepts/authentication-and-sessions)       | V5         |
-| [Authorization](/concepts/authorization)                                 | V5         |
-| [Validation with Zod](/concepts/validation-with-zod)                     | V5         |
-| [Caching & rate limiting](/concepts/caching-and-rate-limiting)           | V5         |
 | [Money & rounding](/concepts/money-and-rounding)                         | V8         |
 | [Dates & time zones](/concepts/dates-and-timezones)                      | V8         |
 | [Idempotency & unique constraints](/concepts/idempotency)                | V8         |
