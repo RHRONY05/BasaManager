@@ -49,7 +49,7 @@ V0 Preflight ─▶ V1 Monorepo + CI ─▶ V2 Design ─▶ V3 Infra walking sk
   - Docs: `concepts/docker-and-vps.md`, `concepts/ci-cd.md`, `concepts/sentry-from-zero.md`, `concepts/backups.md`, `operations/*` runbooks (deploy, rollback, restore, rotate a secret, read logs, incident), architecture L1 diagram (SVG).
   - **AC:** `https://staging.basamanager.rhrony05.me/api/health` and prod `/api/health` return the deployed SHA; `docs.` serves the site; a deliberately failing smoke test triggers rollback (proved once, logged); a backup file exists in the Azure `backups` container and the restore drill passes; on staging, a Cloudinary upload → expiring download URL → refused after expiry works for an image and a PDF (or the API-stream fallback is chosen and logged).
 
-- [ ] **V4 Schema, roles, RLS, seed** (architect)
+- [x] **V4 Schema, roles, RLS, seed** (architect)
   - Full Prisma schema + SQL migrations per `03-DATABASE.md` (roles, RLS, checks, partial indexes, views). Prisma tenant extension (`db.$tx` sets context; throws without it). Seed through services (stub services where needed, completed in later tasks). `db-docs` set up (`pnpm db:docs`).
   - Shared Zod enums and IDs in `packages/shared`.
   - Docs: `overview/data-map.md`, `concepts/multi-tenancy-and-rls.md` (with L0/L1 SVG), ER from tbls, `concepts/transactions-and-locking.md` (first version).
