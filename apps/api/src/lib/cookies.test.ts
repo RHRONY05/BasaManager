@@ -1,6 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { Response } from 'express';
-import { setAuthCookies, clearAuthCookies, COOKIE_ACCESS_NAME, COOKIE_REFRESH_NAME, COOKIE_CSRF_NAME } from './cookies';
+import {
+  setAuthCookies,
+  clearAuthCookies,
+  COOKIE_ACCESS_NAME,
+  COOKIE_REFRESH_NAME,
+  COOKIE_CSRF_NAME,
+} from './cookies';
 import type { Env } from '../config/env';
 
 describe('cookies lib', () => {
@@ -46,7 +52,10 @@ describe('cookies lib', () => {
     clearAuthCookies(res, mockEnv);
 
     expect(res.clearCookie).toHaveBeenCalledWith(COOKIE_ACCESS_NAME, expect.objectContaining({ path: '/' }));
-    expect(res.clearCookie).toHaveBeenCalledWith(COOKIE_REFRESH_NAME, expect.objectContaining({ path: '/api/auth' }));
+    expect(res.clearCookie).toHaveBeenCalledWith(
+      COOKIE_REFRESH_NAME,
+      expect.objectContaining({ path: '/api/auth' }),
+    );
     expect(res.clearCookie).toHaveBeenCalledWith(COOKIE_CSRF_NAME, expect.objectContaining({ path: '/' }));
   });
 });

@@ -29,11 +29,7 @@ describe('email templates', () => {
   });
 
   it('renders user.security_alert template', () => {
-    const rendered = renderEmail(
-      'user.security_alert',
-      { email: 'user@example.com' },
-      appUrl,
-    );
+    const rendered = renderEmail('user.security_alert', { email: 'user@example.com' }, appUrl);
     expect(rendered).not.toBeNull();
     expect(rendered?.to).toBe('user@example.com');
     expect(rendered?.subject).toMatch(/security/i);

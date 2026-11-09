@@ -1,10 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  hashPassword,
-  verifyPassword,
-  isCommonPassword,
-  validatePassword,
-} from './passwords';
+import { hashPassword, verifyPassword, isCommonPassword, validatePassword } from './passwords';
 import { ApiError } from './ApiError';
 
 describe('passwords lib', () => {
