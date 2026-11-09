@@ -438,3 +438,7 @@ Next: check staging deploy for 8bb7967 and main ci green; tick V4 in 08-TASKS; M
 ### 2026-11-09 — Claude (lead) — V4 closing (partial)
 Did: added the V4 METRICS row; removed worktree D:/Projects/bm-wt/V4 and branch feat/V4. Staging deploy 42555133421 (8bb7967) and 42555154378 (8ce8685) were still building images; main ci on 8bb7967 was cancelled (superseded by 8ce8685), ci 42555154361 on 8ce8685 in progress. V4 NOT yet ticked in 08-TASKS (line 52).
 Next: when deploy and ci on main are green, tick V4 in 08-TASKS and update the METRICS row ("staging deploy pending" -> green). Then the follow-up PR (architect): onUpdate NoAction on composite FKs + regenerate 0100 + test, org_id-first unique indexes or doc note, db:drift in the CI integration job. Then V5.
+
+### 2026-11-09 — Claude (lead) — V4 staging wait
+Did: checked main: deploy runs 42555133421 (8bb7967), 42555154378 (8ce8685), 42555292569 (9651a1c) and ci 42555292735 all still in progress (earlier ci runs cancelled by newer pushes). V4 not ticked yet. No code change.
+Next: when deploy on the latest main head and its ci are green, tick V4 in 08-TASKS (line 52) and update the METRICS row. Then the V4 follow-up PR (architect): onUpdate NoAction on composite FKs + regenerate 0100 + test, org_id-first unique indexes or doc note, db:drift in the CI integration job. Then V5. Note: each PROGRESS push to main restarts deploy/ci; batch doc commits.
