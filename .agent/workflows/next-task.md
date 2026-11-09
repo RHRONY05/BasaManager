@@ -1,13 +1,17 @@
 ---
-description: Lead only — do the next step of the build in this session, record it, then stop (scripts/autonomous.sh starts the next session)
+description: Antigravity lead — take one task from start to merged and deployed on staging, calling Claude for the checks in 11-AGENT-TEAM.md
 ---
 
-The lead is a relay: each session does one step and hands over through the files. No human is expected.
+Do this for the first unticked task in `.agent/08-TASKS.md`. If its PR or worktree already exists, continue from where it stands, and read the PR's latest review with `gh pr view <n> --comments`.
 
-1. Read `AGENTS.md`, `.agent/rules/basamanager.md`, `.agent/PROGRESS.md`, `.agent/11-AGENT-TEAM.md`. Read other docs only where the step needs them.
-2. If PROGRESS.md has "Resume here", take its first unfinished item. Otherwise take the first task not ticked in `.agent/08-TASKS.md` and mark it `— in progress: lead`.
-3. Do one step of the loop in `11-AGENT-TEAM.md`: for a task, one of brief → contracts → tests first → implement → verify → docs → PR → review → merge; for a "Resume here" item, finish that item. One subagent at a time. Run agy in the foreground and wait for its result before ending the session. Agent reports stay under 30 lines, with details in a file.
-4. Commit after every step and push it, so local `main` never drifts from GitHub. Reviewers rely on CI instead of re-running full suites.
-5. Decide everything yourself by the docs, choose the simpler option, log it in PROGRESS.md. Never ask the human.
-6. Before ending: update PROGRESS.md ("Now" + exactly where this task stands). After a merge: staging green, tick the task, METRICS.md rows, remove worktrees. Then stop; the next session continues.
-7. Only for a Human step that blocks all remaining work: add it to PROGRESS.md, create the file `../bm-runs/STOP`, stop.
+1. **Set up.** `git worktree add ../bm-wt/<task> -b feat/<task>` from `origin/main`. Work only there, never on `main`.
+2. **Critical logic: Claude writes the tests first.** If the task touches auth, permissions/RLS, billing, allocation, payments or file access, call the Claude test designer (`11-AGENT-TEAM.md`) before you write the code. Do not edit its tests to make them pass. If you believe one is wrong, ask Claude to check it.
+3. **Build.** Write the code and the remaining tests, then the learning docs per `.agent/10-LEARNING.md`. Use parallel agents when it saves time, under the rules in `11-AGENT-TEAM.md`. Use `.claude/skills/mobile-layout-qa` and `.claude/skills/ui-states` for any UI. Commit and push often.
+4. **Verify.** Run typecheck, lint, unit, integration and e2e for the area, and fix your own failures. Same failure after 3 rounds: call the Claude debugger.
+5. **Record, on the same branch.** Tick the task in `08-TASKS.md`, add its row to `METRICS.md`, and update `PROGRESS.md`. Never push notes to `main`: that puts open PRs behind and restarts their CI.
+6. **PR.** Open it with evidence (test summary, screenshots desktop + mobile). Wait with `gh pr checks <n> --watch`, and fix anything red. Do not poll in a loop.
+7. **Review.** When CI is green, call the Claude reviewer. On `VERDICT: CHANGES`, fix every blocker and should, go back to step 6, and call it again. After 3 rounds without approval, stop and tell the owner.
+8. **Merge, only after `VERDICT: APPROVE`.** `gh pr update-branch <n>`, wait for CI again, then `gh pr merge <n> --squash`. In the main checkout: `git switch main`, `git pull --ff-only origin main`, then remove the worktree.
+9. **Staging.** Watch the `deploy` run with `gh run watch <id> --exit-status`. If it fails, call Claude DevOps.
+
+**Never** read `BasaManager.env` or the credentials folder, or run `az`, `ssh` or deploy scripts: those go to Claude DevOps. If something would cost money or is destructive on shared things, skip that part and add a Human step to `PROGRESS.md`.
