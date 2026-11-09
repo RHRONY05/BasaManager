@@ -67,6 +67,7 @@ export async function createVerifiedLandlord(
   const password = o.password ?? GOOD_PASSWORD;
   const fullName = o.fullName ?? 'Rahim Uddin';
   const orgName = o.orgName ?? 'Rahim Properties';
+  await clearRateLimits();
   const ctx = await apiContext();
   try {
     const s = await ctx.post('/api/auth/signup', { data: { email, password, fullName, orgName } });

@@ -63,7 +63,7 @@ export default function ResetPasswordPage() {
         </div>
         <Link
           to="/forgot-password"
-          className="btn btn--secondary btn--block font-semibold border-border-strong text-fg hover:bg-surface-hover min-h-control rounded-md flex items-center justify-center"
+          className="btn btn--secondary btn--block font-semibold border-border-strong text-fg hover:bg-surface-hover min-h-control rounded-md flex items-center justify-center px-2 text-sm sm:px-4 sm:text-base"
         >
           {t('auth.requestNewLink')}
         </Link>
