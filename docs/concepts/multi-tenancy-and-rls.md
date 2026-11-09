@@ -207,6 +207,16 @@ that mixes two orgs (error `23503`), even for the owner login that skips RLS. In
 a composite key would also try to blank `org_id`, and those parents are never deleted anyway (soft-deleted or
 `removed`).
 
+Two smaller rules close the last gaps. First, composite FKs are `on update no action` (Prisma
+`onUpdate: NoAction`). Prisma's default is `cascade`, and because `org_id` is part of the key, a worker or
+admin login that skips RLS could run `update buildings set org_id = B` and silently drag every unit, lease and
+bill under it into org B. With `no action` that update fails with `23503` while any child still points at the
+old `(org_id, id)`. Second, every unique key on a link column starts with `org_id`: `unique(org_id,
+building_id, label)`, `(org_id, unit_id) where live` and so on. A unique check runs before the FK check, so with
+plain `unique(unit_id)` org A naming org B's unit would get `23505` ("already taken") and learn that the unit
+exists and is let. With `org_id` first, A's key can never collide with B's, the FK check runs and the answer is
+the same `23503` as for an id that doesn't exist at all.
+
 Guarded by `every foreign key from an org_id table to an org_id table is composite and pairs org_id with
 org_id` in `apps/api/test/rls.int.test.ts` (it reads every FK from `pg_constraint`), and proved by `a row in org
 A cannot point at a row of org B` in `tenant-isolation.int.test.ts`.

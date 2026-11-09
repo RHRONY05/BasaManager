@@ -451,11 +451,10 @@ model CaretakerBuilding {
   updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   org        Organization @relation(fields: [orgId], references: [id])
-  membership Membership   @relation(fields: [orgId, membershipId], references: [orgId, id], onDelete: Cascade)
-  building   Building     @relation(fields: [orgId, buildingId], references: [orgId, id], onDelete: Cascade)
+  membership Membership   @relation(fields: [orgId, membershipId], references: [orgId, id], onDelete: Cascade, onUpdate: NoAction)
+  building   Building     @relation(fields: [orgId, buildingId], references: [orgId, id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@id([membershipId, buildingId])
-  @@index([orgId])
+  @@id([orgId, membershipId, buildingId])
   @@index([buildingId])
   @@map("caretaker_buildings")
 }
@@ -478,7 +477,7 @@ model Invitation {
   updatedAt   DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   org     Organization @relation(fields: [orgId], references: [id])
-  lease   Lease?       @relation(fields: [orgId, leaseId], references: [orgId, id], onDelete: Restrict)
+  lease   Lease?       @relation(fields: [orgId, leaseId], references: [orgId, id], onDelete: Restrict, onUpdate: NoAction)
   inviter User         @relation("InvitationInvitedBy", fields: [invitedBy], references: [id])
 
   /// One open invitation per email and role in an org.
@@ -538,17 +537,16 @@ model Unit {
   updatedAt         DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   org      Organization @relation(fields: [orgId], references: [id])
-  building Building     @relation(fields: [orgId, buildingId], references: [orgId, id])
+  building Building     @relation(fields: [orgId, buildingId], references: [orgId, id], onUpdate: NoAction)
 
   charges             UnitCharge[]
   leases              Lease[]
   meterReadings       MeterReading[]
   maintenanceRequests MaintenanceRequest[]
 
-  @@unique([buildingId, label])
+  @@unique([orgId, buildingId, label])
   /// Target of the composite (org_id, id) foreign keys of child rows (03 "Conventions").
   @@unique([orgId, id])
-  @@index([orgId])
   @@map("units")
 }
 
@@ -562,10 +560,9 @@ model UnitCharge {
   updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   org  Organization @relation(fields: [orgId], references: [id])
-  unit Unit         @relation(fields: [orgId, unitId], references: [orgId, id], onDelete: Cascade)
+  unit Unit         @relation(fields: [orgId, unitId], references: [orgId, id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@unique([unitId, name])
-  @@index([orgId])
+  @@unique([orgId, unitId, name])
   @@map("unit_charges")
 }
 
@@ -591,7 +588,7 @@ model Lease {
   updatedAt         DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   org     Organization @relation(fields: [orgId], references: [id])
-  unit    Unit         @relation(fields: [orgId, unitId], references: [orgId, id])
+  unit    Unit         @relation(fields: [orgId, unitId], references: [orgId, id], onUpdate: NoAction)
   creator User         @relation("LeaseCreatedBy", fields: [createdBy], references: [id])
 
   tenants             LeaseTenant[]
@@ -606,7 +603,7 @@ model Lease {
   invitations         Invitation[]
 
   /// One live lease per unit.
-  @@unique([unitId], map: "leases_one_live_per_unit", where: raw("(status = ANY (ARRAY['pending'::lease_status, 'active'::lease_status, 'notice'::lease_status]))"))
+  @@unique([orgId, unitId], map: "leases_one_live_per_unit", where: raw("(status = ANY (ARRAY['pending'::lease_status, 'active'::lease_status, 'notice'::lease_status]))"))
   /// Target of the composite (org_id, id) foreign keys of child rows (03 "Conventions").
   @@unique([orgId, id])
   @@index([orgId, status])
@@ -624,13 +621,12 @@ model LeaseTenant {
   updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   org        Organization @relation(fields: [orgId], references: [id])
-  lease      Lease        @relation(fields: [orgId, leaseId], references: [orgId, id], onDelete: Cascade)
-  membership Membership   @relation(fields: [orgId, membershipId], references: [orgId, id])
+  lease      Lease        @relation(fields: [orgId, leaseId], references: [orgId, id], onDelete: Cascade, onUpdate: NoAction)
+  membership Membership   @relation(fields: [orgId, membershipId], references: [orgId, id], onUpdate: NoAction)
 
-  @@id([leaseId, membershipId])
+  @@id([orgId, leaseId, membershipId])
   /// One primary tenant per lease.
-  @@unique([leaseId], map: "lease_tenants_one_primary", where: raw("is_primary"))
-  @@index([orgId])
+  @@unique([orgId, leaseId], map: "lease_tenants_one_primary", where: raw("is_primary"))
   @@index([membershipId])
   @@map("lease_tenants")
 }
@@ -646,10 +642,9 @@ model LeaseCharge {
   updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   org   Organization @relation(fields: [orgId], references: [id])
-  lease Lease        @relation(fields: [orgId, leaseId], references: [orgId, id], onDelete: Cascade)
+  lease Lease        @relation(fields: [orgId, leaseId], references: [orgId, id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@unique([leaseId, name])
-  @@index([orgId])
+  @@unique([orgId, leaseId, name])
   @@map("lease_charges")
 }
 
@@ -666,7 +661,7 @@ model DepositEntry {
   updatedAt    DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   org      Organization @relation(fields: [orgId], references: [id])
-  lease    Lease        @relation(fields: [orgId, leaseId], references: [orgId, id])
+  lease    Lease        @relation(fields: [orgId, leaseId], references: [orgId, id], onUpdate: NoAction)
   recorder User         @relation("DepositEntryRecordedBy", fields: [recordedBy], references: [id])
 
   @@index([orgId])
@@ -691,11 +686,10 @@ model MeterReading {
   updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   org     Organization @relation(fields: [orgId], references: [id])
-  unit    Unit         @relation(fields: [orgId, unitId], references: [orgId, id])
+  unit    Unit         @relation(fields: [orgId, unitId], references: [orgId, id], onUpdate: NoAction)
   enterer User         @relation("MeterReadingEnteredBy", fields: [enteredBy], references: [id])
 
-  @@unique([unitId, periodMonth])
-  @@index([orgId])
+  @@unique([orgId, unitId, periodMonth])
   @@index([enteredBy])
   @@map("meter_readings")
 }
@@ -721,14 +715,14 @@ model Bill {
   updatedAt        DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   org    Organization @relation(fields: [orgId], references: [id])
-  lease  Lease        @relation(fields: [orgId, leaseId], references: [orgId, id])
+  lease  Lease        @relation(fields: [orgId, leaseId], references: [orgId, id], onUpdate: NoAction)
   issuer User?        @relation("BillIssuedBy", fields: [issuedBy], references: [id])
 
   lines         BillLine[]
   allocations   PaymentAllocation[]
   creditEntries CreditEntry[]
 
-  @@unique([leaseId, periodMonth])
+  @@unique([orgId, leaseId, periodMonth])
   /// Target of the composite (org_id, id) foreign keys of child rows (03 "Conventions").
   @@unique([orgId, id])
   @@index([orgId, status, dueDate])
@@ -753,12 +747,11 @@ model BillLine {
   updatedAt    DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   org     Organization @relation(fields: [orgId], references: [id])
-  bill    Bill         @relation(fields: [orgId, billId], references: [orgId, id])
+  bill    Bill         @relation(fields: [orgId, billId], references: [orgId, id], onUpdate: NoAction)
   creator User?        @relation("BillLineCreatedBy", fields: [createdBy], references: [id])
 
   /// Never two late fees on one bill.
-  @@unique([billId], map: "bill_lines_one_late_fee", where: raw("(kind = 'late_fee'::bill_line_kind)"))
-  @@index([orgId])
+  @@unique([orgId, billId], map: "bill_lines_one_late_fee", where: raw("(kind = 'late_fee'::bill_line_kind)"))
   @@index([billId])
   @@index([createdBy])
   @@map("bill_lines")
@@ -786,8 +779,8 @@ model Payment {
   updatedAt      DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   org       Organization @relation(fields: [orgId], references: [id])
-  lease     Lease        @relation(fields: [orgId, leaseId], references: [orgId, id])
-  proofFile File?        @relation("PaymentProofFile", fields: [orgId, proofFileId], references: [orgId, id], onDelete: Restrict)
+  lease     Lease        @relation(fields: [orgId, leaseId], references: [orgId, id], onUpdate: NoAction)
+  proofFile File?        @relation("PaymentProofFile", fields: [orgId, proofFileId], references: [orgId, id], onDelete: Restrict, onUpdate: NoAction)
   submitter User         @relation("PaymentSubmittedBy", fields: [submittedBy], references: [id])
   confirmer User?        @relation("PaymentConfirmedBy", fields: [confirmedBy], references: [id])
   voider    User?        @relation("PaymentVoidedBy", fields: [voidedBy], references: [id])
@@ -821,8 +814,8 @@ model PaymentAllocation {
   updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   org     Organization @relation(fields: [orgId], references: [id])
-  payment Payment      @relation(fields: [orgId, paymentId], references: [orgId, id])
-  bill    Bill         @relation(fields: [orgId, billId], references: [orgId, id])
+  payment Payment      @relation(fields: [orgId, paymentId], references: [orgId, id], onUpdate: NoAction)
+  bill    Bill         @relation(fields: [orgId, billId], references: [orgId, id], onUpdate: NoAction)
 
   @@index([orgId])
   @@index([paymentId])
@@ -844,9 +837,9 @@ model CreditEntry {
   updatedAt    DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   org     Organization @relation(fields: [orgId], references: [id])
-  lease   Lease        @relation(fields: [orgId, leaseId], references: [orgId, id])
-  payment Payment?     @relation(fields: [orgId, paymentId], references: [orgId, id], onDelete: Restrict)
-  bill    Bill?        @relation(fields: [orgId, billId], references: [orgId, id], onDelete: Restrict)
+  lease   Lease        @relation(fields: [orgId, leaseId], references: [orgId, id], onUpdate: NoAction)
+  payment Payment?     @relation(fields: [orgId, paymentId], references: [orgId, id], onDelete: Restrict, onUpdate: NoAction)
+  bill    Bill?        @relation(fields: [orgId, billId], references: [orgId, id], onDelete: Restrict, onUpdate: NoAction)
 
   @@index([orgId])
   @@index([leaseId])
@@ -871,8 +864,8 @@ model PaymentIntent {
   updatedAt       DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   org     Organization @relation(fields: [orgId], references: [id])
-  lease   Lease        @relation(fields: [orgId, leaseId], references: [orgId, id])
-  payment Payment?     @relation(fields: [orgId, paymentId], references: [orgId, id], onDelete: Restrict)
+  lease   Lease        @relation(fields: [orgId, leaseId], references: [orgId, id], onUpdate: NoAction)
+  payment Payment?     @relation(fields: [orgId, paymentId], references: [orgId, id], onDelete: Restrict, onUpdate: NoAction)
   creator User         @relation("PaymentIntentCreatedBy", fields: [createdBy], references: [id])
 
   @@index([status, createdAt])
@@ -901,7 +894,7 @@ model ReceiptCounter {
 model Receipt {
   id        String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   orgId     String        @map("org_id") @db.Uuid
-  paymentId String        @unique @map("payment_id") @db.Uuid
+  paymentId String        @map("payment_id") @db.Uuid
   number    String
   status    ReceiptStatus @default(valid)
   fileId    String?       @map("file_id") @db.Uuid
@@ -909,8 +902,8 @@ model Receipt {
   updatedAt DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   org     Organization @relation(fields: [orgId], references: [id])
-  payment Payment      @relation(fields: [orgId, paymentId], references: [orgId, id])
-  file    File?        @relation("ReceiptFile", fields: [orgId, fileId], references: [orgId, id], onDelete: Restrict)
+  payment Payment      @relation(fields: [orgId, paymentId], references: [orgId, id], onUpdate: NoAction)
+  file    File?        @relation("ReceiptFile", fields: [orgId, fileId], references: [orgId, id], onDelete: Restrict, onUpdate: NoAction)
 
   @@unique([orgId, number])
   /// Prisma needs the composite FK's own columns unique for the 1:1 Payment.receipt relation.
@@ -942,11 +935,11 @@ model MaintenanceRequest {
   updatedAt   DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   org      Organization @relation(fields: [orgId], references: [id])
-  building Building     @relation(fields: [orgId, buildingId], references: [orgId, id])
-  unit     Unit         @relation(fields: [orgId, unitId], references: [orgId, id])
-  lease    Lease        @relation(fields: [orgId, leaseId], references: [orgId, id])
+  building Building     @relation(fields: [orgId, buildingId], references: [orgId, id], onUpdate: NoAction)
+  unit     Unit         @relation(fields: [orgId, unitId], references: [orgId, id], onUpdate: NoAction)
+  lease    Lease        @relation(fields: [orgId, leaseId], references: [orgId, id], onUpdate: NoAction)
   creator  User         @relation("MaintenanceRequestCreatedBy", fields: [createdBy], references: [id])
-  assignee Membership?  @relation("MaintenanceRequestAssignedTo", fields: [orgId, assignedTo], references: [orgId, id], onDelete: Restrict)
+  assignee Membership?  @relation("MaintenanceRequestAssignedTo", fields: [orgId, assignedTo], references: [orgId, id], onDelete: Restrict, onUpdate: NoAction)
 
   events MaintenanceEvent[]
 
@@ -976,9 +969,9 @@ model MaintenanceEvent {
   updatedAt  DateTime             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   org     Organization       @relation(fields: [orgId], references: [id])
-  request MaintenanceRequest @relation(fields: [orgId, requestId], references: [orgId, id])
+  request MaintenanceRequest @relation(fields: [orgId, requestId], references: [orgId, id], onUpdate: NoAction)
   actor   User               @relation("MaintenanceEventActor", fields: [actorId], references: [id])
-  file    File?              @relation("MaintenanceEventFile", fields: [orgId, fileId], references: [orgId, id], onDelete: Restrict)
+  file    File?              @relation("MaintenanceEventFile", fields: [orgId, fileId], references: [orgId, id], onDelete: Restrict, onUpdate: NoAction)
 
   @@index([orgId])
   @@index([requestId, createdAt])
@@ -1001,7 +994,7 @@ model Notice {
   updatedAt  DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   org      Organization @relation(fields: [orgId], references: [id])
-  building Building     @relation(fields: [orgId, buildingId], references: [orgId, id])
+  building Building     @relation(fields: [orgId, buildingId], references: [orgId, id], onUpdate: NoAction)
   creator  User         @relation("NoticeCreatedBy", fields: [createdBy], references: [id])
 
   @@index([orgId])
@@ -1056,8 +1049,8 @@ model Document {
   updatedAt  DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   org      Organization @relation(fields: [orgId], references: [id])
-  lease    Lease        @relation(fields: [orgId, leaseId], references: [orgId, id])
-  file     File         @relation(fields: [orgId, fileId], references: [orgId, id])
+  lease    Lease        @relation(fields: [orgId, leaseId], references: [orgId, id], onUpdate: NoAction)
+  file     File         @relation(fields: [orgId, fileId], references: [orgId, id], onUpdate: NoAction)
   uploader User         @relation("DocumentUploadedBy", fields: [uploadedBy], references: [id])
 
   @@index([orgId])

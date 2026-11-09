@@ -35,17 +35,17 @@ One bill per lease and month. total = sum of lines, paid = sum of allocations.
 | bills_issued_by_fkey       | FOREIGN KEY | FOREIGN KEY (issued_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL                    |
 | bills_org_id_fkey          | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT               |
 | bills_pkey                 | PRIMARY KEY | PRIMARY KEY (id)                                                                                     |
-| bills_org_id_lease_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT    |
+| bills_org_id_lease_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON DELETE RESTRICT                      |
 
 ## Indexes
 
-| Name                             | Definition                                                                                               |
-| -------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| bills_pkey                       | CREATE UNIQUE INDEX bills_pkey ON public.bills USING btree (id)                                          |
-| bills_org_id_status_due_date_idx | CREATE INDEX bills_org_id_status_due_date_idx ON public.bills USING btree (org_id, status, due_date)     |
-| bills_issued_by_idx              | CREATE INDEX bills_issued_by_idx ON public.bills USING btree (issued_by)                                 |
-| bills_lease_id_period_month_key  | CREATE UNIQUE INDEX bills_lease_id_period_month_key ON public.bills USING btree (lease_id, period_month) |
-| bills_org_id_id_key              | CREATE UNIQUE INDEX bills_org_id_id_key ON public.bills USING btree (org_id, id)                         |
+| Name                                   | Definition                                                                                                              |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| bills_pkey                             | CREATE UNIQUE INDEX bills_pkey ON public.bills USING btree (id)                                                         |
+| bills_org_id_status_due_date_idx       | CREATE INDEX bills_org_id_status_due_date_idx ON public.bills USING btree (org_id, status, due_date)                    |
+| bills_issued_by_idx                    | CREATE INDEX bills_issued_by_idx ON public.bills USING btree (issued_by)                                                |
+| bills_org_id_lease_id_period_month_key | CREATE UNIQUE INDEX bills_org_id_lease_id_period_month_key ON public.bills USING btree (org_id, lease_id, period_month) |
+| bills_org_id_id_key                    | CREATE UNIQUE INDEX bills_org_id_id_key ON public.bills USING btree (org_id, id)                                        |
 
 ## Relations
 

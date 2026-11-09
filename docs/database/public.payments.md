@@ -28,16 +28,16 @@ History (void, never delete). Cash, bKash, Nagad, bank, SSLCommerz.
 
 ## Constraints
 
-| Name                               | Type        | Definition                                                                                            |
-| ---------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------- |
-| payments_amount_check              | CHECK       | CHECK ((amount_poisha > 0))                                                                           |
-| payments_confirmed_by_fkey         | FOREIGN KEY | FOREIGN KEY (confirmed_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL                  |
-| payments_submitted_by_fkey         | FOREIGN KEY | FOREIGN KEY (submitted_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE RESTRICT                  |
-| payments_voided_by_fkey            | FOREIGN KEY | FOREIGN KEY (voided_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL                     |
-| payments_org_id_fkey               | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT                |
-| payments_pkey                      | PRIMARY KEY | PRIMARY KEY (id)                                                                                      |
-| payments_org_id_lease_id_fkey      | FOREIGN KEY | FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT     |
-| payments_org_id_proof_file_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, proof_file_id) REFERENCES files(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT |
+| Name                               | Type        | Definition                                                                             |
+| ---------------------------------- | ----------- | -------------------------------------------------------------------------------------- |
+| payments_amount_check              | CHECK       | CHECK ((amount_poisha > 0))                                                            |
+| payments_confirmed_by_fkey         | FOREIGN KEY | FOREIGN KEY (confirmed_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL   |
+| payments_submitted_by_fkey         | FOREIGN KEY | FOREIGN KEY (submitted_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE RESTRICT   |
+| payments_voided_by_fkey            | FOREIGN KEY | FOREIGN KEY (voided_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL      |
+| payments_org_id_fkey               | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT |
+| payments_pkey                      | PRIMARY KEY | PRIMARY KEY (id)                                                                       |
+| payments_org_id_lease_id_fkey      | FOREIGN KEY | FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON DELETE RESTRICT        |
+| payments_org_id_proof_file_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, proof_file_id) REFERENCES files(org_id, id) ON DELETE RESTRICT    |
 
 ## Indexes
 

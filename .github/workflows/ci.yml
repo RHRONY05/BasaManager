@@ -79,6 +79,14 @@ jobs:
         run: psql "postgresql://bm_owner:bm_owner_dev@localhost:5433/basamanager_test" -v ON_ERROR_STOP=1 -f infra/postgres/init/01-roles.sql
       - name: Test env
         run: cp .env.test.example .env.test
+      - name: Migrations from zero + schema drift (schema.prisma must equal what the migrations build)
+        # prisma.config.ts reads DATABASE_OWNER_URL (it loads only the root .env, not .env.test). The test suites
+        # create their own throwaway databases, so migrating basamanager_test here doesn't affect them.
+        env:
+          DATABASE_OWNER_URL: postgresql://bm_owner:bm_owner_dev@localhost:5433/basamanager_test
+        run: |
+          pnpm --filter @bm/api db:migrate
+          pnpm --filter @bm/api db:drift
       - run: pnpm test:int
 
   e2e:

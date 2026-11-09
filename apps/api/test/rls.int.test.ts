@@ -90,6 +90,39 @@ describe('RLS coverage (rls.int.test.ts)', () => {
     expect(rows.map((r) => r.conname)).toEqual([]);
   });
 
+  it('every composite org FK is ON UPDATE NO ACTION / RESTRICT (a cascade would re-home a subtree into another org)', async () => {
+    const rows = await q<{ conname: string; confupdtype: string }>(
+      `select c.conname, c.confupdtype from pg_constraint c
+         join pg_attribute a on a.attrelid = c.conrelid and a.attnum = any (c.conkey) and a.attname = 'org_id'
+        where c.contype = 'f' and c.connamespace = 'public'::regnamespace
+          and exists (select 1 from pg_attribute p where p.attrelid = c.confrelid and p.attname = 'org_id')`,
+    );
+    expect(rows.length).toBeGreaterThan(30);
+    const offenders = rows.filter((r) => !['a', 'r'].includes(r.confupdtype)).map((r) => r.conname);
+    expect(offenders, `composite FKs that cascade/null on update: ${offenders.join(', ')}`).toEqual([]);
+  });
+
+  it('every unique key on an org table that covers a composite-FK column leads with org_id (no 23505 oracle)', async () => {
+    // A unique check runs before the FK check; without org_id first, naming org B's id answers 23505 ("taken").
+    const rows = await q<{ index: string; first: string }>(
+      `select i.indexrelid::regclass::text as index, fa.attname as first
+         from pg_index i
+         join pg_attribute fa on fa.attrelid = i.indrelid and fa.attnum = i.indkey[0]
+        where i.indisunique
+          and exists (select 1 from pg_attribute o where o.attrelid = i.indrelid and o.attname = 'org_id')
+          and exists (
+            select 1 from pg_constraint c
+             where c.contype = 'f' and c.conrelid = i.indrelid and array_length(c.conkey, 1) > 1
+               and exists (select 1 from unnest(c.conkey) k(n) join pg_attribute ka
+                             on ka.attrelid = c.conrelid and ka.attnum = k.n
+                            where ka.attname <> 'org_id' and ka.attnum = any (i.indkey::int2[])))`,
+    );
+    // Not vacuous: units, unit_charges, leases, lease_tenants, lease_charges, meter_readings, bills, bill_lines, receipts …
+    expect(rows.length).toBeGreaterThan(8);
+    const offenders = rows.filter((r) => r.first !== 'org_id').map((r) => r.index);
+    expect(offenders, `unique keys on FK columns without org_id first: ${offenders.join(', ')}`).toEqual([]);
+  });
+
   it('organizations (keyed by id, no org_id column) also has RLS enabled and forced, with the org_self_* and member_orgs policies', async () => {
     const rows = await q<{ relrowsecurity: boolean; relforcerowsecurity: boolean }>(
       `select relrowsecurity, relforcerowsecurity from pg_class

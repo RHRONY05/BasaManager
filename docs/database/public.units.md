@@ -22,21 +22,20 @@ A rentable flat, room or shop in a building.
 
 ## Constraints
 
-| Name                          | Type        | Definition                                                                                              |
-| ----------------------------- | ----------- | ------------------------------------------------------------------------------------------------------- |
-| units_default_rent_check      | CHECK       | CHECK ((default_rent_poisha >= 0))                                                                      |
-| units_org_id_fkey             | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT                  |
-| units_pkey                    | PRIMARY KEY | PRIMARY KEY (id)                                                                                        |
-| units_org_id_building_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, building_id) REFERENCES buildings(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT |
+| Name                          | Type        | Definition                                                                             |
+| ----------------------------- | ----------- | -------------------------------------------------------------------------------------- |
+| units_default_rent_check      | CHECK       | CHECK ((default_rent_poisha >= 0))                                                     |
+| units_org_id_fkey             | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT |
+| units_pkey                    | PRIMARY KEY | PRIMARY KEY (id)                                                                       |
+| units_org_id_building_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, building_id) REFERENCES buildings(org_id, id) ON DELETE RESTRICT  |
 
 ## Indexes
 
-| Name                        | Definition                                                                                       |
-| --------------------------- | ------------------------------------------------------------------------------------------------ |
-| units_pkey                  | CREATE UNIQUE INDEX units_pkey ON public.units USING btree (id)                                  |
-| units_org_id_idx            | CREATE INDEX units_org_id_idx ON public.units USING btree (org_id)                               |
-| units_building_id_label_key | CREATE UNIQUE INDEX units_building_id_label_key ON public.units USING btree (building_id, label) |
-| units_org_id_id_key         | CREATE UNIQUE INDEX units_org_id_id_key ON public.units USING btree (org_id, id)                 |
+| Name                               | Definition                                                                                                      |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| units_pkey                         | CREATE UNIQUE INDEX units_pkey ON public.units USING btree (id)                                                 |
+| units_org_id_building_id_label_key | CREATE UNIQUE INDEX units_org_id_building_id_label_key ON public.units USING btree (org_id, building_id, label) |
+| units_org_id_id_key                | CREATE UNIQUE INDEX units_org_id_id_key ON public.units USING btree (org_id, id)                                |
 
 ## Relations
 

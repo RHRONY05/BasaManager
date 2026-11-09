@@ -18,20 +18,19 @@ Fixed monthly charges of a unit (service, water, gas...).
 
 ## Constraints
 
-| Name                             | Type        | Definition                                                                                     |
-| -------------------------------- | ----------- | ---------------------------------------------------------------------------------------------- |
-| unit_charges_amount_check        | CHECK       | CHECK ((amount_poisha >= 0))                                                                   |
-| unit_charges_org_id_fkey         | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT         |
-| unit_charges_pkey                | PRIMARY KEY | PRIMARY KEY (id)                                                                               |
-| unit_charges_org_id_unit_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, unit_id) REFERENCES units(org_id, id) ON UPDATE CASCADE ON DELETE CASCADE |
+| Name                             | Type        | Definition                                                                             |
+| -------------------------------- | ----------- | -------------------------------------------------------------------------------------- |
+| unit_charges_amount_check        | CHECK       | CHECK ((amount_poisha >= 0))                                                           |
+| unit_charges_org_id_fkey         | FOREIGN KEY | FOREIGN KEY (org_id) REFERENCES organizations(id) ON UPDATE CASCADE ON DELETE RESTRICT |
+| unit_charges_pkey                | PRIMARY KEY | PRIMARY KEY (id)                                                                       |
+| unit_charges_org_id_unit_id_fkey | FOREIGN KEY | FOREIGN KEY (org_id, unit_id) REFERENCES units(org_id, id) ON DELETE CASCADE           |
 
 ## Indexes
 
-| Name                          | Definition                                                                                           |
-| ----------------------------- | ---------------------------------------------------------------------------------------------------- |
-| unit_charges_pkey             | CREATE UNIQUE INDEX unit_charges_pkey ON public.unit_charges USING btree (id)                        |
-| unit_charges_org_id_idx       | CREATE INDEX unit_charges_org_id_idx ON public.unit_charges USING btree (org_id)                     |
-| unit_charges_unit_id_name_key | CREATE UNIQUE INDEX unit_charges_unit_id_name_key ON public.unit_charges USING btree (unit_id, name) |
+| Name                                 | Definition                                                                                                          |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| unit_charges_pkey                    | CREATE UNIQUE INDEX unit_charges_pkey ON public.unit_charges USING btree (id)                                       |
+| unit_charges_org_id_unit_id_name_key | CREATE UNIQUE INDEX unit_charges_org_id_unit_id_name_key ON public.unit_charges USING btree (org_id, unit_id, name) |
 
 ## Relations
 

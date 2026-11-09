@@ -694,19 +694,12 @@
       "indexes": [
         {
           "name": "caretaker_buildings_pkey",
-          "def": "CREATE UNIQUE INDEX caretaker_buildings_pkey ON public.caretaker_buildings USING btree (membership_id, building_id)",
+          "def": "CREATE UNIQUE INDEX caretaker_buildings_pkey ON public.caretaker_buildings USING btree (org_id, membership_id, building_id)",
           "table": "public.caretaker_buildings",
           "columns": [
+            "org_id",
             "membership_id",
             "building_id"
-          ]
-        },
-        {
-          "name": "caretaker_buildings_org_id_idx",
-          "def": "CREATE INDEX caretaker_buildings_org_id_idx ON public.caretaker_buildings USING btree (org_id)",
-          "table": "public.caretaker_buildings",
-          "columns": [
-            "org_id"
           ]
         },
         {
@@ -735,10 +728,11 @@
         {
           "name": "caretaker_buildings_pkey",
           "type": "PRIMARY KEY",
-          "def": "PRIMARY KEY (membership_id, building_id)",
+          "def": "PRIMARY KEY (org_id, membership_id, building_id)",
           "table": "public.caretaker_buildings",
           "referenced_table": "",
           "columns": [
+            "org_id",
             "membership_id",
             "building_id"
           ]
@@ -746,7 +740,7 @@
         {
           "name": "caretaker_buildings_org_id_membership_id_fkey",
           "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (org_id, membership_id) REFERENCES memberships(org_id, id) ON UPDATE CASCADE ON DELETE CASCADE",
+          "def": "FOREIGN KEY (org_id, membership_id) REFERENCES memberships(org_id, id) ON DELETE CASCADE",
           "table": "public.caretaker_buildings",
           "referenced_table": "public.memberships",
           "columns": [
@@ -761,7 +755,7 @@
         {
           "name": "caretaker_buildings_org_id_building_id_fkey",
           "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (org_id, building_id) REFERENCES buildings(org_id, id) ON UPDATE CASCADE ON DELETE CASCADE",
+          "def": "FOREIGN KEY (org_id, building_id) REFERENCES buildings(org_id, id) ON DELETE CASCADE",
           "table": "public.caretaker_buildings",
           "referenced_table": "public.buildings",
           "columns": [
@@ -942,7 +936,7 @@
         {
           "name": "invitations_org_id_lease_id_fkey",
           "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT",
+          "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON DELETE RESTRICT",
           "table": "public.invitations",
           "referenced_table": "public.leases",
           "columns": [
@@ -1233,18 +1227,11 @@
           ]
         },
         {
-          "name": "units_org_id_idx",
-          "def": "CREATE INDEX units_org_id_idx ON public.units USING btree (org_id)",
+          "name": "units_org_id_building_id_label_key",
+          "def": "CREATE UNIQUE INDEX units_org_id_building_id_label_key ON public.units USING btree (org_id, building_id, label)",
           "table": "public.units",
           "columns": [
-            "org_id"
-          ]
-        },
-        {
-          "name": "units_building_id_label_key",
-          "def": "CREATE UNIQUE INDEX units_building_id_label_key ON public.units USING btree (building_id, label)",
-          "table": "public.units",
-          "columns": [
+            "org_id",
             "building_id",
             "label"
           ]
@@ -1296,7 +1283,7 @@
         {
           "name": "units_org_id_building_id_fkey",
           "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (org_id, building_id) REFERENCES buildings(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT",
+          "def": "FOREIGN KEY (org_id, building_id) REFERENCES buildings(org_id, id) ON DELETE RESTRICT",
           "table": "public.units",
           "referenced_table": "public.buildings",
           "columns": [
@@ -1364,18 +1351,11 @@
           ]
         },
         {
-          "name": "unit_charges_org_id_idx",
-          "def": "CREATE INDEX unit_charges_org_id_idx ON public.unit_charges USING btree (org_id)",
+          "name": "unit_charges_org_id_unit_id_name_key",
+          "def": "CREATE UNIQUE INDEX unit_charges_org_id_unit_id_name_key ON public.unit_charges USING btree (org_id, unit_id, name)",
           "table": "public.unit_charges",
           "columns": [
-            "org_id"
-          ]
-        },
-        {
-          "name": "unit_charges_unit_id_name_key",
-          "def": "CREATE UNIQUE INDEX unit_charges_unit_id_name_key ON public.unit_charges USING btree (unit_id, name)",
-          "table": "public.unit_charges",
-          "columns": [
+            "org_id",
             "unit_id",
             "name"
           ]
@@ -1418,7 +1398,7 @@
         {
           "name": "unit_charges_org_id_unit_id_fkey",
           "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (org_id, unit_id) REFERENCES units(org_id, id) ON UPDATE CASCADE ON DELETE CASCADE",
+          "def": "FOREIGN KEY (org_id, unit_id) REFERENCES units(org_id, id) ON DELETE CASCADE",
           "table": "public.unit_charges",
           "referenced_table": "public.units",
           "columns": [
@@ -1560,9 +1540,10 @@
         },
         {
           "name": "leases_one_live_per_unit",
-          "def": "CREATE UNIQUE INDEX leases_one_live_per_unit ON public.leases USING btree (unit_id) WHERE (status = ANY (ARRAY['pending'::lease_status, 'active'::lease_status, 'notice'::lease_status]))",
+          "def": "CREATE UNIQUE INDEX leases_one_live_per_unit ON public.leases USING btree (org_id, unit_id) WHERE (status = ANY (ARRAY['pending'::lease_status, 'active'::lease_status, 'notice'::lease_status]))",
           "table": "public.leases",
           "columns": [
+            "org_id",
             "unit_id"
           ]
         },
@@ -1636,7 +1617,7 @@
         {
           "name": "leases_org_id_unit_id_fkey",
           "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (org_id, unit_id) REFERENCES units(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT",
+          "def": "FOREIGN KEY (org_id, unit_id) REFERENCES units(org_id, id) ON DELETE RESTRICT",
           "table": "public.leases",
           "referenced_table": "public.units",
           "columns": [
@@ -1692,19 +1673,12 @@
       "indexes": [
         {
           "name": "lease_tenants_pkey",
-          "def": "CREATE UNIQUE INDEX lease_tenants_pkey ON public.lease_tenants USING btree (lease_id, membership_id)",
+          "def": "CREATE UNIQUE INDEX lease_tenants_pkey ON public.lease_tenants USING btree (org_id, lease_id, membership_id)",
           "table": "public.lease_tenants",
           "columns": [
+            "org_id",
             "lease_id",
             "membership_id"
-          ]
-        },
-        {
-          "name": "lease_tenants_org_id_idx",
-          "def": "CREATE INDEX lease_tenants_org_id_idx ON public.lease_tenants USING btree (org_id)",
-          "table": "public.lease_tenants",
-          "columns": [
-            "org_id"
           ]
         },
         {
@@ -1717,9 +1691,10 @@
         },
         {
           "name": "lease_tenants_one_primary",
-          "def": "CREATE UNIQUE INDEX lease_tenants_one_primary ON public.lease_tenants USING btree (lease_id) WHERE is_primary",
+          "def": "CREATE UNIQUE INDEX lease_tenants_one_primary ON public.lease_tenants USING btree (org_id, lease_id) WHERE is_primary",
           "table": "public.lease_tenants",
           "columns": [
+            "org_id",
             "lease_id"
           ]
         }
@@ -1741,10 +1716,11 @@
         {
           "name": "lease_tenants_pkey",
           "type": "PRIMARY KEY",
-          "def": "PRIMARY KEY (lease_id, membership_id)",
+          "def": "PRIMARY KEY (org_id, lease_id, membership_id)",
           "table": "public.lease_tenants",
           "referenced_table": "",
           "columns": [
+            "org_id",
             "lease_id",
             "membership_id"
           ]
@@ -1752,7 +1728,7 @@
         {
           "name": "lease_tenants_org_id_membership_id_fkey",
           "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (org_id, membership_id) REFERENCES memberships(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT",
+          "def": "FOREIGN KEY (org_id, membership_id) REFERENCES memberships(org_id, id) ON DELETE RESTRICT",
           "table": "public.lease_tenants",
           "referenced_table": "public.memberships",
           "columns": [
@@ -1767,7 +1743,7 @@
         {
           "name": "lease_tenants_org_id_lease_id_fkey",
           "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON UPDATE CASCADE ON DELETE CASCADE",
+          "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON DELETE CASCADE",
           "table": "public.lease_tenants",
           "referenced_table": "public.leases",
           "columns": [
@@ -1835,18 +1811,11 @@
           ]
         },
         {
-          "name": "lease_charges_org_id_idx",
-          "def": "CREATE INDEX lease_charges_org_id_idx ON public.lease_charges USING btree (org_id)",
+          "name": "lease_charges_org_id_lease_id_name_key",
+          "def": "CREATE UNIQUE INDEX lease_charges_org_id_lease_id_name_key ON public.lease_charges USING btree (org_id, lease_id, name)",
           "table": "public.lease_charges",
           "columns": [
-            "org_id"
-          ]
-        },
-        {
-          "name": "lease_charges_lease_id_name_key",
-          "def": "CREATE UNIQUE INDEX lease_charges_lease_id_name_key ON public.lease_charges USING btree (lease_id, name)",
-          "table": "public.lease_charges",
-          "columns": [
+            "org_id",
             "lease_id",
             "name"
           ]
@@ -1889,7 +1858,7 @@
         {
           "name": "lease_charges_org_id_lease_id_fkey",
           "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON UPDATE CASCADE ON DELETE CASCADE",
+          "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON DELETE CASCADE",
           "table": "public.lease_charges",
           "referenced_table": "public.leases",
           "columns": [
@@ -2041,7 +2010,7 @@
         {
           "name": "deposit_entries_org_id_lease_id_fkey",
           "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT",
+          "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON DELETE RESTRICT",
           "table": "public.deposit_entries",
           "referenced_table": "public.leases",
           "columns": [
@@ -2125,14 +2094,6 @@
           ]
         },
         {
-          "name": "meter_readings_org_id_idx",
-          "def": "CREATE INDEX meter_readings_org_id_idx ON public.meter_readings USING btree (org_id)",
-          "table": "public.meter_readings",
-          "columns": [
-            "org_id"
-          ]
-        },
-        {
           "name": "meter_readings_entered_by_idx",
           "def": "CREATE INDEX meter_readings_entered_by_idx ON public.meter_readings USING btree (entered_by)",
           "table": "public.meter_readings",
@@ -2141,10 +2102,11 @@
           ]
         },
         {
-          "name": "meter_readings_unit_id_period_month_key",
-          "def": "CREATE UNIQUE INDEX meter_readings_unit_id_period_month_key ON public.meter_readings USING btree (unit_id, period_month)",
+          "name": "meter_readings_org_id_unit_id_period_month_key",
+          "def": "CREATE UNIQUE INDEX meter_readings_org_id_unit_id_period_month_key ON public.meter_readings USING btree (org_id, unit_id, period_month)",
           "table": "public.meter_readings",
           "columns": [
+            "org_id",
             "unit_id",
             "period_month"
           ]
@@ -2210,7 +2172,7 @@
         {
           "name": "meter_readings_org_id_unit_id_fkey",
           "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (org_id, unit_id) REFERENCES units(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT",
+          "def": "FOREIGN KEY (org_id, unit_id) REFERENCES units(org_id, id) ON DELETE RESTRICT",
           "table": "public.meter_readings",
           "referenced_table": "public.units",
           "columns": [
@@ -2340,10 +2302,11 @@
           ]
         },
         {
-          "name": "bills_lease_id_period_month_key",
-          "def": "CREATE UNIQUE INDEX bills_lease_id_period_month_key ON public.bills USING btree (lease_id, period_month)",
+          "name": "bills_org_id_lease_id_period_month_key",
+          "def": "CREATE UNIQUE INDEX bills_org_id_lease_id_period_month_key ON public.bills USING btree (org_id, lease_id, period_month)",
           "table": "public.bills",
           "columns": [
+            "org_id",
             "lease_id",
             "period_month"
           ]
@@ -2439,7 +2402,7 @@
         {
           "name": "bills_org_id_lease_id_fkey",
           "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT",
+          "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON DELETE RESTRICT",
           "table": "public.bills",
           "referenced_table": "public.leases",
           "columns": [
@@ -2528,14 +2491,6 @@
           ]
         },
         {
-          "name": "bill_lines_org_id_idx",
-          "def": "CREATE INDEX bill_lines_org_id_idx ON public.bill_lines USING btree (org_id)",
-          "table": "public.bill_lines",
-          "columns": [
-            "org_id"
-          ]
-        },
-        {
           "name": "bill_lines_bill_id_idx",
           "def": "CREATE INDEX bill_lines_bill_id_idx ON public.bill_lines USING btree (bill_id)",
           "table": "public.bill_lines",
@@ -2553,9 +2508,10 @@
         },
         {
           "name": "bill_lines_one_late_fee",
-          "def": "CREATE UNIQUE INDEX bill_lines_one_late_fee ON public.bill_lines USING btree (bill_id) WHERE (kind = 'late_fee'::bill_line_kind)",
+          "def": "CREATE UNIQUE INDEX bill_lines_one_late_fee ON public.bill_lines USING btree (org_id, bill_id) WHERE (kind = 'late_fee'::bill_line_kind)",
           "table": "public.bill_lines",
           "columns": [
+            "org_id",
             "bill_id"
           ]
         }
@@ -2600,7 +2556,7 @@
         {
           "name": "bill_lines_org_id_bill_id_fkey",
           "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (org_id, bill_id) REFERENCES bills(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT",
+          "def": "FOREIGN KEY (org_id, bill_id) REFERENCES bills(org_id, id) ON DELETE RESTRICT",
           "table": "public.bill_lines",
           "referenced_table": "public.bills",
           "columns": [
@@ -2861,7 +2817,7 @@
         {
           "name": "payments_org_id_lease_id_fkey",
           "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT",
+          "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON DELETE RESTRICT",
           "table": "public.payments",
           "referenced_table": "public.leases",
           "columns": [
@@ -2876,7 +2832,7 @@
         {
           "name": "payments_org_id_proof_file_id_fkey",
           "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (org_id, proof_file_id) REFERENCES files(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT",
+          "def": "FOREIGN KEY (org_id, proof_file_id) REFERENCES files(org_id, id) ON DELETE RESTRICT",
           "table": "public.payments",
           "referenced_table": "public.files",
           "columns": [
@@ -3005,7 +2961,7 @@
         {
           "name": "payment_allocations_org_id_bill_id_fkey",
           "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (org_id, bill_id) REFERENCES bills(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT",
+          "def": "FOREIGN KEY (org_id, bill_id) REFERENCES bills(org_id, id) ON DELETE RESTRICT",
           "table": "public.payment_allocations",
           "referenced_table": "public.bills",
           "columns": [
@@ -3020,7 +2976,7 @@
         {
           "name": "payment_allocations_org_id_payment_id_fkey",
           "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (org_id, payment_id) REFERENCES payments(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT",
+          "def": "FOREIGN KEY (org_id, payment_id) REFERENCES payments(org_id, id) ON DELETE RESTRICT",
           "table": "public.payment_allocations",
           "referenced_table": "public.payments",
           "columns": [
@@ -3157,7 +3113,7 @@
         {
           "name": "credit_entries_org_id_lease_id_fkey",
           "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT",
+          "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON DELETE RESTRICT",
           "table": "public.credit_entries",
           "referenced_table": "public.leases",
           "columns": [
@@ -3172,7 +3128,7 @@
         {
           "name": "credit_entries_org_id_bill_id_fkey",
           "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (org_id, bill_id) REFERENCES bills(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT",
+          "def": "FOREIGN KEY (org_id, bill_id) REFERENCES bills(org_id, id) ON DELETE RESTRICT",
           "table": "public.credit_entries",
           "referenced_table": "public.bills",
           "columns": [
@@ -3187,7 +3143,7 @@
         {
           "name": "credit_entries_org_id_payment_id_fkey",
           "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (org_id, payment_id) REFERENCES payments(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT",
+          "def": "FOREIGN KEY (org_id, payment_id) REFERENCES payments(org_id, id) ON DELETE RESTRICT",
           "table": "public.credit_entries",
           "referenced_table": "public.payments",
           "columns": [
@@ -3385,7 +3341,7 @@
         {
           "name": "payment_intents_org_id_lease_id_fkey",
           "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT",
+          "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON DELETE RESTRICT",
           "table": "public.payment_intents",
           "referenced_table": "public.leases",
           "columns": [
@@ -3400,7 +3356,7 @@
         {
           "name": "payment_intents_org_id_payment_id_fkey",
           "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (org_id, payment_id) REFERENCES payments(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT",
+          "def": "FOREIGN KEY (org_id, payment_id) REFERENCES payments(org_id, id) ON DELETE RESTRICT",
           "table": "public.payment_intents",
           "referenced_table": "public.payments",
           "columns": [
@@ -3556,14 +3512,6 @@
           ]
         },
         {
-          "name": "receipts_payment_id_key",
-          "def": "CREATE UNIQUE INDEX receipts_payment_id_key ON public.receipts USING btree (payment_id)",
-          "table": "public.receipts",
-          "columns": [
-            "payment_id"
-          ]
-        },
-        {
           "name": "receipts_file_id_idx",
           "def": "CREATE INDEX receipts_file_id_idx ON public.receipts USING btree (file_id)",
           "table": "public.receipts",
@@ -3617,7 +3565,7 @@
         {
           "name": "receipts_org_id_payment_id_fkey",
           "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (org_id, payment_id) REFERENCES payments(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT",
+          "def": "FOREIGN KEY (org_id, payment_id) REFERENCES payments(org_id, id) ON DELETE RESTRICT",
           "table": "public.receipts",
           "referenced_table": "public.payments",
           "columns": [
@@ -3632,7 +3580,7 @@
         {
           "name": "receipts_org_id_file_id_fkey",
           "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (org_id, file_id) REFERENCES files(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT",
+          "def": "FOREIGN KEY (org_id, file_id) REFERENCES files(org_id, id) ON DELETE RESTRICT",
           "table": "public.receipts",
           "referenced_table": "public.files",
           "columns": [
@@ -3852,7 +3800,7 @@
         {
           "name": "maintenance_requests_org_id_assigned_to_fkey",
           "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (org_id, assigned_to) REFERENCES memberships(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT",
+          "def": "FOREIGN KEY (org_id, assigned_to) REFERENCES memberships(org_id, id) ON DELETE RESTRICT",
           "table": "public.maintenance_requests",
           "referenced_table": "public.memberships",
           "columns": [
@@ -3867,7 +3815,7 @@
         {
           "name": "maintenance_requests_org_id_building_id_fkey",
           "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (org_id, building_id) REFERENCES buildings(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT",
+          "def": "FOREIGN KEY (org_id, building_id) REFERENCES buildings(org_id, id) ON DELETE RESTRICT",
           "table": "public.maintenance_requests",
           "referenced_table": "public.buildings",
           "columns": [
@@ -3882,7 +3830,7 @@
         {
           "name": "maintenance_requests_org_id_unit_id_fkey",
           "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (org_id, unit_id) REFERENCES units(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT",
+          "def": "FOREIGN KEY (org_id, unit_id) REFERENCES units(org_id, id) ON DELETE RESTRICT",
           "table": "public.maintenance_requests",
           "referenced_table": "public.units",
           "columns": [
@@ -3897,7 +3845,7 @@
         {
           "name": "maintenance_requests_org_id_lease_id_fkey",
           "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT",
+          "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON DELETE RESTRICT",
           "table": "public.maintenance_requests",
           "referenced_table": "public.leases",
           "columns": [
@@ -4058,7 +4006,7 @@
         {
           "name": "maintenance_events_org_id_request_id_fkey",
           "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (org_id, request_id) REFERENCES maintenance_requests(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT",
+          "def": "FOREIGN KEY (org_id, request_id) REFERENCES maintenance_requests(org_id, id) ON DELETE RESTRICT",
           "table": "public.maintenance_events",
           "referenced_table": "public.maintenance_requests",
           "columns": [
@@ -4073,7 +4021,7 @@
         {
           "name": "maintenance_events_org_id_file_id_fkey",
           "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (org_id, file_id) REFERENCES files(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT",
+          "def": "FOREIGN KEY (org_id, file_id) REFERENCES files(org_id, id) ON DELETE RESTRICT",
           "table": "public.maintenance_events",
           "referenced_table": "public.files",
           "columns": [
@@ -4227,7 +4175,7 @@
         {
           "name": "notices_org_id_building_id_fkey",
           "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (org_id, building_id) REFERENCES buildings(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT",
+          "def": "FOREIGN KEY (org_id, building_id) REFERENCES buildings(org_id, id) ON DELETE RESTRICT",
           "table": "public.notices",
           "referenced_table": "public.buildings",
           "columns": [
@@ -4553,7 +4501,7 @@
         {
           "name": "documents_org_id_lease_id_fkey",
           "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT",
+          "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON DELETE RESTRICT",
           "table": "public.documents",
           "referenced_table": "public.leases",
           "columns": [
@@ -4568,7 +4516,7 @@
         {
           "name": "documents_org_id_file_id_fkey",
           "type": "FOREIGN KEY",
-          "def": "FOREIGN KEY (org_id, file_id) REFERENCES files(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT",
+          "def": "FOREIGN KEY (org_id, file_id) REFERENCES files(org_id, id) ON DELETE RESTRICT",
           "table": "public.documents",
           "referenced_table": "public.files",
           "columns": [
@@ -5318,7 +5266,7 @@
         "id"
       ],
       "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (org_id, membership_id) REFERENCES memberships(org_id, id) ON UPDATE CASCADE ON DELETE CASCADE"
+      "def": "FOREIGN KEY (org_id, membership_id) REFERENCES memberships(org_id, id) ON DELETE CASCADE"
     },
     {
       "table": "public.caretaker_buildings",
@@ -5333,7 +5281,7 @@
         "id"
       ],
       "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (org_id, building_id) REFERENCES buildings(org_id, id) ON UPDATE CASCADE ON DELETE CASCADE"
+      "def": "FOREIGN KEY (org_id, building_id) REFERENCES buildings(org_id, id) ON DELETE CASCADE"
     },
     {
       "table": "public.invitations",
@@ -5374,7 +5322,7 @@
         "id"
       ],
       "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT"
+      "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON DELETE RESTRICT"
     },
     {
       "table": "public.buildings",
@@ -5415,7 +5363,7 @@
         "id"
       ],
       "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (org_id, building_id) REFERENCES buildings(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT"
+      "def": "FOREIGN KEY (org_id, building_id) REFERENCES buildings(org_id, id) ON DELETE RESTRICT"
     },
     {
       "table": "public.unit_charges",
@@ -5443,7 +5391,7 @@
         "id"
       ],
       "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (org_id, unit_id) REFERENCES units(org_id, id) ON UPDATE CASCADE ON DELETE CASCADE"
+      "def": "FOREIGN KEY (org_id, unit_id) REFERENCES units(org_id, id) ON DELETE CASCADE"
     },
     {
       "table": "public.leases",
@@ -5484,7 +5432,7 @@
         "id"
       ],
       "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (org_id, unit_id) REFERENCES units(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT"
+      "def": "FOREIGN KEY (org_id, unit_id) REFERENCES units(org_id, id) ON DELETE RESTRICT"
     },
     {
       "table": "public.lease_tenants",
@@ -5512,7 +5460,7 @@
         "id"
       ],
       "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (org_id, membership_id) REFERENCES memberships(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT"
+      "def": "FOREIGN KEY (org_id, membership_id) REFERENCES memberships(org_id, id) ON DELETE RESTRICT"
     },
     {
       "table": "public.lease_tenants",
@@ -5527,7 +5475,7 @@
         "id"
       ],
       "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON UPDATE CASCADE ON DELETE CASCADE"
+      "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON DELETE CASCADE"
     },
     {
       "table": "public.lease_charges",
@@ -5555,7 +5503,7 @@
         "id"
       ],
       "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON UPDATE CASCADE ON DELETE CASCADE"
+      "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON DELETE CASCADE"
     },
     {
       "table": "public.deposit_entries",
@@ -5596,7 +5544,7 @@
         "id"
       ],
       "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT"
+      "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON DELETE RESTRICT"
     },
     {
       "table": "public.meter_readings",
@@ -5637,7 +5585,7 @@
         "id"
       ],
       "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (org_id, unit_id) REFERENCES units(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT"
+      "def": "FOREIGN KEY (org_id, unit_id) REFERENCES units(org_id, id) ON DELETE RESTRICT"
     },
     {
       "table": "public.bills",
@@ -5678,7 +5626,7 @@
         "id"
       ],
       "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT"
+      "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON DELETE RESTRICT"
     },
     {
       "table": "public.bill_lines",
@@ -5719,7 +5667,7 @@
         "id"
       ],
       "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (org_id, bill_id) REFERENCES bills(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT"
+      "def": "FOREIGN KEY (org_id, bill_id) REFERENCES bills(org_id, id) ON DELETE RESTRICT"
     },
     {
       "table": "public.payments",
@@ -5786,7 +5734,7 @@
         "id"
       ],
       "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT"
+      "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON DELETE RESTRICT"
     },
     {
       "table": "public.payments",
@@ -5801,7 +5749,7 @@
         "id"
       ],
       "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (org_id, proof_file_id) REFERENCES files(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT"
+      "def": "FOREIGN KEY (org_id, proof_file_id) REFERENCES files(org_id, id) ON DELETE RESTRICT"
     },
     {
       "table": "public.payment_allocations",
@@ -5829,7 +5777,7 @@
         "id"
       ],
       "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (org_id, bill_id) REFERENCES bills(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT"
+      "def": "FOREIGN KEY (org_id, bill_id) REFERENCES bills(org_id, id) ON DELETE RESTRICT"
     },
     {
       "table": "public.payment_allocations",
@@ -5844,7 +5792,7 @@
         "id"
       ],
       "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (org_id, payment_id) REFERENCES payments(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT"
+      "def": "FOREIGN KEY (org_id, payment_id) REFERENCES payments(org_id, id) ON DELETE RESTRICT"
     },
     {
       "table": "public.credit_entries",
@@ -5872,7 +5820,7 @@
         "id"
       ],
       "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT"
+      "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON DELETE RESTRICT"
     },
     {
       "table": "public.credit_entries",
@@ -5887,7 +5835,7 @@
         "id"
       ],
       "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (org_id, bill_id) REFERENCES bills(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT"
+      "def": "FOREIGN KEY (org_id, bill_id) REFERENCES bills(org_id, id) ON DELETE RESTRICT"
     },
     {
       "table": "public.credit_entries",
@@ -5902,7 +5850,7 @@
         "id"
       ],
       "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (org_id, payment_id) REFERENCES payments(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT"
+      "def": "FOREIGN KEY (org_id, payment_id) REFERENCES payments(org_id, id) ON DELETE RESTRICT"
     },
     {
       "table": "public.payment_intents",
@@ -5943,7 +5891,7 @@
         "id"
       ],
       "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT"
+      "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON DELETE RESTRICT"
     },
     {
       "table": "public.payment_intents",
@@ -5958,7 +5906,7 @@
         "id"
       ],
       "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (org_id, payment_id) REFERENCES payments(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT"
+      "def": "FOREIGN KEY (org_id, payment_id) REFERENCES payments(org_id, id) ON DELETE RESTRICT"
     },
     {
       "table": "public.receipt_counters",
@@ -5999,7 +5947,7 @@
         "id"
       ],
       "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (org_id, payment_id) REFERENCES payments(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT"
+      "def": "FOREIGN KEY (org_id, payment_id) REFERENCES payments(org_id, id) ON DELETE RESTRICT"
     },
     {
       "table": "public.receipts",
@@ -6014,7 +5962,7 @@
         "id"
       ],
       "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (org_id, file_id) REFERENCES files(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT"
+      "def": "FOREIGN KEY (org_id, file_id) REFERENCES files(org_id, id) ON DELETE RESTRICT"
     },
     {
       "table": "public.maintenance_requests",
@@ -6055,7 +6003,7 @@
         "id"
       ],
       "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (org_id, assigned_to) REFERENCES memberships(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT"
+      "def": "FOREIGN KEY (org_id, assigned_to) REFERENCES memberships(org_id, id) ON DELETE RESTRICT"
     },
     {
       "table": "public.maintenance_requests",
@@ -6070,7 +6018,7 @@
         "id"
       ],
       "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (org_id, building_id) REFERENCES buildings(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT"
+      "def": "FOREIGN KEY (org_id, building_id) REFERENCES buildings(org_id, id) ON DELETE RESTRICT"
     },
     {
       "table": "public.maintenance_requests",
@@ -6085,7 +6033,7 @@
         "id"
       ],
       "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (org_id, unit_id) REFERENCES units(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT"
+      "def": "FOREIGN KEY (org_id, unit_id) REFERENCES units(org_id, id) ON DELETE RESTRICT"
     },
     {
       "table": "public.maintenance_requests",
@@ -6100,7 +6048,7 @@
         "id"
       ],
       "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT"
+      "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON DELETE RESTRICT"
     },
     {
       "table": "public.maintenance_events",
@@ -6141,7 +6089,7 @@
         "id"
       ],
       "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (org_id, request_id) REFERENCES maintenance_requests(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT"
+      "def": "FOREIGN KEY (org_id, request_id) REFERENCES maintenance_requests(org_id, id) ON DELETE RESTRICT"
     },
     {
       "table": "public.maintenance_events",
@@ -6156,7 +6104,7 @@
         "id"
       ],
       "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (org_id, file_id) REFERENCES files(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT"
+      "def": "FOREIGN KEY (org_id, file_id) REFERENCES files(org_id, id) ON DELETE RESTRICT"
     },
     {
       "table": "public.notices",
@@ -6197,7 +6145,7 @@
         "id"
       ],
       "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (org_id, building_id) REFERENCES buildings(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT"
+      "def": "FOREIGN KEY (org_id, building_id) REFERENCES buildings(org_id, id) ON DELETE RESTRICT"
     },
     {
       "table": "public.files",
@@ -6264,7 +6212,7 @@
         "id"
       ],
       "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT"
+      "def": "FOREIGN KEY (org_id, lease_id) REFERENCES leases(org_id, id) ON DELETE RESTRICT"
     },
     {
       "table": "public.documents",
@@ -6279,7 +6227,7 @@
         "id"
       ],
       "parent_cardinality": "exactly_one",
-      "def": "FOREIGN KEY (org_id, file_id) REFERENCES files(org_id, id) ON UPDATE CASCADE ON DELETE RESTRICT"
+      "def": "FOREIGN KEY (org_id, file_id) REFERENCES files(org_id, id) ON DELETE RESTRICT"
     },
     {
       "table": "public.notifications",

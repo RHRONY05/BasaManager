@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import { createPrisma, type Db } from '../src/config/db';
-import { appUrl } from './helpers/env';
+import { appUrl, workerUrl } from './helpers/env';
 import { resetData, closeOwner, asApp, connectAs, pgErrorCode, q } from './helpers/pg';
 import { makeOrg, makeBuilding, makeUnit, makeLease, type Org } from './helpers/factories';
 
@@ -149,6 +149,50 @@ describe('tenant isolation via db.$tx as bm_app (tenant-isolation.int.test.ts)',
         ),
       ),
     ).toBe('23503');
+  });
+
+  it("a unique key on a FK column can't reveal org B's rows (org_id leads it, so the answer is 23503, not 23505)", async () => {
+    // B's unit already has a live lease and a 'B-1' label. Before org_id led those uniques, org A naming
+    // B's ids got 23505 ("taken"), which told A the row exists.
+    const unitB = await makeUnit(B.id, bldB, { label: 'B-1' });
+    await makeLease(B.id, unitB, B.landlordUserId);
+    const leaseCode = await asApp(ctxA(), (c) =>
+      pgErrorCode(
+        c.query(
+          `insert into leases (org_id, unit_id, start_date, monthly_rent_poisha, status, created_by)
+           values ($1, $2, '2026-01-01', 100, 'active', $3)`,
+          [A.id, unitB, A.landlordUserId],
+        ),
+      ),
+    );
+    expect(leaseCode).toBe('23503');
+    const labelCode = await asApp(ctxA(), (c) =>
+      pgErrorCode(
+        c.query(
+          `insert into units (org_id, building_id, label, floor, type, default_rent_poisha, electricity_mode)
+           values ($1, $2, 'B-1', 1, 'family_flat', 100, 'none')`,
+          [A.id, bldB],
+        ),
+      ),
+    );
+    expect(labelCode).toBe('23503');
+  });
+
+  it("even BYPASSRLS bm_worker can't move a parent into another org: composite FKs are ON UPDATE NO ACTION", async () => {
+    const unitA = await makeUnit(A.id, bldA);
+    const worker = await connectAs(workerUrl());
+    try {
+      // With Prisma's default ON UPDATE CASCADE this succeeded and re-homed the unit (and its subtree) into B.
+      expect(
+        await pgErrorCode(worker.query('update buildings set org_id = $1 where id = $2', [B.id, bldA])),
+      ).toBe('23503');
+    } finally {
+      await worker.end();
+    }
+    const [row] = await q<{ org_id: string }>('select org_id from buildings where id = $1', [bldA]);
+    expect(row!.org_id).toBe(A.id);
+    const [unit] = await q<{ org_id: string }>('select org_id from units where id = $1', [unitA]);
+    expect(unit!.org_id).toBe(A.id);
   });
 
   it('notifications: in org A a user may write their own notification for org A or no org, never tagged org B', async () => {
