@@ -450,3 +450,7 @@ Next: when deploy on 98eea0b and its ci are green, tick V4 in 08-TASKS (line 52)
 ### 2026-11-09 — Claude (lead) — V4 staging wait 3
 Did: checked main: deploy 42555383664 (98eea0b) still pending, 42555292569 and 42555133421 in progress, ci 42555383647 in progress. No code change. Committed locally, NOT pushed (a push restarts deploy/ci).
 Next: when deploy on 98eea0b and its ci are green, tick V4 in 08-TASKS (line 52), update the METRICS row, then push all doc commits in one go. Then the V4 follow-up PR (architect): onUpdate NoAction on composite FKs + regenerate 0100 + test, org_id-first unique indexes or doc note, db:drift in the CI integration job. Then V5.
+
+### 2026-11-09 — Claude (lead) — V4 staging wait 4
+Did: checked main (origin head 98eea0b; local is 2 docs commits ahead, unpushed). Deploy 42555133421 (8bb7967, the V4 code) still in progress; 42555292569 (9651a1c) pending behind it; 42555383664 (98eea0b) cancelled by the concurrency group; ci 42555383647 (98eea0b) in progress. Nothing failed. V4 not ticked. No code change, nothing pushed.
+Next: when deploy 42555133421 is green (the V4 code is what matters) and a ci run on main is green, tick V4 in 08-TASKS (line 52), update the METRICS row, then push all doc commits once. If the last deploy of the latest head is still cancelled, re-run it with `gh workflow run deploy` / `gh run rerun`. Then the V4 follow-up PR (architect), then V5.
