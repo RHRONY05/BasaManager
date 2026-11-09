@@ -1,9 +1,11 @@
+import http from 'node:http';
 import { loadEnv } from './config/env';
 import { createPrisma, pingDb } from './config/db';
 import { createRedis, pingRedis } from './config/redis';
 import { createLogger } from './lib/logger';
 import { createApp } from './app';
 import { initSentry } from './config/sentry';
+import { attachRealtime } from './realtime/io';
 
 async function bootstrap() {
   let env;
@@ -42,8 +44,10 @@ async function bootstrap() {
   logger.info('Infrastructure connections verified healthy.');
 
   const app = createApp({ env, prisma, redis, logger });
+  const server = http.createServer(app);
+  const realtime = await attachRealtime(server, { env, prisma, redis, logger });
 
-  const server = app.listen(env.PORT, () => {
+  server.listen(env.PORT, () => {
     logger.info({ port: env.PORT, appEnv: env.APP_ENV }, `API server listening on port ${env.PORT}`);
   });
 
@@ -62,6 +66,7 @@ async function bootstrap() {
       }
 
       try {
+        await realtime.close().catch((err) => logger.error({ err }, 'Error closing realtime server'));
         await Promise.allSettled([prisma.$disconnect(), redis.quit()]);
         logger.info('Disconnected infrastructure. Server shutdown complete.');
         process.exit(0);

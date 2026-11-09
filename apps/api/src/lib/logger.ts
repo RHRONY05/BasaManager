@@ -22,13 +22,14 @@ const SENSITIVE_QUERY_KEYS = new Set(['token', 'sig', 'signature', 'code', 'stat
 /** Returns the request URL with the values of sensitive query keys replaced by [REDACTED]. */
 export function redactUrl(url: string | undefined): string {
   if (!url) return '';
-  const queryStart = url.indexOf('?');
-  if (queryStart === -1) return url;
-  const params = new URLSearchParams(url.slice(queryStart + 1));
+  const cleanUrl = url.replace(/\/api\/invites\/[^/?#]+/, '/api/invites/[REDACTED]');
+  const queryStart = cleanUrl.indexOf('?');
+  if (queryStart === -1) return cleanUrl;
+  const params = new URLSearchParams(cleanUrl.slice(queryStart + 1));
   for (const key of new Set(params.keys())) {
     if (SENSITIVE_QUERY_KEYS.has(key.toLowerCase())) params.set(key, '[REDACTED]');
   }
-  return `${url.slice(0, queryStart)}?${params.toString()}`;
+  return `${cleanUrl.slice(0, queryStart)}?${params.toString()}`;
 }
 
 export interface CreateLoggerOptions {

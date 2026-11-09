@@ -1,6 +1,7 @@
 import type { Tx } from '../src/config/db';
 import type { Db } from '../src/config/db';
 import type { ElectricityMode, LateFeeType, MembershipRole, UnitType } from '../src/generated/prisma/client';
+import { hashPassword } from '../src/lib/passwords';
 
 /**
  * Thin repository functions the dev seed uses while the real services don't exist yet (V4).
@@ -14,16 +15,28 @@ import type { ElectricityMode, LateFeeType, MembershipRole, UnitType } from '../
 
 export async function upsertUser(
   db: Db,
-  u: { email: string; fullName: string; passwordHash: string; phone?: string; isPlatformAdmin?: boolean },
+  u: {
+    email: string;
+    fullName: string;
+    password?: string;
+    passwordHash?: string;
+    phone?: string;
+    isPlatformAdmin?: boolean;
+  },
   now: Date,
 ): Promise<string> {
+  let hash = u.passwordHash;
+  if (!hash && u.password) {
+    hash = await hashPassword(u.password);
+  }
+
   const row = await db.user.upsert({
     where: { email: u.email },
     update: {},
     create: {
       email: u.email,
       fullName: u.fullName,
-      passwordHash: u.passwordHash,
+      passwordHash: hash ?? null,
       phone: u.phone ?? null,
       isPlatformAdmin: u.isPlatformAdmin ?? false,
       emailVerifiedAt: now,

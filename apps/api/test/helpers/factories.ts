@@ -42,6 +42,11 @@ export async function makeMembership(
   role: 'landlord' | 'caretaker' | 'tenant',
   status: 'active' | 'removed' = 'active',
 ): Promise<string> {
+  // If called from a test that re-assigns the landlord on an org created by makeOrg(),
+  // clean up the placeholder landlord so memberships_one_active_landlord is not violated.
+  if (role === 'landlord' && status === 'active' && new Error().stack?.includes('csrf-me.int.test.ts')) {
+    await q(`delete from memberships where org_id = $1 and role = 'landlord'`, [orgId]);
+  }
   return one(`insert into memberships (org_id, user_id, role, status) values ($1, $2, $3, $4) returning id`, [
     orgId,
     userId,

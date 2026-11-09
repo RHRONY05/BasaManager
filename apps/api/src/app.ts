@@ -8,9 +8,14 @@ import type { Db } from './config/db';
 import type { Env } from './config/env';
 import { requestId } from './middleware/requestId';
 import { createHttpLogger } from './middleware/logger';
+import { createCsrfMiddleware } from './middleware/csrf';
 import { notFound } from './middleware/notFound';
 import { errorHandler } from './middleware/errorHandler';
 import { createHealthRoutes } from './modules/health/health.routes';
+import { createAuthRoutes } from './modules/auth/auth.routes';
+import { createUsersRoutes } from './modules/users/users.routes';
+import { createInvitesRoutes } from './modules/invites/invites.routes';
+import { createOrgsRoutes } from './modules/orgs/orgs.routes';
 
 export interface AppDeps {
   env: Env;
@@ -44,7 +49,10 @@ export function createApp(deps: AppDeps): Express {
   // 5. Cookie parsing
   app.use(cookieParser());
 
-  // 6. Routes mounted under /api
+  // 6. CSRF protection on unsafe methods
+  app.use(createCsrfMiddleware(deps.env));
+
+  // 7. Routes mounted under /api
   app.use(
     '/api',
     createHealthRoutes({
@@ -53,11 +61,40 @@ export function createApp(deps: AppDeps): Express {
       redis: deps.redis,
     }),
   );
+  app.use(
+    '/api/auth',
+    createAuthRoutes({
+      env: deps.env,
+      prisma: deps.prisma,
+      redis: deps.redis,
+    }),
+  );
+  app.use(
+    '/api/me',
+    createUsersRoutes({
+      env: deps.env,
+      prisma: deps.prisma,
+    }),
+  );
+  app.use(
+    '/api/invites',
+    createInvitesRoutes({
+      env: deps.env,
+      prisma: deps.prisma,
+    }),
+  );
+  app.use(
+    '/api/org',
+    createOrgsRoutes({
+      env: deps.env,
+      prisma: deps.prisma,
+    }),
+  );
 
-  // 7. Not Found handler for unmatched routes
+  // 8. Not Found handler for unmatched routes
   app.use(notFound);
 
-  // 8. Error handler (ApiError, ZodError, 500)
+  // 9. Error handler (ApiError, ZodError, 500)
   app.use(errorHandler);
 
   return app;
