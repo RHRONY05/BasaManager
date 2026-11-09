@@ -579,3 +579,7 @@ Next: CI 8/8 on 6d03a03 (merge main first if behind), Opus reviewer on auth (fix
 ### 2026-11-09 — Claude (lead) — V5 CI wait / merge main
 Did: PR #10 at 6d03a03 had all 7 checks pending and was BEHIND main (docs-only changes). Merged origin/main into feat/V5 (clean) and pushed 6e6f9a5. CI re-running.
 Next: CI 8/8 on 6e6f9a5, then Opus reviewer on auth (fix the gaps listed in the V5 docs entry or justify them), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5. Do not push PROGRESS commits to main until #10 is merged.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 2
+Did: checked PR #10 at 6e6f9a5: all 7 checks pending (run 42584554356), state BLOCKED on pending checks only. No code change. Committed locally, NOT pushed (a push to main makes #10 behind under strict checks).
+Next: CI 8/8 on 6e6f9a5, then Opus reviewer on auth (fix the gaps listed in the V5 docs entry or justify them), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5. Do not push PROGRESS commits to main until #10 is merged.
