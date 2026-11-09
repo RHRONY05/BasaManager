@@ -230,7 +230,7 @@ export function AddBuildingDialog({ isOpen, onClose, building }: AddBuildingDial
                   id="bld-grace"
                   type="number"
                   min={0}
-                  max={30}
+                  max={15}
                   value={graceDays}
                   onChange={(e) => setGraceDays(Number(e.target.value))}
                   className="input input--num"

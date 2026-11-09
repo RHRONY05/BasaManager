@@ -6,6 +6,10 @@ import { ApiError } from '../../lib/ApiError';
 import { clock } from '../../lib/clock';
 import { sha256 } from '../../lib/tokens';
 import { deliverOutboxNow } from '../../config/mailer';
+import { createLogger } from '../../lib/logger';
+import { emitSessionRevoked, updateCaretakerBuildingRooms } from '../../realtime/emit';
+
+const logger = createLogger({ level: 'info' });
 
 export class OrgsService {
   constructor(private readonly prisma: Db) {}
@@ -111,19 +115,32 @@ export class OrgsService {
     const email = data.email.toLowerCase().trim();
 
     const result = await this.prisma.$tx(tenantCtx, async (tx) => {
-      // Validate buildingIds if provided
+      // Reject if user is already an active member of this organization
+      const existingMember = await tx.membership.findFirst({
+        where: {
+          orgId: tenantCtx.orgId!,
+          user: { email },
+          status: 'active',
+        },
+      });
+      if (existingMember) {
+        throw ApiError.conflict('User is already an active member of this organization');
+      }
+
+      // Validate buildingIds if provided (must belong to this org and not be archived)
       if (data.buildingIds && data.buildingIds.length > 0) {
         const bCount = await tx.building.count({
           where: {
             orgId: tenantCtx.orgId!,
             id: { in: data.buildingIds },
+            archivedAt: null,
           },
         });
         if (bCount !== data.buildingIds.length) {
           throw ApiError.validation([
             {
               path: 'buildingIds',
-              message: 'One or more building IDs are invalid or belong to another organization',
+              message: 'One or more building IDs are invalid, archived, or belong to another organization',
             },
           ]);
         }
@@ -200,7 +217,12 @@ export class OrgsService {
           token: result.rawToken,
         },
       },
-    ]).catch(() => {});
+    ]).catch((err) => {
+      logger.warn(
+        { err, email: result.inv.email, invitationId: result.inv.id },
+        'Immediate delivery of invite outbox failed; worker will retry',
+      );
+    });
 
     return result.inv;
   }
@@ -263,7 +285,7 @@ export class OrgsService {
     membershipId: string,
     data: { buildingIds: string[] },
   ) {
-    return this.prisma.$tx(tenantCtx, async (tx) => {
+    const result = await this.prisma.$tx(tenantCtx, async (tx) => {
       const m = await tx.membership.findFirst({
         where: {
           id: membershipId,
@@ -271,7 +293,7 @@ export class OrgsService {
         },
       });
 
-      if (!m) {
+      if (!m || m.status === 'removed') {
         throw ApiError.notFound('Member not found');
       }
 
@@ -287,13 +309,14 @@ export class OrgsService {
           where: {
             orgId: tenantCtx.orgId!,
             id: { in: data.buildingIds },
+            archivedAt: null,
           },
         });
         if (bCount !== data.buildingIds.length) {
           throw ApiError.validation([
             {
               path: 'buildingIds',
-              message: 'One or more building IDs do not belong to this organization',
+              message: 'One or more building IDs do not belong to this organization or are archived',
             },
           ]);
         }
@@ -316,15 +339,34 @@ export class OrgsService {
         });
       }
 
-      return { membershipId, buildingIds: data.buildingIds };
+      const allBuildings = await tx.building.findMany({
+        where: {
+          orgId: tenantCtx.orgId!,
+          archivedAt: null,
+        },
+        select: { id: true },
+      });
+
+      return {
+        membershipId,
+        userId: m.userId,
+        buildingIds: data.buildingIds,
+        allOrgBuildingIds: allBuildings.map((b) => b.id),
+      };
     });
+
+    if (result.userId) {
+      await updateCaretakerBuildingRooms(result.userId, result.buildingIds, result.allOrgBuildingIds);
+    }
+
+    return { membershipId: result.membershipId, buildingIds: result.buildingIds };
   }
 
   /**
    * Soft-removes a member from the organization (cannot remove landlord or tenant).
    */
   async removeMember(tenantCtx: TenantCtx, membershipId: string) {
-    return this.prisma.$tx(tenantCtx, async (tx) => {
+    const result = await this.prisma.$tx(tenantCtx, async (tx) => {
       const m = await tx.membership.findFirst({
         where: {
           id: membershipId,
@@ -332,7 +374,7 @@ export class OrgsService {
         },
       });
 
-      if (!m) {
+      if (!m || m.status === 'removed') {
         throw ApiError.notFound('Member not found');
       }
 
@@ -362,7 +404,13 @@ export class OrgsService {
         },
       });
 
-      return { success: true };
+      return { success: true, userId: m.userId };
     });
+
+    if (result.userId) {
+      await emitSessionRevoked(result.userId);
+    }
+
+    return { success: true };
   }
 }

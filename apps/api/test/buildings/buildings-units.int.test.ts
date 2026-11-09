@@ -86,8 +86,12 @@ describe('V6: buildings and units', () => {
       ['billDay 29', { billDay: 29 }],
       ['dueDay 0', { dueDay: 0 }],
       ['dueDay 29', { dueDay: 29 }],
+      ['dueDay before billDay', { billDay: 15, dueDay: 5 }],
       ['graceDays -1', { graceDays: -1 }],
+      ['graceDays 16', { graceDays: 16 }],
+      ['graceDays 40', { graceDays: 40 }],
       ['lateFeeValue -1', { lateFeeValue: -1 }],
+      ['percent lateFeeValue > 10000', { lateFeeType: 'percent', lateFeeValue: 10001 }],
       ['electricityRatePoisha -1', { electricityRatePoisha: -1 }],
       ['unknown lateFeeType', { lateFeeType: 'weekly' }],
       ['empty name', { name: '' }],
@@ -110,21 +114,30 @@ describe('V6: buildings and units', () => {
   });
 
   describe('GET /api/buildings', () => {
-    it('landlord sees all org buildings with unit and occupancy counts, and none from other orgs', async () => {
+    it('landlord sees all org buildings with unit and occupancy counts (including notice), and none from other orgs', async () => {
       const u1 = await makeUnit(org.id, b1, { label: 'A1' });
-      await makeUnit(org.id, b1, { label: 'A2' });
+      const u2 = await makeUnit(org.id, b1, { label: 'A2' });
+      await makeUnit(org.id, b1, { label: 'A3' });
       await makeLease(org.id, u1, org.landlordUserId, { status: 'active' });
+      await makeLease(org.id, u2, org.landlordUserId, { status: 'notice' });
       const b2 = await makeBuilding(org.id, { name: 'B2' });
       const other = await makeOrg();
       await makeBuilding(other.id, { name: 'Foreign' });
 
       const res = await landlord.agent.get('/api/buildings');
       expect(res.status).toBe(200);
-      const list = res.body.data as { id: string; name: string; unitCount: number; occupiedCount: number }[];
+      const list = res.body.data as {
+        id: string;
+        name: string;
+        unitCount: number;
+        occupiedCount: number;
+        noticeCount: number;
+      }[];
       expect(list.map((b) => b.id).sort()).toEqual([b1, b2].sort());
       const first = list.find((b) => b.id === b1)!;
-      expect(first.unitCount).toBe(2);
-      expect(first.occupiedCount).toBe(1);
+      expect(first.unitCount).toBe(3);
+      expect(first.occupiedCount).toBe(2);
+      expect(first.noticeCount).toBe(1);
       expect(JSON.stringify(res.body)).not.toContain('Foreign');
     });
 
@@ -168,6 +181,14 @@ describe('V6: buildings and units', () => {
       );
       expect([400, 404]).toContain((await landlord.agent.get('/api/buildings/not-a-uuid')).status);
     });
+
+    it('an archived building returns 404 NOT_FOUND', async () => {
+      const bArchived = await makeBuilding(org.id, { name: 'Archived' });
+      await q(`update buildings set archived_at = now() where id=$1`, [bArchived]);
+      const res = await landlord.agent.get(`/api/buildings/${bArchived}`);
+      expect(res.status).toBe(404);
+      expect(res.body.error.code).toBe(ErrorCode.NOT_FOUND);
+    });
   });
 
   describe('PATCH /api/buildings/:id', () => {
@@ -195,6 +216,18 @@ describe('V6: buildings and units', () => {
       expect(
         (await q<{ bill_day: number }>(`select bill_day from buildings where id=$1`, [b1]))[0]!.bill_day,
       ).toBe(1);
+
+      const resGrace = await landlord.agent.patch(`/api/buildings/${b1}`).send({ graceDays: 40 });
+      expect(resGrace.status).toBe(400);
+      expect(resGrace.body.error.code).toBe(ErrorCode.VALIDATION_FAILED);
+    });
+
+    it('rejects update to archived building with 404 NOT_FOUND', async () => {
+      const bArchived = await makeBuilding(org.id, { name: 'Archived' });
+      await q(`update buildings set archived_at = now() where id=$1`, [bArchived]);
+      const res = await landlord.agent.patch(`/api/buildings/${bArchived}`).send({ name: 'Revived' });
+      expect(res.status).toBe(404);
+      expect(res.body.error.code).toBe(ErrorCode.NOT_FOUND);
     });
 
     it('caretaker (even assigned) gets 403 FORBIDDEN', async () => {
@@ -321,6 +354,14 @@ describe('V6: buildings and units', () => {
       expect((await otherLandlord.agent.post(`/api/buildings/${b1}/units`).send(validUnit)).status).toBe(404);
     });
 
+    it('returns 404 when trying to add unit to archived building', async () => {
+      const bArchived = await makeBuilding(org.id, { name: 'Archived' });
+      await q(`update buildings set archived_at = now() where id=$1`, [bArchived]);
+      const res = await landlord.agent.post(`/api/buildings/${bArchived}/units`).send(validUnit);
+      expect(res.status).toBe(404);
+      expect(res.body.error.code).toBe(ErrorCode.NOT_FOUND);
+    });
+
     it('two concurrent creates of the same label: exactly one wins', async () => {
       const results = await Promise.all(
         [1, 2].map(() => landlord.agent.post(`/api/buildings/${b1}/units`).send(validUnit)),
@@ -352,6 +393,14 @@ describe('V6: buildings and units', () => {
       expect(a1.charges).toHaveLength(2);
       expect(a1.lease).toEqual(expect.objectContaining({ status: 'active' }));
       expect(list.find((u) => u.id === vacant)!.lease).toBeNull();
+    });
+
+    it('returns 404 when building is archived', async () => {
+      const bArchived = await makeBuilding(org.id, { name: 'Archived' });
+      await q(`update buildings set archived_at = now() where id=$1`, [bArchived]);
+      const res = await landlord.agent.get(`/api/buildings/${bArchived}/units`);
+      expect(res.status).toBe(404);
+      expect(res.body.error.code).toBe(ErrorCode.NOT_FOUND);
     });
 
     it('tenant gets 403', async () => {

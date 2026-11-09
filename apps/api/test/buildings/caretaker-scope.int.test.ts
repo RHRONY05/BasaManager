@@ -118,4 +118,44 @@ describe('V6: caretaker building scope', () => {
     expect(res.body.data).toEqual([]);
     expect(await q(`select 1 from caretaker_buildings where building_id=$1`, [mine])).toHaveLength(1);
   });
+
+  it('reassignment rejects archived buildings with 400 VALIDATION_FAILED', async () => {
+    const archivedB = await makeBuilding(org.id, { name: 'Archived' });
+    await q(`update buildings set archived_at = now() where id=$1`, [archivedB]);
+    const res = await landlord.agent
+      .put(`/api/org/members/${caretaker.membershipId}/buildings`)
+      .send({ buildingIds: [archivedB] });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe(ErrorCode.VALIDATION_FAILED);
+  });
+
+  it('reassignment rejects removed members with 404 NOT_FOUND', async () => {
+    await landlord.agent.delete(`/api/org/members/${caretaker.membershipId}`);
+    const res = await landlord.agent
+      .put(`/api/org/members/${caretaker.membershipId}/buildings`)
+      .send({ buildingIds: [notMine] });
+    expect(res.status).toBe(404);
+  });
+
+  it('inviting a caretaker with an archived building is rejected with 400', async () => {
+    const archivedB = await makeBuilding(org.id, { name: 'ArchivedB' });
+    await q(`update buildings set archived_at = now() where id=$1`, [archivedB]);
+    const res = await landlord.agent.post('/api/org/invites').send({
+      email: 'newcaretaker@example.com',
+      role: 'caretaker',
+      buildingIds: [archivedB],
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe(ErrorCode.VALIDATION_FAILED);
+  });
+
+  it('inviting an existing active member is rejected with 409 CONFLICT', async () => {
+    const res = await landlord.agent.post('/api/org/invites').send({
+      email: caretaker.email,
+      role: 'caretaker',
+      buildingIds: [mine],
+    });
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe(ErrorCode.CONFLICT);
+  });
 });

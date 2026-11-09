@@ -43,7 +43,7 @@ describe('BuildingsService', () => {
       {
         id: 'u-1',
         archivedAt: null,
-        leases: [{ id: 'lease-1' }],
+        leases: [{ id: 'lease-1', status: 'active' }],
       },
       {
         id: 'u-2',
@@ -430,6 +430,9 @@ describe('BuildingsService', () => {
                 name: 'Gas',
                 amountPoisha: BigInt(80000),
               }),
+            },
+            lease: {
+              findFirst: vi.fn().mockResolvedValue(null),
             },
           });
         }),

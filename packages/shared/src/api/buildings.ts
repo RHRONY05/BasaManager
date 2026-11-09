@@ -22,10 +22,26 @@ export const createBuildingRequestSchema = z
     lng: z.number().min(-180).max(180).nullable().optional(),
     billDay: z.number().int().min(1).max(28).default(1),
     dueDay: z.number().int().min(1).max(28).default(10),
-    graceDays: z.number().int().min(0).default(0),
+    graceDays: z.number().int().min(0).max(15).default(0),
     lateFeeType: lateFeeTypeSchema.default('none'),
     lateFeeValue: z.number().int().min(0).default(0),
     electricityRatePoisha: z.number().int().min(0).default(0),
+  })
+  .superRefine((data, ctx) => {
+    if (data.lateFeeType === 'percent' && data.lateFeeValue > 10000) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Percent late fee cannot exceed 10000 basis points (100%)',
+        path: ['lateFeeValue'],
+      });
+    }
+    if (data.dueDay < data.billDay) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Due day must be on or after bill day',
+        path: ['dueDay'],
+      });
+    }
   })
   .meta({ id: 'CreateBuildingRequest' });
 
@@ -41,10 +57,26 @@ export const updateBuildingRequestSchema = z
     lng: z.number().min(-180).max(180).nullable().optional(),
     billDay: z.number().int().min(1).max(28).optional(),
     dueDay: z.number().int().min(1).max(28).optional(),
-    graceDays: z.number().int().min(0).optional(),
+    graceDays: z.number().int().min(0).max(15).optional(),
     lateFeeType: lateFeeTypeSchema.optional(),
     lateFeeValue: z.number().int().min(0).optional(),
     electricityRatePoisha: z.number().int().min(0).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.lateFeeType === 'percent' && data.lateFeeValue !== undefined && data.lateFeeValue > 10000) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Percent late fee cannot exceed 10000 basis points (100%)',
+        path: ['lateFeeValue'],
+      });
+    }
+    if (data.dueDay !== undefined && data.billDay !== undefined && data.dueDay < data.billDay) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Due day must be on or after bill day',
+        path: ['dueDay'],
+      });
+    }
   })
   .meta({ id: 'UpdateBuildingRequest' });
 
@@ -70,6 +102,7 @@ export const buildingSchema = z
     createdAt: z.union([z.string(), z.date()]).optional(),
     unitCount: z.number().optional(),
     occupiedCount: z.number().optional(),
+    noticeCount: z.number().optional(),
   })
   .meta({ id: 'Building' });
 

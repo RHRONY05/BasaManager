@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { MapPin, Pencil, Plus, Home, DoorOpen, ChevronRight } from 'lucide-react';
+import { MapPin, Pencil, Plus, Home, DoorOpen, ChevronRight, Clock } from 'lucide-react';
 import { useBuilding, useBuildingUnits, useUpdateBuilding } from '../../lib/api/buildings';
 import { AddBuildingDialog } from './AddBuildingDialog';
 import { AddUnitDialog } from './AddUnitDialog';
@@ -37,7 +37,7 @@ export default function BuildingDetailPage() {
   const updateMutation = useUpdateBuilding();
 
   const [activeTab, setActiveTab] = useState<TabKey>('units');
-  const [unitFilter, setUnitFilter] = useState<'all' | 'occupied' | 'vacant'>('all');
+  const [unitFilter, setUnitFilter] = useState<'all' | 'occupied' | 'notice' | 'vacant'>('all');
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isAddUnitOpen, setIsAddUnitOpen] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState<UnitSummary | null>(null);
@@ -89,10 +89,12 @@ export default function BuildingDetailPage() {
 
   const unitCount = building.unitCount ?? 0;
   const occupiedCount = building.occupiedCount ?? 0;
+  const noticeCount = building.noticeCount ?? 0;
   const vacantCount = Math.max(0, unitCount - occupiedCount);
 
   const filteredUnits = (units ?? []).filter((u) => {
     if (unitFilter === 'occupied') return isUnitOccupied(u);
+    if (unitFilter === 'notice') return u.lease?.status === 'notice';
     if (unitFilter === 'vacant') return !isUnitOccupied(u);
     return true;
   });
@@ -278,6 +280,14 @@ export default function BuildingDetailPage() {
               </button>
               <button
                 type="button"
+                onClick={() => setUnitFilter('notice')}
+                aria-pressed={unitFilter === 'notice'}
+                className="chip"
+              >
+                {t('units.filterNotice')} {noticeCount}
+              </button>
+              <button
+                type="button"
                 onClick={() => setUnitFilter('vacant')}
                 aria-pressed={unitFilter === 'vacant'}
                 className="chip"
@@ -354,7 +364,12 @@ export default function BuildingDetailPage() {
                         </span>
                       </td>
                       <td>
-                        {isUnitOccupied(u) ? (
+                        {u.lease?.status === 'notice' ? (
+                          <span className="badge badge--warning">
+                            <Clock className="h-3 w-3" aria-hidden="true" />
+                            {t('units.statusNotice')}
+                          </span>
+                        ) : isUnitOccupied(u) ? (
                           <span className="badge badge--success">
                             <Home className="h-3 w-3" aria-hidden="true" />
                             {t('units.statusOccupied')}
@@ -430,7 +445,7 @@ export default function BuildingDetailPage() {
                   id="tab-grace-days"
                   type="number"
                   min={0}
-                  max={30}
+                  max={15}
                   value={graceDays ?? building.graceDays}
                   onChange={(e) => setGraceDays(Number(e.target.value))}
                   className="input input--num"

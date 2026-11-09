@@ -96,8 +96,12 @@ describe('OrgsService', () => {
     const mockDb = {
       $tx: vi.fn().mockImplementation(async (_ctx, fn) => {
         return fn({
+          membership: {
+            findFirst: vi.fn().mockResolvedValue(null),
+          },
           building: {
             count: vi.fn().mockResolvedValue(1),
+            findMany: vi.fn().mockResolvedValue([{ id: 'b-1' }]),
           },
           invitation: {
             findFirst: vi.fn().mockResolvedValue(null),
@@ -129,6 +133,9 @@ describe('OrgsService', () => {
     const mockDb = {
       $tx: vi.fn().mockImplementation(async (_ctx, fn) => {
         return fn({
+          membership: {
+            findFirst: vi.fn().mockResolvedValue(null),
+          },
           building: {
             count: vi.fn().mockResolvedValue(0), // 0 found out of 1 provided
           },
@@ -159,6 +166,7 @@ describe('OrgsService', () => {
           },
           building: {
             count: vi.fn().mockResolvedValue(1),
+            findMany: vi.fn().mockResolvedValue([{ id: 'b-1' }]),
           },
           caretakerBuilding: {
             deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
@@ -243,5 +251,70 @@ describe('OrgsService', () => {
 
     const service = new OrgsService(mockDb);
     await expect(service.removeMember(tenantCtx, 'mem-ll')).rejects.toThrow(ApiError);
+  });
+
+  it('rejects invite if user is already an active member of this organization', async () => {
+    const mockDb = {
+      $tx: vi.fn().mockImplementation(async (_ctx, fn) => {
+        return fn({
+          membership: {
+            findFirst: vi.fn().mockResolvedValue({
+              id: 'mem-existing',
+              role: 'caretaker',
+              status: 'active',
+            }),
+          },
+        });
+      }),
+    } as unknown as Db;
+
+    const service = new OrgsService(mockDb);
+    await expect(
+      service.inviteCaretaker(tenantCtx, {
+        email: 'active@test.com',
+        role: 'caretaker',
+        buildingIds: ['b-1'],
+      }),
+    ).rejects.toThrow(ApiError);
+  });
+
+  it('rejects updating buildings for a removed caretaker member', async () => {
+    const mockDb = {
+      $tx: vi.fn().mockImplementation(async (_ctx, fn) => {
+        return fn({
+          membership: {
+            findFirst: vi.fn().mockResolvedValue({
+              id: 'mem-removed',
+              role: 'caretaker',
+              status: 'removed',
+            }),
+          },
+        });
+      }),
+    } as unknown as Db;
+
+    const service = new OrgsService(mockDb);
+    await expect(
+      service.updateCaretakerBuildings(tenantCtx, 'mem-removed', { buildingIds: ['b-1'] }),
+    ).rejects.toThrow(ApiError);
+  });
+
+  it('rejects removing an already removed member', async () => {
+    const mockDb = {
+      $tx: vi.fn().mockImplementation(async (_ctx, fn) => {
+        return fn({
+          membership: {
+            findFirst: vi.fn().mockResolvedValue({
+              id: 'mem-removed',
+              role: 'caretaker',
+              status: 'removed',
+            }),
+          },
+        });
+      }),
+    } as unknown as Db;
+
+    const service = new OrgsService(mockDb);
+    await expect(service.removeMember(tenantCtx, 'mem-removed')).rejects.toThrow(ApiError);
   });
 });

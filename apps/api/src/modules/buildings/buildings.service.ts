@@ -8,6 +8,103 @@ import type { Db, TenantCtx } from '../../config/db';
 import { ApiError } from '../../lib/ApiError';
 import { clock } from '../../lib/clock';
 
+interface BuildingUnitWithLeases {
+  leases?: Array<{ id: string; status: string }>;
+}
+
+interface BuildingWithUnitsData {
+  id: string;
+  orgId: string;
+  name: string;
+  address: string;
+  area: string;
+  city: string;
+  lat: unknown;
+  lng: unknown;
+  billDay: number;
+  dueDay: number;
+  graceDays: number;
+  lateFeeType: string;
+  lateFeeValue: number;
+  electricityRatePoisha: number;
+  archivedAt: Date | null;
+  createdAt: Date;
+  units?: BuildingUnitWithLeases[];
+}
+
+function toBuildingDto(b: BuildingWithUnitsData) {
+  const units = b.units ?? [];
+  const occupiedCount = units.filter((u) =>
+    u.leases?.some((l) => l.status === 'active' || l.status === 'notice'),
+  ).length;
+  const noticeCount = units.filter((u) => u.leases?.some((l) => l.status === 'notice')).length;
+
+  return {
+    id: b.id,
+    orgId: b.orgId,
+    name: b.name,
+    address: b.address,
+    area: b.area,
+    city: b.city,
+    lat: b.lat ? Number(b.lat) : null,
+    lng: b.lng ? Number(b.lng) : null,
+    billDay: b.billDay,
+    dueDay: b.dueDay,
+    graceDays: b.graceDays,
+    lateFeeType: b.lateFeeType as 'none' | 'flat' | 'percent',
+    lateFeeValue: b.lateFeeValue,
+    electricityRatePoisha: b.electricityRatePoisha,
+    archivedAt: b.archivedAt,
+    createdAt: b.createdAt,
+    unitCount: units.length,
+    occupiedCount,
+    noticeCount,
+  };
+}
+
+interface UnitData {
+  id: string;
+  buildingId: string;
+  label: string;
+  floor: number;
+  type: string;
+  defaultRentPoisha: bigint | number;
+  electricityMode: string;
+  archivedAt: Date | null;
+  charges?: Array<{ id: string; name: string; amountPoisha: bigint | number }>;
+}
+
+interface LeaseSummaryData {
+  id: string;
+  status: string;
+  monthlyRentPoisha: bigint | number;
+}
+
+function toUnitDto(u: UnitData, lease: LeaseSummaryData | null = null) {
+  return {
+    id: u.id,
+    buildingId: u.buildingId,
+    label: u.label,
+    floor: u.floor,
+    type: u.type as 'family_flat' | 'bachelor_flat' | 'room' | 'shop',
+    defaultRentPoisha: Number(u.defaultRentPoisha),
+    electricityMode: u.electricityMode as 'none' | 'prepaid' | 'submeter',
+    archivedAt: u.archivedAt,
+    charges: (u.charges ?? []).map((c) => ({
+      id: c.id,
+      name: c.name,
+      amountPoisha: Number(c.amountPoisha),
+    })),
+    lease: lease
+      ? {
+          id: lease.id,
+          status: lease.status as 'pending' | 'active' | 'notice' | 'ended' | 'terminated',
+          monthlyRentPoisha: Number(lease.monthlyRentPoisha),
+        }
+      : null,
+  };
+}
+
 export class BuildingsService {
   constructor(private readonly prisma: Db) {}
 
@@ -66,8 +163,8 @@ export class BuildingsService {
             where: { archivedAt: null },
             include: {
               leases: {
-                where: { status: 'active' },
-                select: { id: true },
+                where: { status: { in: ['active', 'notice'] } },
+                select: { id: true, status: true },
               },
             },
           },
@@ -75,26 +172,7 @@ export class BuildingsService {
         orderBy: { createdAt: 'asc' },
       });
 
-      return buildings.map((b) => ({
-        id: b.id,
-        orgId: b.orgId,
-        name: b.name,
-        address: b.address,
-        area: b.area,
-        city: b.city,
-        lat: b.lat ? Number(b.lat) : null,
-        lng: b.lng ? Number(b.lng) : null,
-        billDay: b.billDay,
-        dueDay: b.dueDay,
-        graceDays: b.graceDays,
-        lateFeeType: b.lateFeeType,
-        lateFeeValue: b.lateFeeValue,
-        electricityRatePoisha: b.electricityRatePoisha,
-        archivedAt: b.archivedAt,
-        createdAt: b.createdAt,
-        unitCount: b.units.length,
-        occupiedCount: b.units.filter((u) => u.leases.length > 0).length,
-      }));
+      return buildings.map((b) => toBuildingDto(b));
     });
   }
 
@@ -133,14 +211,15 @@ export class BuildingsService {
         where: {
           id: buildingId,
           orgId: tenantCtx.orgId!,
+          archivedAt: null,
         },
         include: {
           units: {
             where: { archivedAt: null },
             include: {
               leases: {
-                where: { status: 'active' },
-                select: { id: true },
+                where: { status: { in: ['active', 'notice'] } },
+                select: { id: true, status: true },
               },
             },
           },
@@ -151,26 +230,7 @@ export class BuildingsService {
         throw ApiError.notFound('Building not found');
       }
 
-      return {
-        id: b.id,
-        orgId: b.orgId,
-        name: b.name,
-        address: b.address,
-        area: b.area,
-        city: b.city,
-        lat: b.lat ? Number(b.lat) : null,
-        lng: b.lng ? Number(b.lng) : null,
-        billDay: b.billDay,
-        dueDay: b.dueDay,
-        graceDays: b.graceDays,
-        lateFeeType: b.lateFeeType,
-        lateFeeValue: b.lateFeeValue,
-        electricityRatePoisha: b.electricityRatePoisha,
-        archivedAt: b.archivedAt,
-        createdAt: b.createdAt,
-        unitCount: b.units.length,
-        occupiedCount: b.units.filter((u) => u.leases.length > 0).length,
-      };
+      return toBuildingDto(b);
     });
   }
 
@@ -197,26 +257,7 @@ export class BuildingsService {
         },
       });
 
-      return {
-        id: b.id,
-        orgId: b.orgId,
-        name: b.name,
-        address: b.address,
-        area: b.area,
-        city: b.city,
-        lat: b.lat ? Number(b.lat) : null,
-        lng: b.lng ? Number(b.lng) : null,
-        billDay: b.billDay,
-        dueDay: b.dueDay,
-        graceDays: b.graceDays,
-        lateFeeType: b.lateFeeType,
-        lateFeeValue: b.lateFeeValue,
-        electricityRatePoisha: b.electricityRatePoisha,
-        archivedAt: b.archivedAt,
-        createdAt: b.createdAt,
-        unitCount: 0,
-        occupiedCount: 0,
-      };
+      return toBuildingDto(b);
     });
   }
 
@@ -229,6 +270,7 @@ export class BuildingsService {
         where: {
           id: buildingId,
           orgId: tenantCtx.orgId!,
+          archivedAt: null,
         },
       });
 
@@ -236,7 +278,7 @@ export class BuildingsService {
         throw ApiError.notFound('Building not found');
       }
 
-      const b = await tx.building.update({
+      const updated = await tx.building.update({
         where: { id: buildingId },
         data: {
           ...(data.name !== undefined ? { name: data.name.trim() } : {}),
@@ -254,26 +296,20 @@ export class BuildingsService {
             ? { electricityRatePoisha: data.electricityRatePoisha }
             : {}),
         },
+        include: {
+          units: {
+            where: { archivedAt: null },
+            include: {
+              leases: {
+                where: { status: { in: ['active', 'notice'] } },
+                select: { id: true, status: true },
+              },
+            },
+          },
+        },
       });
 
-      return {
-        id: b.id,
-        orgId: b.orgId,
-        name: b.name,
-        address: b.address,
-        area: b.area,
-        city: b.city,
-        lat: b.lat ? Number(b.lat) : null,
-        lng: b.lng ? Number(b.lng) : null,
-        billDay: b.billDay,
-        dueDay: b.dueDay,
-        graceDays: b.graceDays,
-        lateFeeType: b.lateFeeType,
-        lateFeeValue: b.lateFeeValue,
-        electricityRatePoisha: b.electricityRatePoisha,
-        archivedAt: b.archivedAt,
-        createdAt: b.createdAt,
-      };
+      return toBuildingDto(updated);
     });
   }
 
@@ -286,6 +322,7 @@ export class BuildingsService {
         where: {
           id: buildingId,
           orgId: tenantCtx.orgId!,
+          archivedAt: null,
         },
       });
 
@@ -336,6 +373,7 @@ export class BuildingsService {
         where: {
           id: buildingId,
           orgId: tenantCtx.orgId!,
+          archivedAt: null,
         },
       });
 
@@ -355,12 +393,13 @@ export class BuildingsService {
             where: {
               status: { in: ['pending', 'active', 'notice'] },
             },
-            take: 1,
             select: {
               id: true,
               status: true,
               monthlyRentPoisha: true,
             },
+            orderBy: { createdAt: 'desc' },
+            take: 1,
           },
         },
         orderBy: [{ floor: 'asc' }, { label: 'asc' }],
@@ -368,28 +407,7 @@ export class BuildingsService {
 
       return units.map((u) => {
         const lease = u.leases[0] ?? null;
-        return {
-          id: u.id,
-          buildingId: u.buildingId,
-          label: u.label,
-          floor: u.floor,
-          type: u.type,
-          defaultRentPoisha: Number(u.defaultRentPoisha),
-          electricityMode: u.electricityMode,
-          archivedAt: u.archivedAt,
-          charges: u.charges.map((c) => ({
-            id: c.id,
-            name: c.name,
-            amountPoisha: Number(c.amountPoisha),
-          })),
-          lease: lease
-            ? {
-                id: lease.id,
-                status: lease.status,
-                monthlyRentPoisha: Number(lease.monthlyRentPoisha),
-              }
-            : null,
-        };
+        return toUnitDto(u, lease);
       });
     });
   }
@@ -403,6 +421,7 @@ export class BuildingsService {
         where: {
           id: buildingId,
           orgId: tenantCtx.orgId!,
+          archivedAt: null,
         },
       });
 
@@ -448,26 +467,11 @@ export class BuildingsService {
                 amountPoisha: BigInt(c.amountPoisha),
               },
             });
-            charges.push({
-              id: createdCharge.id,
-              name: createdCharge.name,
-              amountPoisha: Number(createdCharge.amountPoisha),
-            });
+            charges.push(createdCharge);
           }
         }
 
-        return {
-          id: unit.id,
-          buildingId: unit.buildingId,
-          label: unit.label,
-          floor: unit.floor,
-          type: unit.type,
-          defaultRentPoisha: Number(unit.defaultRentPoisha),
-          electricityMode: unit.electricityMode,
-          archivedAt: unit.archivedAt,
-          charges,
-          lease: null,
-        };
+        return toUnitDto({ ...unit, charges }, null);
       } catch (err: unknown) {
         if (err && typeof err === 'object' && 'code' in err && (err as { code: unknown }).code === 'P2002') {
           throw ApiError.conflict('A unit with this label already exists in this building');
@@ -486,6 +490,7 @@ export class BuildingsService {
         where: {
           id: unitId,
           orgId: tenantCtx.orgId!,
+          archivedAt: null,
         },
       });
 
@@ -544,21 +549,21 @@ export class BuildingsService {
         },
       });
 
-      return {
-        id: updated.id,
-        buildingId: updated.buildingId,
-        label: updated.label,
-        floor: updated.floor,
-        type: updated.type,
-        defaultRentPoisha: Number(updated.defaultRentPoisha),
-        electricityMode: updated.electricityMode,
-        archivedAt: updated.archivedAt,
-        charges: updated.charges.map((c) => ({
-          id: c.id,
-          name: c.name,
-          amountPoisha: Number(c.amountPoisha),
-        })),
-      };
+      const activeLease = await tx.lease.findFirst({
+        where: {
+          orgId: tenantCtx.orgId!,
+          unitId,
+          status: { in: ['pending', 'active', 'notice'] },
+        },
+        select: {
+          id: true,
+          status: true,
+          monthlyRentPoisha: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      return toUnitDto(updated, activeLease);
     });
   }
 
@@ -571,6 +576,7 @@ export class BuildingsService {
         where: {
           id: unitId,
           orgId: tenantCtx.orgId!,
+          archivedAt: null,
         },
       });
 
