@@ -694,3 +694,7 @@ Next: CI 8/8 on ba615ed (if e2e still red, debugger reads the logs); then merge 
 ### 2026-11-09 — Claude (lead) — V5 CI wait on ba615ed
 Did: checked PR #10 at ba615ed: lint-typecheck and unit green; integration, e2e, images, docs, security IN_PROGRESS. BEHIND main (PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change. Committed locally, NOT pushed.
 Next: CI 8/8 on ba615ed (if e2e red, debugger reads the failing logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 2 on ba615ed
+Did: rechecked PR #10 at ba615ed: lint-typecheck, unit, integration, images, docs, security, CodeQL green; e2e still IN_PROGRESS. Still BEHIND main (PROGRESS-only commits); not merged in, to avoid cancelling CI. No code change.
+Next: CI 8/8 on ba615ed (if e2e red, debugger reads the failing logs); then merge main into feat/V5 (docs-only), push, wait for CI 8/8, then Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
