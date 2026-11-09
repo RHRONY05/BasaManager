@@ -342,6 +342,23 @@
     height: 1px;
     background: var(--border-default);
   }
+  .google-g {
+    width: var(--size-icon);
+    height: var(--size-icon);
+    flex-shrink: 0;
+  }
+  .google-g .g-b {
+    fill: var(--google-blue);
+  }
+  .google-g .g-g {
+    fill: var(--google-green);
+  }
+  .google-g .g-y {
+    fill: var(--google-yellow);
+  }
+  .google-g .g-r {
+    fill: var(--google-red);
+  }
   .divider {
     height: 1px;
     background: var(--border-muted);

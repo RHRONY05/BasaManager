@@ -183,11 +183,7 @@ export default function SignupPage() {
       <GoogleButton>{t('auth.signUpWithGoogle')}</GoogleButton>
 
       {/* Divider */}
-      <div className="divider-text flex items-center gap-3 text-xs uppercase text-fg-muted">
-        <span className="flex-1 h-px bg-border" />
-        <span>{t('auth.orWithEmail')}</span>
-        <span className="flex-1 h-px bg-border" />
-      </div>
+      <div className="divider-text">{t('auth.orWithEmail')}</div>
 
       {/* Signup Form */}
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5" noValidate>

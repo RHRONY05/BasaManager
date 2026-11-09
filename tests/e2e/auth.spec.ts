@@ -56,6 +56,18 @@ test.describe('Auth flows', () => {
     await uiLogin(page, email, GOOD_PASSWORD);
   });
 
+  test('google button icon has correct dimensions (≤ 24x24 px)', async ({ page }) => {
+    await page.goto('/login');
+    const googleIcon = page.locator('.google-g');
+    await expect(googleIcon).toBeVisible();
+    const box = await googleIcon.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.width).toBeLessThanOrEqual(24);
+    expect(box!.height).toBeLessThanOrEqual(24);
+    expect(box!.width).toBeGreaterThanOrEqual(16);
+    expect(box!.height).toBeGreaterThanOrEqual(16);
+  });
+
   test('signup validation: a short password is refused before anything is sent', async ({ page }) => {
     await page.goto('/signup');
     await page.getByLabel('Your full name').fill('Short Pass');
