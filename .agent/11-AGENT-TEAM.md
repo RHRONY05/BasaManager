@@ -60,7 +60,10 @@ A call can take 30 minutes or more, so give the terminal command a timeout of at
 
 **If Claude is unavailable.** If the file ends with "You've hit your … limit · resets <time>", no Claude review can happen until then. Carry on with work that doesn't need Claude, and don't merge anything that needs its approval. When nothing else is left, wait until the reset time and call it again. If it says "Not logged in", add a Human step and tell the owner. Never replace a Claude check with your own opinion, or with an Antigravity Claude model.
 
-Fix bug-hunt issues in one PR with "Closes #n" lines, reviewed like any other.
+### Bug-hunt triage & resolution protocol
+After the bug hunt finishes, the lead triages every reported issue:
+1. **Fix in current goal:** Any defect in code already shipped in the current goal must be fixed immediately in one PR (`fix/<goal>-bughunt`) with a regression test for each issue, full CI pass, and Claude review before merging (`Closes #n`). Shipped code must not remain broken.
+2. **Schedule for future tasks:** If a bug touches logic or models scheduled for later tasks, the lead explicitly attaches the GitHub issue number to that task in `08-TASKS.md` (naming the issue and AC) and documents the rationale in `PROGRESS.md`.
 
 ## Merge gates (branch protection on `main`)
 CI green (lint, typecheck, unit, integration, e2e desktop + mobile, docs build, audit, gitleaks, CodeQL)

@@ -140,6 +140,25 @@ describe('auth: signup and email verification (A1)', () => {
     expect(setCookieLine(dup, 'bm_at')).toBeUndefined(); // the duplicate must not get a session
   });
 
+  it('two concurrent signups with the same email return 200 without throwing 500 P2002', async () => {
+    const email = uniqEmail('concurrent');
+    const [res1, res2] = await Promise.all([
+      newAgent(ctx)
+        .post('/api/auth/signup')
+        .send(body(email, { orgName: 'Org 1' })),
+      newAgent(ctx)
+        .post('/api/auth/signup')
+        .send(body(email, { orgName: 'Org 2' })),
+    ]);
+
+    expect(res1.status).toBe(200);
+    expect(res2.status).toBe(200);
+    expect(res1.body).toEqual(res2.body);
+
+    const users = await q(`select id from users where email = $1`, [email]);
+    expect(users).toHaveLength(1);
+  });
+
   it.each([
     ['shorter than 10 characters', 'Ab1!xyz'],
     ['only digits (common)', '1234567890'],

@@ -74,7 +74,7 @@ export function createRequireMembership(prisma: Db) {
         orgId,
         userId: req.user.id,
         role: membership.role,
-        isAdmin: req.user.isPlatformAdmin,
+        isAdmin: false,
       };
 
       next();

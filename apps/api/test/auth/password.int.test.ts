@@ -51,6 +51,18 @@ describe('auth: forgot / reset / change password (A5)', () => {
     expect(await mailCount(ghost)).toBe(0); // ... and the unknown address got nothing
   });
 
+  it('forgot-password responds promptly without blocking on mailer delivery', async () => {
+    const u = await insertUser();
+    const t0 = Date.now();
+    const res = await newAgent(ctx).post('/api/auth/forgot-password').send({ email: u.email });
+    const elapsed = Date.now() - t0;
+    expect(res.status).toBe(200);
+    expect(elapsed).toBeLessThan(1000);
+
+    const mail = await latestMailTo(u.email, { subject: /reset/i });
+    expect(extractLink(mail, '/reset-password')).toContain('token=');
+  });
+
   it('forgot-password validates the email and is RATE_LIMITED after repeated requests', async () => {
     const bad = await newAgent(ctx).post('/api/auth/forgot-password').send({ email: 'nope' });
     expect(bad.status).toBe(400);

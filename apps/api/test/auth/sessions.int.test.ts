@@ -204,6 +204,26 @@ describe('auth: refresh rotation, reuse detection, logout, devices (A3, A4)', ()
       expect(list[0]).toHaveProperty('createdAt');
     });
 
+    it('does not list expired sessions in GET /api/me/sessions', async () => {
+      const { u, agent: a } = await signedIn();
+      await loginAs(newAgent(ctx), u.email, u.password);
+
+      // Expire the other session (b, order by created_at desc)
+      await q(
+        `update sessions set expires_at = now() - interval '5 minutes'
+         where user_id = $1 and id in (
+           select id from sessions where user_id = $1 order by created_at desc limit 1
+         )`,
+        [u.id],
+      );
+
+      const res = await a.get('/api/me/sessions');
+      expect(res.status).toBe(200);
+      const list = res.body.data as { id: string; current: boolean }[];
+      expect(list).toHaveLength(1);
+      expect(list[0]!.current).toBe(true);
+    });
+
     it('revokes another device by id (its refresh then fails); unknown or foreign ids are 404', async () => {
       const { u, agent: a } = await signedIn();
       const b = await loginAs(newAgent(ctx), u.email, u.password);

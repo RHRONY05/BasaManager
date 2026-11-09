@@ -115,6 +115,25 @@ describe('auth: Google OAuth (A6)', () => {
     expect(link).toHaveLength(1);
   });
 
+  it('Google brand new signup is atomic: if org creation fails, no user or oauth account is committed (Issue #17)', async () => {
+    await q(`alter table organizations add constraint test_fail_org check (name not like 'TriggerFail%')`);
+    try {
+      profile = { ...profile, name: 'TriggerFail' };
+      const agent = newAgent(ctx);
+      const res = await viaGoogle(agent);
+      expect(res.status).toBe(302);
+      expect(res.headers['location']).toBe(`${ctx.env.APP_URL}${failed}`);
+
+      // Assert that user and oauthAccount rolled back completely
+      const users = await q(`select 1 from users where email = $1`, [profile.email]);
+      expect(users).toHaveLength(0);
+      const oauths = await q(`select 1 from oauth_accounts where provider_user_id = $1`, [profile.sub]);
+      expect(oauths).toHaveLength(0);
+    } finally {
+      await q(`alter table organizations drop constraint if exists test_fail_org`);
+    }
+  });
+
   it('a verified Google email that matches an existing account links to it (no new user)', async () => {
     const existing = await insertUser({ email: profile.email });
     const agent = newAgent(ctx);
@@ -254,6 +273,42 @@ describe('auth: Google OAuth (A6)', () => {
           .accepted_at,
       ).not.toBeNull();
       expect(await q(`select 1 from organizations`)).toHaveLength(1); // only Lake View, nothing named "...'s properties"
+    });
+
+    it('accepts caretaker invite: creates membership AND assigns caretaker buildings', async () => {
+      const bRows = await q<{ id: string }>(
+        `insert into buildings (id, org_id, name, address, area, city, created_at, updated_at)
+         values (gen_random_uuid(), $1, 'Tower A', 'Road 11', 'Banani', 'Dhaka', now(), now())
+         returning id`,
+        [org.id],
+      );
+      const buildingId = bRows[0]!.id;
+
+      const { token } = await insertInvitation({
+        orgId: org.id,
+        invitedBy: org.landlordUserId,
+        email: profile.email,
+        role: 'caretaker',
+        buildingIds: [buildingId],
+      });
+
+      const agent = newAgent(ctx);
+      const res = await viaGoogle(agent, { invite: token });
+      expect(res.headers['location']).not.toContain('error=');
+
+      const user = (await q<{ id: string }>(`select id from users where email=$1`, [profile.email]))[0]!;
+      const memberships = await q<{ id: string }>(
+        `select id from memberships where org_id=$1 and user_id=$2 and role='caretaker' and status='active'`,
+        [org.id, user.id],
+      );
+      expect(memberships).toHaveLength(1);
+
+      const cbRows = await q<{ building_id: string }>(
+        `select building_id from caretaker_buildings where org_id=$1 and membership_id=$2`,
+        [org.id, memberships[0]!.id],
+      );
+      expect(cbRows).toHaveLength(1);
+      expect(cbRows[0]!.building_id).toBe(buildingId);
     });
 
     it('refuses when the Google email differs from the invited email', async () => {

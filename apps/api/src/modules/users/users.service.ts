@@ -126,6 +126,7 @@ export class UsersService {
         userId,
         revokedAt: null,
         rotatedAt: null,
+        expiresAt: { gt: clock.now() },
       },
       orderBy: { createdAt: 'desc' },
       select: {
