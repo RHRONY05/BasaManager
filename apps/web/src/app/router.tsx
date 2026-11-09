@@ -92,6 +92,18 @@ export const router = createBrowserRouter([
         Component: page('/l/buildings'),
       },
       {
+        path: 'buildings/:id',
+        Component: page('/l/buildings/:id'),
+      },
+      {
+        path: 'team',
+        Component: page('/l/team'),
+      },
+      {
+        path: 'settings',
+        Component: page('/l/settings'),
+      },
+      {
         path: 'billing',
         Component: page('/l/billing'),
       },

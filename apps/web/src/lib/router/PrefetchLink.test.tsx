@@ -3,6 +3,10 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { PrefetchLink } from './PrefetchLink';
 
+vi.mock('./preload', () => ({
+  preloadRoute: vi.fn(),
+}));
+
 describe('PrefetchLink', () => {
   it('calls prefetch callback on pointerenter only once', () => {
     const prefetch = vi.fn();
