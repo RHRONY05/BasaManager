@@ -6,6 +6,8 @@ import { PrefetchLink } from '../../lib/router/PrefetchLink';
 import { idlePreloadRoutes } from '../../lib/router/preload';
 import { TopProgressBar } from '../../components/ui/TopProgressBar';
 import { RouteSkeleton } from '../../components/ui/RouteSkeleton';
+import { OrgSwitcher } from '../../components/ui/OrgSwitcher';
+import { AccountMenu } from '../../components/ui/AccountMenu';
 
 export function TenantLayout() {
   const location = useLocation();
@@ -32,15 +34,18 @@ export function TenantLayout() {
 
       {/* Top Header (Desktop & Mobile) */}
       <header className="border-b border-border bg-surface shrink-0">
-        <div className="max-w-content mx-auto px-4 h-14 flex items-center justify-between">
-          <PrefetchLink
-            to="/t"
-            className="text-base font-bold text-fg min-h-tap flex items-center whitespace-nowrap min-w-0"
-          >
-            <span title={t('appName')} className="truncate">
-              {t('appName')}
-            </span>
-          </PrefetchLink>
+        <div className="max-w-content mx-auto px-4 h-14 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <PrefetchLink
+              to="/t"
+              className="text-base font-bold text-fg min-h-tap flex items-center whitespace-nowrap min-w-0 shrink-0"
+            >
+              <span title={t('appName')} className="truncate">
+                {t('appName')}
+              </span>
+            </PrefetchLink>
+            <OrgSwitcher />
+          </div>
 
           {/* Desktop Top Nav (≥ md) */}
           <nav className="hidden md:flex items-center gap-1">
@@ -67,6 +72,10 @@ export function TenantLayout() {
               );
             })}
           </nav>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <AccountMenu />
+          </div>
         </div>
       </header>
 

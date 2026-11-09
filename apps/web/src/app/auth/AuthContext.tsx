@@ -92,6 +92,7 @@ export function AuthProvider({ children, onNavigateToLogin }: AuthProviderProps)
         if (typeof localStorage !== 'undefined') {
           localStorage.setItem('bm.activeOrg', orgId);
         }
+        queryClient.clear();
         void queryClient.invalidateQueries();
       }
     },

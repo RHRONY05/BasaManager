@@ -15,6 +15,8 @@ import { PrefetchLink } from '../../lib/router/PrefetchLink';
 import { idlePreloadRoutes } from '../../lib/router/preload';
 import { TopProgressBar } from '../../components/ui/TopProgressBar';
 import { RouteSkeleton } from '../../components/ui/RouteSkeleton';
+import { OrgSwitcher } from '../../components/ui/OrgSwitcher';
+import { AccountMenu } from '../../components/ui/AccountMenu';
 
 export function LandlordLayout() {
   const { t } = useTranslation();
@@ -98,33 +100,43 @@ export function LandlordLayout() {
         </div>
       </aside>
 
-      {/* Mobile Top Bar (< md) */}
-      <header className="md:hidden border-b border-border bg-surface shrink-0">
-        <div className="h-14 px-4 flex items-center justify-between">
-          <PrefetchLink
-            to={isCaretaker ? '/c' : '/l'}
-            className="text-base font-bold text-fg min-h-tap flex items-center whitespace-nowrap min-w-0"
-          >
-            <span title={t('appName')} className="truncate">
-              {t('appName')}
-            </span>
-          </PrefetchLink>
-          <PrefetchLink
-            to="/account"
-            aria-label={t('nav.account')}
-            className="min-h-tap min-w-tap inline-flex items-center justify-center text-fg-muted hover:text-fg"
-          >
-            <User className="h-5 w-5 shrink-0" />
-          </PrefetchLink>
-        </div>
-      </header>
+      {/* Main Content Column with Top Bar */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Desktop Top Bar (≥ md) */}
+        <header className="hidden md:flex h-16 border-b border-border bg-surface items-center justify-between px-6 shrink-0">
+          <div className="flex items-center gap-4 min-w-0">
+            <OrgSwitcher />
+          </div>
+          <div className="flex items-center gap-3">
+            <AccountMenu />
+          </div>
+        </header>
 
-      {/* Main Content Area */}
-      <main className="flex-1 p-4 sm:p-6 md:p-8 min-w-0 pb-24 md:pb-6">
-        <Suspense key={location.pathname} fallback={<RouteSkeleton />}>
-          <Outlet />
-        </Suspense>
-      </main>
+        {/* Mobile Top Bar (< md) */}
+        <header className="md:hidden border-b border-border bg-surface shrink-0">
+          <div className="h-14 px-4 flex items-center justify-between gap-2">
+            <PrefetchLink
+              to={isCaretaker ? '/c' : '/l'}
+              className="text-base font-bold text-fg min-h-tap flex items-center whitespace-nowrap min-w-0 shrink-0"
+            >
+              <span title={t('appName')} className="truncate">
+                {t('appName')}
+              </span>
+            </PrefetchLink>
+            <div className="flex items-center gap-2 min-w-0">
+              <OrgSwitcher />
+              <AccountMenu />
+            </div>
+          </div>
+        </header>
+
+        {/* Main Content Area */}
+        <main className="flex-1 p-4 sm:p-6 md:p-8 min-w-0 pb-24 md:pb-6">
+          <Suspense key={location.pathname} fallback={<RouteSkeleton />}>
+            <Outlet />
+          </Suspense>
+        </main>
+      </div>
 
       {/* Mobile Bottom Tab Bar (< md, ≤ 5 items) */}
       <nav
