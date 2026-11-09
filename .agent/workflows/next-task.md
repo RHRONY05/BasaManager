@@ -6,7 +6,7 @@ Do this for the first unticked task in `.agent/08-TASKS.md`. If its PR or worktr
 
 1. **Set up.** `git worktree add ../bm-wt/<task> -b feat/<task>` from `origin/main`. Work only there, never on `main`.
 2. **Critical logic: Claude writes the tests first.** If the task touches auth, permissions/RLS, billing, allocation, payments or file access, call the Claude test designer (`11-AGENT-TEAM.md`) before you write the code. Do not edit its tests to make them pass. If you believe one is wrong, ask Claude to check it.
-3. **Build.** Write the code and the remaining tests, then the learning docs per `.agent/10-LEARNING.md`. Use `.claude/skills/mobile-layout-qa` and `.claude/skills/ui-states` for any UI. Commit and push often.
+3. **Build.** Write the code and the remaining tests, then the learning docs per `.agent/10-LEARNING.md`. Use parallel agents when it saves time, under the rules in `11-AGENT-TEAM.md`. Use `.claude/skills/mobile-layout-qa` and `.claude/skills/ui-states` for any UI. Commit and push often.
 4. **Verify.** Run typecheck, lint, unit, integration and e2e for the area, and fix your own failures. Same failure after 3 rounds: call the Claude debugger.
 5. **Record, on the same branch.** Tick the task in `08-TASKS.md`, add its row to `METRICS.md`, and update `PROGRESS.md`. Never push notes to `main`: that puts open PRs behind and restarts their CI.
 6. **PR.** Open it with evidence (test summary, screenshots desktop + mobile). Wait with `gh pr checks <n> --watch`, and fix anything red. Do not poll in a loop.

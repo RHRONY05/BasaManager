@@ -8,7 +8,7 @@ How BasaManager is built: who does what, on which model, and what must be true b
 1. **The plan is the contract.** Agents build what `.agent/` says. A gap in the docs is fixed in the docs first, then built. Nobody improvises product or design decisions.
 2. **Writer ≠ reviewer, from different model families.** Gemini writes the code and Claude checks it. For critical logic, Claude writes the tests *before* the code, so they are an independent check.
 3. **CI is the referee.** Nothing merges to `main` with a red check or without Claude's `VERDICT: APPROVE`.
-4. **Small, isolated units.** One task = one branch = one git worktree = one PR.
+4. **Small, isolated units.** One task = one branch = one PR. Parallel agents each get their own worktree and never touch the same files.
 5. **Secrets stay with Claude DevOps.** Antigravity never reads `BasaManager.env` and never runs deploys.
 6. **Evidence, not claims.** "Done" means test output, screenshots and the PR link, attached to the PR.
 7. **Claude is the scarce resource.** Each call must have a clear job and name exactly what to read. Waiting, polling and routine fixing never use Claude.
@@ -26,6 +26,14 @@ How BasaManager is built: who does what, on which model, and what must be true b
 **Critical areas:** auth, sessions, permissions/RLS, migrations, billing, allocation, payments, file access, account deletion.
 
 Antigravity uses Gemini 3.8 Flash (High) for its own work. Schema and migration work is done by the lead and reviewed by Opus. The design is done (V2): follow `design/` and make no design decisions.
+
+## Parallel agents
+The lead may run up to **3 Gemini agents at once** when it saves time. It decides this per task, and one agent is fine when the work is small or tightly connected.
+
+- **When:** parts that don't touch the same files, such as backend, frontend and e2e, once the shared contracts (schema, `packages/shared`) are committed on the task branch. Tasks in a goal stay in order unless they don't depend on each other.
+- **Setup:** each part gets `git worktree add ../bm-wt/<task>-<part> -b feat/<task>-<part>` from the task branch, its own test database (`basamanager_test_<task>_<part>`) and its own dev ports (`scripts/ports.mjs`), so they never collide.
+- **Finish:** the lead merges the parts into the task branch, removes their worktrees, and runs the full verify itself. Each task still ends in one PR with one Claude review.
+- **Claude stays one call at a time.** Three Opus runs at once used up a 5-hour window on 2026-11-08.
 
 ## Calling Claude
 Run the `claude` command in the task's worktree, in the terminal, one call at a time. It starts fresh and knows nothing of this session, so name the task, PR and docs in the prompt. Save the output to a file and read that file; don't paste it into the conversation.
