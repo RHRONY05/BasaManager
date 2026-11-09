@@ -59,8 +59,8 @@ export class OrgsController {
 
   revokeInvite = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { id } = req.params;
-      const result = await this.orgsService.revokeInvite(req.tenantCtx!, id!);
+      const id = String(req.params.id);
+      const result = await this.orgsService.revokeInvite(req.tenantCtx!, id);
       res.status(200).json({ data: result });
     } catch (err) {
       next(err);
@@ -69,13 +69,9 @@ export class OrgsController {
 
   updateCaretakerBuildings = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { membershipId } = req.params;
+      const membershipId = String(req.params.membershipId);
       const data = getValidated<UpdateCaretakerBuildingsRequest>(res, 'body') || req.body;
-      const result = await this.orgsService.updateCaretakerBuildings(
-        req.tenantCtx!,
-        membershipId!,
-        data,
-      );
+      const result = await this.orgsService.updateCaretakerBuildings(req.tenantCtx!, membershipId, data);
       res.status(200).json({ data: result });
     } catch (err) {
       next(err);
@@ -84,8 +80,8 @@ export class OrgsController {
 
   removeMember = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { membershipId } = req.params;
-      const result = await this.orgsService.removeMember(req.tenantCtx!, membershipId!);
+      const membershipId = String(req.params.membershipId);
+      const result = await this.orgsService.removeMember(req.tenantCtx!, membershipId);
       res.status(200).json({ data: result });
     } catch (err) {
       next(err);

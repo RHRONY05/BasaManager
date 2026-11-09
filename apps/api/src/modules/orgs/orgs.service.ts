@@ -90,9 +90,7 @@ export class OrgsService {
         email: m.user.email,
         phone: m.user.phone,
       },
-      ...(m.role === 'caretaker'
-        ? { buildingIds: m.caretakerBuildings.map((cb) => cb.buildingId) }
-        : {}),
+      ...(m.role === 'caretaker' ? { buildingIds: m.caretakerBuildings.map((cb) => cb.buildingId) } : {}),
       createdAt: m.createdAt,
     }));
   }
@@ -112,7 +110,7 @@ export class OrgsService {
 
     const email = data.email.toLowerCase().trim();
 
-    return this.prisma.$tx(tenantCtx, async (tx) => {
+    const result = await this.prisma.$tx(tenantCtx, async (tx) => {
       // Validate buildingIds if provided
       if (data.buildingIds && data.buildingIds.length > 0) {
         const bCount = await tx.building.count({

@@ -469,12 +469,7 @@ export class BuildingsService {
           lease: null,
         };
       } catch (err: unknown) {
-        if (
-          err &&
-          typeof err === 'object' &&
-          'code' in err &&
-          (err as { code: unknown }).code === 'P2002'
-        ) {
+        if (err && typeof err === 'object' && 'code' in err && (err as { code: unknown }).code === 'P2002') {
           throw ApiError.conflict('A unit with this label already exists in this building');
         }
         throw err;

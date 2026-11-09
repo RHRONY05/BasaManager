@@ -103,12 +103,7 @@ export function createUnitsRoutes(deps: BuildingsRouteDeps): Router {
   );
 
   // Archive unit (Landlord only)
-  router.post(
-    '/:id/archive',
-    requireRole('landlord'),
-    validate({ params: idParam }),
-    controller.archiveUnit,
-  );
+  router.post('/:id/archive', requireRole('landlord'), validate({ params: idParam }), controller.archiveUnit);
 
   return router;
 }

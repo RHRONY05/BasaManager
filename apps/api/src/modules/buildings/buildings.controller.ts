@@ -13,10 +13,7 @@ export class BuildingsController {
 
   listBuildings = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const result = await this.buildingsService.listBuildings(
-        req.tenantCtx!,
-        req.org!.membershipId,
-      );
+      const result = await this.buildingsService.listBuildings(req.tenantCtx!, req.org!.membershipId);
       res.status(200).json({ data: result });
     } catch (err) {
       next(err);
@@ -25,12 +22,8 @@ export class BuildingsController {
 
   getBuilding = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { id } = req.params;
-      const result = await this.buildingsService.getBuilding(
-        req.tenantCtx!,
-        id!,
-        req.org!.membershipId,
-      );
+      const id = String(req.params.id);
+      const result = await this.buildingsService.getBuilding(req.tenantCtx!, id, req.org!.membershipId);
       res.status(200).json({ data: result });
     } catch (err) {
       next(err);
@@ -49,9 +42,9 @@ export class BuildingsController {
 
   updateBuilding = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { id } = req.params;
+      const id = String(req.params.id);
       const data = getValidated<UpdateBuildingRequest>(res, 'body') || req.body;
-      const result = await this.buildingsService.updateBuilding(req.tenantCtx!, id!, data);
+      const result = await this.buildingsService.updateBuilding(req.tenantCtx!, id, data);
       res.status(200).json({ data: result });
     } catch (err) {
       next(err);
@@ -60,8 +53,8 @@ export class BuildingsController {
 
   archiveBuilding = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { id } = req.params;
-      const result = await this.buildingsService.archiveBuilding(req.tenantCtx!, id!);
+      const id = String(req.params.id);
+      const result = await this.buildingsService.archiveBuilding(req.tenantCtx!, id);
       res.status(200).json({ data: result });
     } catch (err) {
       next(err);
@@ -70,12 +63,8 @@ export class BuildingsController {
 
   listUnits = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { id } = req.params;
-      const result = await this.buildingsService.listUnits(
-        req.tenantCtx!,
-        id!,
-        req.org!.membershipId,
-      );
+      const id = String(req.params.id);
+      const result = await this.buildingsService.listUnits(req.tenantCtx!, id, req.org!.membershipId);
       res.status(200).json({ data: result });
     } catch (err) {
       next(err);
@@ -84,9 +73,9 @@ export class BuildingsController {
 
   createUnit = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { id } = req.params;
+      const id = String(req.params.id);
       const data = getValidated<CreateUnitRequest>(res, 'body') || req.body;
-      const result = await this.buildingsService.createUnit(req.tenantCtx!, id!, data);
+      const result = await this.buildingsService.createUnit(req.tenantCtx!, id, data);
       res.status(201).json({ data: result });
     } catch (err) {
       next(err);
@@ -95,9 +84,9 @@ export class BuildingsController {
 
   updateUnit = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { id } = req.params;
+      const id = String(req.params.id);
       const data = getValidated<UpdateUnitRequest>(res, 'body') || req.body;
-      const result = await this.buildingsService.updateUnit(req.tenantCtx!, id!, data);
+      const result = await this.buildingsService.updateUnit(req.tenantCtx!, id, data);
       res.status(200).json({ data: result });
     } catch (err) {
       next(err);
@@ -106,8 +95,8 @@ export class BuildingsController {
 
   archiveUnit = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { id } = req.params;
-      const result = await this.buildingsService.archiveUnit(req.tenantCtx!, id!);
+      const id = String(req.params.id);
+      const result = await this.buildingsService.archiveUnit(req.tenantCtx!, id);
       res.status(200).json({ data: result });
     } catch (err) {
       next(err);

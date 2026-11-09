@@ -59,13 +59,9 @@ export function createRequireMembership(prisma: Db) {
         });
       });
 
-      if (!membership) {
+      if (!membership || membership.status === 'removed') {
         // Must return 404 NOT_FOUND for "exists but not yours" to never leak existence
         throw ApiError.notFound('Organization not found');
-      }
-
-      if (membership.status === 'removed') {
-        throw ApiError.forbidden('Membership has been removed');
       }
 
       req.org = {
