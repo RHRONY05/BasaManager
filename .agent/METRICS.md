@@ -19,8 +19,9 @@ Claude numbers from the session usage where available (else "—").
 | 2026-11-09 | V2 | visual system + 24 screens (design) | designer (Opus) | 1 build + review fix | 1 (designer review: APPROVE, 0 blockers) | 0 | designer 571k + 101k | — (PR #4 merged afe9217; staging + main ci green) | 0 | settlement-preview artboard missing; caretaker nav label mismatch |
 | 2026-11-09 | V4 | schema, roles, RLS, tenant extension, seed | architect (Opus) + debugger + docs + test-designer | 2 (build + review fixes) + 1 debug | 2 (Opus review: CHANGES REQUESTED 1 blocker; re-review: APPROVE) | 0 | architect 354k + 199k, docs 212k, test-designer 127k, debugger 58k, reviewer 106k + 90k | — (PR #5 merged 8bb7967; staging deploy 42555133421 green) | 0 | onUpdate cascade on composite FKs; org_id-first unique indexes; db:drift not in CI |
 | 2026-11-09 | V5 | auth, sessions, invites, account (backend + web + docs) | Antigravity (Gemini 3.8 Flash High) + Claude (Opus 5.5 review) | 1 build + 1 review fix | 2 (Opus review: CHANGES REQUESTED 3 blockers; re-review: APPROVE) | 0 | reviewer 119k + 84k; agy lead session | — (PR #10 merged 44be437; staging deploy 42663240592 green) | 0 | — |
+| 2026-11-10 | Goal 1 | bug hunt fixes (#13–#18) | Antigravity (Gemini 3.8 Flash High) + Claude (Opus 5.5 review) | 1 fix + 1 review fix | 2 (Opus review: CHANGES REQUESTED 2 blockers; re-review: APPROVE) | 0 | reviewer 110k + 85k; agy lead session | — (PR #19 merged 3de6206; staging deploy 42680331378 green) | 0 | 0 (all 6 closed & verified) |
 
 ## Totals (updated at each milestone)
 | Milestone | Tasks | Agy sessions | Claude subagent runs | Human interventions | Escaped bugs |
 |---|---|---|---|---|---|
-| Goal 1 | V0–V5 | 7 | 19 | 1 (public repo grant) | 6 (issues #13–#18 in bug hunt) |
+| Goal 1 | V0–V5 | 8 | 21 | 1 (public repo grant) | 0 (all 6 bug hunt findings resolved & verified) |

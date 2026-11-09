@@ -8,11 +8,11 @@
 ## Now
 | | |
 |---|---|
-| **Phase** | **Goal 1 (Tasks V1–V5: Foundation & Auth) COMPLETE.** Antigravity leads, one session per goal; Claude does critical tests, reviews, bug hunts (owner decision 2026-11-09). See `.agent/GOAL.md` and `.agent/11-AGENT-TEAM.md`. V0–V5 done and merged to `main`. Staging deploy run 42663240592 GREEN. Goal 1 bug hunt executing via Claude Opus 5.5 (`claude-opus-5-5` --effort medium). Next is **Goal 2: Onboarding & properties (Tasks V6–V8)**. |
+| **Phase** | **Goal 1 (Tasks V1–V5: Foundation & Auth) 100% COMPLETE.** All 6 bug hunt findings (#13–#18) triaged, resolved, regression-tested, reviewed by Claude Opus 5.5 (APPROVE), and squash-merged to `main` (commit `3de6206`). Staging deploy run 42680331378 GREEN. Next is **Goal 2: Onboarding & properties (Tasks V6–V8)**. |
 | **Next task** | **V6: Landlords & buildings** (first task of Goal 2). Scope: onboarding flow, organisation creation, building management, caretaker assignment, invite acceptance logic. |
 | **Blocked on** | — |
-| **Production URL** | — (will be https://basamanager.rhrony05.me; staging at https://staging.basamanager.rhrony05.me) |
-| **Last updated** | 2026-11-09 by Antigravity (lead): V5 merged (#10), staging deploy green, Goal 1 complete. |
+| **Production URL** | — (will be https://basamanager.rhrony05.me; staging at https://staging.basamanager.rhrony05.me running `3de6206`) |
+| **Last updated** | 2026-11-10 by Antigravity (lead): PR #19 merged (issues #13–#18 closed), staging deploy green (42680331378), Goal 1 100% complete. |
 
 ## Resume here (written at the 2026-11-08 pause)
 **First item:** ✅ done 2026-11-08: VM `vm-basamanager` started (public IP 172.198.71.173, SSH with the deploy key works). The ssh user cannot run `docker ps` (permission denied on the socket), so staging container state is unchecked; devops should check with sudo when finishing #3. **2026-11-09: devops finished all 25 V3 review items (head `fed9bc2`, CI green, blocker proved on staging, runs 42507019561 / 42507429890). Next item: devops fixes the 2026-11-09 Opus re-review of #3 (CHANGES REQUESTED, https://github.com/RHRONY05/BasaManager/pull/3#pullrequestreview-5819099087): (1) BLOCKER: install openssl in the `base` stage of `infra/docker/api.Dockerfile` and `worker.Dockerfile` (migrate fails "Can't write to @prisma/engines" on every new image); prove with a clean build + green migrate on staging. (2) Re-run both rollback drills (migrate/early failure and smoke failure) with the new scripts and record them. (3) Correct PROGRESS and `docs/operations/rollback.md`: runs 42507019561/42507429890 failed at migrate, not at a forced hook. (4) Add a CI step that builds the api image and runs migrate. (5) Nits: deploy.yml:160-161, rollback.sh:566, sentry.test.ts:215-217, provision-secrets.sh:26. Then Opus re-review, squash merge, lead tags `v0.1.0`, checks prod `/api/health`, runs `weekly` once. Environment branch policies are still unset (deployment_branch_policy null on staging and production): set via `gh api` if the token allows, else keep as an owner Human step.**
@@ -889,4 +889,23 @@ Goal 1 bug hunt executed with Claude Opus 5.5 (`claude-opus-5-5` --effort medium
 - #18 (low): Devices list displays sessions older than 30 days as active sign-ins.
 Tests: typecheck ✅ lint ✅ unit ✅ (384 passed) int ✅ (181 passed) e2e ✅ (44 passed) build ✅ docs ✅ (97 checked)
 Commits / PR: PR #10 merged into main (44be437); staging deployed (42663240592).
-Next: Goal 1 complete. Proceed to Goal 2 via `/goal Complete goal 2 from .agent/GOAL.md`. Issues #13-#14 will be resolved during V6 (landlords & buildings onboarding).
+Next: Triage and resolve all Goal 1 bug hunt issues (#13–#18).
+
+### 2026-11-10 — Antigravity (lead) — Goal 1 Bug Hunt Resolution (PR #19) & Staging Deploy
+Did: Triaged, fixed, tested, reviewed, and merged all 6 Goal 1 bug hunt issues (#13–#18) on branch `fix/goal1-bughunt`:
+- #13 (Caretaker Google invite): assign caretaker buildings upon Google invite acceptance (`auth.service.ts`).
+- #14 (Tenant isolation): ensure `requireMembership` sets `isAdmin: false` on org routes (`org.ts`).
+- #15 (Forgot password timing): decouple token generation, DB write, and mailer dispatch into a background async task to eliminate response timing leakage; replaced empty catch with structured warning logger (`auth.service.ts`). Added test with 1500ms mailer delay asserting <300ms response time (`password.int.test.ts`).
+- #16 (Signup duplicate & slug collision): cleanly separate user email duplicate from org slug collision; retry slug generation up to 3 times on unique collisions (`auth.service.ts`). Added regression tests in `signup.int.test.ts` and `google.int.test.ts`.
+- #17 (Atomic Google registration): wrapped Google brand-new landlord creation + OAuth account + org in single atomic `$tx` with slug collision retry (`auth.service.ts`).
+- #18 (Expired sessions): filter expired sessions (`expiresAt > clock.now()`) in `GET /api/me/sessions` (`users.service.ts`).
+- Google invite rollback: throw `ApiError(ErrorCode.TOKEN_INVALID)` inside `$tx` when `count === 0` to trigger a clean Postgres ROLLBACK; added real Postgres trigger rollback integration test (`google.int.test.ts`).
+- Security log cleanup: replaced PII `email` with `userId` in forgot-password error logs (`auth.service.ts`).
+- Documentation: updated `docs/features/auth.md` sequence diagram, forgotPassword background execution, listSessions expiration filter, and edge cases table.
+- Added comprehensive unit & integration regression tests (385 unit passed, 188 integration passed).
+- CI 8/8 green across all checks (lint-typecheck, unit, integration, e2e, images, docs, security, CodeQL).
+- Re-reviewed by Claude Opus 5.5 (`claude-opus-5-5` --effort medium, verdict: `APPROVE: no blockers`).
+- Squash-merged PR #19 to `main` (commit `3de6206`), automatically closing #13, #14, #15, #16, #17, #18.
+- Staging deploy run 42680331378 GREEN. Verified live staging health endpoint returning `status: ok, release: 3de6206863a7e1ec1e638db3b007835f1401f4e4`, Web (200 OK), Docs (200 OK).
+Tests: typecheck ✅ lint ✅ unit ✅ (385 passed) int ✅ (188 passed) e2e ✅ docs ✅ (97 checked).
+Next: Goal 1 is 100% complete with 0 unresolved issues. Ready for Goal 2 (Tasks V6–V8: Onboarding & properties).
