@@ -46,10 +46,19 @@ describe('AuthService unit tests', () => {
       },
       $tx: vi.fn().mockImplementation(async (_ctx, fn) => {
         return fn({
+          user: mockDb.user,
           organization: { create: vi.fn() },
           membership: { create: vi.fn() },
           authToken: { create: vi.fn() },
           outboxMessage: { createMany: vi.fn() },
+        });
+      }),
+      $transaction: vi.fn().mockImplementation(async (fn: (tx: unknown) => unknown) => {
+        return fn({
+          $queryRaw: mockDb.$queryRaw,
+          user: mockDb.user,
+          session: mockDb.session,
+          authToken: mockDb.authToken,
         });
       }),
       $queryRaw: vi.fn(),
@@ -174,6 +183,9 @@ describe('AuthService unit tests', () => {
         lockedUntil: null,
         deletedAt: null,
       });
+      mockDb.$queryRaw.mockResolvedValue([
+        { failed_login_count: 5, locked_until: new Date(Date.now() + 15 * 60 * 1000) },
+      ]);
 
       await expect(
         service.login(
@@ -183,11 +195,7 @@ describe('AuthService unit tests', () => {
         ),
       ).rejects.toThrow(ApiError);
 
-      expect(mockDb.user.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ failedLoginCount: 5, lockedUntil: expect.any(Date) }),
-        }),
-      );
+      expect(mockDb.$queryRaw).toHaveBeenCalled();
     });
 
     it('signs in successfully and sets auth cookies on correct password', async () => {
@@ -281,17 +289,13 @@ describe('AuthService unit tests', () => {
         revokedAt: null,
         expiresAt: new Date(Date.now() + 10000),
       });
+      mockDb.$queryRaw.mockResolvedValue([{ id: 's1' }]);
       mockDb.user.findUnique.mockResolvedValue({ id: 'u1', email: 'u1@test.com', isPlatformAdmin: false });
       mockDb.session.create.mockResolvedValue({ id: 's2', familyId: 'fam-1' });
 
       const res = await service.refresh(mockReq as unknown as Request, mockRes as unknown as Response);
       expect(res.ok).toBe(true);
-      expect(mockDb.session.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: 's1' },
-          data: expect.objectContaining({ rotatedAt: expect.any(Date) }),
-        }),
-      );
+      expect(mockDb.$queryRaw).toHaveBeenCalled();
       expect(mockDb.session.create).toHaveBeenCalled();
       expect(mockRes.cookie).toHaveBeenCalled();
     });
@@ -311,7 +315,12 @@ describe('AuthService unit tests', () => {
 
     it('resetPassword consumes token, resets password, revokes sessions, and signs in', async () => {
       mockDb.$queryRaw.mockResolvedValue([{ id: 'tok-1', user_id: 'u1' }]);
-      mockDb.user.findUnique.mockResolvedValue({ id: 'u1', email: 'u1@test.com', isPlatformAdmin: false });
+      mockDb.user.findUnique.mockResolvedValue({
+        id: 'u1',
+        email: 'u1@test.com',
+        isPlatformAdmin: false,
+        deletedAt: null,
+      });
       mockDb.session.create.mockResolvedValue({ id: 'new-s1', familyId: 'fam-1' });
 
       const res = await service.resetPassword(

@@ -32,9 +32,15 @@ vi.mock('./emit', () => ({ setRealtimeServer: state.setServer }));
 import { attachRealtime } from './io';
 
 const quit = vi.fn().mockResolvedValue('OK');
+const mockSessionFindUnique = vi.fn().mockResolvedValue({ id: 's1', revokedAt: null });
 const deps = {
   env: { APP_URL: 'http://x', JWT_SECRET: 's' },
   redis: { duplicate: vi.fn().mockReturnValue({ quit }) },
+  prisma: {
+    session: {
+      findUnique: mockSessionFindUnique,
+    },
+  },
 } as never;
 
 const sock = (cookie?: string) => ({ handshake: { headers: { cookie } }, data: {}, join: vi.fn() });
@@ -55,6 +61,16 @@ describe('attachRealtime', () => {
     const next = vi.fn();
     await state.middleware!(sock('bm_at=abc'), next);
     expect(next.mock.calls[0]![0]).toBeInstanceOf(Error);
+  });
+
+  it('rejects a revoked session', async () => {
+    await attachRealtime({} as http.Server, deps);
+    state.verify.mockResolvedValue({ sub: 'u1', sid: 's1' });
+    mockSessionFindUnique.mockResolvedValueOnce({ id: 's1', revokedAt: new Date() });
+    const next = vi.fn();
+    await state.middleware!(sock('bm_at=abc'), next);
+    expect(next.mock.calls[0]![0]).toBeInstanceOf(Error);
+    expect(next.mock.calls[0]![0].message).toBe('Session revoked');
   });
 
   it('accepts a valid token, stores identity and joins the user room', async () => {

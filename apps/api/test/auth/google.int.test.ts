@@ -8,6 +8,7 @@ import {
   insertUser,
   insertInvitation,
   cookie,
+  syncCsrf,
   uniqEmail,
   type TestAgent,
   type TestCtx,
@@ -124,6 +125,61 @@ describe('auth: Google OAuth (A6)', () => {
     expect(cookie(agent, 'bm_at')).toBeTruthy();
     const me = await agent.get('/api/me');
     expect(me.body.data.user.id).toBe(existing.id);
+  });
+
+  it('linking an UNVERIFIED local account revokes old sessions, clears password, and marks email verified', async () => {
+    const rawPassword = 'AttackerPassword123!';
+    const unverifiedUser = await insertUser({
+      email: profile.email,
+      password: rawPassword,
+      verified: false,
+    });
+
+    // Attacker signs in and gets an active session
+    const attackerAgent = newAgent(ctx);
+    const loginRes = await attackerAgent.post('/api/auth/login').send({
+      email: profile.email,
+      password: rawPassword,
+    });
+    expect(loginRes.status).toBe(200);
+    expect(cookie(attackerAgent, 'bm_at')).toBeTruthy();
+    syncCsrf(attackerAgent);
+
+    // Legitimate owner signs in via Google OAuth
+    const victimAgent = newAgent(ctx);
+    const googleRes = await viaGoogle(victimAgent);
+    expect(googleRes.headers['location']).not.toContain('error=');
+    expect(cookie(victimAgent, 'bm_at')).toBeTruthy();
+
+    // 1. Account now has email_verified_at set, password_hash null, and oauth link
+    const updatedUser = (
+      await q<{ email_verified_at: Date | null; password_hash: string | null }>(
+        `select email_verified_at, password_hash from users where id = $1`,
+        [unverifiedUser.id],
+      )
+    )[0]!;
+    expect(updatedUser.email_verified_at).not.toBeNull();
+    expect(updatedUser.password_hash).toBeNull();
+
+    // 2. Attacker's old session is revoked in DB with reason 'google_claimed_unverified'
+    const oldSessions = await q<{ revoked_at: Date | null; revoke_reason: string | null }>(
+      `select revoked_at, revoke_reason from sessions where user_id = $1 and revoke_reason = 'google_claimed_unverified'`,
+      [unverifiedUser.id],
+    );
+    expect(oldSessions.length).toBeGreaterThan(0);
+    expect(oldSessions[0]!.revoked_at).not.toBeNull();
+
+    // Attacker tries to use existing session (refresh fails with 401)
+    const refreshRes = await attackerAgent.post('/api/auth/refresh');
+    expect(refreshRes.status).toBe(401);
+
+    // 3. Attacker tries to log in again with old password -> fails with INVALID_CREDENTIALS
+    const attackerRelogin = await newAgent(ctx).post('/api/auth/login').send({
+      email: profile.email,
+      password: rawPassword,
+    });
+    expect(attackerRelogin.status).toBe(401);
+    expect(attackerRelogin.body.error?.code).toBe('INVALID_CREDENTIALS');
   });
 
   it('later sign-ins are matched by the Google subject id, not the email', async () => {

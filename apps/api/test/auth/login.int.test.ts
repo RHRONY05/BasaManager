@@ -103,6 +103,21 @@ describe('auth: login, lockout, rate limit, cookies (A2)', () => {
       /\b(1[0-5]|[1-9])\b.*minute|minute.*\b(1[0-5]|[1-9])\b/i,
     );
     expect(setCookieLine(locked, 'bm_at')).toBeUndefined();
+  });
+
+  it('8 parallel wrong logins trigger ACCOUNT_LOCKED and set failed count >= 5', async () => {
+    const u = await insertUser();
+    const results = await Promise.all(Array.from({ length: 8 }, () => login(u.email, 'Wrong-password-999')));
+
+    const statuses = results.map((r) => r.status);
+    expect(statuses).toContain(423);
+
+    const rows = await q<{ failed_login_count: number; locked_until: Date | null }>(
+      `select failed_login_count, locked_until from users where id = $1`,
+      [u.id],
+    );
+    expect(rows[0]!.failed_login_count).toBeGreaterThanOrEqual(5);
+    expect(rows[0]!.locked_until).not.toBeNull();
 
     const row = (await q<{ locked_until: Date }>(`select locked_until from users where id = $1`, [u.id]))[0]!;
     const ms = row.locked_until.getTime() - Date.now();

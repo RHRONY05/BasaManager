@@ -8,7 +8,7 @@ import {
   type UserMembership,
   type MembershipRole,
 } from '@bm/shared';
-import { apiFetch, setActiveOrgId } from '../../lib/api/client';
+import { apiFetch, setActiveOrgId, setSessionRevokedHandler } from '../../lib/api/client';
 import { keys } from '../../lib/api/keys';
 
 const meDataSchema = z.object({
@@ -45,6 +45,17 @@ export function AuthProvider({ children, onNavigateToLogin }: AuthProviderProps)
     }
     return null;
   });
+
+  useEffect(() => {
+    setSessionRevokedHandler(() => {
+      queryClient.setQueryData(keys.me(), null);
+      setActiveOrgId(null);
+      setCurrentOrgId(null);
+    });
+    return () => {
+      setSessionRevokedHandler(null);
+    };
+  }, [queryClient]);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: keys.me(),

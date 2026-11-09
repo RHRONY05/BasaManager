@@ -44,13 +44,21 @@ function mkDb() {
     invitation: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
     membership: { create: vi.fn().mockResolvedValue({}) },
     organization: { create: vi.fn().mockResolvedValue({}) },
+    user: {
+      create: vi.fn().mockResolvedValue({ id: 'u-new', isPlatformAdmin: false }),
+      update: vi.fn().mockResolvedValue({}),
+    },
+    session: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+    authToken: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
   };
   const db = {
     $queryRaw: vi.fn().mockResolvedValue([]),
     $tx: vi.fn().mockImplementation(async (_c: unknown, fn: (t: unknown) => unknown) => fn(tx)),
+    $transaction: vi.fn().mockImplementation(async (fn: (t: unknown) => unknown) => fn(tx)),
     user: {
       findFirst: vi.fn().mockResolvedValue(null),
       create: vi.fn().mockResolvedValue({ id: 'u-new', isPlatformAdmin: false }),
+      update: vi.fn().mockResolvedValue({}),
     },
     oauthAccount: {
       findUnique: vi.fn().mockResolvedValue(null),
@@ -148,7 +156,7 @@ describe('AuthService Google flows', () => {
   });
 
   it('links Google to an existing user with the same email', async () => {
-    m.db.user.findFirst.mockResolvedValue({ id: 'u2', isPlatformAdmin: false });
+    m.db.user.findFirst.mockResolvedValue({ id: 'u2', isPlatformAdmin: false, emailVerifiedAt: new Date() });
     const out = await svc.googleCallback(
       mkReq({ cookie: cookieFor(), state: 'st', code: 'c' }),
       mkRes() as unknown as Response,
@@ -210,7 +218,11 @@ describe('AuthService Google flows', () => {
 
     it('reuses an existing user', async () => {
       m.db.$queryRaw.mockResolvedValue([invRow()]);
-      m.db.user.findFirst.mockResolvedValue({ id: 'u9', isPlatformAdmin: false });
+      m.db.user.findFirst.mockResolvedValue({
+        id: 'u9',
+        isPlatformAdmin: false,
+        emailVerifiedAt: new Date(),
+      });
       expect(await run()).toBe(APP);
       expect(m.db.user.create).not.toHaveBeenCalled();
     });

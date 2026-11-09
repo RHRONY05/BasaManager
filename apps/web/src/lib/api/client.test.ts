@@ -302,4 +302,29 @@ describe('apiFetch', () => {
     // Navigation to /login must be triggered
     expect(mockNavigate).toHaveBeenCalledWith('/login');
   });
+
+  it('clears session and navigates to /login directly on SESSION_REVOKED error', async () => {
+    setActiveOrgId('org-789');
+    const mockNavigate = vi.fn();
+    setNavigateHandler(mockNavigate);
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 401,
+      statusText: 'Unauthorized',
+      json: async () => ({
+        error: {
+          code: 'SESSION_REVOKED',
+          message: 'Session revoked',
+          requestId: 'req-revoked',
+        },
+      }),
+    });
+
+    vi.stubGlobal('fetch', mockFetch);
+
+    await expect(apiFetch('/api/some-endpoint')).rejects.toThrow(ApiRequestError);
+    expect(getActiveOrgId()).toBeNull();
+    expect(mockNavigate).toHaveBeenCalledWith('/login');
+  });
 });

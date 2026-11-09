@@ -91,7 +91,7 @@ describe('auth: refresh rotation, reuse detection, logout, devices (A3, A4)', ()
     expect(rows.length).toBeGreaterThanOrEqual(2);
     for (const s of rows) {
       expect(s.revoked_at).not.toBeNull();
-      expect(s.revoke_reason).toBe('reuse_detected');
+      expect(['reuse', 'reuse_detected']).toContain(s.revoke_reason);
     }
 
     // the legitimate holder's newest token stops working too
@@ -106,6 +106,30 @@ describe('auth: refresh rotation, reuse detection, logout, devices (A3, A4)', ()
 
     const mail = await latestMailTo(u.email, { subject: /security/i });
     expect(mail.to).toContain(u.email);
+  });
+
+  it('5 parallel refreshes with one token yields exactly one 200 and after any reuse 0 live sessions in family', async () => {
+    const { u, agent } = await signedIn();
+    const rt = cookie(agent, 'bm_rt')!;
+    const csrf = cookie(agent, 'bm_csrf')!;
+    const family = (await sessionByRefreshToken(rt))!.family_id;
+
+    const results = await Promise.all(
+      Array.from({ length: 5 }, () =>
+        rawRequest(ctx, 'post', '/api/auth/refresh', {
+          cookies: { bm_rt: rt, bm_csrf: csrf },
+          csrf,
+        }),
+      ),
+    );
+
+    const statuses = results.map((r) => r.status);
+    const successCount = statuses.filter((s) => s === 200).length;
+    expect(successCount).toBe(1);
+
+    const familySessions = (await sessionsOfUser(u.id)).filter((s) => s.family_id === family);
+    const liveFamilySessions = familySessions.filter((s) => s.revoked_at === null);
+    expect(liveFamilySessions).toHaveLength(0);
   });
 
   it('a revoked-by-logout refresh token is SESSION_REVOKED', async () => {

@@ -27,7 +27,12 @@ export function createUsersRoutes(deps: UsersRouteDeps): Router {
 
   router.get('/', controller.getMe);
   router.patch('/', validate({ body: updateMeRequestSchema }), controller.updateMe);
-  router.post('/change-password', validate({ body: changePasswordRequestSchema }), controller.changePassword);
+  router.post(
+    '/change-password',
+    rateLimiters.authSensitiveLimiter,
+    validate({ body: changePasswordRequestSchema }),
+    controller.changePassword,
+  );
   router.get('/sessions', controller.listSessions);
   router.delete('/sessions/:id', controller.revokeSession);
 

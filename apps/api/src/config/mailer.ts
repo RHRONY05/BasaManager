@@ -1,6 +1,9 @@
 import nodemailer, { type Transporter } from 'nodemailer';
 import { env } from './env';
 import { renderEmail } from '../emails/templates';
+import { createLogger } from '../lib/logger';
+
+const logger = createLogger({ level: 'info' });
 
 let transporter: Transporter | null = null;
 
@@ -33,8 +36,8 @@ export async function deliverOutboxNow(
           html: rendered.html,
         });
       }
-    } catch {
-      // Don't fail the request if local SMTP is down; worker will retry in V11
+    } catch (err) {
+      logger.warn({ err, type: msg.type }, 'mail send failed');
     }
   }
 }

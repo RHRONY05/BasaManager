@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
+import { createCipheriv, createDecipheriv, hkdfSync, randomBytes } from 'node:crypto';
 import { Google } from 'arctic';
 import type { Env } from '../../config/env';
 
@@ -69,7 +69,7 @@ export interface OAuthStateData {
  * Encrypts OAuth state and PKCE verifier into a secure string for the cookie.
  */
 export function encryptOAuthState(data: OAuthStateData, secret: string): string {
-  const key = createHash('sha256').update(secret).digest();
+  const key = Buffer.from(hkdfSync('sha256', secret, '', 'oauth-state', 32));
   const iv = randomBytes(12);
   const cipher = createCipheriv('aes-256-gcm', key, iv);
   const encrypted = Buffer.concat([cipher.update(JSON.stringify(data), 'utf8'), cipher.final()]);
@@ -88,7 +88,7 @@ export function decryptOAuthState(token: string, secret: string): OAuthStateData
     const [ivB64, encB64, tagB64] = parts;
     if (!ivB64 || !encB64 || !tagB64) return null;
 
-    const key = createHash('sha256').update(secret).digest();
+    const key = Buffer.from(hkdfSync('sha256', secret, '', 'oauth-state', 32));
     const iv = Buffer.from(ivB64, 'base64url');
     const enc = Buffer.from(encB64, 'base64url');
     const tag = Buffer.from(tagB64, 'base64url');

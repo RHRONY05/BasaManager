@@ -47,9 +47,19 @@ export async function attachRealtime(server: http.Server, deps: RealtimeDeps) {
         return next(new Error('Authentication cookie missing'));
       }
 
-      const payload = await verifyAccessToken(token, deps.env.JWT_SECRET || '');
+      const payload = await verifyAccessToken(token, deps.env.JWT_SECRET);
       if (!payload) {
         return next(new Error('Invalid or expired authentication token'));
+      }
+
+      if (deps.prisma?.session) {
+        const session = await deps.prisma.session.findUnique({
+          where: { id: payload.sid },
+        });
+
+        if (!session || session.revokedAt !== null) {
+          return next(new Error('Session revoked'));
+        }
       }
 
       socket.data.userId = payload.sub;

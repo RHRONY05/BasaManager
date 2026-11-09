@@ -46,7 +46,9 @@ export const envSchema = z
     DATABASE_WORKER_URL: optionalString,
 
     // ── Auth (optional in V1) ─────────────────────────────────────────────────
-    JWT_SECRET: optionalString,
+    JWT_SECRET: z
+      .preprocess(emptyToUndefined, z.string().min(32))
+      .default('dev-jwt-secret-0123456789abcdef0123456789'),
     JWT_ACCESS_TTL_SECONDS: z.preprocess(
       (val) => (val === undefined || val === '' ? 900 : val),
       z.coerce.number().int().positive().optional(),
@@ -129,6 +131,18 @@ export const envSchema = z
     {
       message: 'COOKIE_SECURE must be true when APP_ENV is staging or prod',
       path: ['COOKIE_SECURE'],
+    },
+  )
+  .refine(
+    (data) => {
+      if (data.APP_ENV === 'staging' || data.APP_ENV === 'prod') {
+        return typeof data.JWT_SECRET === 'string' && data.JWT_SECRET.length >= 32;
+      }
+      return true;
+    },
+    {
+      message: 'JWT_SECRET is required and must be at least 32 characters when APP_ENV is staging or prod',
+      path: ['JWT_SECRET'],
     },
   );
 

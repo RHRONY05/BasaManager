@@ -4,6 +4,7 @@ import type { Db } from '../../config/db';
 import { ApiError } from '../../lib/ApiError';
 import { clock } from '../../lib/clock';
 import { hashPassword, verifyPassword, validatePassword } from '../../lib/passwords';
+import { emitSessionRevoked } from '../../realtime/emit';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -111,6 +112,8 @@ export class UsersService {
       },
     });
 
+    await emitSessionRevoked(userId);
+
     return { ok: true };
   }
 
@@ -170,6 +173,8 @@ export class UsersService {
         revokeReason: 'revoked_by_user',
       },
     });
+
+    await emitSessionRevoked(userId);
 
     return { ok: true };
   }

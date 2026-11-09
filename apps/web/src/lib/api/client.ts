@@ -70,8 +70,15 @@ function getCsrfCookie(): string | null {
   return match && match[1] ? decodeURIComponent(match[1]) : null;
 }
 
+let sessionRevokedHandler: (() => void) | null = null;
+
+export function setSessionRevokedHandler(fn: (() => void) | null): void {
+  sessionRevokedHandler = fn;
+}
+
 function clearSessionAndRedirect(requestPath: string): void {
   setActiveOrgId(null);
+  sessionRevokedHandler?.();
   // Do not force navigation to /login when /api/me fails on public pages (lets useAuth transition to signedOut).
   if (requestPath === '/api/me') {
     return;
@@ -85,12 +92,21 @@ function runSingleFlightRefresh(requestPath: string): Promise<void> {
   if (!activeRefreshPromise) {
     activeRefreshPromise = (async () => {
       try {
-        await apiFetch('/api/auth/refresh', {
-          method: 'POST',
-          _isRetry: true,
-        });
+        const doRefresh = async () => {
+          await apiFetch('/api/auth/refresh', {
+            method: 'POST',
+            _isRetry: true,
+          });
+        };
+        if (typeof navigator !== 'undefined' && navigator.locks?.request) {
+          await navigator.locks.request('bm-refresh', doRefresh);
+        } else {
+          await doRefresh();
+        }
       } catch (err) {
-        clearSessionAndRedirect(requestPath);
+        if (err instanceof ApiRequestError && err.code === 'SESSION_REVOKED') {
+          clearSessionAndRedirect(requestPath);
+        }
         throw err;
       } finally {
         activeRefreshPromise = null;
@@ -152,6 +168,11 @@ export async function apiFetch<T = unknown>(path: string, options: ApiFetchOptio
       }
     } catch {
       // Non-JSON error body fallback
+    }
+
+    // On SESSION_REVOKED, clear session and visibly sign out
+    if (code === 'SESSION_REVOKED') {
+      clearSessionAndRedirect(path);
     }
 
     // On 401 UNAUTHENTICATED, run one single-flight refresh then retry once
