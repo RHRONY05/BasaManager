@@ -8,16 +8,19 @@
     "build": "vite build",
     "preview": "vite preview --port 4173",
     "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run --root ../.. --project apps/web",
     "size": "vite build --logLevel warn && size-limit && node scripts/check-chunks.mjs"
   },
   "dependencies": {
     "@bm/shared": "workspace:*",
+    "@hookform/resolvers": "7.0.3",
     "@sentry/react": "11.11.0",
     "@tanstack/react-query": "5.106.1",
     "i18next": "27.0.1",
     "lucide-react": "1.70.0",
     "react": "19.3.1",
     "react-dom": "19.3.1",
+    "react-hook-form": "7.91.0",
     "react-i18next": "18.0.0",
     "react-router": "7.18.5",
     "zod": "4.6.7"

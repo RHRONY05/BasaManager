@@ -1,5 +1,29 @@
 import { test, expect, type Page } from '@playwright/test';
 import { ROUTE_PATHS } from '../../apps/web/src/lib/router/preload';
+import {
+  GOOD_PASSWORD,
+  clearRateLimits,
+  createVerifiedLandlord,
+  insertInvite,
+  uiLogin,
+  uniqueEmail,
+} from '../helpers/e2e-auth';
+
+/** Signs a fresh user of `role` in (the role pages are behind real auth since V5). A new org per call. */
+async function signInAs(page: Page, role: 'landlord' | 'caretaker' | 'tenant'): Promise<void> {
+  await clearRateLimits();
+  const landlord = await createVerifiedLandlord();
+  if (role === 'landlord') {
+    await uiLogin(page, landlord.email, landlord.password, /\/l$/);
+    return;
+  }
+  const token = await insertInvite(landlord.email, uniqueEmail(role), role);
+  await page.goto(`/invite/${token}`);
+  await page.getByLabel('Your full name').fill('Karim Mia');
+  await page.getByLabel('Password', { exact: true }).fill(GOOD_PASSWORD);
+  await page.getByRole('button', { name: 'Accept and join' }).click();
+  await expect(page).toHaveURL(role === 'caretaker' ? /\/c$/ : /\/t$/);
+}
 
 async function startClsObserver(page: Page) {
   await page.evaluate(() => {
@@ -99,22 +123,26 @@ test.describe('UI States Specs', () => {
   test('check 1: slow API - landlord navigation updates URL and renders within 300ms, CLS < 0.05', async ({
     page,
   }) => {
+    await signInAs(page, 'landlord');
     await expectInstantNavigation(page, '/l', LANDLORD_LINKS);
   });
 
   test('check 1b: slow API - tenant navigation updates URL and renders within 300ms, CLS < 0.05', async ({
     page,
   }) => {
+    await signInAs(page, 'tenant');
     await expectInstantNavigation(page, '/t', TENANT_LINKS);
   });
 
   test('check 1c: slow API - caretaker navigation updates URL and renders within 300ms, CLS < 0.05', async ({
     page,
   }) => {
+    await signInAs(page, 'caretaker');
     await expectInstantNavigation(page, '/c', CARETAKER_LINKS);
   });
 
   test('check 2: slow chunks - shell stays, skeleton and progress bar visible', async ({ page }) => {
+    await signInAs(page, 'landlord');
     // Delay JS chunk downloads BEFORE initial navigation so idle-preloads are in flight
     await page.route('**/assets/*.js', async (route) => {
       await new Promise((r) => setTimeout(r, 1500));
@@ -146,6 +174,7 @@ test.describe('UI States Specs', () => {
   });
 
   test('check 3: cached back navigation is instant with the API delayed', async ({ page }) => {
+    await signInAs(page, 'landlord');
     await page.goto('/l');
     await page.locator('h1').waitFor({ state: 'visible' });
 
@@ -173,6 +202,7 @@ test.describe('UI States Specs', () => {
   test('check 4: main query 500 shows error card with Retry; Retry after unblocking shows content', async ({
     page,
   }) => {
+    await signInAs(page, 'landlord');
     let shouldFail = true;
     let requestCount = 0;
 

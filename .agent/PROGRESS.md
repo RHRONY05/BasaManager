@@ -121,6 +121,9 @@ Agents append one line per choice the docs didn't cover (newest last). If it cha
 
 - 2026-11-09 — Architect (V4 review): the db.ts nested-relation guard reads the relation map from the Prisma client's internal `_runtimeDataModel` (Prisma 7 has no `Prisma.dmmf`; startup fails if it is missing). `receipts` gets an extra unique `(org_id, payment_id)` because Prisma needs it for the one-to-one link. Recorded in 03.
 - 2026-11-08 — Owner: the build must run with no human after the initial grant. agy runs in turbo (`--dangerously-skip-permissions`); leads run as fresh Sonnet 5.5 sessions at medium effort (owner decision to save usage; Opus stays for high-risk reviews and schema work) from `scripts/autonomous.sh` with permissions bypassed. Updated 11-AGENT-TEAM.md and next-task.
+- 2026-11-09 — Lead (V5 review fixes): `POST /api/auth/signup` returns 200 with generic success message when email is already taken to prevent user enumeration (no email sent). Transactional auth emails (verification, reset, security alerts) are dispatched immediately via `deliverOutboxNow` in V5; background worker polling outbox delivery is deferred to V11.
+- 2026-11-09 — Lead (V5 review fixes): Linking an unverified local account during Google OAuth clears `password_hash`, revokes all previous sessions (`google_claimed_unverified`), invalidates verify tokens, and kicks sockets via `emitSessionRevoked` to eliminate pre-account takeover vulnerabilities.
+- 2026-11-09 — Lead (V5 review fixes): Refresh token rotation uses atomic conditional SQL update inside `$transaction` (`UPDATE sessions SET rotated_at = now WHERE id = ... AND rotated_at IS NULL AND revoked_at IS NULL RETURNING id`) paired with `navigator.locks` in the client to eliminate cross-tab and concurrent refresh races. Sockets verify session validity in Postgres during handshake.
 
 ## Session log
 Newest at the bottom. One entry per task. Keep entries short.

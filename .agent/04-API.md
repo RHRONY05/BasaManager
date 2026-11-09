@@ -39,7 +39,7 @@ in CI, so docs and code can't drift.
 ## Auth & account — `/api/auth`, `/api/me`
 | Method & path | Auth | Input | Behaviour | Errors |
 |---|---|---|---|---|
-| `POST /auth/signup` | public | `{email, password, fullName, orgName}` | Creates user + org + landlord membership in one tx; sends verify email; signs in | `CONFLICT` email taken (same message as success page wording: "check your email"), weak password |
+| `POST /auth/signup` | public | `{email, password, fullName, orgName}` | Creates user + org + landlord membership in one tx; sends verify email; signs in. Returns 200 even if email already exists (no account enumeration; email is not sent) | Weak password |
 | `POST /auth/verify-email` | public | `{token}` | Marks verified | `TOKEN_INVALID` (expired/used/unknown, one code for all) |
 | `POST /auth/resend-verification` | user | — | Max 3 per hour | `RATE_LIMITED` |
 | `POST /auth/login` | public | `{email, password}` | argon2 verify; on success new session family + cookies; resets fail count | `INVALID_CREDENTIALS` (same for unknown email), `ACCOUNT_LOCKED` after 5 fails (15 min), `RATE_LIMITED` (10/min/IP) |

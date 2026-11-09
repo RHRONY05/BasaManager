@@ -105,6 +105,10 @@ jobs:
         run: cp .env.test.example .env.test
       - name: Start test services
         run: docker compose -f infra/compose.test.yml up -d --wait
+      - name: Apply migrations (the compose DB only has roles; the API needs the schema)
+        env:
+          DATABASE_OWNER_URL: postgresql://bm_owner:bm_owner_dev@localhost:5433/basamanager_test
+        run: pnpm --filter @bm/api db:migrate
       - uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright

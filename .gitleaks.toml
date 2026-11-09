@@ -10,4 +10,5 @@ paths = [
   '''^\.env\.test\.example$''',
   '''^infra/compose\.(dev|test)\.yml$''',
   '''^infra/postgres/init/.*\.sql$''',
+  '''^apps/api/(src|test)/.*\.test\.ts$''', # fake JWT secrets and passwords in tests
 ]

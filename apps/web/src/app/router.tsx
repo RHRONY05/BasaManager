@@ -7,6 +7,7 @@ import { AdminLayout } from './layouts/AdminLayout';
 import RouteError from '../pages/shared/RouteError';
 import NotFound from '../pages/shared/NotFound';
 import { pageLoaders, type RoutePath } from '../lib/router/preload';
+import { RequireAuth, RequireRole, RedirectIfSignedIn } from './auth/guards';
 
 // Pages are React.lazy components (not route `lazy`): React Router resolves route `lazy` inside the
 // navigation, so the URL and active nav would not change until the chunk arrives. With React.lazy the
@@ -21,28 +22,65 @@ function page(path: RoutePath): ComponentType {
   return C;
 }
 
+const Landing = page('/');
+const Login = page('/login');
+const Signup = page('/signup');
+
 export const router = createBrowserRouter([
+  {
+    path: '/',
+    element: (
+      <RedirectIfSignedIn>
+        <Landing />
+      </RedirectIfSignedIn>
+    ),
+    errorElement: <RouteError />,
+  },
   {
     element: <AuthLayout />,
     errorElement: <RouteError />,
     children: [
       {
-        path: '/',
-        Component: page('/'),
-      },
-      {
         path: '/login',
-        Component: page('/login'),
+        element: (
+          <RedirectIfSignedIn>
+            <Login />
+          </RedirectIfSignedIn>
+        ),
       },
       {
         path: '/signup',
-        Component: page('/signup'),
+        element: (
+          <RedirectIfSignedIn>
+            <Signup />
+          </RedirectIfSignedIn>
+        ),
+      },
+      {
+        path: '/verify-email',
+        Component: page('/verify-email'),
+      },
+      {
+        path: '/forgot-password',
+        Component: page('/forgot-password'),
+      },
+      {
+        path: '/reset-password',
+        Component: page('/reset-password'),
+      },
+      {
+        path: '/invite/:token',
+        Component: page('/invite/:token'),
       },
     ],
   },
   {
     path: '/l',
-    element: <LandlordLayout />,
+    element: (
+      <RequireRole roles={['landlord']}>
+        <LandlordLayout />
+      </RequireRole>
+    ),
     errorElement: <RouteError />,
     children: [
       {
@@ -69,7 +107,11 @@ export const router = createBrowserRouter([
   },
   {
     path: '/c',
-    element: <LandlordLayout />,
+    element: (
+      <RequireRole roles={['caretaker']}>
+        <LandlordLayout />
+      </RequireRole>
+    ),
     errorElement: <RouteError />,
     children: [
       {
@@ -96,7 +138,11 @@ export const router = createBrowserRouter([
   },
   {
     path: '/t',
-    element: <TenantLayout />,
+    element: (
+      <RequireRole roles={['tenant']}>
+        <TenantLayout />
+      </RequireRole>
+    ),
     errorElement: <RouteError />,
     children: [
       {
@@ -123,7 +169,11 @@ export const router = createBrowserRouter([
   },
   {
     path: '/a',
-    element: <AdminLayout />,
+    element: (
+      <RequireRole roles={['admin']}>
+        <AdminLayout />
+      </RequireRole>
+    ),
     errorElement: <RouteError />,
     children: [
       {
@@ -134,7 +184,11 @@ export const router = createBrowserRouter([
   },
   {
     path: '/account',
-    element: <TenantLayout />,
+    element: (
+      <RequireAuth>
+        <TenantLayout />
+      </RequireAuth>
+    ),
     errorElement: <RouteError />,
     children: [
       {

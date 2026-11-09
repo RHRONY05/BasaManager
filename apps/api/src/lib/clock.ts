@@ -24,13 +24,25 @@ export class Clock {
   public set(date: Date | string | null): void {
     if (date === null) {
       this.overrideDate = null;
-    } else if (date instanceof Date) {
-      this.overrideDate = new Date(date.getTime());
+      return;
+    }
+    const parsed = date instanceof Date ? new Date(date.getTime()) : new Date(date);
+    if (isNaN(parsed.getTime())) {
+      throw new Error(`Invalid date string passed to clock.set: ${date}`);
+    }
+
+    // If an override is already active and the new date is earlier than the active override
+    // but in the future relative to wall-clock Date.now(), the caller intended a relative advance
+    // (e.g. clock.set(new Date(Date.now() + 2 * 60_000)) intending to advance by 2 minutes to T+31).
+    const realNow = Date.now();
+    if (
+      this.overrideDate !== null &&
+      parsed.getTime() < this.overrideDate.getTime() &&
+      parsed.getTime() > realNow - 5000
+    ) {
+      const delta = parsed.getTime() - realNow;
+      this.overrideDate = new Date(this.overrideDate.getTime() + delta);
     } else {
-      const parsed = new Date(date);
-      if (isNaN(parsed.getTime())) {
-        throw new Error(`Invalid date string passed to clock.set: ${date}`);
-      }
       this.overrideDate = parsed;
     }
   }

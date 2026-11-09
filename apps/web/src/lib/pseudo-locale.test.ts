@@ -26,6 +26,13 @@ describe('transformToPseudo', () => {
     expect(result.endsWith(']')).toBe(true);
   });
 
+  it('keeps the padding breakable: no unbroken run of more than 5 dots', () => {
+    const result = transformToPseudo('x'.repeat(200));
+    expect(result.match(/·+/g)!.every((run) => run.length <= 5)).toBe(true);
+    expect(result.match(/·/g)!.length).toBe(80);
+    expect(result.endsWith(']')).toBe(true);
+  });
+
   it('handles empty strings gracefully', () => {
     expect(transformToPseudo('')).toBe('');
   });

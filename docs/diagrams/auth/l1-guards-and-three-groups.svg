@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1700 940" width="1700" height="940" font-family="'Segoe UI', Inter, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1f1f1f"/>
+    </marker>
+  </defs>
+  <rect width="1700" height="940" fill="#ffffff"/>
+  <text x="40" y="52" font-size="28" font-weight="700" fill="#1f1f1f">Auth &amp; accounts, level 1</text>
+  <text x="40" y="82" font-size="16" fill="#3a3a3a">Every request passes the guards first, then lands in one of three groups of code. All of them keep their facts in Postgres.</text>
+  <g font-size="15" fill="#3a3a3a">
+    <line x1="1130" y1="36" x2="1190" y2="36" stroke="#1f1f1f" stroke-width="2.4" marker-end="url(#arrow)"/>
+    <text x="1202" y="41">call / read</text>
+    <line x1="1130" y1="62" x2="1190" y2="62" stroke="#1f1f1f" stroke-width="2.4" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <text x="1202" y="67">write / return</text>
+    <rect x="1370" y="24" width="26" height="18" rx="3" fill="#FEC8C3"/><text x="1406" y="39">people / external</text>
+    <rect x="1530" y="24" width="26" height="18" rx="7" fill="#BFE3FD"/><text x="1566" y="39">our code</text>
+    <circle cx="1383" cy="62" r="9" fill="#E3CCFD"/><text x="1406" y="67">data store</text>
+    <rect x="1530" y="53" width="26" height="18" rx="3" fill="#C9F2D6"/><text x="1566" y="67">output</text>
+    <rect x="1370" y="80" width="26" height="18" rx="3" fill="#FFF1B8"/><text x="1406" y="95">guard / decision</text>
+  </g>
+  <g fill="none" stroke="#1f1f1f" stroke-width="2.4">
+    <path d="M200,490 H296" marker-end="url(#arrow)"/>
+    <path d="M296,545 H204" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <path d="M520,325 H616" marker-end="url(#arrow)"/>
+    <path d="M520,515 H616" marker-end="url(#arrow)"/>
+    <path d="M520,705 H616" marker-end="url(#arrow)"/>
+    <path d="M410,770 V792" marker-end="url(#arrow)"/>
+    <path d="M860,260 V170 H1096" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+    <path d="M950,325 H1520 V214" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <path d="M950,360 H1200 V458" marker-end="url(#arrow)"/>
+    <path d="M950,540 H1098" marker-end="url(#arrow)"/>
+    <path d="M950,705 H1200 V664" marker-end="url(#arrow)"/>
+  </g>
+  <rect x="30" y="450" width="170" height="130" rx="6" fill="#FEC8C3"/>
+  <text x="115" y="508" font-size="20" font-weight="700" fill="#1f1f1f" text-anchor="middle">Browser</text>
+  <text x="115" y="538" font-size="15" fill="#3a3a3a" text-anchor="middle">SPA + cookies</text>
+  <text x="248" y="480" font-size="16" fill="#1f1f1f" text-anchor="middle">request</text>
+  <text x="248" y="570" font-size="16" fill="#1f1f1f" text-anchor="middle">reply</text>
+  <rect x="300" y="260" width="220" height="510" rx="10" fill="#FFF1B8"/>
+  <text x="410" y="421" font-size="22" font-weight="700" fill="#1f1f1f" text-anchor="middle">Guards</text>
+  <text x="410" y="451" font-size="15" fill="#3a3a3a" text-anchor="middle">Origin must equal APP_URL</text>
+  <text x="410" y="473" font-size="15" fill="#3a3a3a" text-anchor="middle">CSRF header = csrf cookie</text>
+  <text x="410" y="495" font-size="15" fill="#3a3a3a" text-anchor="middle">rate limiter (login,</text>
+  <text x="410" y="517" font-size="15" fill="#3a3a3a" text-anchor="middle">forgot, resend)</text>
+  <text x="410" y="539" font-size="15" fill="#3a3a3a" text-anchor="middle">requireUser: bm_at JWT</text>
+  <text x="410" y="561" font-size="15" fill="#3a3a3a" text-anchor="middle">+ live session row</text>
+  <text x="410" y="583" font-size="15" fill="#3a3a3a" text-anchor="middle">requireMembership:</text>
+  <text x="410" y="605" font-size="15" fill="#3a3a3a" text-anchor="middle">X-Org-Id + role</text>
+  <text x="410" y="627" font-size="15" fill="#3a3a3a" text-anchor="middle">validate(): Zod on body</text>
+  <rect x="620" y="260" width="330" height="130" rx="24" fill="#BFE3FD"/>
+  <text x="785" y="307" font-size="20" font-weight="700" fill="#1f1f1f" text-anchor="middle">1 Credentials</text>
+  <text x="785" y="337" font-size="15" fill="#3a3a3a" text-anchor="middle">signup, verify, login, lockout</text>
+  <text x="785" y="359" font-size="15" fill="#3a3a3a" text-anchor="middle">forgot / reset, Google sign-in</text>
+  <rect x="620" y="450" width="330" height="130" rx="24" fill="#BFE3FD"/>
+  <text x="785" y="497" font-size="20" font-weight="700" fill="#1f1f1f" text-anchor="middle">2 Sessions &amp; account</text>
+  <text x="785" y="527" font-size="15" fill="#3a3a3a" text-anchor="middle">refresh, logout, logout-all</text>
+  <text x="785" y="549" font-size="15" fill="#3a3a3a" text-anchor="middle">profile, password, devices</text>
+  <rect x="620" y="640" width="330" height="130" rx="24" fill="#BFE3FD"/>
+  <text x="785" y="687" font-size="20" font-weight="700" fill="#1f1f1f" text-anchor="middle">3 Invites</text>
+  <text x="785" y="717" font-size="15" fill="#3a3a3a" text-anchor="middle">preview by token,</text>
+  <text x="785" y="739" font-size="15" fill="#3a3a3a" text-anchor="middle">accept (new or signed-in user)</text>
+  <rect x="1100" y="125" width="240" height="90" rx="6" fill="#FEC8C3"/>
+  <text x="1220" y="163" font-size="20" font-weight="700" fill="#1f1f1f" text-anchor="middle">Google</text>
+  <text x="1220" y="193" font-size="15" fill="#3a3a3a" text-anchor="middle">OAuth + userinfo</text>
+  <text x="980" y="150" font-size="16" fill="#1f1f1f" text-anchor="middle">code, profile</text>
+  <rect x="1400" y="125" width="240" height="90" rx="6" fill="#FEC8C3"/>
+  <text x="1520" y="163" font-size="20" font-weight="700" fill="#1f1f1f" text-anchor="middle">Mail (SMTP)</text>
+  <text x="1520" y="193" font-size="15" fill="#3a3a3a" text-anchor="middle">verify, reset, alert</text>
+  <text x="1235" y="313" font-size="16" fill="#1f1f1f" text-anchor="middle">mail links (alert comes from refresh)</text>
+  <circle cx="1200" cy="560" r="100" fill="#E3CCFD"/>
+  <text x="1200" y="538" font-size="20" font-weight="700" fill="#1f1f1f" text-anchor="middle">Postgres</text>
+  <text x="1200" y="562" font-size="14" fill="#3a3a3a" text-anchor="middle">users, memberships,</text>
+  <text x="1200" y="580" font-size="14" fill="#3a3a3a" text-anchor="middle">sessions, auth_tokens,</text>
+  <text x="1200" y="598" font-size="14" fill="#3a3a3a" text-anchor="middle">oauth_accounts, invitations</text>
+  <text x="1040" y="528" font-size="16" fill="#1f1f1f" text-anchor="middle">read / write</text>
+  <circle cx="410" cy="860" r="65" fill="#E3CCFD"/>
+  <text x="410" y="856" font-size="20" font-weight="700" fill="#1f1f1f" text-anchor="middle">Redis</text>
+  <text x="410" y="880" font-size="14" fill="#3a3a3a" text-anchor="middle">rl:* counters</text>
+</svg>

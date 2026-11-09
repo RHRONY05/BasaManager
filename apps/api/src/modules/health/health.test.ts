@@ -23,6 +23,7 @@ describe('HealthController', () => {
     SENTRY_RELEASE: 'abc1234',
     SENTRY_DSN_WEB: 'https://sentry.example.com/123',
     VAPID_PUBLIC_KEY: 'test-vapid-public-key',
+    JWT_SECRET: 'test-secret-at-least-32-chars-long-abcdef',
   };
 
   const createTestApp = (prisma: Db, redis: Redis, env: Env = mockEnv) => {
