@@ -51,7 +51,9 @@ describe('V6: caretaker building scope', () => {
     const missing = await caretaker.agent.get('/api/buildings/00000000-0000-4000-8000-000000000000');
     expect(res.status).toBe(404);
     expect(res.body.error.code).toBe(ErrorCode.NOT_FOUND);
-    expect(res.body).toEqual(missing.body);
+    expect(missing.status).toBe(404);
+    // requestId is unique per response; compare the rest of the error payload
+    expect(res.body.error).toEqual({ ...missing.body.error, requestId: res.body.error.requestId });
   });
 
   it('GET /buildings/:id/units lists units for an assigned building, 404 for an unassigned one', async () => {
