@@ -827,3 +827,7 @@ Next: when e2e is green (CI 8/8 on 6c35b43; if red, debugger reads the logs), Op
 ### 2026-11-09 — Claude (lead) — V5 CI wait 6 on 6c35b43
 Did: rechecked PR #10 at 6c35b43: lint-typecheck, unit, integration, images, docs, security, CodeQL green; only e2e (run 42615537606) still pending. No code change.
 Next: when e2e is green (CI 8/8 on 6c35b43; if red, debugger reads the logs), Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
+
+### 2026-11-09 — Claude (lead) — V5 CI wait 7 on 6c35b43
+Did: rechecked PR #10 at 6c35b43 (12:21Z): lint-typecheck, unit, integration, images, docs, security, CodeQL green; only e2e (run 42615537606, started 12:15Z, 6 min in, usual 10-12) still IN_PROGRESS. No code change.
+Next: when e2e is green (CI 8/8 on 6c35b43; if red, debugger reads the logs), Opus reviewer on auth (fix or justify the other gaps in the V5 docs entry), merge, tick V5, METRICS row, remove worktree D:/Projects/bm-wt/V5.
