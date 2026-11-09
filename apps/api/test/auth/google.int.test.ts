@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
 import { q } from '../helpers/pg';
 import { makeOrg, type Org } from '../helpers/factories';
 import {
@@ -113,6 +113,57 @@ describe('auth: Google OAuth (A6)', () => {
       [user.id, 'g-sub-1'],
     );
     expect(link).toHaveLength(1);
+  });
+
+  it('Google brand new signup is atomic: if org creation fails, no user or oauth account is committed (Issue #17)', async () => {
+    await q(`alter table organizations add constraint test_fail_org check (name not like 'TriggerFail%')`);
+    try {
+      profile = { ...profile, name: 'TriggerFail' };
+      const agent = newAgent(ctx);
+      const res = await viaGoogle(agent);
+      expect(res.status).toBe(302);
+      expect(res.headers['location']).toBe(`${ctx.env.APP_URL}${failed}`);
+
+      // Assert that user and oauthAccount rolled back completely
+      const users = await q(`select 1 from users where email = $1`, [profile.email]);
+      expect(users).toHaveLength(0);
+      const oauths = await q(`select 1 from oauth_accounts where provider_user_id = $1`, [profile.sub]);
+      expect(oauths).toHaveLength(0);
+    } finally {
+      await q(`alter table organizations drop constraint if exists test_fail_org`);
+    }
+  });
+
+  it('Google brand new signup retries on org slug collision and creates the account', async () => {
+    const slugModule = await import('../../src/lib/slug');
+    let callCount = 0;
+    const existingOrg = await makeOrg({ name: 'Existing Org' });
+    const existingSlug = (
+      await q<{ slug: string }>(`select slug from organizations where id = $1`, [existingOrg.id])
+    )[0]!.slug;
+
+    const spy = vi.spyOn(slugModule, 'generateSlug').mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        return existingSlug;
+      }
+      return `google-recovered-slug-${callCount}`;
+    });
+
+    try {
+      const agent = newAgent(ctx);
+      const res = await viaGoogle(agent);
+      expect(res.headers['location']).not.toContain('error=');
+
+      const user = (await q<{ id: string }>(`select id from users where email=$1`, [profile.email]))[0]!;
+      expect(user).toBeDefined();
+
+      const orgs = await q<{ slug: string }>(`select slug from organizations where created_by=$1`, [user.id]);
+      expect(orgs).toHaveLength(1);
+      expect(orgs[0]!.slug).toBe('google-recovered-slug-2');
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it('a verified Google email that matches an existing account links to it (no new user)', async () => {
@@ -256,6 +307,42 @@ describe('auth: Google OAuth (A6)', () => {
       expect(await q(`select 1 from organizations`)).toHaveLength(1); // only Lake View, nothing named "...'s properties"
     });
 
+    it('accepts caretaker invite: creates membership AND assigns caretaker buildings', async () => {
+      const bRows = await q<{ id: string }>(
+        `insert into buildings (id, org_id, name, address, area, city, created_at, updated_at)
+         values (gen_random_uuid(), $1, 'Tower A', 'Road 11', 'Banani', 'Dhaka', now(), now())
+         returning id`,
+        [org.id],
+      );
+      const buildingId = bRows[0]!.id;
+
+      const { token } = await insertInvitation({
+        orgId: org.id,
+        invitedBy: org.landlordUserId,
+        email: profile.email,
+        role: 'caretaker',
+        buildingIds: [buildingId],
+      });
+
+      const agent = newAgent(ctx);
+      const res = await viaGoogle(agent, { invite: token });
+      expect(res.headers['location']).not.toContain('error=');
+
+      const user = (await q<{ id: string }>(`select id from users where email=$1`, [profile.email]))[0]!;
+      const memberships = await q<{ id: string }>(
+        `select id from memberships where org_id=$1 and user_id=$2 and role='caretaker' and status='active'`,
+        [org.id, user.id],
+      );
+      expect(memberships).toHaveLength(1);
+
+      const cbRows = await q<{ building_id: string }>(
+        `select building_id from caretaker_buildings where org_id=$1 and membership_id=$2`,
+        [org.id, memberships[0]!.id],
+      );
+      expect(cbRows).toHaveLength(1);
+      expect(cbRows[0]!.building_id).toBe(buildingId);
+    });
+
     it('refuses when the Google email differs from the invited email', async () => {
       const { token, id } = await insertInvitation({
         orgId: org.id,
@@ -281,6 +368,46 @@ describe('auth: Google OAuth (A6)', () => {
       for (const invite of [used.token, 'n'.repeat(43)]) {
         const res = await viaGoogle(newAgent(ctx), { invite });
         expect(res.headers['location']).toBe(`${ctx.env.APP_URL}${failed}`);
+      }
+    });
+
+    it('rolls back user and oauth creation if invitation was accepted concurrently during callback', async () => {
+      const { token } = await insertInvitation({
+        orgId: org.id,
+        invitedBy: org.landlordUserId,
+        email: profile.email,
+      });
+
+      // Simulate a concurrent accept by setting accepted_at via trigger when user row is inserted
+      await q(`
+        create or replace function accept_inv_race() returns trigger as $$
+        begin
+          update invitations set accepted_at = now();
+          return new;
+        end;
+        $$ language plpgsql;
+      `);
+      await q(`
+        create trigger trg_test_concurrent_accept
+        after insert on users
+        for each row execute function accept_inv_race();
+      `);
+
+      try {
+        const res = await viaGoogle(newAgent(ctx), { invite: token });
+        expect(res.headers['location']).toBe(`${ctx.env.APP_URL}${failed}`);
+
+        // Entire transaction must have rolled back: no user, no oauth account, no membership
+        expect(await q(`select 1 from users where email=$1`, [profile.email])).toHaveLength(0);
+        expect(await q(`select 1 from oauth_accounts where provider_user_id=$1`, [profile.sub])).toHaveLength(
+          0,
+        );
+        expect(await q(`select 1 from memberships where org_id=$1 and role='tenant'`, [org.id])).toHaveLength(
+          0,
+        );
+      } finally {
+        await q(`drop trigger if exists trg_test_concurrent_accept on users;`);
+        await q(`drop function if exists accept_inv_race();`);
       }
     });
   });

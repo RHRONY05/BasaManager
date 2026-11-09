@@ -60,4 +60,35 @@ describe('org middleware', () => {
     checkLandlord(reqOk, res, nextOk);
     expect(nextOk).toHaveBeenCalledWith();
   });
+
+  it('sets tenantCtx.isAdmin to false on org routes even for platform admins (Issue #14)', async () => {
+    const validOrgId = 'a0000000-0000-0000-0000-000000000001';
+    const mockDb = {
+      $tx: vi.fn().mockImplementation(async (_ctx, fn) => {
+        return fn({
+          membership: {
+            findFirst: vi.fn().mockResolvedValue({ id: 'm1', role: 'landlord' }),
+          },
+        });
+      }),
+    } as unknown as Db;
+
+    const requireMembership = createRequireMembership(mockDb);
+
+    const req = {
+      headers: { 'x-org-id': validOrgId },
+      user: { id: 'u1', isPlatformAdmin: true },
+    } as unknown as Request;
+    const res = {} as Response;
+    const next = vi.fn();
+
+    await requireMembership(req, res, next);
+    expect(next).toHaveBeenCalledWith();
+    expect(req.tenantCtx).toEqual({
+      orgId: validOrgId,
+      userId: 'u1',
+      role: 'landlord',
+      isAdmin: false,
+    });
+  });
 });

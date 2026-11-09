@@ -49,7 +49,7 @@ describe('AuthService unit tests', () => {
           user: mockDb.user,
           organization: { create: vi.fn() },
           membership: { create: vi.fn() },
-          authToken: { create: vi.fn() },
+          authToken: mockDb.authToken,
           outboxMessage: { createMany: vi.fn() },
         });
       }),

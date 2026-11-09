@@ -311,18 +311,20 @@ export async function insertInvitation(o: {
   invitedBy: string;
   email: string;
   role?: 'caretaker' | 'tenant';
+  buildingIds?: string[];
   expiresAt?: Date;
   acceptedAt?: Date | null;
   revokedAt?: Date | null;
 }): Promise<{ token: string; id: string }> {
   const token = randomUUID().replace(/-/g, '') + randomUUID().replace(/-/g, '');
   const rows = await q<{ id: string }>(
-    `insert into invitations (org_id, email, role, token_hash, expires_at, accepted_at, revoked_at, invited_by)
-     values ($1, $2, $3, $4, $5, $6, $7, $8) returning id`,
+    `insert into invitations (org_id, email, role, building_ids, token_hash, expires_at, accepted_at, revoked_at, invited_by)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning id`,
     [
       o.orgId,
       o.email,
       o.role ?? 'tenant',
+      o.buildingIds ?? [],
       sha256(token),
       o.expiresAt ?? new Date(Date.now() + 7 * 86_400_000),
       o.acceptedAt ?? null,

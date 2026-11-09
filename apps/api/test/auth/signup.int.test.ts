@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import { ErrorCode } from '@bm/shared/errors';
 import { q } from '../helpers/pg';
 import {
@@ -138,6 +138,65 @@ describe('auth: signup and email verification (A1)', () => {
     expect(await q(`select id from users where email = $1`, [email])).toHaveLength(1);
     expect(await q(`select id from organizations`)).toHaveLength(orgsBefore.length); // no 2nd org
     expect(setCookieLine(dup, 'bm_at')).toBeUndefined(); // the duplicate must not get a session
+  });
+
+  it('two concurrent signups with the same email return 200 without throwing 500 P2002', async () => {
+    const email = uniqEmail('concurrent');
+    const [res1, res2] = await Promise.all([
+      newAgent(ctx)
+        .post('/api/auth/signup')
+        .send(body(email, { orgName: 'Org 1' })),
+      newAgent(ctx)
+        .post('/api/auth/signup')
+        .send(body(email, { orgName: 'Org 2' })),
+    ]);
+
+    expect(res1.status).toBe(200);
+    expect(res2.status).toBe(200);
+    expect(res1.body).toEqual(res2.body);
+
+    const users = await q(`select id from users where email = $1`, [email]);
+    expect(users).toHaveLength(1);
+  });
+
+  it('slug collision on signup retries with fresh slug and creates the account', async () => {
+    const slugModule = await import('../../src/lib/slug');
+    let callCount = 0;
+    const spy = vi.spyOn(slugModule, 'generateSlug').mockImplementation(() => {
+      callCount++;
+      // First signup gets fixed-slug; second signup first attempts fixed-slug (clash!), then retries and gets recovered-slug
+      if (callCount <= 2) {
+        return 'fixed-collision-slug';
+      }
+      return `recovered-slug-${callCount}`;
+    });
+
+    try {
+      const email1 = uniqEmail('slug1');
+      const email2 = uniqEmail('slug2');
+
+      const res1 = await newAgent(ctx)
+        .post('/api/auth/signup')
+        .send(body(email1, { orgName: 'Org Collide' }));
+      expect([200, 201]).toContain(res1.status);
+
+      const res2 = await newAgent(ctx)
+        .post('/api/auth/signup')
+        .send(body(email2, { orgName: 'Org Collide' }));
+      expect([200, 201]).toContain(res2.status);
+      expect(setCookieLine(res2, 'bm_at')).toBeDefined(); // Must have created a real session!
+
+      // Both users must exist in DB and both must have received verification mail
+      const users = await q(`select email from users where email in ($1, $2)`, [email1, email2]);
+      expect(users).toHaveLength(2);
+
+      const mail1 = await latestMailTo(email1, { subject: /verify/i });
+      const mail2 = await latestMailTo(email2, { subject: /verify/i });
+      expect(mail1).toBeDefined();
+      expect(mail2).toBeDefined();
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it.each([

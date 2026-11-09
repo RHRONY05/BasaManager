@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import { ErrorCode } from '@bm/shared/errors';
 import { clock } from '../../src/lib/clock';
 import { q } from '../helpers/pg';
@@ -49,6 +49,29 @@ describe('auth: forgot / reset / change password (A5)', () => {
     const mail = await latestMailTo(u.email, { subject: /reset/i }); // known user's mail has arrived ...
     expect(extractLink(mail, '/reset-password')).toContain('token=');
     expect(await mailCount(ghost)).toBe(0); // ... and the unknown address got nothing
+  });
+
+  it('forgot-password responds promptly without blocking on mailer delivery', async () => {
+    const u = await insertUser();
+    const mailer = await import('../../src/config/mailer');
+    const origDeliver = mailer.deliverOutboxNow;
+    const deliverSpy = vi.spyOn(mailer, 'deliverOutboxNow').mockImplementation(async (msgs) => {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      return origDeliver(msgs);
+    });
+
+    try {
+      const t0 = Date.now();
+      const res = await newAgent(ctx).post('/api/auth/forgot-password').send({ email: u.email });
+      const elapsed = Date.now() - t0;
+      expect(res.status).toBe(200);
+      expect(elapsed).toBeLessThan(300);
+
+      const mail = await latestMailTo(u.email, { subject: /reset/i, timeoutMs: 5000 });
+      expect(extractLink(mail, '/reset-password')).toContain('token=');
+    } finally {
+      deliverSpy.mockRestore();
+    }
   });
 
   it('forgot-password validates the email and is RATE_LIMITED after repeated requests', async () => {

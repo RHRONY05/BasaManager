@@ -37,6 +37,10 @@ const cookieFor = (invite?: string) => encryptOAuthState({ state: 'st', codeVeri
 interface Mocks {
   invitation: { updateMany: ReturnType<typeof vi.fn> };
   membership: { create: ReturnType<typeof vi.fn> };
+  organization: { create: ReturnType<typeof vi.fn> };
+  user: { create: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn> };
+  oauthAccount: { create: ReturnType<typeof vi.fn>; upsert: ReturnType<typeof vi.fn> };
+  caretakerBuilding: { create: ReturnType<typeof vi.fn> };
 }
 
 function mkDb() {
@@ -46,7 +50,14 @@ function mkDb() {
     organization: { create: vi.fn().mockResolvedValue({}) },
     user: {
       create: vi.fn().mockResolvedValue({ id: 'u-new', isPlatformAdmin: false }),
-      update: vi.fn().mockResolvedValue({}),
+      update: vi.fn().mockResolvedValue({ id: 'u-new', isPlatformAdmin: false }),
+    },
+    oauthAccount: {
+      create: vi.fn().mockResolvedValue({}),
+      upsert: vi.fn().mockResolvedValue({}),
+    },
+    caretakerBuilding: {
+      create: vi.fn().mockResolvedValue({}),
     },
     session: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
     authToken: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
@@ -172,8 +183,9 @@ describe('AuthService Google flows', () => {
       mkRes() as unknown as Response,
     );
     expect(out).toBe(APP);
-    expect(m.db.user.create).toHaveBeenCalled();
     expect(m.db.$tx).toHaveBeenCalled();
+    expect(m.tx.user.create).toHaveBeenCalled();
+    expect(m.tx.organization.create).toHaveBeenCalled();
     expect(m.tx.membership.create).toHaveBeenCalled();
   });
 
@@ -210,8 +222,8 @@ describe('AuthService Google flows', () => {
     it('creates the user, links OAuth, accepts the invite and signs in', async () => {
       m.db.$queryRaw.mockResolvedValue([invRow()]);
       expect(await run()).toBe(APP);
-      expect(m.db.user.create).toHaveBeenCalled();
-      expect(m.db.oauthAccount.upsert).toHaveBeenCalled();
+      expect(m.tx.user.create).toHaveBeenCalled();
+      expect(m.tx.oauthAccount.upsert).toHaveBeenCalled();
       expect(m.tx.membership.create).toHaveBeenCalled();
       expect(m.db.session.create).toHaveBeenCalled();
     });
@@ -224,7 +236,7 @@ describe('AuthService Google flows', () => {
         emailVerifiedAt: new Date(),
       });
       expect(await run()).toBe(APP);
-      expect(m.db.user.create).not.toHaveBeenCalled();
+      expect(m.tx.user.create).not.toHaveBeenCalled();
     });
   });
 });

@@ -20,7 +20,9 @@ Don't ask the owner anything: decide by the docs, choose the simpler option, and
 
 **A goal is done when:**
 1. Every task in the goal is ticked and merged, and the staging deploy is green.
-2. The bug hunt for the goal has run (see `11-AGENT-TEAM.md`), and its confirmed bugs are fixed or logged in `PROGRESS.md` with the reason.
+2. The bug hunt for the goal has run (see `11-AGENT-TEAM.md`), and the lead triages and handles every confirmed bug:
+   - **Current goal defects (shipped code regressions/flaws):** The lead opens a `fix/<goal>-bugs` branch, implements the fixes with regression tests, passes CI and Claude review, merges to `main`, and closes the GitHub issues. No code shipped in this goal may remain known-broken.
+   - **Future-task bugs (features planned in later tasks):** If a bug touches code/logic scheduled for a later task, the lead explicitly attaches the GitHub issue number to that task's description and acceptance criteria in `.agent/08-TASKS.md`, noting the reason in `PROGRESS.md`.
 3. `PROGRESS.md` and `METRICS.md` are current.
 
 **Then stop. Do not start the next goal.** Tell the owner what was built, the merged PRs, how to try it on staging, each Claude call made and what it found, and anything left open. At the end of goal 5, also give the URLs, the demo logins, the Lighthouse table, the first steps of `docs/learning-path.md`, and `RETRO.md`.
