@@ -73,7 +73,7 @@ agy -p "$(cat .agent/briefs/<task>-<part>.md)" --model gemini-3.8-flash-high   -
   test → JSON parsed → follow-up with `--conversation` → worktree removed), 2026-11-08.
 
 ## Running without a human (relay, owner decision 2026-11-08)
-The owner plans, grants permissions once and checks in; the agents do the rest. One long lead session can't finish the build, because every request re-sends its whole context. So `scripts/autonomous.sh` starts a fresh lead session (Sonnet 5.5 at medium effort, owner decision to save usage; permissions bypassed by the owner's choice) per step until every task is ticked. A usage limit only pauses it. The files are the lead's memory: PROGRESS.md, 08-TASKS.md, briefs, git. Opus also stays for the reviews listed above and the architect and designer roles.
+The owner plans, grants permissions once and checks in; the agents do the rest. One long lead session can't finish the build, because every request re-sends its whole context. So `scripts/autonomous.sh` starts a fresh lead session (Sonnet 5.5 at medium effort, owner decision to save usage; permissions bypassed by the owner's choice) per step until the goal is reached: `scripts/autonomous.sh V5` stops once every task up to V5 is ticked, and with no argument the goal is V17 (everything). The owner can run it in stages (for example V5, then V7, then V10) and start the next stage later. A usage limit only pauses it. The files are the lead's memory: PROGRESS.md, 08-TASKS.md, briefs, git. Opus also stays for the reviews listed above and the architect and designer roles.
 
 ## Merge gates (branch protection on `main`)
 CI green (lint, typecheck, unit, integration, e2e desktop + mobile, docs build, audit, gitleaks, CodeQL)
