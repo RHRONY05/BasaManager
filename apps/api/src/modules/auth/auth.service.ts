@@ -128,30 +128,13 @@ export class AuthService {
           (err as { code: string }).code === 'P2002';
 
         if (isP2002) {
-          const meta = (err as { meta?: { target?: string[] | string } }).meta;
-          const targets = Array.isArray(meta?.target)
-            ? meta.target
-            : typeof meta?.target === 'string'
-              ? [meta.target]
-              : [];
-
-          const isEmailCollision = targets.some((t) => t.includes('email'));
-          const isSlugCollision = targets.some((t) => t.includes('slug'));
-
-          if (isEmailCollision) {
-            return { message: 'Check your email to verify your account' };
-          }
-
-          if (isSlugCollision && attempt < MAX_SLUG_ATTEMPTS - 1) {
-            continue;
-          }
-
-          // If target is ambiguous, check if a user with this email exists in DB
+          // If a user with this email already exists, it's an email conflict
           const existingUser = await this.prisma.user.findFirst({ where: { email } });
           if (existingUser) {
             return { message: 'Check your email to verify your account' };
           }
 
+          // Otherwise, the collision was on organization slug; retry with fresh slug
           if (attempt < MAX_SLUG_ATTEMPTS - 1) {
             continue;
           }
@@ -602,7 +585,7 @@ export class AuthService {
           },
         ]);
       })().catch((err: unknown) => {
-        logger.warn({ err, email }, 'forgot-password background dispatch failed');
+        logger.warn({ err, userId: user.id }, 'forgot-password background dispatch failed');
       });
     }
 

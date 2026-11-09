@@ -135,7 +135,7 @@ sequenceDiagram
   A->>A: cookie decrypts, state equals query state, else failure
   A->>Go: exchange code + verifier, fetch userinfo
   A->>A: email_verified must be true
-  A->>DB: find by google sub, else by email (link), else if invite: accept + membership + caretaker_buildings in 1 tx, else new landlord + org
+  A->>DB: if invite: accept + membership + caretaker_buildings in 1 tx, else find by google sub, else link by email, else new landlord + org
   A-->>B: Set-Cookie session, 302 to APP_URL (any failure: /login?error=google_failed)
 ```
 

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
 import { q } from '../helpers/pg';
 import { makeOrg, type Org } from '../helpers/factories';
 import {
@@ -131,6 +131,38 @@ describe('auth: Google OAuth (A6)', () => {
       expect(oauths).toHaveLength(0);
     } finally {
       await q(`alter table organizations drop constraint if exists test_fail_org`);
+    }
+  });
+
+  it('Google brand new signup retries on org slug collision and creates the account', async () => {
+    const slugModule = await import('../../src/lib/slug');
+    let callCount = 0;
+    const existingOrg = await makeOrg({ name: 'Existing Org' });
+    const existingSlug = (
+      await q<{ slug: string }>(`select slug from organizations where id = $1`, [existingOrg.id])
+    )[0]!.slug;
+
+    const spy = vi.spyOn(slugModule, 'generateSlug').mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        return existingSlug;
+      }
+      return `google-recovered-slug-${callCount}`;
+    });
+
+    try {
+      const agent = newAgent(ctx);
+      const res = await viaGoogle(agent);
+      expect(res.headers['location']).not.toContain('error=');
+
+      const user = (await q<{ id: string }>(`select id from users where email=$1`, [profile.email]))[0]!;
+      expect(user).toBeDefined();
+
+      const orgs = await q<{ slug: string }>(`select slug from organizations where created_by=$1`, [user.id]);
+      expect(orgs).toHaveLength(1);
+      expect(orgs[0]!.slug).toBe('google-recovered-slug-2');
+    } finally {
+      spy.mockRestore();
     }
   });
 
