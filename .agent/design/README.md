@@ -224,12 +224,9 @@ caretaker `/c` (dashboard "Needs you" + lists). Their four states are in `states
    the normal utilities; never `p-[13px]`.
 
 ## Notes for the lead (found while auditing)
-- `auditLayout()` at a 844 px-high viewport reports `overlapping-targets` for any control that is scrolled
-  *under* the fixed bottom nav (geometry ignores stacking). The designer's check runs the audit with the
-  viewport as tall as the page. `layout.spec.ts` should do the same (or skip pairs where one element is
-  inside `[data-bottom-nav]`), otherwise every long mobile page fails.
-- The audit's `wrapped-label` rule counts distinct text tops, so a control whose label mixes font sizes
-  (e.g. 14 px label + 12 px count) is reported as wrapped. The kit avoids that; keep it that way.
+- Fixed in `tests/helpers/layout-audit.ts` (V5 prep, 2026-11-09): `overlapping-targets` skips pairs where only one
+  control is inside `[data-bottom-nav]` or `.action-bar` (geometry ignores stacking), and `wrapped-label` counts
+  vertical line bands, so a label mixing font sizes is one line.
 - A visible `.sr-only` element is reported as `clipped-text`; see "Visually hidden text" above.
 
 ## Token table

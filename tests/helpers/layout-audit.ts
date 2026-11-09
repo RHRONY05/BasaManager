@@ -26,7 +26,9 @@ export async function auditLayout(page: Page): Promise<Violation[]> {
     };
     const lineCount = (el: Element) => {
       const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-      const tops = new Set<number>();
+      // A line is a vertical band; rects whose centre lies inside an existing band are the same line,
+      // so a label mixing font sizes (14 px text + 12 px count) is one line, not two.
+      const bands: { top: number; bottom: number }[] = [];
       let node = walker.nextNode();
       while (node) {
         if (node.textContent && node.textContent.trim().length > 0) {
@@ -34,13 +36,15 @@ export async function auditLayout(page: Page): Promise<Violation[]> {
           range.selectNodeContents(node);
           for (const r of range.getClientRects()) {
             if (r.width > 1) {
-              tops.add(Math.round(r.top));
+              const mid = (r.top + r.bottom) / 2;
+              if (!bands.some((b) => mid >= b.top && mid <= b.bottom))
+                bands.push({ top: r.top, bottom: r.bottom });
             }
           }
         }
         node = walker.nextNode();
       }
-      return tops.size;
+      return bands.length;
     };
 
     // 1. horizontal page scroll
@@ -137,6 +141,9 @@ export async function auditLayout(page: Page): Promise<Violation[]> {
         const a = controls[i]!.getBoundingClientRect(),
           b = controls[j]!.getBoundingClientRect();
         if (controls[i]!.contains(controls[j]!) || controls[j]!.contains(controls[i]!)) continue;
+        // Geometry ignores stacking: a control scrolled under a fixed bar is not a real overlap.
+        const fixedBar = '[data-bottom-nav], .action-bar';
+        if (!!controls[i]!.closest(fixedBar) !== !!controls[j]!.closest(fixedBar)) continue;
         const ox = Math.min(a.right, b.right) - Math.max(a.left, b.left),
           oy = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
         if (ox > 2 && oy > 2)
