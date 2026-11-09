@@ -82,9 +82,9 @@ describe('BuildingsController', () => {
       body: {
         label: '1A',
         floor: 1,
-        type: 'residential',
+        type: 'family_flat',
         defaultRentPoisha: 2000000,
-        electricityMode: 'metered',
+        electricityMode: 'submeter',
       },
     });
     await controller.createUnit(req, res, next);

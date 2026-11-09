@@ -309,9 +309,9 @@ describe('BuildingsService', () => {
       buildingId: 'b-1',
       label: '2A',
       floor: 2,
-      type: 'residential',
+      type: 'family_flat',
       defaultRentPoisha: BigInt(2500000),
-      electricityMode: 'metered',
+      electricityMode: 'submeter',
       archivedAt: null,
       createdAt: new Date(),
       charges: [],
@@ -364,9 +364,9 @@ describe('BuildingsService', () => {
       const res = await service.createUnit(landlordCtx, 'b-1', {
         label: '2A',
         floor: 2,
-        type: 'residential',
+        type: 'family_flat',
         defaultRentPoisha: 2500000,
-        electricityMode: 'metered',
+        electricityMode: 'submeter',
         charges: [
           {
             name: 'Water',
@@ -398,9 +398,9 @@ describe('BuildingsService', () => {
         service.createUnit(landlordCtx, 'b-1', {
           label: '2A',
           floor: 2,
-          type: 'residential',
+          type: 'family_flat',
           defaultRentPoisha: 2500000,
-          electricityMode: 'metered',
+          electricityMode: 'submeter',
         }),
       ).rejects.toThrow(ApiError);
     });
