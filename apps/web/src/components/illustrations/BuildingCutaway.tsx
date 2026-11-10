@@ -172,7 +172,6 @@ export function SceneBackdrop({ className = '', clouds = true }: { className?: s
   return (
     <svg
       data-layout-ignore
-
       viewBox="0 0 600 600"
       preserveAspectRatio="xMidYMax slice"
       className={`absolute inset-0 w-full h-full ${className}`}

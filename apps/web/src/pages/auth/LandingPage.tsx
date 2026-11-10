@@ -77,6 +77,11 @@ const FLOORS: { level: number; flats: [SampleFlat, SampleFlat] }[] = [
   },
 ];
 const ALL_FLATS: SampleFlat[] = FLOORS.flatMap((f) => f.flats);
+const billTotal = (f: SampleFlat) => f.rent + SERVICE + GAS + WATER + f.units * UNIT_PRICE;
+const reading = (n: number) => n.toLocaleString('en-IN');
+/** Flat 4A drives the worked examples below the hero, so every number on the page agrees. */
+const EXAMPLE = ALL_FLATS.find((f) => f.id === '4A')!;
+const EXAMPLE_RECEIPT = 'BM-2026-000214';
 const COUNTS = ALL_FLATS.reduce((acc, f) => ({ ...acc, [f.status]: acc[f.status] + 1 }), {
   paid: 0,
   due: 0,
@@ -132,7 +137,7 @@ export default function LandingPage() {
             </span>
             <span className="hidden sm:flex flex-col leading-none">
               <span className={`${display} text-lg font-bold tracking-tight`}>{t('appName')}</span>
-              <span className="brand__bn text-micro text-fg-muted mt-0.5" lang="bn">
+              <span className="brand__bn text-xs text-fg-muted mt-0.5" lang="bn">
                 {t('brandBn')}
               </span>
             </span>
@@ -270,14 +275,29 @@ export default function LandingPage() {
                 tone="bg-accent-soft"
               >
                 <div className="flex flex-col sm:flex-row md:flex-col xl:flex-row items-center gap-4 sm:gap-5 min-w-0">
-                  <MeterArt reading="01395" className="w-20 sm:w-28 h-auto shrink-0" />
+                  <MeterArt
+                    reading={String(EXAMPLE.prev + EXAMPLE.units).padStart(5, '0')}
+                    className="w-20 sm:w-28 h-auto shrink-0"
+                  />
                   <div className="w-full flex-1 min-w-0 bg-surface rounded-[var(--radius-lg)] border border-border p-4 text-sm shadow-[var(--shadow-sm)]">
-                    <Row label={t('auth.landing.meterPrev')} value="1,240" mono />
-                    <Row label={t('auth.landing.meterCurr')} value="1,395" mono />
+                    <Row label={t('auth.landing.meterPrev')} value={reading(EXAMPLE.prev)} mono />
+                    <Row
+                      label={t('auth.landing.meterCurr')}
+                      value={reading(EXAMPLE.prev + EXAMPLE.units)}
+                      mono
+                    />
                     <div className="my-2 border-t border-dashed border-border-strong" />
-                    <Row label={t('auth.landing.electricity')} value="৳1,395" strong />
+                    <Row
+                      label={t('auth.landing.electricity')}
+                      value={formatMoney(EXAMPLE.units * UNIT_PRICE)}
+                      strong
+                    />
                     <p className="text-xs text-fg-muted font-mono mt-0.5">
-                      {t('auth.landing.electricityExplain')}
+                      {t('auth.landing.elecExplain', {
+                        prev: reading(EXAMPLE.prev),
+                        curr: reading(EXAMPLE.prev + EXAMPLE.units),
+                        units: EXAMPLE.units,
+                      })}
                     </p>
                   </div>
                 </div>
@@ -292,9 +312,9 @@ export default function LandingPage() {
                 <div className="flex flex-col gap-4 min-w-0">
                   <div className="relative min-w-0 bg-surface rounded-t-[var(--radius-lg)] p-4 pb-6 shadow-[var(--shadow-md)] [clip-path:polygon(0_0,100%_0,100%_calc(100%-8px),95%_100%,90%_calc(100%-8px),85%_100%,80%_calc(100%-8px),75%_100%,70%_calc(100%-8px),65%_100%,60%_calc(100%-8px),55%_100%,50%_calc(100%-8px),45%_100%,40%_calc(100%-8px),35%_100%,30%_calc(100%-8px),25%_100%,20%_calc(100%-8px),15%_100%,10%_calc(100%-8px),5%_100%,0_calc(100%-8px))]">
                     <p className="text-xs text-fg-muted">{t('auth.landing.receiptTitle')}</p>
-                    <p className="font-mono text-sm font-semibold text-fg">BM-2026-000214</p>
+                    <p className="font-mono text-sm font-semibold text-fg">{EXAMPLE_RECEIPT}</p>
                     <p className={`${display} mt-3 text-3xl font-bold tabular-nums tracking-tight`}>
-                      ৳16,475
+                      {formatMoney(billTotal(EXAMPLE))}
                     </p>
                     <p className="text-xs text-fg-muted">{t('auth.landing.receiptVia')}</p>
                     <span className="absolute right-4 top-4 rotate-[-10deg] rounded-[var(--radius-sm)] border-2 border-success-primary px-2 py-0.5 text-xs font-extrabold uppercase tracking-stamp text-success-text">
@@ -488,7 +508,7 @@ function BillCard({ flat }: { flat: SampleFlat }) {
   const { t } = useTranslation();
   const elec = flat.units * UNIT_PRICE;
   const occupied = flat.status !== 'vacant';
-  const total = flat.rent + SERVICE + GAS + WATER + elec;
+  const total = billTotal(flat);
   const receiptNo = `BM-2026-000${200 + ALL_FLATS.indexOf(flat)}`;
   const rows: [string, number][] = [
     [t('auth.landing.rent'), flat.rent],
@@ -518,8 +538,8 @@ function BillCard({ flat }: { flat: SampleFlat }) {
             ))}
             <p className="text-xs text-fg-muted font-mono -mt-1">
               {t('auth.landing.elecExplain', {
-                prev: flat.prev.toLocaleString('en-IN'),
-                curr: (flat.prev + flat.units).toLocaleString('en-IN'),
+                prev: reading(flat.prev),
+                curr: reading(flat.prev + flat.units),
                 units: flat.units,
               })}
             </p>

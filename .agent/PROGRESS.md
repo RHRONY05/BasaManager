@@ -974,5 +974,18 @@ Did: the owner reviewed the V2 landing and login screens ("basic, generic, narro
 Tests: web typecheck ✅, ESLint 0 errors, token lint 0 errors, Prettier ✅, unit 78/78 ✅, size budget ✅,
 docs:check ✅ (97 pages). Full layout audit (`layout.spec.ts` every route × 6 widths × light/dark × en/en-XA, desktop + mobile
 projects) + `home.spec.ts`: 1716/1716 ✅ (local).
-Next: owner reviews; commit on a branch + PR through the normal review gate. Antigravity: the new pages are the
-source of truth (design README "Landing + auth pages"); do not rebuild them to the old V2 artboards.
+Review: PR #23, reviewer agent APPROVE (0 blockers; posted as a review comment because GitHub refuses
+self-approval on the owner's account). Its should-fix items were done before merge:
+- `LandingPage.test.tsx`: flat selection (`aria-pressed`, both `aria-live` bills, vacant flat, links). Web unit 82/82.
+- **App-wide visual change to note:** the newly mapped utilities (`text-danger-text`, `border-danger-border`,
+  `bg-danger-soft`, `text-fg-secondary`, `bg-accent-soft`, `text-accent-text`, `border-border-strong`,
+  `bg-warning-soft`, `bg-inverse`) were already used by AccountMenu, OrgSwitcher, Login, Signup, ForgotPassword,
+  Invite and others but rendered as plain text colour before. Form errors are now red as designed; checked
+  login + forgot-password errors at 390 px light and dark.
+- CLS: `/` 0.037 (390) / 0.025 (1440); `/login` 0.0004 (390) / 0.013 (1440), all < 0.05. `/login` on phones was
+  0.064 on `main` too (staging measured identically): the vertically centred form jumped when the route chunk
+  replaced its skeleton. Fixed: auth form is top-aligned below 768 px (`items-start md:items-center`).
+- Nits: 11 dead `auth.landing` keys removed; worked-example numbers derived from sample flat 4A
+  (`formatMoney`, no literals); Bangla brand subtitle 12 px.
+Next: Antigravity can start Goal 3. The landing, login and signup pages are the source of truth as built (design
+README "Landing + auth pages"); do not rebuild them to the old V2 artboards.

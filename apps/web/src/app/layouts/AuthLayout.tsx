@@ -147,7 +147,7 @@ export function AuthLayout() {
         </aside>
 
         {/* Right side form area (Desktop) / Main area (Mobile) */}
-        <main className="flex items-center justify-center px-4 py-8 sm:p-8 lg:p-12 min-w-0">
+        <main className="flex items-start md:items-center justify-center px-4 py-8 sm:p-8 lg:p-12 min-w-0">
           <div className="w-full max-w-[var(--width-form)] min-w-0">
             <Suspense key={location.pathname} fallback={<RouteSkeleton />}>
               <Outlet />
