@@ -829,10 +829,16 @@ export class LeasesService {
   /**
    * Cancels a pending lease (e.g. if created with wrong email or before move-in).
    * Marks lease status as 'ended' and revokes the associated open invitation.
+   * Guarded against concurrent activation, held deposits, and already-linked tenants.
    */
   async cancelPendingLease(tenantCtx: TenantCtx, leaseId: string) {
+    if (tenantCtx.role !== 'landlord') {
+      throw ApiError.forbidden('Only landlords can cancel leases');
+    }
+
     const orgId = tenantCtx.orgId!;
     return this.prisma.$tx(tenantCtx, async (tx) => {
+      // 1. Check if lease exists
       const lease = await tx.lease.findFirst({
         where: { id: leaseId, orgId },
       });
@@ -843,12 +849,37 @@ export class LeasesService {
         throw ApiError.conflict('Only pending leases can be cancelled without a move-out settlement');
       }
 
-      await tx.lease.update({
-        where: { id: leaseId },
+      // 2. Reject if any tenant has already accepted this lease
+      const tenantCount = await tx.leaseTenant.count({
+        where: { leaseId, orgId },
+      });
+      if (tenantCount > 0) {
+        throw ApiError.conflict('Cannot cancel lease that already has an accepted tenant');
+      }
+
+      // 3. Reject if deposit held is above 0
+      const depositEntries = await tx.depositEntry.findMany({
+        where: { leaseId, orgId },
+      });
+      let held = 0n;
+      for (const e of depositEntries) {
+        if (e.kind === 'received') held += e.amountPoisha;
+        else if (e.kind === 'applied_to_dues' || e.kind === 'refunded') held -= e.amountPoisha;
+      }
+      if (held > 0n) {
+        throw ApiError.conflict('Cannot cancel lease with held deposit. Settle or refund deposit first');
+      }
+
+      // 4. Atomic conditional update to prevent race conditions with acceptance
+      const updated = await tx.lease.updateMany({
+        where: { id: leaseId, orgId, status: 'pending' },
         data: { status: 'ended' },
       });
+      if (updated.count === 0) {
+        throw ApiError.conflict('Only pending leases can be cancelled without a move-out settlement');
+      }
 
-      // Revoke any open invite for this lease
+      // 5. Revoke any open invite for this lease
       await tx.invitation.updateMany({
         where: {
           orgId,

@@ -6,12 +6,13 @@ import type { Db } from '../../config/db';
 import type { Env } from '../../config/env';
 import { ApiError } from '../../lib/ApiError';
 import { clock } from '../../lib/clock';
-import { hashPassword, validatePassword, verifyPassword } from '../../lib/passwords';
+import { hashPassword, validatePassword } from '../../lib/passwords';
 import { sha256, generateRefreshToken, generateCsrfToken, signAccessToken } from '../../lib/tokens';
 import { setAuthCookies } from '../../lib/cookies';
 import { findInvitationByTokenHash } from '../../config/db';
 import type { AuthenticatedUser } from '../../middleware/auth';
 import { linkTenantToLease } from '../leases/lease-activation';
+import { verifyUserPasswordWithLockout } from '../auth/auth.helpers';
 
 export class InvitesService {
   constructor(
@@ -198,17 +199,11 @@ export class InvitesService {
     });
 
     let userId: string;
+    let isPlatformAdmin = false;
     if (existingUser) {
-      if (!existingUser.passwordHash || !(await verifyPassword(existingUser.passwordHash, body.password))) {
-        throw ApiError.validation([
-          {
-            path: 'password',
-            message:
-              'An account with this email exists. Please enter your existing account password or sign in.',
-          },
-        ]);
-      }
+      await verifyUserPasswordWithLockout(this.prisma, existingUser, body.password, now);
       userId = existingUser.id;
+      isPlatformAdmin = Boolean(existingUser.isPlatformAdmin);
     } else {
       if (!body.fullName || typeof body.fullName !== 'string' || body.fullName.trim().length === 0) {
         throw ApiError.validation([{ path: 'fullName', message: 'Full name is required' }]);
@@ -346,7 +341,7 @@ export class InvitesService {
     });
 
     const accessToken = await signAccessToken(
-      { sub: userId, sid: session.id, adm: false },
+      { sub: userId, sid: session.id, adm: isPlatformAdmin },
       this.env.JWT_SECRET || '',
     );
     const csrfToken = generateCsrfToken();

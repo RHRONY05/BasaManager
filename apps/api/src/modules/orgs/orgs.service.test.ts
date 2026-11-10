@@ -318,4 +318,78 @@ describe('OrgsService', () => {
     const service = new OrgsService(mockDb);
     await expect(service.removeMember(tenantCtx, 'mem-removed')).rejects.toThrow(ApiError);
   });
+
+  describe('revokeInvite', () => {
+    it('throws 404 if invitation does not exist', async () => {
+      const mockDb = {
+        $tx: vi.fn().mockImplementation(async (_ctx, fn) => {
+          return fn({
+            invitation: { findFirst: vi.fn().mockResolvedValue(null) },
+          });
+        }),
+      } as unknown as Db;
+
+      const service = new OrgsService(mockDb);
+      await expect(service.revokeInvite(tenantCtx, 'inv-none')).rejects.toThrow(ApiError);
+    });
+
+    it('throws 409 if invitation was already accepted', async () => {
+      const mockDb = {
+        $tx: vi.fn().mockImplementation(async (_ctx, fn) => {
+          return fn({
+            invitation: {
+              findFirst: vi.fn().mockResolvedValue({
+                id: 'inv-1',
+                acceptedAt: new Date(),
+                revokedAt: null,
+              }),
+            },
+          });
+        }),
+      } as unknown as Db;
+
+      const service = new OrgsService(mockDb);
+      await expect(service.revokeInvite(tenantCtx, 'inv-1')).rejects.toThrow(/already been accepted/);
+    });
+
+    it('throws 409 if invitation was already revoked', async () => {
+      const mockDb = {
+        $tx: vi.fn().mockImplementation(async (_ctx, fn) => {
+          return fn({
+            invitation: {
+              findFirst: vi.fn().mockResolvedValue({
+                id: 'inv-1',
+                acceptedAt: null,
+                revokedAt: new Date(),
+              }),
+            },
+          });
+        }),
+      } as unknown as Db;
+
+      const service = new OrgsService(mockDb);
+      await expect(service.revokeInvite(tenantCtx, 'inv-1')).rejects.toThrow(/already revoked/);
+    });
+
+    it('successfully revokes an open invitation', async () => {
+      const mockDb = {
+        $tx: vi.fn().mockImplementation(async (_ctx, fn) => {
+          return fn({
+            invitation: {
+              findFirst: vi.fn().mockResolvedValue({
+                id: 'inv-1',
+                acceptedAt: null,
+                revokedAt: null,
+              }),
+              update: vi.fn().mockResolvedValue({ id: 'inv-1' }),
+            },
+          });
+        }),
+      } as unknown as Db;
+
+      const service = new OrgsService(mockDb);
+      const res = await service.revokeInvite(tenantCtx, 'inv-1');
+      expect(res).toEqual({ success: true });
+    });
+  });
 });

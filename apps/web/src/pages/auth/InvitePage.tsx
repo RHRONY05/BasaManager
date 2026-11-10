@@ -39,12 +39,13 @@ export default function InvitePage() {
     isError,
     error,
   } = useQuery<InvitePreview>({
-    queryKey: keys.invite(token || ''),
+    queryKey: [...keys.invite(token || ''), user?.id ?? 'anon'],
     queryFn: () =>
       apiFetch<InvitePreview>(`/api/invites/${encodeURIComponent(token || '')}`, {
         schema: invitePreviewSchema,
       }),
     enabled: Boolean(token),
+    staleTime: 0,
     retry: false,
   });
 

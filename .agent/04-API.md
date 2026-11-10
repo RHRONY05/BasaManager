@@ -50,8 +50,8 @@ in CI, so docs and code can't drift.
 | `POST /auth/reset-password` | public | `{token, password}` | Sets password, revokes **all** sessions, signs in on this device | `TOKEN_INVALID` |
 | `GET /auth/google/start` | public | `?invite=<token>` optional | Redirect to Google with state + PKCE | — |
 | `GET /auth/google/callback` | public | code, state | Link / create / accept invite; redirect to app | redirect to `/login?error=google_failed` |
-| `GET /invites/:token` | public | — | Invite preview: org name, role, inviter, email (masked) | `TOKEN_INVALID` |
-| `POST /invites/:token/accept` | public or user | `{password?, fullName?}` | New user: create + verify (email proven by the link) + membership. Signed-in user: email must match | `INVITE_EMAIL_MISMATCH`, `TOKEN_INVALID` |
+| `GET /invites/:token` | public | — | Invite preview: org name, role, inviter, email (masked), `emailMatchesCurrentUser`, `userExists` | `TOKEN_INVALID` |
+| `POST /invites/:token/accept` | public or user | `{password?, fullName?}` | New user: create + verify (email proven by the link) + membership. Existing user: verify password + login protections (lockout, active account) + join membership. Signed-in user: email must match | `INVITE_EMAIL_MISMATCH`, `TOKEN_INVALID`, `CONFLICT`, `ACCOUNT_LOCKED` |
 | `GET /me` | user | — | `{user, memberships:[{orgId, orgName, role, status}]}` | — |
 | `PATCH /me` | user | `{fullName?, phone?}` | | |
 | `POST /me/change-password` | user | `{currentPassword, newPassword}` | Revokes other sessions | `INVALID_CREDENTIALS` |
@@ -65,7 +65,7 @@ in CI, so docs and code can't drift.
 | `GET /org` · `PATCH /org` | L (C,T read name) | name |
 | `GET /org/members` | L | members with role, status, buildings |
 | `POST /org/invites` | L | `{email, role:'caretaker', buildingIds}` (tenant invites go through leases) → email. `CONFLICT` if an open invite exists |
-| `GET /org/invites` · `DELETE /org/invites/:id` | L | list / revoke |
+| `GET /org/invites` · `DELETE /org/invites/:id` | L | list / revoke (returns `CONFLICT` if already accepted or already revoked) |
 | `PUT /org/members/:membershipId/buildings` | L | `{buildingIds}` caretaker assignment; sockets of that user re-joined |
 | `DELETE /org/members/:membershipId` | L | remove caretaker (tenants are removed by ending leases) |
 
@@ -90,6 +90,7 @@ in CI, so docs and code can't drift.
 | `GET /leases/:id/settlement-preview` | L | Rule 7 numbers for a given `moveOutDate` |
 | `POST /leases/:id/end` | L | `{moveOutDate, moveOutReading?}` final prorated bill + settlement in one tx; PDF queued |
 | `POST /leases/:id/resend-invite` | L | |
+| `POST /leases/:id/cancel` | L | Cancels pending lease (no held deposit, no accepted tenant) and revokes open invitations | `CONFLICT`, `NOT_FOUND` |
 | `GET /tenants/:membershipId/history` | L | T5 |
 
 ## Billing

@@ -73,6 +73,7 @@ describe('LeasesService', () => {
         findMany: vi.fn().mockResolvedValue([sampleLease]),
         create: vi.fn().mockResolvedValue(sampleLease),
         update: vi.fn().mockResolvedValue(sampleLease),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
         ...overrides.lease,
       },
       leaseCharge: {
@@ -103,9 +104,7 @@ describe('LeasesService', () => {
           note: 'Deposit paid',
           createdAt: new Date(),
         }),
-        findMany: vi
-          .fn()
-          .mockResolvedValue([{ id: 'dep-1', kind: 'received', amountPoisha: BigInt(4000000) }]),
+        findMany: vi.fn().mockResolvedValue([]),
         ...overrides.depositEntry,
       },
       membership: {
@@ -121,6 +120,7 @@ describe('LeasesService', () => {
       },
       leaseTenant: {
         findMany: vi.fn().mockResolvedValue([{ leaseId: 'lease-1', lease: sampleLease }]),
+        count: vi.fn().mockResolvedValue(0),
         ...overrides.leaseTenant,
       },
       bill: {
@@ -496,6 +496,67 @@ describe('LeasesService', () => {
       const result = await service.getTenantHistory(landlordCtx, 'mem-1');
       expect(result.tenant.email).toBe('t@test.com');
       expect(result.leases).toHaveLength(1);
+    });
+  });
+
+  describe('cancelPendingLease', () => {
+    it('throws 403 if caller is not a landlord', async () => {
+      const db = createMockDb();
+      const service = new LeasesService(db);
+
+      await expect(service.cancelPendingLease(caretakerCtx, 'lease-1')).rejects.toThrow(ApiError);
+    });
+
+    it('throws 404 if lease is not found', async () => {
+      const db = createMockDb({
+        lease: { findFirst: vi.fn().mockResolvedValue(null) },
+      });
+      const service = new LeasesService(db);
+
+      await expect(service.cancelPendingLease(landlordCtx, 'missing-lease')).rejects.toThrow(ApiError);
+    });
+
+    it('throws 409 if lease status is not pending', async () => {
+      const db = createMockDb({
+        lease: { findFirst: vi.fn().mockResolvedValue({ id: 'lease-1', status: 'active' }) },
+      });
+      const service = new LeasesService(db);
+
+      await expect(service.cancelPendingLease(landlordCtx, 'lease-1')).rejects.toThrow(
+        /Only pending leases can be cancelled/,
+      );
+    });
+
+    it('throws 409 if tenant is already linked to the lease', async () => {
+      const db = createMockDb({
+        leaseTenant: { count: vi.fn().mockResolvedValue(1) },
+      });
+      const service = new LeasesService(db);
+
+      await expect(service.cancelPendingLease(landlordCtx, 'lease-1')).rejects.toThrow(
+        /already has an accepted tenant/,
+      );
+    });
+
+    it('throws 409 if held deposit is above 0', async () => {
+      const db = createMockDb({
+        depositEntry: {
+          findMany: vi.fn().mockResolvedValue([{ id: 'dep-1', kind: 'received', amountPoisha: 500000n }]),
+        },
+      });
+      const service = new LeasesService(db);
+
+      await expect(service.cancelPendingLease(landlordCtx, 'lease-1')).rejects.toThrow(
+        /Cannot cancel lease with held deposit/,
+      );
+    });
+
+    it('successfully cancels pending lease and revokes invitations', async () => {
+      const db = createMockDb();
+      const service = new LeasesService(db);
+
+      const res = await service.cancelPendingLease(landlordCtx, 'lease-1');
+      expect(res).toEqual({ success: true, message: 'Pending lease cancelled' });
     });
   });
 });
