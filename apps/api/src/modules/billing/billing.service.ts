@@ -464,72 +464,83 @@ export class BillingService {
 
       // Update draft bill if exists
       if (activeLease) {
-        const bill = await tx.bill.findUnique({
-          where: {
-            orgId_leaseId_periodMonth: {
-              orgId: ctx.orgId,
-              leaseId: activeLease.id,
-              periodMonth: periodDate,
-            },
-          },
-          include: {
-            lines: true,
-            lease: {
-              include: {
-                unit: true,
+        // 1. Lock the bill row first to serialize concurrent operations
+        const lockedBills = await tx.$queryRawUnsafe<Array<{ id: string; lease_id: string }>>(
+          'SELECT id, lease_id FROM bills WHERE org_id = $1 AND lease_id = $2 AND period_month = $3 FOR UPDATE',
+          ctx.orgId,
+          activeLease.id,
+          periodDate,
+        );
+
+        if (lockedBills.length > 0) {
+          // 2. Also lock lease row per financial rules (bill -> lease lock order)
+          await tx.$queryRawUnsafe(
+            'SELECT id FROM leases WHERE id = $1 FOR UPDATE',
+            lockedBills[0]!.lease_id,
+          );
+
+          // 3. Read fresh bill under lock with its lines
+          const bill = await tx.bill.findUnique({
+            where: { id: lockedBills[0]!.id },
+            include: {
+              lines: true,
+              lease: {
+                include: {
+                  unit: true,
+                },
               },
-            },
-          },
-        });
-
-        if (bill) {
-          if (bill.status !== 'draft') {
-            throw ApiError.conflict('Readings cannot be edited after the bill is issued');
-          }
-
-          const elecMeta = {
-            prev: input.meterReplaced ? (input.newMeterStart ?? 0) : prevReading,
-            curr: input.reading,
-            units: elecResult.units,
-            ratePoisha: unit.building.electricityRatePoisha,
-            meterReplaced: input.meterReplaced,
-          };
-
-          // Update or insert electricity line (bm_app has no DELETE grant on bill_lines)
-          const existingElecLine = bill.lines.find((l) => l.kind === 'electricity');
-          if (existingElecLine) {
-            await tx.billLine.update({
-              where: { id: existingElecLine.id },
-              data: {
-                amountPoisha: BigInt(elecResult.amountPoisha),
-                meta: elecMeta as unknown as Prisma.InputJsonValue,
-              },
-            });
-          } else {
-            await tx.billLine.create({
-              data: {
-                orgId: ctx.orgId,
-                billId: bill.id,
-                kind: 'electricity',
-                label: 'Electricity',
-                amountPoisha: BigInt(elecResult.amountPoisha),
-                meta: elecMeta as unknown as Prisma.InputJsonValue,
-              },
-            });
-          }
-
-          // Recompute total
-          const remainingLines = bill.lines.filter((l) => l.kind !== 'electricity');
-          const nonElecTotal = remainingLines.reduce((sum, l) => sum + Number(l.amountPoisha), 0);
-          const newTotal = nonElecTotal + elecResult.amountPoisha;
-
-          await tx.bill.update({
-            where: { id: bill.id },
-            data: {
-              totalPoisha: BigInt(newTotal),
-              needsReading: false,
             },
           });
+
+          if (bill) {
+            if (bill.status !== 'draft') {
+              throw ApiError.conflict('Readings cannot be edited after the bill is issued');
+            }
+
+            const elecMeta = {
+              prev: input.meterReplaced ? (input.newMeterStart ?? 0) : prevReading,
+              curr: input.reading,
+              units: elecResult.units,
+              ratePoisha: unit.building.electricityRatePoisha,
+              meterReplaced: input.meterReplaced,
+            };
+
+            // Update or insert electricity line (bm_app has no DELETE grant on bill_lines)
+            const existingElecLine = bill.lines.find((l) => l.kind === 'electricity');
+            if (existingElecLine) {
+              await tx.billLine.update({
+                where: { id: existingElecLine.id },
+                data: {
+                  amountPoisha: BigInt(elecResult.amountPoisha),
+                  meta: elecMeta as unknown as Prisma.InputJsonValue,
+                },
+              });
+            } else {
+              await tx.billLine.create({
+                data: {
+                  orgId: ctx.orgId,
+                  billId: bill.id,
+                  kind: 'electricity',
+                  label: 'Electricity',
+                  amountPoisha: BigInt(elecResult.amountPoisha),
+                  meta: elecMeta as unknown as Prisma.InputJsonValue,
+                },
+              });
+            }
+
+            // Recompute total from fresh locked lines
+            const remainingLines = bill.lines.filter((l) => l.kind !== 'electricity');
+            const nonElecTotal = remainingLines.reduce((sum, l) => sum + Number(l.amountPoisha), 0);
+            const newTotal = nonElecTotal + elecResult.amountPoisha;
+
+            await tx.bill.update({
+              where: { id: bill.id },
+              data: {
+                totalPoisha: BigInt(newTotal),
+                needsReading: false,
+              },
+            });
+          }
         }
       }
 
@@ -818,8 +829,17 @@ export class BillingService {
         if (b.needsReading) {
           skipped++;
         } else {
-          await this.issueBillInTx(tx, ctx, b.id, todayStr);
-          issued++;
+          try {
+            await this.issueBillInTx(tx, ctx, b.id, todayStr);
+            issued++;
+          } catch (err) {
+            if (err instanceof ApiError && (err.status === 409 || err.code === ErrorCode.CONFLICT)) {
+              // Concurrently issued or no longer draft: count as skipped and continue batch
+              skipped++;
+            } else {
+              throw err;
+            }
+          }
         }
       }
 

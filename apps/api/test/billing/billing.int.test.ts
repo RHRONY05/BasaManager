@@ -74,6 +74,8 @@ describe('V8: billing endpoints', () => {
 
   const run = (month = '2026-03', agent = landlord.agent) =>
     agent.post('/api/billing/run').send({ buildingId: building, month });
+  const put = (o: Record<string, unknown> = {}, agent = landlord.agent) =>
+    agent.put('/api/readings').send({ unitId: unitMeter, month: '2026-03', reading: 1155, ...o });
   const billOf = async (leaseId: string, month = '2026-03-01') => {
     const rows = await q<{
       id: string;
@@ -190,9 +192,6 @@ describe('V8: billing endpoints', () => {
   });
 
   describe('PUT /readings', () => {
-    const put = (o: Record<string, unknown> = {}, agent = landlord.agent) =>
-      agent.put('/api/readings').send({ unitId: unitMeter, month: '2026-03', reading: 1155, ...o });
-
     beforeEach(async () => {
       await run();
     });
@@ -265,6 +264,56 @@ describe('V8: billing endpoints', () => {
       const b2 = await makeBuilding(org.id, { name: 'Other' });
       const c2 = await actorIn(ctx, org.id, 'caretaker', { buildingIds: [b2] });
       expect([403, 404]).toContain((await put({}, c2.agent)).status);
+    });
+
+    it('handles concurrent reading and adjustment without lost updates: total_poisha equals sum of bill_lines', async () => {
+      await run();
+      const id = (await billOf(leaseMeter))!.id;
+      await put({ reading: 1100 });
+
+      // Concurrent adjustment (+10,000) and reading update (1155 -> 155 units x 900 = 139,500)
+      const [readRes, adjRes] = await Promise.all([
+        put({ reading: 1155 }),
+        landlord.agent.post(`/api/bills/${id}/adjustments`).send({ amountPoisha: 10000, reason: 'Adj' }),
+      ]);
+
+      expect(readRes.status).toBe(200);
+      expect(adjRes.status).toBe(201);
+
+      const billRow = await q<{ total_poisha: string }>(
+        `select total_poisha::text from bills where id = $1`,
+        [id],
+      );
+      const linesSum = await q<{ sum: string }>(
+        `select sum(amount_poisha)::text as sum from bill_lines where bill_id = $1`,
+        [id],
+      );
+      expect(billRow[0]!.total_poisha).toBe(linesSum[0]!.sum);
+    });
+
+    it('handles concurrent reading and bill issue correctly: no post-issue total mutation', async () => {
+      await run();
+      const id = (await billOf(leaseMeter))!.id;
+      await put({ reading: 1100 });
+
+      const [_readRes, issueRes] = await Promise.allSettled([
+        put({ reading: 1300 }),
+        landlord.agent.post(`/api/bills/${id}/issue`),
+      ]);
+
+      const billRow = await q<{ status: string; total_poisha: string }>(
+        `select status, total_poisha::text from bills where id = $1`,
+        [id],
+      );
+      const linesSum = await q<{ sum: string }>(
+        `select sum(amount_poisha)::text as sum from bill_lines where bill_id = $1`,
+        [id],
+      );
+
+      expect(billRow[0]!.total_poisha).toBe(linesSum[0]!.sum);
+      if (issueRes.status === 'fulfilled' && issueRes.value.status === 200) {
+        expect(billRow[0]!.total_poisha).toBe(String(issueRes.value.body.data.totalPoisha));
+      }
     });
   });
 
@@ -355,6 +404,24 @@ describe('V8: billing endpoints', () => {
         .post('/api/bills/issue-ready')
         .send({ buildingId: building, month: '2026-03' });
       expect(res.status).toBe(403);
+    });
+
+    it('handles concurrent batch issue and single issue without failing: skips already-issued bills', async () => {
+      await run();
+      // Unit flat is ready to issue; unit meter needs reading. Put reading so both are ready.
+      await put({ reading: 1100 });
+      const flatBillId = (await billOf(leaseFlat))!.id;
+
+      // Run concurrent single issue on flat bill and batch issue on building
+      const [singleRes, batchRes] = await Promise.all([
+        landlord.agent.post(`/api/bills/${flatBillId}/issue`),
+        landlord.agent.post('/api/bills/issue-ready').send({ buildingId: building, month: '2026-03' }),
+      ]);
+
+      expect(singleRes.status).toBe(200);
+      expect(batchRes.status).toBe(200);
+      expect((await billOf(leaseFlat))!.status).toBe('issued');
+      expect((await billOf(leaseMeter))!.status).toBe('issued');
     });
   });
 

@@ -29,7 +29,7 @@ BasaManager enforces idempotency at two independent layers: the application serv
    const unbilledLeases = activeLeases.filter((l) => !existingBillLeaseIds.has(l.id));
    ```
 3. **Graceful Handling of Concurrency Races**:
-   If two requests pass the pre-flight check at the exact same millisecond, the database engine enforces the unique index. One transaction succeeds; the other transaction rolls back cleanly with a unique constraint violation (error code `23505`).
+   Bill generation serializes on a PostgreSQL transaction advisory lock hashed from the building ID and period month, followed by an existence check on existing bills. If racing requests occur, execution is serialized and subsequent requests report existing bills as skipped without error. The database composite unique index (`bills(lease_id, period_month)`) acts as the last-resort constraint guard.
 4. **Idempotent Background Jobs**:
    Worker jobs (`apps/worker/src/jobs/generateBills.ts` and `applyLateFees.ts`) use Redis distributed locks (`withJobLock`) to ensure only one worker node runs at a time, backed by database unique constraints so even if locks expire, no duplicate records are created.
 
@@ -67,7 +67,7 @@ sequenceDiagram
 
 ## Where in code
 
-- `apps/api/src/modules/billing/billing.service.ts`: Idempotent `runGeneration` with composite unique constraint checks.
+- `apps/api/src/modules/billing/billing.service.ts`: Idempotent `runGeneration` with advisory locks, existence checks, and composite unique constraints.
 - `apps/worker/src/lib/jobLock.ts`: Distributed Redis locking (`withJobLock`) preventing simultaneous worker invocations.
 - `apps/api/test/billing/billing.int.test.ts`: Integration tests proving generation idempotency when run twice and under concurrency.
 - `prisma/schema.prisma`: Schema constraints `@@unique([leaseId, periodMonth])` and `@@unique([unitId, periodMonth])`.
