@@ -125,7 +125,7 @@ describe('Rule 4 — late fee', () => {
     dueDate: '2026-12-10',
     graceDays: 2,
     lateFeeType: 'percent' as const,
-    lateFeeValue: 5,
+    lateFeeValue: 500, // basis points: 500 = 5%
     lateFeeAlreadyApplied: false,
   };
 
@@ -433,5 +433,129 @@ describe('Rule 7 — move-out settlement', () => {
     expect(res.settlementPoisha).toBe(0);
     expect(res.outcome).toBe('even');
     expect(res.leaseStatus).toBe('ended');
+  });
+
+  describe('Edge branches coverage', () => {
+    it('electricityCharge throws when meter replaced and curr < newMeterStart', () => {
+      expect(() =>
+        electricityCharge({
+          prev: 1000,
+          curr: 50,
+          ratePoisha: 900,
+          meterReplaced: true,
+          newMeterStart: 100,
+        }),
+      ).toThrowError(/lower than new meter start/i);
+    });
+
+    it('electricityCharge computes units correctly with newMeterStart', () => {
+      const res = electricityCharge({
+        prev: 1000,
+        curr: 150,
+        ratePoisha: 900,
+        meterReplaced: true,
+        newMeterStart: 100,
+      });
+      expect(res.units).toBe(50);
+      expect(res.amountPoisha).toBe(45000);
+    });
+
+    it('prorate returns 0 when moveInDate is after moveOutDate', () => {
+      expect(
+        prorate(taka(20000), {
+          periodMonth: '2026-11-01',
+          moveInDate: '2026-11-20',
+          moveOutDate: '2026-11-10',
+        }),
+      ).toBe(0);
+    });
+
+    it('computeLateFee returns 0 for unknown lateFeeType or negative balance', () => {
+      expect(
+        computeLateFee({
+          dueDate: '2026-12-10',
+          graceDays: 2,
+          lateFeeType: 'unknown' as unknown as 'none',
+          lateFeeValue: 500,
+          balancePoisha: taka(5000),
+          today: '2026-12-13',
+        }),
+      ).toBe(0);
+      expect(
+        computeLateFee({
+          dueDate: '2026-12-10',
+          graceDays: 2,
+          lateFeeType: 'percent',
+          lateFeeValue: 500,
+          balancePoisha: -100,
+          today: '2026-12-13',
+        }),
+      ).toBe(0);
+    });
+
+    it('applyCreditToBill returns 0 when credit is zero', () => {
+      const res = applyCreditToBill({
+        bill: { totalPoisha: taka(10000), paidPoisha: 0 },
+        creditPoisha: 0,
+      });
+      expect(res.appliedPoisha).toBe(0);
+      expect(res.balancePoisha).toBe(taka(10000));
+      expect(res.remainingCreditPoisha).toBe(0);
+      expect(res.status).toBe('issued');
+    });
+
+    it('voidPayment marks bills that remain fully paid as paid', () => {
+      const res = voidPayment({
+        allocations: [{ billId: 'bill-1', amountPoisha: taka(2000) }],
+        creditCreatedPoisha: 0,
+        creditBalancePoisha: 0,
+        creditApplications: [],
+        bills: [
+          { id: 'bill-1', totalPoisha: taka(5000), paidPoisha: taka(5000) },
+          { id: 'bill-2', totalPoisha: taka(3000), paidPoisha: taka(3000) },
+        ],
+      });
+      const b1 = res.bills.find((b) => b.id === 'bill-1');
+      const b2 = res.bills.find((b) => b.id === 'bill-2');
+      expect(b1?.status).toBe('partially_paid');
+      expect(b2?.status).toBe('paid');
+    });
+
+    it('prorate handles moveIn and moveOut in different months/years', () => {
+      // moveIn was previous month, moveOut is next month -> factor is 1
+      const factor = prorationFactor({
+        periodMonth: '2026-11-01',
+        moveInDate: '2026-10-15',
+        moveOutDate: '2026-12-15',
+      });
+      expect(factor).toBe(1);
+    });
+
+    it('roundTaka returns 0 when rounded is 0', () => {
+      expect(roundTaka(40)).toBe(0);
+      expect(roundTaka(0)).toBe(0);
+    });
+
+    it('electricityCharge handles meterReplaced with undefined newMeterStart', () => {
+      const res = electricityCharge({
+        prev: 1000,
+        curr: 25,
+        ratePoisha: 900,
+        meterReplaced: true,
+      });
+      expect(res.units).toBe(25);
+      expect(res.amountPoisha).toBe(22500);
+    });
+
+    it('voidPayment ignores allocations and creditApplications for missing bills', () => {
+      const res = voidPayment({
+        allocations: [{ billId: 'non-existent-bill', amountPoisha: taka(1000) }],
+        creditCreatedPoisha: 0,
+        creditBalancePoisha: 0,
+        creditApplications: [{ billId: 'non-existent-bill-2', amountPoisha: taka(500) }],
+        bills: [{ id: 'bill-1', totalPoisha: taka(5000), paidPoisha: taka(2000) }],
+      });
+      expect(res.bills[0]?.paidPoisha).toBe(taka(2000));
+    });
   });
 });

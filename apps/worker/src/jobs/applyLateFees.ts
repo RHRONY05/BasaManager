@@ -41,27 +41,56 @@ export async function runApplyLateFees(
 
   for (const bill of candidateBills) {
     const building = bill.lease.unit.building;
-    const balance = Number(bill.totalPoisha - bill.paidPoisha);
     const dueDateStr =
       bill.dueDate instanceof Date
         ? bill.dueDate.toISOString().slice(0, 10)
         : String(bill.dueDate).slice(0, 10);
-    const hasLateFeeLine = bill.lines.some((l) => l.kind === 'late_fee');
 
-    const fee = computeLateFee({
-      dueDate: dueDateStr,
-      graceDays: building.graceDays,
-      lateFeeType: building.lateFeeType as 'none' | 'flat' | 'percent',
-      lateFeeValue: building.lateFeeValue,
-      balancePoisha: balance,
-      today: todayStr,
-      lateFeeAlreadyApplied: hasLateFeeLine,
-    });
-
-    if (fee > 0) {
+    try {
       await ctx.prisma.$tx(
         { orgId: bill.orgId, userId: '00000000-0000-4000-8000-000000000000', role: null },
         async (tx) => {
+          // 1. Lock the lease row per the rules
+          await tx.$queryRawUnsafe('SELECT id FROM leases WHERE id = $1 FOR UPDATE', bill.leaseId);
+
+          // 2. Re-read bill under lock with its lines
+          const freshBill = await tx.bill.findUnique({
+            where: { id: bill.id },
+            include: { lines: true },
+          });
+
+          if (!freshBill || freshBill.lateFeeAppliedAt !== null) {
+            return;
+          }
+
+          if (freshBill.status !== 'issued' && freshBill.status !== 'partially_paid') {
+            return;
+          }
+
+          const hasLateFeeLine = freshBill.lines.some((l) => l.kind === 'late_fee');
+          if (hasLateFeeLine) {
+            return;
+          }
+
+          const freshBalance = Number(freshBill.totalPoisha - freshBill.paidPoisha);
+          if (freshBalance <= 0) {
+            return;
+          }
+
+          const fee = computeLateFee({
+            dueDate: dueDateStr,
+            graceDays: building.graceDays,
+            lateFeeType: building.lateFeeType as 'none' | 'flat' | 'percent',
+            lateFeeValue: building.lateFeeValue,
+            balancePoisha: freshBalance,
+            today: todayStr,
+            lateFeeAlreadyApplied: false,
+          });
+
+          if (fee <= 0) {
+            return;
+          }
+
           // Add late_fee line
           await tx.billLine.create({
             data: {
@@ -103,11 +132,13 @@ export async function runApplyLateFees(
               },
             ],
           });
+
+          appliedCount++;
+          totalFeePoisha += fee;
         },
       );
-
-      appliedCount++;
-      totalFeePoisha += fee;
+    } catch (err) {
+      ctx.logger.error({ err, billId: bill.id }, 'Failed to apply late fee to bill');
     }
   }
 

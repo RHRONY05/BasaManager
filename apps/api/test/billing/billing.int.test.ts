@@ -398,6 +398,36 @@ describe('V8: billing endpoints', () => {
         .send({ amountPoisha: 100, reason: 'x' });
       expect(res.status).toBe(403);
     });
+
+    it('400 VALIDATION_FAILED if adjustment makes total negative or less than paid_poisha', async () => {
+      const id = await draftFlat();
+      await landlord.agent.post(`/api/bills/${id}/issue`);
+      // Total is 1,600,000 poisha. Negative total:
+      const resNeg = await landlord.agent
+        .post(`/api/bills/${id}/adjustments`)
+        .send({ amountPoisha: -2000000, reason: 'Overdiscount' });
+      expect(resNeg.status).toBe(400);
+      expect(resNeg.body.error.code).toBe(ErrorCode.VALIDATION_FAILED);
+
+      // Total less than paid:
+      await q(`update bills set paid_poisha = 1000000, status = 'partially_paid' where id = $1`, [id]);
+      const resUnder = await landlord.agent
+        .post(`/api/bills/${id}/adjustments`)
+        .send({ amountPoisha: -700000, reason: 'Exceeds balance' });
+      expect(resUnder.status).toBe(400);
+      expect(resUnder.body.error.code).toBe(ErrorCode.VALIDATION_FAILED);
+    });
+
+    it('201: adjustment reducing balance to 0 marks issued bill as paid', async () => {
+      const id = await draftFlat();
+      await landlord.agent.post(`/api/bills/${id}/issue`);
+      const res = await landlord.agent
+        .post(`/api/bills/${id}/adjustments`)
+        .send({ amountPoisha: -1600000, reason: 'Full waiver promo' });
+      expect(res.status).toBe(201);
+      expect(res.body.data.status).toBe('paid');
+      expect((await billOf(leaseFlat))!.status).toBe('paid');
+    });
   });
 
   describe('POST /bills/:id/late-fee/waive', () => {
@@ -472,6 +502,16 @@ describe('V8: billing endpoints', () => {
       expect((await billOf(leaseFlat))!.status).not.toBe('void');
     });
 
+    it('409 CONFLICT when bill status is paid', async () => {
+      const id = await draftFlat();
+      await landlord.agent.post(`/api/bills/${id}/issue`);
+      await q(`update bills set status='paid' where id=$1`, [id]);
+      const res = await landlord.agent.post(`/api/bills/${id}/void`).send({ reason: 'oops' });
+      expect(res.status).toBe(409);
+      expect(res.body.error.code).toBe(ErrorCode.CONFLICT);
+      expect((await billOf(leaseFlat))!.status).toBe('paid');
+    });
+
     it('403 for caretaker', async () => {
       const id = await draftFlat();
       const res = await caretaker.agent.post(`/api/bills/${id}/void`).send({ reason: 'x' });
@@ -509,6 +549,20 @@ describe('V8: billing endpoints', () => {
   });
 
   describe('role scoping and isolation', () => {
+    it('tenant cannot see draft bills via GET /api/bills/:id (404) or GET /api/bills list', async () => {
+      const draftId = await draftFlat();
+      // Tenant tries to read draft bill
+      const getRes = await tenantFlat.agent.get(`/api/bills/${draftId}`);
+      expect(getRes.status).toBe(404);
+      expect(getRes.body.error.code).toBe(ErrorCode.NOT_FOUND);
+
+      // Tenant lists bills -> drafts are excluded
+      const listRes = await tenantFlat.agent.get('/api/bills');
+      expect(listRes.status).toBe(200);
+      const ids = listRes.body.data.map((b: { id: string }) => b.id);
+      expect(ids).not.toContain(draftId);
+    });
+
     it('tenant cannot read another tenants bill (404 NOT_FOUND) but can read their own', async () => {
       await run();
       const flatId = (await billOf(leaseFlat))!.id;

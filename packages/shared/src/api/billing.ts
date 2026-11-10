@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { billStatusSchema, billLineKindSchema } from '../enums';
+import { cursorQuerySchema } from './common';
 
 export const monthStringSchema = z
   .string()
@@ -17,13 +18,14 @@ export const runBillingSchema = z.object({
 });
 export type RunBillingInput = z.infer<typeof runBillingSchema>;
 
-export const listBillsQuerySchema = z.object({
+export const listBillsQuerySchema = cursorQuerySchema.extend({
   status: billStatusSchema.optional(),
   buildingId: z.string().uuid().optional(),
   month: monthStringSchema.optional(),
   leaseId: z.string().uuid().optional(),
 });
-export type ListBillsQuery = z.infer<typeof listBillsQuerySchema>;
+export type ListBillsQuery = z.input<typeof listBillsQuerySchema>;
+export type ListBillsParsedQuery = z.infer<typeof listBillsQuerySchema>;
 
 export const billLineResponseSchema = z.object({
   id: z.string().uuid(),

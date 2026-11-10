@@ -281,10 +281,11 @@ export class BillingService {
                   label: 'Electricity',
                   amountPoisha: elec.amountPoisha,
                   meta: {
-                    prev: prevReading,
+                    prev: reading.meterReplaced ? (reading.newMeterStart ?? 0) : prevReading,
                     curr: reading.reading,
                     units: elec.units,
                     ratePoisha: building.electricityRatePoisha,
+                    meterReplaced: reading.meterReplaced,
                   },
                 });
                 totalPoisha += elec.amountPoisha;
@@ -297,40 +298,31 @@ export class BillingService {
             }
           }
 
-          try {
-            const createdBill = await tx.bill.create({
-              data: {
-                orgId: ctx.orgId,
-                leaseId: lease.id,
-                periodMonth: periodDate,
-                dueDate,
-                status: 'draft',
-                needsReading,
-                totalPoisha: BigInt(totalPoisha),
-                paidPoisha: BigInt(0),
-              },
-            });
+          const createdBill = await tx.bill.create({
+            data: {
+              orgId: ctx.orgId,
+              leaseId: lease.id,
+              periodMonth: periodDate,
+              dueDate,
+              status: 'draft',
+              needsReading,
+              totalPoisha: BigInt(totalPoisha),
+              paidPoisha: BigInt(0),
+            },
+          });
 
-            await tx.billLine.createMany({
-              data: linesToCreate.map((l) => ({
-                orgId: l.orgId,
-                billId: createdBill.id,
-                kind: l.kind,
-                label: l.label,
-                amountPoisha: BigInt(l.amountPoisha),
-                meta: (l.meta ?? {}) as Prisma.InputJsonValue,
-              })),
-            });
+          await tx.billLine.createMany({
+            data: linesToCreate.map((l) => ({
+              orgId: l.orgId,
+              billId: createdBill.id,
+              kind: l.kind,
+              label: l.label,
+              amountPoisha: BigInt(l.amountPoisha),
+              meta: (l.meta ?? {}) as Prisma.InputJsonValue,
+            })),
+          });
 
-            created++;
-          } catch (e: unknown) {
-            // Check for unique constraint violation (concurrent execution)
-            if (e && typeof e === 'object' && 'code' in e && (e as { code: string }).code === 'P2002') {
-              skipped++;
-            } else {
-              throw e;
-            }
-          }
+          created++;
         }
       }
 
@@ -394,6 +386,10 @@ export class BillingService {
 
       if (!unit) {
         throw ApiError.notFound('Unit not found');
+      }
+
+      if (unit.electricityMode !== 'submeter') {
+        throw ApiError.badRequest(ErrorCode.VALIDATION_FAILED, 'Unit does not have an electric submeter');
       }
 
       // Check caretaker scope if caretaker
@@ -482,6 +478,14 @@ export class BillingService {
             throw ApiError.conflict('Readings cannot be edited after the bill is issued');
           }
 
+          const elecMeta = {
+            prev: input.meterReplaced ? (input.newMeterStart ?? 0) : prevReading,
+            curr: input.reading,
+            units: elecResult.units,
+            ratePoisha: unit.building.electricityRatePoisha,
+            meterReplaced: input.meterReplaced,
+          };
+
           // Update or insert electricity line (bm_app has no DELETE grant on bill_lines)
           const existingElecLine = bill.lines.find((l) => l.kind === 'electricity');
           if (existingElecLine) {
@@ -489,12 +493,7 @@ export class BillingService {
               where: { id: existingElecLine.id },
               data: {
                 amountPoisha: BigInt(elecResult.amountPoisha),
-                meta: {
-                  prev: prevReading,
-                  curr: input.reading,
-                  units: elecResult.units,
-                  ratePoisha: unit.building.electricityRatePoisha,
-                } as unknown as Prisma.InputJsonValue,
+                meta: elecMeta as unknown as Prisma.InputJsonValue,
               },
             });
           } else {
@@ -505,12 +504,7 @@ export class BillingService {
                 kind: 'electricity',
                 label: 'Electricity',
                 amountPoisha: BigInt(elecResult.amountPoisha),
-                meta: {
-                  prev: prevReading,
-                  curr: input.reading,
-                  units: elecResult.units,
-                  ratePoisha: unit.building.electricityRatePoisha,
-                } as unknown as Prisma.InputJsonValue,
+                meta: elecMeta as unknown as Prisma.InputJsonValue,
               },
             });
           }
@@ -645,101 +639,113 @@ export class BillingService {
     });
   }
 
+  private async issueBillInTx(
+    tx: Parameters<Parameters<Db['$tx']>[1]>[0],
+    ctx: BillingContext,
+    billId: string,
+    todayStr: string,
+  ): Promise<BillResponse> {
+    const bill = await tx.bill.findUnique({
+      where: {
+        orgId_id: {
+          orgId: ctx.orgId,
+          id: billId,
+        },
+      },
+      include: {
+        lines: true,
+      },
+    });
+
+    if (!bill) {
+      throw ApiError.notFound('Bill not found');
+    }
+
+    if (bill.status !== 'draft') {
+      throw ApiError.conflict('Only draft bills can be issued');
+    }
+
+    if (bill.needsReading) {
+      throw new ApiError(ErrorCode.READING_REQUIRED, 'Submeter reading required before issuing bill');
+    }
+
+    // Lock the lease row per the rules
+    await tx.$queryRawUnsafe('SELECT id FROM leases WHERE id = $1 FOR UPDATE', bill.leaseId);
+
+    // Check available credit on the lease under lock
+    const creditSumRow = await tx.$queryRaw<Array<{ sum: string | null }>>`
+      SELECT coalesce(sum(amount_poisha), 0)::text as sum
+      FROM credit_entries
+      WHERE org_id = ${ctx.orgId}::uuid AND lease_id = ${bill.leaseId}::uuid
+    `;
+    const creditAvailable = parseInt(creditSumRow[0]?.sum ?? '0', 10);
+
+    let newStatus: 'issued' | 'partially_paid' | 'paid' = 'issued';
+    let appliedCredit = 0;
+
+    if (creditAvailable > 0) {
+      const creditRes = applyCreditToBill({
+        creditPoisha: creditAvailable,
+        bill: {
+          totalPoisha: Number(bill.totalPoisha),
+          paidPoisha: Number(bill.paidPoisha),
+        },
+      });
+
+      appliedCredit = creditRes.appliedPoisha;
+      newStatus = creditRes.status;
+
+      if (appliedCredit > 0) {
+        // Record deduction from credit entries (negative amount to reduce balance)
+        await tx.creditEntry.create({
+          data: {
+            orgId: ctx.orgId,
+            leaseId: bill.leaseId,
+            billId: bill.id,
+            amountPoisha: BigInt(-appliedCredit),
+            kind: 'applied',
+          },
+        });
+      }
+    }
+
+    const updatedBill = await tx.bill.update({
+      where: { id: bill.id },
+      data: {
+        status: newStatus,
+        paidPoisha: BigInt(appliedCredit),
+        issuedAt: clock.now(),
+        issuedBy: ctx.userId,
+      },
+      include: { lines: true },
+    });
+
+    // Write outbox event for bill.issued
+    await tx.outboxMessage.createMany({
+      data: [
+        {
+          orgId: ctx.orgId,
+          type: 'bill.issued',
+          payload: {
+            billId: bill.id,
+            leaseId: bill.leaseId,
+            orgId: ctx.orgId,
+          },
+        },
+      ],
+    });
+
+    return toBillDto(updatedBill, todayStr);
+  }
+
   /**
-   * Issues a draft bill and applies any available lease credit.
+   * Issues a single draft bill.
    */
   async issueBill(ctx: BillingContext, billId: string) {
     const todayStr = toDateString(clock.now());
 
     return this.prisma.$tx(this.getTenantCtx(ctx), async (tx) => {
-      const bill = await tx.bill.findUnique({
-        where: {
-          orgId_id: {
-            orgId: ctx.orgId,
-            id: billId,
-          },
-        },
-        include: {
-          lines: true,
-        },
-      });
-
-      if (!bill) {
-        throw ApiError.notFound('Bill not found');
-      }
-
-      if (bill.status !== 'draft') {
-        throw ApiError.conflict('Only draft bills can be issued');
-      }
-
-      if (bill.needsReading) {
-        throw new ApiError(ErrorCode.READING_REQUIRED, 'Submeter reading required before issuing bill');
-      }
-
-      // Check available credit on the lease
-      const creditSumRow = await tx.$queryRaw<Array<{ sum: string | null }>>`
-        SELECT coalesce(sum(amount_poisha), 0)::text as sum
-        FROM credit_entries
-        WHERE org_id = ${ctx.orgId}::uuid AND lease_id = ${bill.leaseId}::uuid
-      `;
-      const creditAvailable = parseInt(creditSumRow[0]?.sum ?? '0', 10);
-
-      let newStatus: 'issued' | 'partially_paid' | 'paid' = 'issued';
-      let appliedCredit = 0;
-
-      if (creditAvailable > 0) {
-        const creditRes = applyCreditToBill({
-          creditPoisha: creditAvailable,
-          bill: {
-            totalPoisha: Number(bill.totalPoisha),
-            paidPoisha: Number(bill.paidPoisha),
-          },
-        });
-
-        appliedCredit = creditRes.appliedPoisha;
-        newStatus = creditRes.status;
-
-        if (appliedCredit > 0) {
-          // Record deduction from credit entries (negative amount to reduce balance)
-          await tx.creditEntry.create({
-            data: {
-              orgId: ctx.orgId,
-              leaseId: bill.leaseId,
-              billId: bill.id,
-              amountPoisha: BigInt(-appliedCredit),
-              kind: 'applied',
-            },
-          });
-        }
-      }
-
-      const updatedBill = await tx.bill.update({
-        where: { id: bill.id },
-        data: {
-          status: newStatus,
-          paidPoisha: BigInt(appliedCredit),
-          issuedAt: clock.now(),
-          issuedBy: ctx.userId,
-        },
-        include: { lines: true },
-      });
-
-      // Write outbox event for bill.issued
-      await tx.outboxMessage.createMany({
-        data: [
-          {
-            orgId: ctx.orgId,
-            type: 'bill.issued',
-            payload: {
-              billId: bill.id,
-              leaseId: bill.leaseId,
-              orgId: ctx.orgId,
-            },
-          },
-        ],
-      });
-
-      return toBillDto(updatedBill, todayStr);
+      return this.issueBillInTx(tx, ctx, billId, todayStr);
     });
   }
 
@@ -748,6 +754,7 @@ export class BillingService {
    */
   async issueReadyBills(ctx: BillingContext, input: IssueReadyBillsInput) {
     const periodDate = parseMonthToDate(input.month);
+    const todayStr = toDateString(clock.now());
 
     return this.prisma.$tx(this.getTenantCtx(ctx), async (tx) => {
       // Find building to confirm org ownership
@@ -790,7 +797,7 @@ export class BillingService {
         if (b.needsReading) {
           skipped++;
         } else {
-          await this.issueBill(ctx, b.id);
+          await this.issueBillInTx(tx, ctx, b.id, todayStr);
           issued++;
         }
       }
@@ -823,6 +830,33 @@ export class BillingService {
         throw ApiError.conflict('Adjustments cannot be added to paid or void bills');
       }
 
+      // Lock lease row per financial rules
+      await tx.$queryRawUnsafe('SELECT id FROM leases WHERE id = $1 FOR UPDATE', bill.leaseId);
+
+      const newTotal = Number(bill.totalPoisha) + input.amountPoisha;
+      if (newTotal < 0) {
+        throw ApiError.badRequest(ErrorCode.VALIDATION_FAILED, 'Adjusted total cannot be negative');
+      }
+      if (newTotal < Number(bill.paidPoisha)) {
+        throw ApiError.badRequest(
+          ErrorCode.VALIDATION_FAILED,
+          'Adjustment cannot reduce total below amount already paid',
+        );
+      }
+
+      // Recompute status
+      let newStatus: 'draft' | 'issued' | 'partially_paid' | 'paid' = bill.status;
+      if (bill.status !== 'draft') {
+        const newBalance = newTotal - Number(bill.paidPoisha);
+        if (newBalance === 0) {
+          newStatus = 'paid';
+        } else if (Number(bill.paidPoisha) > 0) {
+          newStatus = 'partially_paid';
+        } else {
+          newStatus = 'issued';
+        }
+      }
+
       // Create adjustment line
       await tx.billLine.create({
         data: {
@@ -839,9 +873,8 @@ export class BillingService {
       const updatedBill = await tx.bill.update({
         where: { id: bill.id },
         data: {
-          totalPoisha: {
-            increment: BigInt(input.amountPoisha),
-          },
+          totalPoisha: BigInt(newTotal),
+          status: newStatus,
         },
         include: { lines: true },
       });
@@ -871,6 +904,13 @@ export class BillingService {
         throw ApiError.notFound('Bill not found');
       }
 
+      if (bill.status === 'void') {
+        throw ApiError.conflict('Cannot waive late fee on a void bill');
+      }
+
+      // Lock lease row per financial rules
+      await tx.$queryRawUnsafe('SELECT id FROM leases WHERE id = $1 FOR UPDATE', bill.leaseId);
+
       const lateFeeLine = bill.lines.find((l) => l.kind === 'late_fee');
       if (!lateFeeLine) {
         throw ApiError.notFound('Bill has no late fee to waive');
@@ -890,12 +930,24 @@ export class BillingService {
         },
       });
 
+      const newTotal = Number(bill.totalPoisha) - currentFee;
+      let newStatus: 'draft' | 'issued' | 'partially_paid' | 'paid' = bill.status;
+      if (bill.status !== 'draft') {
+        const newBalance = newTotal - Number(bill.paidPoisha);
+        if (newBalance === 0) {
+          newStatus = 'paid';
+        } else if (Number(bill.paidPoisha) > 0) {
+          newStatus = 'partially_paid';
+        } else {
+          newStatus = 'issued';
+        }
+      }
+
       const updatedBill = await tx.bill.update({
         where: { id: bill.id },
         data: {
-          totalPoisha: {
-            decrement: BigInt(currentFee),
-          },
+          totalPoisha: BigInt(newTotal),
+          status: newStatus,
         },
         include: { lines: true },
       });
@@ -923,6 +975,25 @@ export class BillingService {
 
       if (!bill) {
         throw ApiError.notFound('Bill not found');
+      }
+
+      if (bill.status === 'void') {
+        throw ApiError.conflict('Bill is already void');
+      }
+
+      if (bill.status === 'paid') {
+        throw ApiError.conflict('Cannot void a paid bill');
+      }
+
+      if (bill.status !== 'draft' && bill.status !== 'issued') {
+        throw ApiError.conflict(`Cannot void a bill with status ${bill.status}`);
+      }
+
+      // Lock lease row per financial rules
+      await tx.$queryRawUnsafe('SELECT id FROM leases WHERE id = $1 FOR UPDATE', bill.leaseId);
+
+      if (Number(bill.paidPoisha) > 0) {
+        throw ApiError.conflict('Cannot void a bill that has payments or credit applied');
       }
 
       const allocationsCount = await tx.paymentAllocation.count({
@@ -994,6 +1065,8 @@ export class BillingService {
             },
           },
         };
+        // Tenants must NEVER see draft bills
+        where.status = { not: 'draft' };
       } else if (query.buildingId) {
         where.lease = {
           unit: {
@@ -1002,13 +1075,30 @@ export class BillingService {
         };
       }
 
-      const bills = await tx.bill.findMany({
+      const limit = Number(query.limit) || 50;
+      const findArgs: Prisma.BillFindManyArgs = {
         where,
         include: { lines: true },
-        orderBy: [{ periodMonth: 'desc' }, { createdAt: 'desc' }],
-      });
+        orderBy: [{ periodMonth: 'desc' }, { id: 'desc' }],
+        take: limit + 1,
+      };
 
-      return bills.map((b) => toBillDto(b, todayStr));
+      if (query.cursor) {
+        findArgs.cursor = { id: query.cursor };
+        findArgs.skip = 1;
+      }
+
+      const bills = await tx.bill.findMany(findArgs);
+      let nextCursor: string | null = null;
+      if (bills.length > limit) {
+        const nextItem = bills.pop();
+        nextCursor = nextItem?.id ?? null;
+      }
+
+      return {
+        bills: bills.map((b) => toBillDto(b, todayStr)),
+        nextCursor,
+      };
     });
   }
 
@@ -1045,7 +1135,7 @@ export class BillingService {
 
       if (ctx.role === 'tenant') {
         const isAssociated = bill.lease.tenants.some((t) => t.membershipId === ctx.membershipId);
-        if (!isAssociated) {
+        if (!isAssociated || bill.status === 'draft') {
           throw ApiError.notFound('Bill not found');
         }
       } else if (ctx.role === 'caretaker') {

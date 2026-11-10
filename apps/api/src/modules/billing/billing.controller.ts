@@ -112,7 +112,7 @@ export class BillingController {
     try {
       const query = getValidated<ListBillsQuery>(res, 'query') ?? {};
       const result = await this.service.listBills(this.getContext(req), query);
-      res.json({ data: result });
+      res.json({ data: result.bills, page: { nextCursor: result.nextCursor } });
     } catch (err) {
       next(err);
     }

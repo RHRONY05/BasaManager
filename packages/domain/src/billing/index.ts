@@ -148,9 +148,11 @@ export function computeLateFee(params: {
   }
 
   if (params.lateFeeType === 'percent') {
-    // lateFeeValue is percentage (e.g. 5 for 5%)
-    const fee = params.balancePoisha * (params.lateFeeValue / 100);
-    return roundTaka(fee);
+    // lateFeeValue is stored in basis points (e.g. 500 = 5% = 500 bp)
+    // formula: roundTaka(balance * bp / 10000) using integer math:
+    // Math.round((balance * bp) / 1_000_000) * 100
+    const rawTaka = Math.round((params.balancePoisha * params.lateFeeValue) / 1_000_000);
+    return rawTaka * 100;
   }
 
   return 0;
@@ -195,16 +197,14 @@ export function allocatePayment(params: { amountPoisha: number; bills: BillToAll
     if (remaining <= 0) break;
     const balance = b.totalPoisha - b.paidPoisha;
     const alloc = Math.min(remaining, balance);
-    if (alloc > 0) {
-      const newPaid = b.paidPoisha + alloc;
-      const status: 'paid' | 'partially_paid' = newPaid >= b.totalPoisha ? 'paid' : 'partially_paid';
-      allocations.push({
-        billId: b.id,
-        amountPoisha: alloc,
-        status,
-      });
-      remaining -= alloc;
-    }
+    const newPaid = b.paidPoisha + alloc;
+    const status: 'paid' | 'partially_paid' = newPaid >= b.totalPoisha ? 'paid' : 'partially_paid';
+    allocations.push({
+      billId: b.id,
+      amountPoisha: alloc,
+      status,
+    });
+    remaining -= alloc;
   }
 
   return {

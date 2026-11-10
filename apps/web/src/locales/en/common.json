@@ -652,6 +652,8 @@
     },
     "units": "units",
     "ratePerUnit": "৳{{rate}}/unit",
+    "electricityExplain": "{{prev}} → {{curr}} = {{units}} units × {{rate}}",
+    "electricityExplainReplaced": "Meter replaced: {{prev}} → {{curr}} = {{units}} units × {{rate}}",
     "prevReading": "Prev reading",
     "currReading": "Current reading",
     "enterReading": "Enter reading",

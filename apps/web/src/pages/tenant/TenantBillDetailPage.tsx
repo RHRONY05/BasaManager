@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Calendar, FileText, CheckCircle2 } from 'lucide-react';
 import { useBill } from '../../lib/api/billing.js';
-import { formatMoney } from '../../lib/format.js';
+import { formatMoney, formatNumber } from '../../lib/format.js';
 import { Skeleton } from '../../components/ui/Skeleton.js';
 import { ErrorState } from '../../components/ui/ErrorState.js';
 
@@ -117,9 +117,17 @@ export default function TenantBillDetailPage() {
 
                   {line.kind === 'electricity' && meta && (
                     <p className="text-xs text-fg-muted">
-                      {Number(meta.prev).toLocaleString()} → {Number(meta.curr).toLocaleString()} ={' '}
-                      {Number(meta.units).toLocaleString()} units × ৳
-                      {(Number(meta.ratePoisha) / 100).toFixed(2)}
+                      {t(
+                        meta.meterReplaced
+                          ? 'billing.electricityExplainReplaced'
+                          : 'billing.electricityExplain',
+                        {
+                          prev: formatNumber(Number(meta.prev)),
+                          curr: formatNumber(Number(meta.curr)),
+                          units: formatNumber(Number(meta.units)),
+                          rate: formatMoney(Number(meta.ratePoisha), { forceDecimals: true }),
+                        },
+                      )}
                     </p>
                   )}
 

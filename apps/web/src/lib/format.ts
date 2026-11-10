@@ -4,13 +4,13 @@
  * Displays whole taka unless there is a non-zero poisha remainder (then 2 decimals).
  * Negative values use U+2212 minus sign: −৳12,500.
  */
-export function formatMoney(poisha: number | bigint): string {
+export function formatMoney(poisha: number | bigint, options?: { forceDecimals?: boolean }): string {
   const isNegative = poisha < 0;
   const absVal = typeof poisha === 'bigint' ? (poisha < 0n ? -poisha : poisha) : Math.abs(poisha);
 
   const poishaRemainder = typeof absVal === 'bigint' ? absVal % 100n : Math.round(absVal % 100);
 
-  const hasDecimals = poishaRemainder > 0;
+  const hasDecimals = options?.forceDecimals || poishaRemainder > 0;
   const takaAmount =
     typeof absVal === 'bigint' ? (hasDecimals ? Number(absVal) / 100 : absVal / 100n) : absVal / 100;
 
@@ -21,6 +21,13 @@ export function formatMoney(poisha: number | bigint): string {
 
   const sign = isNegative ? '\u2212' : '';
   return `${sign}৳${formatted}`;
+}
+
+/**
+ * Formats a count or unit reading with comma separation (e.g. 1,240).
+ */
+export function formatNumber(n: number | bigint): string {
+  return Number(n).toLocaleString('en-US');
 }
 
 /**
