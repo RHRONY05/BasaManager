@@ -70,7 +70,7 @@ V0 Preflight ─▶ V1 Monorepo + CI ─▶ V2 Design ─▶ V3 Infra walking sk
   - **Tests:** integration for every route incl. caretaker scope; `buildings-units.spec.ts`.
   - **AC:** landlord creates 2 buildings with units/charges; caretaker invited, assigned to one building, sees only it.
 
-- [ ] **V7 Tenants & leases** — T1, T2, T4, T5
+- [x] **V7 Tenants & leases** — T1, T2, T4, T5
   - Lease creation stepper, invite accept for tenants, lease detail (overview, history), deposits, tenant `/t/lease`.
   - Docs: `features/tenants-and-leases.md`.
   - **Tests:** one live lease per unit (concurrent create → one wins with 409); invite flows; `tenant-invite.spec.ts`.

@@ -8,11 +8,11 @@
 ## Now
 | | |
 |---|---|
-| **Phase** | **Goal 2: Onboarding & properties (Tasks V6–V8)** in progress. Task V6 complete and merged (PR #20). Next: Task V7 (Tenants & leases). |
-| **Next task** | **V7: Tenants & leases** (T1, T2, T4, T5). |
+| **Phase** | **Goal 2: Organisations, buildings, units, tenants, leases (Tasks V6–V7)** 100% COMPLETE. Tasks V6, V7, and Goal 2 bug fixes merged to `main` (PR #20, #21, #22). Staging green at `166656d`. |
+| **Next task** | **Goal 3: V8 Billing engine** (start with `/goal Complete goal 3 from .agent/GOAL.md` in a fresh session). |
 | **Blocked on** | — |
-| **Production URL** | — (will be https://basamanager.rhrony05.me; staging at https://staging.basamanager.rhrony05.me running `bfc20cd`) |
-| **Last updated** | 2026-11-10 by Antigravity (lead): Task V6 merged into main (PR #20). Unit (422/422), integration (287/287), e2e passed, docs:check passed. Claude Reviewer APPROVE. |
+| **Production URL** | — (will be https://basamanager.rhrony05.me; staging at https://staging.basamanager.rhrony05.me running `166656d`) |
+| **Last updated** | 2026-11-10 by Antigravity (lead): Goal 2 100% COMPLETE. Tasks V6, V7, and Goal 2 bug hunt & race condition fixes merged to `main` (PR #22, commit `166656d`). Unit (474/474), integration (69/69), Playwright e2e all passed. Staging deploy run 42815182424 verified green. Claude Reviewer APPROVE. |
 
 ## Resume here (written at the 2026-11-08 pause)
 **First item:** ✅ done 2026-11-08: VM `vm-basamanager` started (public IP 172.198.71.173, SSH with the deploy key works). The ssh user cannot run `docker ps` (permission denied on the socket), so staging container state is unchecked; devops should check with sudo when finishing #3. **2026-11-09: devops finished all 25 V3 review items (head `fed9bc2`, CI green, blocker proved on staging, runs 42507019561 / 42507429890). Next item: devops fixes the 2026-11-09 Opus re-review of #3 (CHANGES REQUESTED, https://github.com/RHRONY05/BasaManager/pull/3#pullrequestreview-5819099087): (1) BLOCKER: install openssl in the `base` stage of `infra/docker/api.Dockerfile` and `worker.Dockerfile` (migrate fails "Can't write to @prisma/engines" on every new image); prove with a clean build + green migrate on staging. (2) Re-run both rollback drills (migrate/early failure and smoke failure) with the new scripts and record them. (3) Correct PROGRESS and `docs/operations/rollback.md`: runs 42507019561/42507429890 failed at migrate, not at a forced hook. (4) Add a CI step that builds the api image and runs migrate. (5) Nits: deploy.yml:160-161, rollback.sh:566, sentry.test.ts:215-217, provision-secrets.sh:26. Then Opus re-review, squash merge, lead tags `v0.1.0`, checks prod `/api/health`, runs `weekly` once. Environment branch policies are still unset (deployment_branch_policy null on staging and production): set via `gh api` if the token allows, else keep as an owner Human step.**
@@ -922,3 +922,30 @@ Did: Implemented Task V6 (stories O1–O5) covering landlord organisation settin
 - Squash-merged PR #20 to `main` (commit `bfc20cd`). Staging deploy initiated.
 Tests: typecheck ✅ lint ✅ unit ✅ (422 passed) int ✅ (287 passed) e2e ✅ (onboarding, buildings-units, states, auth, home) docs ✅ (97 checked).
 Next: Task V7 (Tenants & leases — T1, T2, T4, T5).
+
+### 2026-11-10 — Antigravity (lead) — Task V7 Tenants & Leases (PR #21)
+Did: Implemented Task V7 (stories T1, T2, T4, T5) covering tenant invitations, lease creation stepper, deposit ledger, and tenant portal:
+- Backend: LeasesService & LeasesController, deposit ledger with append-only entries, calendar-date validation in Asia/Dhaka, invite generation with transactional outbox, activateDueLeases scheduled job with Dhaka timezone calculation.
+- Real-time & Auth: Secure tenant invite acceptance flow with existing/new user discrimination, single-use token invalidation, role demotion protection (staff cannot become tenants and vice-versa).
+- Frontend: Landlord LeasesPage, LeaseDetailPage (Overview, Deposit Ledger, Billing, Charges, Tenants), TenantPortal (`/t/lease`), InvitePage with password strength and role routing.
+- Docs: `docs/features/tenants-and-leases.md` with complete L0/L1/L2 SVG diagrams.
+- CI 8/8 green across all checks. Claude Reviewer (`claude-sonnet-5-5`) VERDICT: APPROVE.
+- Squash-merged PR #21 to `main` (commit `aa0304e`). Staging deploy GREEN.
+Tests: typecheck ✅ lint ✅ unit ✅ (474 passed) int ✅ (67 passed) e2e ✅ docs ✅ (97 checked).
+
+### 2026-11-10 — Antigravity (lead) — Goal 2 Bug Hunt & Race Condition Hardening (PR #22) & Staging Deploy
+Did: Triaged, fixed, tested, reviewed, and merged all Goal 2 bug hunter findings and reviewer race-condition hardening on branch `fix/goal2-bugs`:
+- Cancel lease locking & concurrency: added `POST /api/leases/:id/cancel` with strict locking hierarchy (`invitations` updateMany/FOR UPDATE first, verify `acceptedAt` is null, `SELECT ... FROM leases FOR UPDATE` second, verify `leaseTenant` count == 0 and held deposit == 0). Ensures cancel cannot race against tenant acceptance or deposit recording.
+- Deadlock prevention on lease resend: updated `resendInvite` to lock open invitations with `FOR UPDATE` before acquiring the lease `FOR UPDATE` lock, strictly enforcing the `invitations` -> `leases` locking hierarchy across all three mutation paths (`accept`, `cancel`, `resend`).
+- Resend vs Cancel race safety: in `cancelPendingLease`, added a secondary revocation pass under the lease lock to catch any racing resend invite committed while waiting for the lease lock, guaranteeing 0 open invites upon lease cancellation.
+- Concurrent race integration tests: added 4 PostgreSQL concurrent race integration tests in `apps/api/test/leases/leases.int.test.ts` (cancel vs accept, cancel vs recordDeposit, resend vs accept, resend vs cancel) verifying neither deadlocks nor returns 500, and asserts deterministic final DB state. All 69/69 integration tests passing.
+- Existing user invite acceptance: shared `verifyUserPasswordWithLockout` helper enforces `deletedAt`, lockout periods, Google-only accounts, and failure counting; sets `emailVerifiedAt` if not previously set.
+- Rate limiting: added `rateLimiters.loginLimiter` (10 req/min per IP) to `POST /api/invites/:token/accept`.
+- UI & Validation: refined `InvitePage` client-side password length validation with Zod `superRefine` so `#password-error` appears properly on short passwords for new accounts, while allowing existing users to enter their existing password without full name.
+- Documentation: updated `docs/features/organisations-and-staff.md`, `docs/features/tenants-and-leases.md` (documented lock hierarchy), and `.agent/04-API.md`.
+- CI 8/8 green across all checks in run `42812458763` (lint-typecheck, unit, integration, e2e, images, docs, security, CodeQL).
+- Re-reviewed by Claude Reviewer (`claude-sonnet-5-5`), verdict: `VERDICT: APPROVE`.
+- Squash-merged PR #22 to `main` (commit `166656d`).
+- Staging deploy run `42815182424` GREEN across all jobs. Live staging verified: `/api/health` -> 200 OK (release `166656d`), `/api/ready` -> 200 OK (`checks: { db: true, redis: true }`).
+Tests: typecheck ✅ lint ✅ unit ✅ (474 passed) int ✅ (69 passed) e2e ✅ docs ✅ (97 checked).
+Next: Goal 2 is 100% COMPLETE with 0 unresolved issues. Hard boundary reached per `.agent/rules/basamanager.md` and `.agent/GOAL.md`. Ready for Goal 3 (Tasks V8–V10: Billing engine, manual payments, SSLCommerz).
