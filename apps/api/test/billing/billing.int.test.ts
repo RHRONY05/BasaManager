@@ -110,23 +110,26 @@ describe('V8: billing endpoints', () => {
       const flat = await billOf(leaseFlat);
       expect(flat).toMatchObject({ status: 'draft', needs_reading: false, total_poisha: '1600000' });
       const lines = await q<{ kind: string; amount_poisha: string }>(
-        `select kind, amount_poisha::text from bill_lines where bill_id=$1 order by kind`,
+        `select kind, amount_poisha::text from bill_lines where bill_id=$1 order by kind::text`,
         [flat!.id],
       );
       expect(lines).toEqual([
         { kind: 'fixed_charge', amount_poisha: '100000' },
         { kind: 'rent', amount_poisha: '1500000' },
       ]);
-      const due = await q<{ d: string }>(`select to_char(due_date,'YYYY-MM-DD') as d from bills where id=$1`, [
-        flat!.id,
-      ]);
+      const due = await q<{ d: string }>(
+        `select to_char(due_date,'YYYY-MM-DD') as d from bills where id=$1`,
+        [flat!.id],
+      );
       expect(due[0]!.d).toBe('2026-03-10');
     });
 
     it('is idempotent: running several times (even concurrently) leaves exactly one bill per lease', async () => {
       const results = await Promise.all([run(), run(), run()]);
       for (const r of results) expect(r.status).toBe(200);
-      const rows = await q<{ n: string }>(`select count(*)::text as n from bills where period_month='2026-03-01'`);
+      const rows = await q<{ n: string }>(
+        `select count(*)::text as n from bills where period_month='2026-03-01'`,
+      );
       expect(rows[0]!.n).toBe('2');
       expect((await run()).body.data).toEqual({ created: 0, skipped: 2 });
     });
@@ -183,7 +186,11 @@ describe('V8: billing endpoints', () => {
       const res = await put();
       expect(res.status).toBe(200);
       const b = await billOf(leaseMeter);
-      expect(b).toMatchObject({ needs_reading: false, status: 'draft', total_poisha: String(1600000 + 139500) });
+      expect(b).toMatchObject({
+        needs_reading: false,
+        status: 'draft',
+        total_poisha: String(1600000 + 139500),
+      });
       const lines = await q<{ amount_poisha: string; meta: { prev: number; curr: number } }>(
         `select amount_poisha::text, meta from bill_lines where bill_id=$1 and kind='electricity'`,
         [b!.id],
@@ -279,7 +286,11 @@ describe('V8: billing endpoints', () => {
       await setCredit(leaseFlat, 300000);
       const res = await landlord.agent.post(`/api/bills/${id}/issue`);
       expect(res.status).toBe(200);
-      expect(res.body.data).toMatchObject({ status: 'partially_paid', paidPoisha: 300000, balancePoisha: 1300000 });
+      expect(res.body.data).toMatchObject({
+        status: 'partially_paid',
+        paidPoisha: 300000,
+        balancePoisha: 1300000,
+      });
       expect(await creditSum(leaseFlat)).toBe('0');
     });
 
@@ -313,7 +324,9 @@ describe('V8: billing endpoints', () => {
   describe('POST /bills/issue-ready', () => {
     it('issues drafts without missing readings and leaves the rest', async () => {
       await run();
-      const res = await landlord.agent.post('/api/bills/issue-ready').send({ buildingId: building, month: '2026-03' });
+      const res = await landlord.agent
+        .post('/api/bills/issue-ready')
+        .send({ buildingId: building, month: '2026-03' });
       expect(res.status).toBe(200);
       expect(res.body.data).toEqual({ issued: 1, skipped: 1 });
       expect((await billOf(leaseFlat))!.status).toBe('issued');
@@ -322,7 +335,9 @@ describe('V8: billing endpoints', () => {
 
     it('403 for caretaker', async () => {
       await run();
-      const res = await caretaker.agent.post('/api/bills/issue-ready').send({ buildingId: building, month: '2026-03' });
+      const res = await caretaker.agent
+        .post('/api/bills/issue-ready')
+        .send({ buildingId: building, month: '2026-03' });
       expect(res.status).toBe(403);
     });
   });
@@ -345,7 +360,9 @@ describe('V8: billing endpoints', () => {
     it('201 on an issued bill (positive charge raises total and balance)', async () => {
       const id = await draftFlat();
       await landlord.agent.post(`/api/bills/${id}/issue`);
-      const res = await landlord.agent.post(`/api/bills/${id}/adjustments`).send({ amountPoisha: 25000, reason: 'Repair' });
+      const res = await landlord.agent
+        .post(`/api/bills/${id}/adjustments`)
+        .send({ amountPoisha: 25000, reason: 'Repair' });
       expect(res.status).toBe(201);
       expect(res.body.data).toMatchObject({ totalPoisha: 1625000, balancePoisha: 1625000 });
     });
@@ -353,22 +370,32 @@ describe('V8: billing endpoints', () => {
     it('409 CONFLICT on a paid or void bill', async () => {
       const id = await draftFlat();
       await q(`update bills set status='paid', paid_poisha=total_poisha where id=$1`, [id]);
-      const paid = await landlord.agent.post(`/api/bills/${id}/adjustments`).send({ amountPoisha: 100, reason: 'x' });
+      const paid = await landlord.agent
+        .post(`/api/bills/${id}/adjustments`)
+        .send({ amountPoisha: 100, reason: 'x' });
       expect(paid.status).toBe(409);
       expect(paid.body.error.code).toBe(ErrorCode.CONFLICT);
       await q(`update bills set status='void', paid_poisha=0 where id=$1`, [id]);
-      const voided = await landlord.agent.post(`/api/bills/${id}/adjustments`).send({ amountPoisha: 100, reason: 'x' });
+      const voided = await landlord.agent
+        .post(`/api/bills/${id}/adjustments`)
+        .send({ amountPoisha: 100, reason: 'x' });
       expect(voided.status).toBe(409);
     });
 
     it('400 for a missing reason or a zero amount; 403 for caretaker', async () => {
       const id = await draftFlat();
-      for (const body of [{ amountPoisha: 100 }, { amountPoisha: 0, reason: 'x' }, { amountPoisha: 100, reason: '' }]) {
+      for (const body of [
+        { amountPoisha: 100 },
+        { amountPoisha: 0, reason: 'x' },
+        { amountPoisha: 100, reason: '' },
+      ]) {
         const res = await landlord.agent.post(`/api/bills/${id}/adjustments`).send(body);
         expect(res.status).toBe(400);
         expect(res.body.error.code).toBe(ErrorCode.VALIDATION_FAILED);
       }
-      const res = await caretaker.agent.post(`/api/bills/${id}/adjustments`).send({ amountPoisha: 100, reason: 'x' });
+      const res = await caretaker.agent
+        .post(`/api/bills/${id}/adjustments`)
+        .send({ amountPoisha: 100, reason: 'x' });
       expect(res.status).toBe(403);
     });
   });
@@ -381,7 +408,10 @@ describe('V8: billing endpoints', () => {
         `insert into bill_lines (org_id, bill_id, kind, label, amount_poisha) values ($1,$2,'late_fee','Late fee',80000)`,
         [org.id, id],
       );
-      await q(`update bills set total_poisha = total_poisha + 80000, late_fee_applied_at = now() where id=$1`, [id]);
+      await q(
+        `update bills set total_poisha = total_poisha + 80000, late_fee_applied_at = now() where id=$1`,
+        [id],
+      );
       return id;
     }
 
@@ -456,9 +486,10 @@ describe('V8: billing endpoints', () => {
       for (const m of ['2026-05-01', '2026-03-01', '2026-04-01']) {
         await landlord.agent.post(`/api/bills/${(await billOf(leaseFlat, m))!.id}/issue`);
       }
-      await q(`update bills set status='paid', paid_poisha=total_poisha where lease_id=$1 and period_month='2026-04-01'`, [
-        leaseFlat,
-      ]);
+      await q(
+        `update bills set status='paid', paid_poisha=total_poisha where lease_id=$1 and period_month='2026-04-01'`,
+        [leaseFlat],
+      );
       await setCredit(leaseFlat, 100000); // added after issue, so it stays as credit
       const res = await tenantFlat.agent.get('/api/dues');
       expect(res.status).toBe(200);

@@ -57,7 +57,10 @@ describe('Rule 2 — proration', () => {
 
   it('leap-year February uses D=29 (move-in 15 Feb 2028 → 15/29; move-out 10 Feb 2028 → 10/29)', () => {
     expect(prorationFactor({ periodMonth: '2028-02-01', moveInDate: '2028-02-15' })).toBeCloseTo(15 / 29, 10);
-    expect(prorationFactor({ periodMonth: '2028-02-01', moveOutDate: '2028-02-10' })).toBeCloseTo(10 / 29, 10);
+    expect(prorationFactor({ periodMonth: '2028-02-01', moveOutDate: '2028-02-10' })).toBeCloseTo(
+      10 / 29,
+      10,
+    );
     expect(prorate(taka(29000), { periodMonth: '2028-02-01', moveInDate: '2028-02-15' })).toBe(taka(15000));
   });
 
@@ -92,7 +95,10 @@ describe('Rule 3 — electricity', () => {
   });
 
   it('same reading is zero units, zero charge', () => {
-    expect(electricityCharge({ prev: 500, curr: 500, ratePoisha: 900 })).toEqual({ units: 0, amountPoisha: 0 });
+    expect(electricityCharge({ prev: 500, curr: 500, ratePoisha: 900 })).toEqual({
+      units: 0,
+      amountPoisha: 0,
+    });
   });
 
   it('curr < prev without meterReplaced is rejected with READING_LOWER_THAN_PREVIOUS', () => {
@@ -131,13 +137,23 @@ describe('Rule 4 — late fee', () => {
 
   it('4: on 20 Dec nothing more is added (already applied)', () => {
     expect(
-      computeLateFee({ ...base, balancePoisha: taka(5250), today: '2026-12-20', lateFeeAlreadyApplied: true }),
+      computeLateFee({
+        ...base,
+        balancePoisha: taka(5250),
+        today: '2026-12-20',
+        lateFeeAlreadyApplied: true,
+      }),
     ).toBe(0);
   });
 
   it('is applied only once per bill (second check returns 0)', () => {
     expect(
-      computeLateFee({ ...base, balancePoisha: taka(5000), today: '2026-12-13', lateFeeAlreadyApplied: true }),
+      computeLateFee({
+        ...base,
+        balancePoisha: taka(5000),
+        today: '2026-12-13',
+        lateFeeAlreadyApplied: true,
+      }),
     ).toBe(0);
   });
 
@@ -167,7 +183,13 @@ describe('Rule 4 — late fee', () => {
 
   it("type 'none' never charges a fee", () => {
     expect(
-      computeLateFee({ ...base, lateFeeType: 'none', lateFeeValue: 0, balancePoisha: taka(5000), today: '2026-12-13' }),
+      computeLateFee({
+        ...base,
+        lateFeeType: 'none',
+        lateFeeValue: 0,
+        balancePoisha: taka(5000),
+        today: '2026-12-13',
+      }),
     ).toBe(0);
   });
 
@@ -258,11 +280,15 @@ describe('Rule 5 — payment allocation', () => {
 
   it('rejects a zero or negative payment', () => {
     expect(() => allocatePayment({ amountPoisha: 0, bills: [] })).toThrowError(codeOf('VALIDATION_FAILED'));
-    expect(() => allocatePayment({ amountPoisha: -100, bills: [] })).toThrowError(codeOf('VALIDATION_FAILED'));
+    expect(() => allocatePayment({ amountPoisha: -100, bills: [] })).toThrowError(
+      codeOf('VALIDATION_FAILED'),
+    );
   });
 
   it('5 (cont.): Dec bill ৳14,000 issued with ৳3,000 credit → applied 3,000, balance 11,000, partially_paid', () => {
-    expect(applyCreditToBill({ creditPoisha: taka(3000), bill: { totalPoisha: taka(14000), paidPoisha: 0 } })).toEqual({
+    expect(
+      applyCreditToBill({ creditPoisha: taka(3000), bill: { totalPoisha: taka(14000), paidPoisha: 0 } }),
+    ).toEqual({
       appliedPoisha: taka(3000),
       balancePoisha: taka(11000),
       remainingCreditPoisha: 0,
@@ -271,7 +297,9 @@ describe('Rule 5 — payment allocation', () => {
   });
 
   it('credit bigger than the bill pays it fully and leaves the rest as credit', () => {
-    expect(applyCreditToBill({ creditPoisha: taka(20000), bill: { totalPoisha: taka(14000), paidPoisha: 0 } })).toEqual({
+    expect(
+      applyCreditToBill({ creditPoisha: taka(20000), bill: { totalPoisha: taka(14000), paidPoisha: 0 } }),
+    ).toEqual({
       appliedPoisha: taka(14000),
       balancePoisha: 0,
       remainingCreditPoisha: taka(6000),
@@ -280,12 +308,14 @@ describe('Rule 5 — payment allocation', () => {
   });
 
   it('no credit leaves the bill as issued', () => {
-    expect(applyCreditToBill({ creditPoisha: 0, bill: { totalPoisha: taka(14000), paidPoisha: 0 } })).toEqual({
-      appliedPoisha: 0,
-      balancePoisha: taka(14000),
-      remainingCreditPoisha: 0,
-      status: 'issued',
-    });
+    expect(applyCreditToBill({ creditPoisha: 0, bill: { totalPoisha: taka(14000), paidPoisha: 0 } })).toEqual(
+      {
+        appliedPoisha: 0,
+        balancePoisha: taka(14000),
+        remainingCreditPoisha: 0,
+        status: 'issued',
+      },
+    );
   });
 });
 
@@ -319,7 +349,9 @@ describe('Rule 6 — voiding a payment', () => {
       creditApplications: [],
       bills: [{ id: 'oct', totalPoisha: taka(3000), paidPoisha: taka(3000) }],
     });
-    expect(res.bills).toEqual([{ id: 'oct', paidPoisha: taka(2000), balancePoisha: taka(1000), status: 'partially_paid' }]);
+    expect(res.bills).toEqual([
+      { id: 'oct', paidPoisha: taka(2000), balancePoisha: taka(1000), status: 'partially_paid' },
+    ]);
   });
 
   it('credit already used by a later bill: that bill becomes unpaid again by that amount', () => {
@@ -373,8 +405,11 @@ describe('Rule 7 — move-out settlement', () => {
 
   it('credit is added to the settlement', () => {
     expect(
-      computeSettlement({ depositPoisha: taka(24000), unpaidBalancesPoisha: [taka(2000)], creditPoisha: taka(1000) })
-        .settlementPoisha,
+      computeSettlement({
+        depositPoisha: taka(24000),
+        unpaidBalancesPoisha: [taka(2000)],
+        creditPoisha: taka(1000),
+      }).settlementPoisha,
     ).toBe(taka(23000));
   });
 
@@ -390,7 +425,11 @@ describe('Rule 7 — move-out settlement', () => {
   });
 
   it('exactly zero: nothing to refund, nothing owed', () => {
-    const res = computeSettlement({ depositPoisha: taka(5000), unpaidBalancesPoisha: [taka(5000)], creditPoisha: 0 });
+    const res = computeSettlement({
+      depositPoisha: taka(5000),
+      unpaidBalancesPoisha: [taka(5000)],
+      creditPoisha: 0,
+    });
     expect(res.settlementPoisha).toBe(0);
     expect(res.outcome).toBe('even');
     expect(res.leaseStatus).toBe('ended');

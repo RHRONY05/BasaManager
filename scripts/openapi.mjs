@@ -57,6 +57,14 @@ const {
   singleLeaseResponseSchema,
   leasesListResponseSchema,
   depositEntryResponseSchema,
+  runBillingSchema,
+  issueReadyBillsSchema,
+  meterReadingInputSchema,
+  billResponseSchema,
+  addAdjustmentSchema,
+  waiveLateFeeSchema,
+  voidBillSchema,
+  duesResponseSchema,
 } = shared;
 
 // Schemas with `.meta({ id })` in packages/shared become named components automatically.
@@ -429,6 +437,163 @@ registry.registerPath({
     200: { description: 'Tenant history details.' },
     403: errorResponse('Forbidden'),
     404: errorResponse('Tenant membership not found'),
+  },
+});
+
+// ── Billing ──────────────────────────────────────────────────────────────────
+
+registry.registerPath({
+  method: 'post',
+  path: '/api/billing/generate',
+  tags: ['Billing'],
+  summary: 'Generate monthly bills for a building (Landlord only)',
+  request: {
+    body: { content: json(runBillingSchema) },
+  },
+  responses: {
+    200: { description: 'Generated bills summary.' },
+    400: errorResponse('Validation failed'),
+    403: errorResponse('Forbidden'),
+  },
+});
+
+registry.registerPath({
+  method: 'post',
+  path: '/api/billing/issue-ready',
+  tags: ['Billing'],
+  summary: 'Batch issue ready bills for a building (Landlord only)',
+  request: {
+    body: { content: json(issueReadyBillsSchema) },
+  },
+  responses: {
+    200: { description: 'Issued bills count.' },
+    400: errorResponse('Validation failed'),
+    403: errorResponse('Forbidden'),
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/readings',
+  tags: ['Billing'],
+  summary: 'Get meter readings grid for a building (Landlord/Caretaker)',
+  responses: {
+    200: { description: 'Meter readings grid.' },
+    400: errorResponse('Validation failed'),
+    403: errorResponse('Forbidden'),
+  },
+});
+
+registry.registerPath({
+  method: 'put',
+  path: '/api/readings',
+  tags: ['Billing'],
+  summary: 'Enter meter reading (Landlord/Caretaker)',
+  request: {
+    body: { content: json(meterReadingInputSchema) },
+  },
+  responses: {
+    200: { description: 'Meter reading entered.' },
+    400: errorResponse('Validation failed'),
+    403: errorResponse('Forbidden'),
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/bills',
+  tags: ['Billing'],
+  summary: 'List bills (Landlord/Caretaker/Tenant)',
+  responses: {
+    200: { description: 'List of bills.' },
+    401: errorResponse('Unauthenticated'),
+    403: errorResponse('Forbidden'),
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/bills/{id}',
+  tags: ['Billing'],
+  summary: 'Get single bill details',
+  responses: {
+    200: { description: 'Bill details.', content: json(billResponseSchema) },
+    401: errorResponse('Unauthenticated'),
+    403: errorResponse('Forbidden'),
+    404: errorResponse('Bill not found'),
+  },
+});
+
+registry.registerPath({
+  method: 'post',
+  path: '/api/bills/{id}/issue',
+  tags: ['Billing'],
+  summary: 'Issue a draft bill (Landlord only)',
+  responses: {
+    200: { description: 'Bill issued.', content: json(billResponseSchema) },
+    400: errorResponse('Cannot issue without reading or already issued'),
+    403: errorResponse('Forbidden'),
+    404: errorResponse('Bill not found'),
+  },
+});
+
+registry.registerPath({
+  method: 'post',
+  path: '/api/bills/{id}/adjustments',
+  tags: ['Billing'],
+  summary: 'Add an adjustment line to a bill (Landlord only)',
+  request: {
+    body: { content: json(addAdjustmentSchema) },
+  },
+  responses: {
+    200: { description: 'Adjustment added.', content: json(billResponseSchema) },
+    400: errorResponse('Validation failed'),
+    403: errorResponse('Forbidden'),
+    404: errorResponse('Bill not found'),
+  },
+});
+
+registry.registerPath({
+  method: 'post',
+  path: '/api/bills/{id}/waive-late-fee',
+  tags: ['Billing'],
+  summary: 'Waive late fee on a bill (Landlord only)',
+  request: {
+    body: { content: json(waiveLateFeeSchema) },
+  },
+  responses: {
+    200: { description: 'Late fee waived.', content: json(billResponseSchema) },
+    400: errorResponse('Validation failed'),
+    403: errorResponse('Forbidden'),
+    404: errorResponse('Bill not found'),
+  },
+});
+
+registry.registerPath({
+  method: 'post',
+  path: '/api/bills/{id}/void',
+  tags: ['Billing'],
+  summary: 'Void an issued bill (Landlord only)',
+  request: {
+    body: { content: json(voidBillSchema) },
+  },
+  responses: {
+    200: { description: 'Bill voided.', content: json(billResponseSchema) },
+    400: errorResponse('Validation failed or has payments'),
+    403: errorResponse('Forbidden'),
+    404: errorResponse('Bill not found'),
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/dues',
+  tags: ['Billing'],
+  summary: 'Get dues for logged-in tenant (Tenant only)',
+  responses: {
+    200: { description: 'Dues summary.', content: json(duesResponseSchema) },
+    401: errorResponse('Unauthenticated'),
+    403: errorResponse('Forbidden'),
   },
 });
 

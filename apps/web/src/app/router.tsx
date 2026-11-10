@@ -124,6 +124,10 @@ export const router = createBrowserRouter([
         Component: page('/l/billing'),
       },
       {
+        path: 'bills/:id',
+        Component: page('/l/bills/:id'),
+      },
+      {
         path: 'payments',
         Component: page('/l/payments'),
       },
@@ -180,6 +184,10 @@ export const router = createBrowserRouter([
       {
         path: 'bills',
         Component: page('/t/bills'),
+      },
+      {
+        path: 'bills/:id',
+        Component: page('/t/bills/:id'),
       },
       {
         path: 'requests',
