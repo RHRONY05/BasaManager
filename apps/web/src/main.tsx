@@ -6,6 +6,9 @@ import { router } from './app/router';
 import { queryClient } from './lib/api/queryClient';
 import { publicConfigQuery } from './lib/api/publicConfig';
 import { initSentry } from './lib/sentry';
+import '@fontsource-variable/plus-jakarta-sans/wght.css';
+import '@fontsource-variable/bricolage-grotesque/opsz.css';
+import '@fontsource-variable/noto-sans-bengali/wght.css';
 import './styles/globals.css';
 
 const rootEl = document.getElementById('root');

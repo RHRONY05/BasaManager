@@ -2,8 +2,8 @@
    BasaManager design tokens — the single source of truth for looks.
    Designed in task V2 (designer agent). Light + dark.
 
-   Implementation: this file replaces apps/web/src/styles/tokens.css as-is
-   (minus the Google Fonts @import, which becomes self-hosted woff2 later) and
+   Implementation: .agent/design/tokens.css is this file plus a Google Fonts @import for the
+   static artboards; the app self-hosts the same fonts via @fontsource-variable (main.tsx), and
    is exposed to Tailwind v4 through @theme in globals.css — see README.md,
    "Token table" and "Tailwind @theme mapping".
 
@@ -13,41 +13,42 @@
    Only colours live here as raw values. Never use a raw colour anywhere else.
    ========================================================================== */
 
-/* Fonts (all SIL Open Font License 1.1, Google Fonts):
-   - Atkinson Hyperlegible Next — UI + numbers (Braille Institute; built for low-vision legibility)
-   - Atkinson Hyperlegible Mono — IDs, TrxIDs, receipt numbers, meter readings
-   - Noto Sans Bengali        — Bangla (loaded for i18n; also supplies the ৳ glyph) */
-@import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Mono:wght@400..600&family=Atkinson+Hyperlegible+Next:wght@400..800&family=Noto+Sans+Bengali:wght@400..700&display=swap');
+/* Fonts (all SIL Open Font License 1.1). The app self-hosts them via @fontsource-variable;
+   the static artboards load the same families from Google Fonts:
+   - Bricolage Grotesque — headings (--font-display)
+   - Plus Jakarta Sans   — UI text and numbers (--font-body)
+   - Noto Sans Bengali   — Bangla (also supplies the ৳ glyph) */
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Plus+Jakarta+Sans:wght@200..800&family=Noto+Sans+Bengali:wght@400..700&display=swap');
 
 :root {
   color-scheme: light;
 
   /* ---- Surfaces (60%) ------------------------------------------------- */
-  --bg-app: #f5f3ee;            /* page canvas: warm ledger paper */
-  --bg-surface: #ffffff;        /* cards, sidebar, top bar, sheets */
-  --bg-surface-hover: #f8f6f2;  /* hovered row / card */
-  --bg-muted: #edeae3;          /* table header, segmented track, inset wells */
-  --bg-inverse: #1d2725;        /* toast, tooltip */
+  --bg-app: #f5f3ee; /* page canvas: warm ledger paper */
+  --bg-surface: #ffffff; /* cards, sidebar, top bar, sheets */
+  --bg-surface-hover: #f8f6f2; /* hovered row / card */
+  --bg-muted: #edeae3; /* table header, segmented track, inset wells */
+  --bg-inverse: #1d2725; /* toast, tooltip */
 
   /* ---- Text ------------------------------------------------------------ */
-  --fg-default: #17201e;        /* headings, values, body */
-  --fg-secondary: #424d49;      /* supporting body text */
-  --fg-muted: #5a6561;          /* labels, meta — passes 4.5:1 on every surface incl. --bg-muted */
-  --fg-inverse: #f3f1ec;        /* text on --bg-inverse */
+  --fg-default: #17201e; /* headings, values, body */
+  --fg-secondary: #424d49; /* supporting body text */
+  --fg-muted: #5a6561; /* labels, meta — passes 4.5:1 on every surface incl. --bg-muted */
+  --fg-inverse: #f3f1ec; /* text on --bg-inverse */
 
   /* ---- Lines ----------------------------------------------------------- */
-  --border-default: #d8d3c9;    /* card + table outlines (decorative) */
-  --border-muted: #e8e4db;      /* row dividers */
-  --border-strong: #7f8883;     /* input/checkbox outlines — 3:1 non-text contrast */
+  --border-default: #d8d3c9; /* card + table outlines (decorative) */
+  --border-muted: #e8e4db; /* row dividers */
+  --border-strong: #7f8883; /* input/checkbox outlines — 3:1 non-text contrast */
 
   /* ---- Accent (10%): "Karnaphuli teal" ---------------------------------- */
-  --accent-primary: #0b5a61;    /* primary button, active nav, selection, links */
+  --accent-primary: #0b5a61; /* primary button, active nav, selection, links */
   --accent-hover: #084b51;
   --accent-pressed: #063e43;
-  --accent-fg: #ffffff;         /* text/icons on accent */
-  --accent-soft: #e0eeee;       /* selected nav item, selected row, chip on */
+  --accent-fg: #ffffff; /* text/icons on accent */
+  --accent-soft: #e0eeee; /* selected nav item, selected row, chip on */
   --accent-soft-hover: #d0e5e5;
-  --accent-text: #0a5960;       /* accent-coloured text on light surfaces */
+  --accent-text: #0a5960; /* accent-coloured text on light surfaces */
 
   /* ---- Status tones (never the accent; always paired with icon + word) - */
   --success-primary: #23703a;
@@ -60,7 +61,7 @@
   --warning-text: #7a4800;
   --warning-border: #e8c385;
 
-  --danger-primary: #b42318;    /* destructive buttons, overdue */
+  --danger-primary: #b42318; /* destructive buttons, overdue */
   --danger-hover: #96190f;
   --danger-fg: #ffffff;
   --danger-soft: #fbe6e2;
@@ -72,13 +73,13 @@
   --info-text: #264e88;
   --info-border: #b2c5e5;
 
-  --neutral-soft: #ebe8e1;      /* draft / closed / ended badges */
+  --neutral-soft: #ebe8e1; /* draft / closed / ended badges */
   --neutral-text: #48524e;
   --neutral-border: #cfcac0;
 
   /* ---- Effects ---------------------------------------------------------- */
   --focus-ring: #0b5a61;
-  --highlight: #fff1bf;         /* real-time "this changed" flash */
+  --highlight: #fff1bf; /* real-time "this changed" flash */
   --skeleton-base: #e8e4dc;
   --skeleton-shine: #f3f0ea;
   --scrim: rgba(16, 22, 20, 0.48);
@@ -90,22 +91,58 @@
   --google-yellow: #fbbc05;
   --google-red: #ea4335;
 
+  /* ---- Illustrations (landing + auth artwork only) -------------------- */
+  --illo-sky: #d7eae8;
+  --illo-sky-deep: #bfdedb;
+  --illo-sun: #f2c463;
+  --illo-cloud: #ffffff;
+  --illo-facade: #fbf7ef;
+  --illo-facade-shade: #ece4d6;
+  --illo-facade-alt: #ecd5c2;
+  --illo-facade-alt-shade: #ddbfa8;
+  --illo-brick: #c06a48;
+  --illo-window: #a9cfcd;
+  --illo-window-lit: #f5d68a;
+  --illo-ink: #0a4f55; /* labels on lit windows */
+  --illo-frame: #0b5a61;
+  --illo-rail: #7f8883;
+  --illo-leaf: #3d8656;
+  --illo-leaf-soft: #7fbf8f;
+  --illo-trunk: #8a6446;
+  --illo-ground: #ddd5c6;
+
   /* ---- Typography ------------------------------------------------------- */
-  --font-body: 'Atkinson Hyperlegible Next', 'Noto Sans Bengali', system-ui, sans-serif;
-  --font-display: 'Atkinson Hyperlegible Next', 'Noto Sans Bengali', system-ui, sans-serif;
-  --font-mono: 'Atkinson Hyperlegible Mono', ui-monospace, 'Cascadia Mono', monospace;
-  --font-bengali: 'Noto Sans Bengali', 'Atkinson Hyperlegible Next', system-ui, sans-serif;
+  /* Self-hosted via @fontsource-variable (imported in main.tsx); Bangla falls through to Noto Sans Bengali */
+  --font-body:
+    'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', 'Noto Sans Bengali Variable', 'Noto Sans Bengali',
+    system-ui, sans-serif;
+  --font-display:
+    'Bricolage Grotesque Variable', 'Bricolage Grotesque', 'Noto Sans Bengali Variable', 'Noto Sans Bengali',
+    system-ui, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Mono', 'SF Mono', Consolas, monospace;
+  --font-bengali:
+    'Noto Sans Bengali Variable', 'Noto Sans Bengali', 'Plus Jakarta Sans Variable', 'Plus Jakarta Sans',
+    system-ui, sans-serif;
 
   /* size / line-height pairs (rem so browser zoom works) */
-  --text-xs: 0.75rem;     --leading-xs: 1rem;        /* 12/16 meta, captions */
-  --text-sm: 0.875rem;    --leading-sm: 1.25rem;     /* 14/20 table cells, labels */
-  --text-base: 1rem;      --leading-base: 1.5rem;    /* 16/24 body, inputs */
-  --text-lg: 1.125rem;    --leading-lg: 1.625rem;    /* 18/26 card titles */
-  --text-xl: 1.25rem;     --leading-xl: 1.75rem;     /* 20/28 section titles */
-  --text-2xl: 1.5rem;     --leading-2xl: 2rem;       /* 24/32 page titles (mobile) */
-  --text-3xl: 1.875rem;   --leading-3xl: 2.25rem;    /* 30/36 page titles (desktop), KPI values */
-  --text-4xl: 2.25rem;    --leading-4xl: 2.5rem;     /* 36/40 big amounts */
-  --text-5xl: 3rem;       --leading-5xl: 3.25rem;    /* 48/52 hero amount (desktop) */
+  --text-xs: 0.75rem;
+  --leading-xs: 1rem; /* 12/16 meta, captions */
+  --text-sm: 0.875rem;
+  --leading-sm: 1.25rem; /* 14/20 table cells, labels */
+  --text-base: 1rem;
+  --leading-base: 1.5rem; /* 16/24 body, inputs */
+  --text-lg: 1.125rem;
+  --leading-lg: 1.625rem; /* 18/26 card titles */
+  --text-xl: 1.25rem;
+  --leading-xl: 1.75rem; /* 20/28 section titles */
+  --text-2xl: 1.5rem;
+  --leading-2xl: 2rem; /* 24/32 page titles (mobile) */
+  --text-3xl: 1.875rem;
+  --leading-3xl: 2.25rem; /* 30/36 page titles (desktop), KPI values */
+  --text-4xl: 2.25rem;
+  --leading-4xl: 2.5rem; /* 36/40 big amounts */
+  --text-5xl: 3rem;
+  --leading-5xl: 3.25rem; /* 48/52 hero amount (desktop) */
   /* fluid tokens for headings and hero amounts (mobile 320 → desktop) */
   --text-title: clamp(1.5rem, 1.2rem + 1.2vw, 1.875rem);
   --text-amount: clamp(2.25rem, 1.7rem + 2.6vw, 3rem);
@@ -115,7 +152,7 @@
   --weight-medium: 500;
   --weight-semibold: 600;
   --weight-bold: 700;
-  --weight-heavy: 800;    /* hero amounts only */
+  --weight-heavy: 800; /* hero amounts only */
 
   --leading-tight: 1.15;
   --leading-snug: 1.3;
@@ -145,11 +182,11 @@
   --space-24: 96px;
 
   /* ---- Shape ("soft but firm") ------------------------------------------ */
-  --radius-xs: 4px;   /* badges, kbd */
-  --radius-sm: 6px;   /* inputs, small buttons */
-  --radius-md: 10px;  /* buttons, cards inside cards */
-  --radius-lg: 14px;  /* cards, sheets */
-  --radius-xl: 20px;  /* bottom sheet top corners, hero card */
+  --radius-xs: 4px; /* badges, kbd */
+  --radius-sm: 6px; /* inputs, small buttons */
+  --radius-md: 10px; /* buttons, cards inside cards */
+  --radius-lg: 14px; /* cards, sheets */
+  --radius-xl: 20px; /* bottom sheet top corners, hero card */
   --radius-full: 9999px;
 
   /* ---- Depth (one light source, top) ----------------------------------- */
@@ -158,33 +195,48 @@
   --shadow-lg: 0 16px 40px rgb(var(--shadow-color) / 0.16), 0 4px 12px rgb(var(--shadow-color) / 0.08);
 
   /* ---- Motion ("calm": no spring, gentle fades/slides) ------------------ */
-  --dur-instant: 100ms;  /* press feedback, colour */
-  --dur-fast: 150ms;     /* hover, toggles, chips */
-  --dur-normal: 250ms;   /* menus, toasts, tab indicator */
-  --dur-slow: 350ms;     /* sheets, drawers, dialogs */
+  --dur-instant: 100ms; /* press feedback, colour */
+  --dur-fast: 150ms; /* hover, toggles, chips */
+  --dur-normal: 250ms; /* menus, toasts, tab indicator */
+  --dur-slow: 350ms; /* sheets, drawers, dialogs */
   --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);   /* entering */
-  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);    /* exiting */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1); /* entering */
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0); /* exiting */
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 
   /* ---- Layout & interaction --------------------------------------------- */
-  --size-tap: 44px;            /* minimum touch target */
-  --size-control: 44px;        /* button / input height (mobile + desktop forms) */
-  --size-control-sm: 36px;     /* compact buttons in desktop tables only */
-  --size-topbar: 56px;         /* mobile top bar */
+  --size-tap: 44px; /* minimum touch target */
+  --size-control: 44px; /* button / input height (mobile + desktop forms) */
+  --size-control-sm: 36px; /* compact buttons in desktop tables only */
+  --size-topbar: 56px; /* mobile top bar */
   --size-topbar-desktop: 64px;
-  --size-bottom-nav: 64px;     /* + env(safe-area-inset-bottom) */
+  --size-bottom-nav: 64px; /* + env(safe-area-inset-bottom) */
   --size-icon-sm: 16px;
   --size-icon: 20px;
   --size-icon-lg: 24px;
   --size-avatar: 36px;
-  --size-progress: 2px;        /* top progress bar */
+  --size-progress: 2px; /* top progress bar */
   --width-sidebar: 248px;
   --width-sidebar-collapsed: 72px;
-  --width-content: 720px;      /* tenant column on desktop */
-  --width-page: 1200px;        /* staff page max width */
-  --width-form: 480px;         /* auth card, dialogs */
-  --width-drawer: 520px;       /* unit / maintenance drawer */
+  --width-content: 720px; /* tenant column on desktop */
+  --width-page: 1200px; /* staff page max width */
+  --width-form: 480px; /* auth card, dialogs */
+  --width-drawer: 520px; /* unit / maintenance drawer */
+  --width-frame: 1360px; /* landing page frame (wide, small gutters) */
+  --radius-card-lg: 24px; /* landing feature rows */
+  --radius-panel: 28px; /* landing hero scene, CTA panel, auth inset panel */
+  --size-control-lg: 52px; /* landing CTAs */
+  /* Landing + auth display type (fluid, mobile 320 → desktop) */
+  --text-micro: 0.6875rem; /* 11 px: flat status pills in the building drawing only */
+  --text-display: clamp(2.5rem, 1.4rem + 4.4vw, 4.75rem); /* landing h1 */
+  --text-section: clamp(1.75rem, 1.2rem + 2vw, 2.75rem); /* landing h2 */
+  --text-cta: clamp(2rem, 1.3rem + 2.8vw, 3.5rem); /* landing call to action */
+  --text-panel: clamp(1.75rem, 1rem + 1.8vw, 2.5rem); /* auth panel headline */
+  --leading-display: 1;
+  --leading-heading: 1.06;
+  --tracking-display: -0.032em;
+  --tracking-heading: -0.025em;
+  --tracking-stamp: 0.12em;
   --width-prose: 65ch;
   --focus-ring-width: 2px;
   --focus-ring-offset: 2px;
@@ -253,6 +305,24 @@
     --scrim: rgba(0, 0, 0, 0.6);
     --chart-collected: #4db5b7;
     --shadow-color: 0 0 0;
+    --illo-sky: #15302f;
+    --illo-sky-deep: #1a3a39;
+    --illo-sun: #d9a94a;
+    --illo-cloud: #2a3d3b;
+    --illo-facade: #2c3735;
+    --illo-facade-shade: #232d2b;
+    --illo-facade-alt: #3b302a;
+    --illo-facade-alt-shade: #302722;
+    --illo-brick: #b0623f;
+    --illo-window: #355a5c;
+    --illo-window-lit: #e6c066;
+    --illo-ink: #2b2206;
+    --illo-frame: #4db5b7;
+    --illo-rail: #6d7b76;
+    --illo-leaf: #3c7a52;
+    --illo-leaf-soft: #4f9566;
+    --illo-trunk: #6b4e38;
+    --illo-ground: #1f2826;
   }
 }
 
@@ -306,4 +376,22 @@
   --scrim: rgba(0, 0, 0, 0.6);
   --chart-collected: #4db5b7;
   --shadow-color: 0 0 0;
+  --illo-sky: #15302f;
+  --illo-sky-deep: #1a3a39;
+  --illo-sun: #d9a94a;
+  --illo-cloud: #2a3d3b;
+  --illo-facade: #2c3735;
+  --illo-facade-shade: #232d2b;
+  --illo-facade-alt: #3b302a;
+  --illo-facade-alt-shade: #302722;
+  --illo-brick: #b0623f;
+  --illo-window: #355a5c;
+  --illo-window-lit: #e6c066;
+  --illo-ink: #2b2206;
+  --illo-frame: #4db5b7;
+  --illo-rail: #6d7b76;
+  --illo-leaf: #3c7a52;
+  --illo-leaf-soft: #4f9566;
+  --illo-trunk: #6b4e38;
+  --illo-ground: #1f2826;
 }

@@ -2,8 +2,8 @@
    BasaManager design tokens — the single source of truth for looks.
    Designed in task V2 (designer agent). Light + dark.
 
-   Implementation: this file replaces apps/web/src/styles/tokens.css as-is
-   (minus the Google Fonts @import, which becomes self-hosted woff2 later) and
+   Implementation: .agent/design/tokens.css is this file plus a Google Fonts @import for the
+   static artboards; the app self-hosts the same fonts via @fontsource-variable (main.tsx), and
    is exposed to Tailwind v4 through @theme in globals.css — see README.md,
    "Token table" and "Tailwind @theme mapping".
 
@@ -84,11 +84,38 @@
   --google-yellow: #fbbc05;
   --google-red: #ea4335;
 
+  /* ---- Illustrations (landing + auth artwork only) -------------------- */
+  --illo-sky: #d7eae8;
+  --illo-sky-deep: #bfdedb;
+  --illo-sun: #f2c463;
+  --illo-cloud: #ffffff;
+  --illo-facade: #fbf7ef;
+  --illo-facade-shade: #ece4d6;
+  --illo-facade-alt: #ecd5c2;
+  --illo-facade-alt-shade: #ddbfa8;
+  --illo-brick: #c06a48;
+  --illo-window: #a9cfcd;
+  --illo-window-lit: #f5d68a;
+  --illo-ink: #0a4f55; /* labels on lit windows */
+  --illo-frame: #0b5a61;
+  --illo-rail: #7f8883;
+  --illo-leaf: #3d8656;
+  --illo-leaf-soft: #7fbf8f;
+  --illo-trunk: #8a6446;
+  --illo-ground: #ddd5c6;
+
   /* ---- Typography ------------------------------------------------------- */
-  --font-body: 'Atkinson Hyperlegible Next', 'Noto Sans Bengali', system-ui, sans-serif;
-  --font-display: 'Atkinson Hyperlegible Next', 'Noto Sans Bengali', system-ui, sans-serif;
-  --font-mono: 'Atkinson Hyperlegible Mono', ui-monospace, 'Cascadia Mono', monospace;
-  --font-bengali: 'Noto Sans Bengali', 'Atkinson Hyperlegible Next', system-ui, sans-serif;
+  /* Self-hosted via @fontsource-variable (imported in main.tsx); Bangla falls through to Noto Sans Bengali */
+  --font-body:
+    'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', 'Noto Sans Bengali Variable', 'Noto Sans Bengali',
+    system-ui, sans-serif;
+  --font-display:
+    'Bricolage Grotesque Variable', 'Bricolage Grotesque', 'Noto Sans Bengali Variable', 'Noto Sans Bengali',
+    system-ui, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Mono', 'SF Mono', Consolas, monospace;
+  --font-bengali:
+    'Noto Sans Bengali Variable', 'Noto Sans Bengali', 'Plus Jakarta Sans Variable', 'Plus Jakarta Sans',
+    system-ui, sans-serif;
 
   /* size / line-height pairs (rem so browser zoom works) */
   --text-xs: 0.75rem;
@@ -188,6 +215,21 @@
   --width-page: 1200px; /* staff page max width */
   --width-form: 480px; /* auth card, dialogs */
   --width-drawer: 520px; /* unit / maintenance drawer */
+  --width-frame: 1360px; /* landing page frame (wide, small gutters) */
+  --radius-card-lg: 24px; /* landing feature rows */
+  --radius-panel: 28px; /* landing hero scene, CTA panel, auth inset panel */
+  --size-control-lg: 52px; /* landing CTAs */
+  /* Landing + auth display type (fluid, mobile 320 → desktop) */
+  --text-micro: 0.6875rem; /* 11 px: flat status pills in the building drawing only */
+  --text-display: clamp(2.5rem, 1.4rem + 4.4vw, 4.75rem); /* landing h1 */
+  --text-section: clamp(1.75rem, 1.2rem + 2vw, 2.75rem); /* landing h2 */
+  --text-cta: clamp(2rem, 1.3rem + 2.8vw, 3.5rem); /* landing call to action */
+  --text-panel: clamp(1.75rem, 1rem + 1.8vw, 2.5rem); /* auth panel headline */
+  --leading-display: 1;
+  --leading-heading: 1.06;
+  --tracking-display: -0.032em;
+  --tracking-heading: -0.025em;
+  --tracking-stamp: 0.12em;
   --width-prose: 65ch;
   --focus-ring-width: 2px;
   --focus-ring-offset: 2px;
@@ -256,6 +298,24 @@
     --scrim: rgba(0, 0, 0, 0.6);
     --chart-collected: #4db5b7;
     --shadow-color: 0 0 0;
+    --illo-sky: #15302f;
+    --illo-sky-deep: #1a3a39;
+    --illo-sun: #d9a94a;
+    --illo-cloud: #2a3d3b;
+    --illo-facade: #2c3735;
+    --illo-facade-shade: #232d2b;
+    --illo-facade-alt: #3b302a;
+    --illo-facade-alt-shade: #302722;
+    --illo-brick: #b0623f;
+    --illo-window: #355a5c;
+    --illo-window-lit: #e6c066;
+    --illo-ink: #2b2206;
+    --illo-frame: #4db5b7;
+    --illo-rail: #6d7b76;
+    --illo-leaf: #3c7a52;
+    --illo-leaf-soft: #4f9566;
+    --illo-trunk: #6b4e38;
+    --illo-ground: #1f2826;
   }
 }
 
@@ -309,4 +369,22 @@
   --scrim: rgba(0, 0, 0, 0.6);
   --chart-collected: #4db5b7;
   --shadow-color: 0 0 0;
+  --illo-sky: #15302f;
+  --illo-sky-deep: #1a3a39;
+  --illo-sun: #d9a94a;
+  --illo-cloud: #2a3d3b;
+  --illo-facade: #2c3735;
+  --illo-facade-shade: #232d2b;
+  --illo-facade-alt: #3b302a;
+  --illo-facade-alt-shade: #302722;
+  --illo-brick: #b0623f;
+  --illo-window: #355a5c;
+  --illo-window-lit: #e6c066;
+  --illo-ink: #2b2206;
+  --illo-frame: #4db5b7;
+  --illo-rail: #6d7b76;
+  --illo-leaf: #3c7a52;
+  --illo-leaf-soft: #4f9566;
+  --illo-trunk: #6b4e38;
+  --illo-ground: #1f2826;
 }

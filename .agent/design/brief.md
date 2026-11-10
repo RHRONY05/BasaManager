@@ -41,9 +41,9 @@ errors say what happened and what to do. No exclamation marks except in "Paid".
   (`--accent-primary`, named after Chattogram's river) for primary actions, active nav and selection only.
   Status tones (success / warning / danger / info / neutral) are separate hues from the accent and always
   come with an icon + word. 60-30-10: paper 60, white cards 30, teal + status 10.
-- **Type:** Atkinson Hyperlegible Next (UI + numbers), Atkinson Hyperlegible Mono (IDs, TrxIDs, receipt
-  numbers, meter readings), Noto Sans Bengali (loaded for i18n, and supplies the ৳ glyph). Weights 400 / 600
-  / 700. Body 16 px everywhere. Tabular numerals for every amount, date and count.
+- **Type (revised 2026-11-10, see decision 25):** Bricolage Grotesque for headings, Plus Jakarta Sans (UI +
+  numbers), system monospace for IDs, TrxIDs, receipt numbers and meter readings, Noto Sans Bengali (Bangla, and
+  supplies the ৳ glyph). All self-hosted. Body 16 px everywhere. Tabular numerals for every amount, date and count.
 - **Shape:** "soft but firm" radii (6 inputs, 10 buttons, 14 cards, 20 hero card / sheets). Hairline borders
   for structure; shadows only on things that float (due card, drawer, dialog, toast).
 - **Density:** staff desktop pages are moderately dense (tables, 14 px cells, 44 px rows); tenant pages breathe.
@@ -101,14 +101,14 @@ slides only, everything off under `prefers-reduced-motion`.
    fintech"; the teal was kept, glassmorphism rejected (NOT list).
 4. **Warm paper canvas** instead of cool grey: echoes the paper khata, makes white cards read as "sheets
    of the ledger" without heavy shadows. Neutrals are tinted green-grey to sit with the teal.
-5. **Atkinson Hyperlegible Next** instead of the design-pack default Inter (banned as a reflex font by
+5. *(Superseded 2026-11-10 by decision 25.)* **Atkinson Hyperlegible Next** instead of the design-pack default Inter (banned as a reflex font by
    craft.md): it was designed by the Braille Institute for low-vision readers, distinguishes 1/l/I and 0/O
    (matters for TrxIDs like `9ABCD1EFGH`, receipt `BM-2026-000123` and amounts read by 60-year-olds),
    has tabular figures, and is OFL. Bangla partner **Noto Sans Bengali** (variable 400–700, OFL) — the most
    complete Bengali family on Google Fonts, similar x-height and stroke contrast; it also renders ৳ (U+09F3)
    which Atkinson lacks, so ৳ always comes from the same font. Hind Siliguri was considered and rejected:
    fewer weights and its Latin would compete with Atkinson. All three get self-hosted woff2 later.
-6. **One family, no display serif.** Hierarchy comes from size and weight; the bold typographic moment is
+6. *(Superseded 2026-11-10 by decision 25.)* **One family, no display serif.** Hierarchy comes from size and weight; the bold typographic moment is
    the hero amount. A second display face would add noise and bytes for older Android phones.
 7. **Mobile staff bottom nav = Home · Billing · Payments · Requests · More** (≤ 5, one word ≤ 10 chars;
    "Maintenance" is 11 chars so the tab says "Requests"; sidebar keeps "Maintenance"). More sheet: Buildings,
@@ -125,7 +125,7 @@ slides only, everything off under `prefers-reduced-motion`.
     compact buttons exist only inside desktop table rows.
 12. **Overdue is shown, never stored** (07-BILLING): the badge is derived; the tenant due card gets a red
     strip with "Overdue since 10 Nov · late fee ৳374 added on 13 Nov", so the fee is explained, not just added.
-13. **Landing illustration is the product itself** (a live-rendered due card + ledger), not an image or
+13. *(Refined by decision 25.)* **Landing illustration is the product itself** (a live-rendered due card + ledger), not an image or
     stock photo; no testimonials, no user counts (we have none).
 14. **Dark theme is designed, not inverted:** surfaces get lighter with elevation, accent lightened to
     `#4db5b7` with dark text on it (6.98:1), danger buttons use dark text on a light red, shadows are pure
@@ -157,3 +157,14 @@ slides only, everything off under `prefers-reduced-motion`.
     rows stay scannable; mobile never uses them.
 24. **Pages in 06-UI without an artboard** reuse named patterns (README, "Screens"), so implementers never
     invent layouts: e.g. `/t/pay` = ledger + MoneyInput + "Continue to SSLCommerz".
+25. **Landing and auth redesign (2026-11-10, owner review).** The owner found the V2 landing and login "basic
+    and generic". Root causes: (a) no web font was ever loaded, so the app rendered in the system font;
+    (b) every landing section had the same centred-heading-plus-card-grid shape; (c) the content column was
+    narrow. Fixes: a display face (**Bricolage Grotesque**, characterful but readable, OFL) for h1–h3 with
+    **Plus Jakarta Sans** for UI text (warm, open, good figures, OFL), both self-hosted; a 1360 px frame with
+    16 / 24 / 40 px gutters; and a landing page built around one signature drawing, a **building cut away
+    floor by floor** where every flat shows its rent status and opens its bill. That keeps decision 13 (the
+    illustration is the product) and makes it the hero. Photos were tried and rejected by the owner: vector
+    art in the token palette fits the ledger feel and works in dark mode. Badge pills, equal icon-card
+    grids and glassy cards were removed as stock patterns. The sign-in/up panel reuses the sky, building
+    and sample bill. Artboards 01–03 are now snapshots of the built pages (`tools/snapshot.mjs`).

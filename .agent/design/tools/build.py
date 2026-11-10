@@ -5,6 +5,10 @@ Shells live here so every artboard uses the exact same sidebar / top bar / botto
 The generated files in desktop/ and mobile/ are the spec implementers read; edit src/ and rebuild:
     python .agent/design/tools/build.py
 Meta header (first line of a src file):  <!--meta {"title": "...", "shell": "...", ...} -->
+
+Shell "snapshot": the body is the real rendered page captured from the running app by tools/snapshot.mjs
+(landing, login, signup). Those artboards load ../app.css (the app's compiled CSS, also written by
+snapshot.mjs) instead of ui.css, so they match the implementation exactly. Re-capture them; don't hand-edit.
 """
 import json, re, pathlib
 
@@ -21,7 +25,8 @@ GOOGLE = ('<svg class="google-g" viewBox="0 0 48 48" aria-hidden="true">'
           '<path class="g-g" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/>'
           '<path class="g-b" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>')
 
-def head(title, style, pseudo=False):
+def head(title, style, pseudo=False, sheets=('../tokens.css', '../ui.css')):
+    links = ''.join(f'<link rel="stylesheet" href="{x}">\n' for x in sheets)
     return f'''<!doctype html>
 <html lang="en"{' data-pseudo="en-XA"' if pseudo else ''}>
 <head>
@@ -30,9 +35,7 @@ def head(title, style, pseudo=False):
 <title>{title} — BasaManager</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="../tokens.css">
-<link rel="stylesheet" href="../ui.css">
-<script src="https://unpkg.com/lucide@1.70.0/dist/umd/lucide.min.js"></script>
+{links}<script src="https://unpkg.com/lucide@1.70.0/dist/umd/lucide.min.js"></script>
 <script src="../mock.js"></script>
 <style>
   /* layout only — tokens only */
@@ -221,11 +224,13 @@ def build():
         elif shell == 'tenant-m': page = mobile(m, body, TENANT_TABS)
         elif shell == 'tenant-d': page = tenant_d(m, body)
         elif shell == 'plain': page = plain(m, body)
+        elif shell == 'snapshot': page = plain(m, body)
         else: raise SystemExit(f'{f}: unknown shell {shell}')
         page = page.replace('{{MARK}}', MARK).replace('{{GOOGLE}}', GOOGLE)
         out = ROOT / f.parent.name / f.name
         out.parent.mkdir(exist_ok=True)
-        out.write_text(head(m['title'], style, m.get('pseudo')) + page, encoding='utf8', newline='\n')
+        sheets = ('../tokens.css', '../app.css') if shell == 'snapshot' else ('../tokens.css', '../ui.css')
+        out.write_text(head(m['title'], style, m.get('pseudo'), sheets) + page, encoding='utf8', newline='\n')
         n += 1
     print(f'built {n} artboards')
 

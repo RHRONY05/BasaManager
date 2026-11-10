@@ -270,6 +270,12 @@ and disconnects those sockets. It is called by `logoutAll` and `resetPassword`.
   [ResetPasswordPage](https://github.com/RHRONY05/BasaManager/blob/main/apps/web/src/pages/auth/ResetPasswordPage.tsx),
   [InvitePage](https://github.com/RHRONY05/BasaManager/blob/main/apps/web/src/pages/auth/InvitePage.tsx)) and the
   [AccountPage](https://github.com/RHRONY05/BasaManager/blob/main/apps/web/src/pages/shared/AccountPage.tsx) (profile, change password, devices).
+- [AuthLayout.tsx](https://github.com/RHRONY05/BasaManager/blob/main/apps/web/src/app/layouts/AuthLayout.tsx) wraps every auth page:
+  on screens from 768 px wide a left panel (sky, brand, headline, a sample bill, and from 1024 px the drawn
+  building) sits beside the form. The drawings are plain SVG/HTML in
+  [components/illustrations/](https://github.com/RHRONY05/BasaManager/tree/main/apps/web/src/components/illustrations), coloured only by
+  `--illo-*` tokens, so dark mode works without extra code. The landing page's building is interactive: each flat
+  is a `button`; tapping it swaps the sample bill shown beside it (static sample data, nothing is fetched).
 
 ## 8. Where the data lives
 

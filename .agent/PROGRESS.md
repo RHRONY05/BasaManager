@@ -12,7 +12,7 @@
 | **Next task** | **Goal 3: V8 Billing engine** (start with `/goal Complete goal 3 from .agent/GOAL.md` in a fresh session). |
 | **Blocked on** | — |
 | **Production URL** | — (will be https://basamanager.rhrony05.me; staging at https://staging.basamanager.rhrony05.me running `166656d`) |
-| **Last updated** | 2026-11-10 by Antigravity (lead): Goal 2 100% COMPLETE. Tasks V6, V7, and Goal 2 bug hunt & race condition fixes merged to `main` (PR #22, commit `166656d`). Unit (474/474), integration (69/69), Playwright e2e all passed. Staging deploy run 42815182424 verified green. Claude Reviewer APPROVE. |
+| **Last updated** | 2026-11-10 by Claude (owner-requested design session): landing, login and signup redesigned in code; web fonts now loaded app-wide; design docs and artboards updated to match (uncommitted on `main` working tree until the owner approves a PR). Before that, Antigravity (lead): Goal 2 100% COMPLETE. Tasks V6, V7, and Goal 2 bug hunt & race condition fixes merged to `main` (PR #22, commit `166656d`). Unit (474/474), integration (69/69), Playwright e2e all passed. Staging deploy run 42815182424 verified green. Claude Reviewer APPROVE. |
 
 ## Resume here (written at the 2026-11-08 pause)
 **First item:** ✅ done 2026-11-08: VM `vm-basamanager` started (public IP 172.198.71.173, SSH with the deploy key works). The ssh user cannot run `docker ps` (permission denied on the socket), so staging container state is unchecked; devops should check with sudo when finishing #3. **2026-11-09: devops finished all 25 V3 review items (head `fed9bc2`, CI green, blocker proved on staging, runs 42507019561 / 42507429890). Next item: devops fixes the 2026-11-09 Opus re-review of #3 (CHANGES REQUESTED, https://github.com/RHRONY05/BasaManager/pull/3#pullrequestreview-5819099087): (1) BLOCKER: install openssl in the `base` stage of `infra/docker/api.Dockerfile` and `worker.Dockerfile` (migrate fails "Can't write to @prisma/engines" on every new image); prove with a clean build + green migrate on staging. (2) Re-run both rollback drills (migrate/early failure and smoke failure) with the new scripts and record them. (3) Correct PROGRESS and `docs/operations/rollback.md`: runs 42507019561/42507429890 failed at migrate, not at a forced hook. (4) Add a CI step that builds the api image and runs migrate. (5) Nits: deploy.yml:160-161, rollback.sh:566, sentry.test.ts:215-217, provision-secrets.sh:26. Then Opus re-review, squash merge, lead tags `v0.1.0`, checks prod `/api/health`, runs `weekly` once. Environment branch policies are still unset (deployment_branch_policy null on staging and production): set via `gh api` if the token allows, else keep as an owner Human step.**
@@ -949,3 +949,30 @@ Did: Triaged, fixed, tested, reviewed, and merged all Goal 2 bug hunter findings
 - Staging deploy run `42815182424` GREEN across all jobs. Live staging verified: `/api/health` -> 200 OK (release `166656d`), `/api/ready` -> 200 OK (`checks: { db: true, redis: true }`).
 Tests: typecheck ✅ lint ✅ unit ✅ (474 passed) int ✅ (69 passed) e2e ✅ docs ✅ (97 checked).
 Next: Goal 2 is 100% COMPLETE with 0 unresolved issues. Hard boundary reached per `.agent/rules/basamanager.md` and `.agent/GOAL.md`. Ready for Goal 3 (Tasks V8–V10: Billing engine, manual payments, SSLCommerz).
+
+### 2026-11-10 — Claude (owner-requested design session) — Landing + auth redesign, fonts
+Did: the owner reviewed the V2 landing and login screens ("basic, generic, narrow") and asked Claude to act as designer.
+- Landing (`apps/web/src/pages/auth/LandingPage.tsx`) rebuilt around an **interactive building cut-away**
+  (`components/illustrations/BuildingCutaway.tsx`): 10 sample flats with Paid / Due / Repair / Vacant; tapping a flat
+  shows its sample bill. Then four worked examples (meter, receipt, repair thread, notice), roles, how it works, CTA
+  with skyline. Wide frame (`--width-frame` 1360 px). No behaviour or route changes; all sample data is static.
+- Auth layout (`apps/web/src/app/layouts/AuthLayout.tsx`): inset sky panel with brand, headline, sample bill and
+  (from 1024 px) the building. Form side unchanged.
+- **Fonts were never loaded before** (every screen used the system font). Now self-hosted via
+  `@fontsource-variable` in `main.tsx`: Bricolage Grotesque (h1–h3, `--font-display`), Plus Jakarta Sans (body),
+  Noto Sans Bengali. Affects every page; the full layout audit was re-run to check.
+- `globals.css` @theme now maps the status / accent-soft / fg-secondary / border-strong colours (classes like
+  `text-danger-text` were silently doing nothing before) and the new landing type/radius tokens.
+- New tokens: `--illo-*` (light + dark), `--width-frame`, `--radius-card-lg`, `--radius-panel`, `--size-control-lg`,
+  `--text-micro|display|section|cta|panel`, `--leading-display|heading`, `--tracking-display|heading|stamp`.
+- Design pack updated so it describes the built pages: `design/tokens.css` = app tokens + Google Fonts import;
+  artboards 01–03 (desktop + mobile) are now **snapshots of the running app** (`design/tools/snapshot.mjs` →
+  `tools/src`, shell `snapshot`, `design/app.css`; `build.py` supports it); `screens.js` heights; README (files,
+  screens table, "Landing + auth pages", token table); `brief.md` decision 25 (5, 6 superseded; 13 refined);
+  `06-UI.md` landing + auth-layout rows; `docs/features/auth.md` code walk.
+- Tried and rejected by the owner along the way: flat illustrations in an equal-card layout, then Unsplash photos.
+Tests: web typecheck ✅, ESLint 0 errors, token lint 0 errors, Prettier ✅, unit 78/78 ✅, size budget ✅,
+docs:check ✅ (97 pages). Full layout audit (`layout.spec.ts` every route × 6 widths × light/dark × en/en-XA, desktop + mobile
+projects) + `home.spec.ts`: 1716/1716 ✅ (local).
+Next: owner reviews; commit on a branch + PR through the normal review gate. Antigravity: the new pages are the
+source of truth (design README "Landing + auth pages"); do not rebuild them to the old V2 artboards.
