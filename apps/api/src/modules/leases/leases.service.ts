@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import type { CreateLeaseInput, ListLeasesQuery, RecordDepositInput } from '@bm/shared/api/leases';
 import type { Db, TenantCtx } from '../../config/db';
 import { deliverOutboxNow } from '../../config/mailer';
@@ -6,7 +5,9 @@ import type { Prisma } from '../../generated/prisma/client';
 import { ApiError } from '../../lib/ApiError';
 import { clock } from '../../lib/clock';
 import { createLogger } from '../../lib/logger';
-import { sha256 } from '../../lib/tokens';
+import { sha256, generateRandomToken } from '../../lib/tokens';
+import type { LeaseStatus } from '@bm/shared/enums';
+import { ErrorCode } from '@bm/shared/errors';
 
 const logger = createLogger({ level: 'info' });
 
@@ -97,13 +98,13 @@ export function toLeaseDto(lease: RawLeaseData) {
       ? {
           id: lease.unit.id,
           label: lease.unit.label,
-          floor: lease.unit.floor ?? 1,
+          floor: lease.unit.floor ?? null,
           type: lease.unit.type,
           buildingId: lease.unit.buildingId,
           buildingName: lease.unit.building?.name ?? '',
         }
       : undefined,
-    status: lease.status as 'pending' | 'active' | 'notice' | 'ended',
+    status: lease.status as LeaseStatus,
     startDate: startDateStr,
     endDate: endDateStr,
     noticeDate: noticeDateStr,
@@ -183,6 +184,26 @@ export class LeasesService {
           throw ApiError.conflict('Unit already has an active or pending lease');
         }
 
+        // Blocker 1: Prevent staff members from being invited as tenants
+        const normalizedEmail = data.tenantEmail.toLowerCase().trim();
+        const existingStaffUser = await tx.user.findFirst({
+          where: {
+            email: normalizedEmail,
+            memberships: {
+              some: {
+                orgId,
+                status: 'active',
+                role: { in: ['landlord', 'caretaker'] },
+              },
+            },
+          },
+        });
+        if (existingStaffUser) {
+          throw ApiError.conflict(
+            'Cannot invite staff member (landlord or caretaker) as a tenant in this organisation',
+          );
+        }
+
         const now = clock.now();
         const lease = await tx.lease.create({
           data: {
@@ -199,19 +220,17 @@ export class LeasesService {
         });
 
         if (data.charges && data.charges.length > 0) {
-          for (const ch of data.charges) {
-            await tx.leaseCharge.create({
-              data: {
-                orgId,
-                leaseId: lease.id,
-                name: ch.name,
-                amountPoisha: BigInt(ch.amountPoisha),
-              },
-            });
-          }
+          await tx.leaseCharge.createMany({
+            data: data.charges.map((ch) => ({
+              orgId,
+              leaseId: lease.id,
+              name: ch.name,
+              amountPoisha: BigInt(ch.amountPoisha),
+            })),
+          });
         }
 
-        const inviteToken = randomUUID().replace(/-/g, '') + randomUUID().replace(/-/g, '');
+        const inviteToken = generateRandomToken();
         const tokenHash = sha256(inviteToken);
         const expiresAt = new Date(now.getTime() + 7 * 24 * 3600 * 1000);
 
@@ -283,6 +302,11 @@ export class LeasesService {
       return result.lease;
     } catch (err: unknown) {
       if (err && typeof err === 'object' && 'code' in err && (err as { code: unknown }).code === 'P2002') {
+        const meta = (err as { meta?: { target?: string[] | string } }).meta;
+        const targetStr = Array.isArray(meta?.target) ? meta.target.join(' ') : String(meta?.target ?? '');
+        if (targetStr.includes('invitation') || targetStr.includes('email')) {
+          throw ApiError.conflict('An open invitation already exists for this email address');
+        }
         throw ApiError.conflict('Unit already has an active or pending lease');
       }
       throw err;
@@ -470,15 +494,41 @@ export class LeasesService {
     const userId = ctx.userId;
 
     return this.prisma.$tx(ctx, async (tx) => {
-      const lease = await tx.lease.findFirst({
-        where: {
-          orgId,
-          id: leaseId,
-        },
-      });
+      // Row lock the lease
+      const locked = await tx.$queryRaw<{ id: string; status: string }[]>`
+        SELECT id, status FROM "leases"
+        WHERE "org_id" = ${orgId}::uuid AND "id" = ${leaseId}::uuid
+        FOR UPDATE
+      `;
 
+      const lease = locked?.[0];
       if (!lease) {
         throw ApiError.notFound('Lease not found');
+      }
+
+      if (lease.status === 'ended' || lease.status === 'ended_with_dues') {
+        throw ApiError.conflict('Cannot record deposit on an ended lease');
+      }
+
+      // Check balance if refunding or applying
+      const existingEntries = await tx.depositEntry.findMany({
+        where: { orgId, leaseId },
+        select: { kind: true, amountPoisha: true },
+      });
+      let currentHeld = 0n;
+      for (const e of existingEntries) {
+        if (e.kind === 'received') currentHeld += e.amountPoisha;
+        else if (e.kind === 'refunded' || e.kind === 'applied_to_dues') currentHeld -= e.amountPoisha;
+      }
+
+      const amountBigInt = BigInt(data.amountPoisha);
+      if (data.kind === 'refunded' || data.kind === 'applied_to_dues') {
+        if (currentHeld - amountBigInt < 0n) {
+          throw ApiError.badRequest(
+            ErrorCode.VALIDATION_FAILED,
+            'Refund or applied amount cannot exceed held deposit balance',
+          );
+        }
       }
 
       const entry = await tx.depositEntry.create({
@@ -486,7 +536,7 @@ export class LeasesService {
           orgId,
           leaseId,
           kind: data.kind,
-          amountPoisha: BigInt(data.amountPoisha),
+          amountPoisha: amountBigInt,
           note: data.note ?? null,
           recordedBy: userId,
         },
@@ -526,6 +576,7 @@ export class LeasesService {
         throw ApiError.conflict('Lease is no longer pending invitation');
       }
 
+      let email: string;
       const openInv = await tx.invitation.findFirst({
         where: {
           orgId,
@@ -535,7 +586,9 @@ export class LeasesService {
         },
       });
 
-      if (!openInv) {
+      if (openInv) {
+        email = openInv.email;
+      } else {
         const accepted = await tx.invitation.findFirst({
           where: {
             orgId,
@@ -546,9 +599,21 @@ export class LeasesService {
         if (accepted) {
           throw ApiError.conflict('Invitation has already been accepted');
         }
+
+        const recentInv = await tx.invitation.findFirst({
+          where: {
+            orgId,
+            leaseId,
+          },
+          orderBy: { createdAt: 'desc' },
+        });
+
+        if (!recentInv || !recentInv.email) {
+          throw ApiError.conflict('No invitation found to resend');
+        }
+        email = recentInv.email;
       }
 
-      const email = openInv ? openInv.email : '';
       const now = clock.now();
 
       // Revoke old invitation
@@ -564,7 +629,7 @@ export class LeasesService {
         },
       });
 
-      const inviteToken = randomUUID().replace(/-/g, '') + randomUUID().replace(/-/g, '');
+      const inviteToken = generateRandomToken();
       const tokenHash = sha256(inviteToken);
       const expiresAt = new Date(now.getTime() + 7 * 24 * 3600 * 1000);
 

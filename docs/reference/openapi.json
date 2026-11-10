@@ -794,7 +794,7 @@
                             "properties": {
                               "id": { "type": "string", "format": "uuid" },
                               "label": { "type": "string" },
-                              "floor": { "type": "integer" },
+                              "floor": { "type": ["integer", "null"] },
                               "type": { "type": "string" },
                               "buildingId": { "type": "string", "format": "uuid" },
                               "buildingName": { "type": "string" }
@@ -940,7 +940,7 @@
                           "properties": {
                             "id": { "type": "string", "format": "uuid" },
                             "label": { "type": "string" },
-                            "floor": { "type": "integer" },
+                            "floor": { "type": ["integer", "null"] },
                             "type": { "type": "string" },
                             "buildingId": { "type": "string", "format": "uuid" },
                             "buildingName": { "type": "string" }
@@ -1048,6 +1048,14 @@
       "get": {
         "tags": ["Leases"],
         "summary": "Get active lease for current tenant or unit",
+        "parameters": [
+          {
+            "schema": { "type": "string", "format": "uuid" },
+            "required": false,
+            "name": "unitId",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Active lease details.",
@@ -1067,7 +1075,7 @@
                           "properties": {
                             "id": { "type": "string", "format": "uuid" },
                             "label": { "type": "string" },
-                            "floor": { "type": "integer" },
+                            "floor": { "type": ["integer", "null"] },
                             "type": { "type": "string" },
                             "buildingId": { "type": "string", "format": "uuid" },
                             "buildingName": { "type": "string" }
@@ -1186,7 +1194,7 @@
                           "properties": {
                             "id": { "type": "string", "format": "uuid" },
                             "label": { "type": "string" },
-                            "floor": { "type": "integer" },
+                            "floor": { "type": ["integer", "null"] },
                             "type": { "type": "string" },
                             "buildingId": { "type": "string", "format": "uuid" },
                             "buildingName": { "type": "string" }

@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { X, Plus, Trash2, Home, DoorOpen, AlertCircle, FileText, ArrowRight } from 'lucide-react';
 import { useUpdateUnit, useArchiveUnit } from '../../lib/api/buildings';
+import { PrefetchLink } from '../../lib/router/PrefetchLink';
 import type { UnitSummary, UnitCharge } from '@bm/shared';
 
 export interface UnitDrawerProps {
@@ -207,7 +207,9 @@ export function UnitDrawer({ buildingId, buildingName, unit, isOpen, onClose, on
             <div className="card__head flex items-center justify-between">
               <h3 className="font-semibold text-sm text-fg">{t('units.currentLease')}</h3>
               {isOccupied && unit.lease && (
-                <span className="badge badge--success text-xs capitalize">{unit.lease.status}</span>
+                <span className="badge badge--success text-xs">
+                  {t(`leases.status.${unit.lease.status}`, { defaultValue: unit.lease.status })}
+                </span>
               )}
             </div>
             {isOccupied && unit.lease ? (
@@ -227,11 +229,14 @@ export function UnitDrawer({ buildingId, buildingName, unit, isOpen, onClose, on
                   ) : null}
                 </div>
                 {unit.lease.id && (
-                  <Link to={`/l/leases/${unit.lease.id}`} className="btn btn--secondary btn--sm w-full">
+                  <PrefetchLink
+                    to={`/l/leases/${unit.lease.id}`}
+                    className="btn btn--secondary btn--sm w-full"
+                  >
                     <FileText className="h-4 w-4 mr-1.5" />
                     {t('leases.openLease')}
                     <ArrowRight className="h-4 w-4 ml-1.5" />
-                  </Link>
+                  </PrefetchLink>
                 )}
               </div>
             ) : (

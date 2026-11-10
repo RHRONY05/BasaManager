@@ -209,6 +209,13 @@ describe('V7: leases, deposit ledger, tenant invites, tenant history', () => {
       expect(await q(`select 1 from leases where org_id=$1`, [org.id])).toHaveLength(0);
     });
 
+    it('throws 409 CONFLICT if tenantEmail belongs to an active staff member', async () => {
+      const res = await landlord.agent.post('/api/leases').send(body(unit, { tenantEmail: caretaker.email }));
+      expect(res.status).toBe(409);
+      expect(res.body.error.code).toBe(ErrorCode.CONFLICT);
+      expect(res.body.error.message).toContain('Cannot invite staff member');
+    });
+
     it('401 without a session', async () => {
       const res = await newAgent(ctx).post('/api/leases').send(body(unit));
       expect(res.status).toBe(401);
@@ -413,9 +420,42 @@ describe('V7: leases, deposit ledger, tenant invites, tenant history', () => {
       }
       expect(await q(`select 1 from deposit_entries where lease_id=$1`, [leaseId])).toHaveLength(0);
     });
+
+    it('rejects recording deposit on an ended lease with 409 CONFLICT', async () => {
+      const endedLease = await makeLease(org.id, unit, org.landlordUserId, { status: 'ended' });
+      const res = await landlord.agent.post(`/api/leases/${endedLease}/deposit`).send({
+        kind: 'received',
+        amountPoisha: 100000,
+      });
+      expect(res.status).toBe(409);
+      expect(res.body.error.code).toBe(ErrorCode.CONFLICT);
+    });
+
+    it('rejects refund exceeding held deposit balance with 400', async () => {
+      await landlord.agent.post(`/api/leases/${leaseId}/deposit`).send({
+        kind: 'received',
+        amountPoisha: 100000,
+      });
+      const res = await landlord.agent.post(`/api/leases/${leaseId}/deposit`).send({
+        kind: 'refunded',
+        amountPoisha: 200000,
+      });
+      expect(res.status).toBe(400);
+      expect(res.body.error.message).toContain('cannot exceed held deposit balance');
+    });
   });
 
   describe('POST /leases/:id/resend-invite', () => {
+    it('resends invite using recent email even if earlier invite was revoked', async () => {
+      const { id, token } = await createLease();
+      // Revoke the open invite
+      await q(`update invitations set revoked_at=now() where lease_id=$1`, [id]);
+      const res = await landlord.agent.post(`/api/leases/${id}/resend-invite`);
+      expect(res.status).toBe(200);
+      expect(res.body.data.resent).toBe(true);
+      const newToken = await lastToken();
+      expect(newToken).not.toBe(token);
+    });
     it('revokes the old invite, creates a new one and queues a fresh outbox message', async () => {
       const { id, token: oldToken } = await createLease();
       const res = await landlord.agent.post(`/api/leases/${id}/resend-invite`);
@@ -553,6 +593,57 @@ describe('V7: leases, deposit ledger, tenant invites, tenant history', () => {
       const rs = await Promise.all([acceptInvite(token), acceptInvite(token)]);
       expect(rs.map((r) => r.status).sort()).toEqual([200, 400]);
       expect(await q(`select 1 from lease_tenants where lease_id=$1`, [id])).toHaveLength(1);
+    });
+
+    it('rejects tenant invite acceptance if user is already a staff member (prevents role demotion)', async () => {
+      const { id, token } = await createLease({}, otherUnit);
+      await q(`update invitations set email = $1 where lease_id = $2`, [caretaker.email, id]);
+
+      // Caretaker tries to accept this tenant invite with their signed-in agent
+      const res = await caretaker.agent.post(`/api/invites/${token}/accept`).send({});
+      expect(res.status).toBe(409);
+      expect(res.body.error.code).toBe(ErrorCode.CONFLICT);
+      expect(res.body.error.message).toContain('Cannot accept tenant invite');
+
+      // Verify caretaker role was not demoted
+      const m = await q<{ role: string }>(`select role from memberships where id=$1`, [
+        caretaker.membershipId,
+      ]);
+      expect(m[0]!.role).toBe('caretaker');
+    });
+  });
+
+  describe('GET /leases/active', () => {
+    it('tenant gets own active lease', async () => {
+      const { id, token } = await createLease();
+      const agent = newAgent(ctx);
+      await agent
+        .post(`/api/invites/${token}/accept`)
+        .send({ password: PASSWORD, fullName: 'Active Tenant' });
+      agent.set('X-Org-Id', org.id);
+
+      const res = await agent.get('/api/leases/active');
+      expect(res.status).toBe(200);
+      expect(res.body.data.id).toBe(id);
+    });
+
+    it('landlord gets active lease for a unit via ?unitId=', async () => {
+      const { id } = await createLease();
+      const res = await landlord.agent.get(`/api/leases/active?unitId=${unit}`);
+      expect(res.status).toBe(200);
+      expect(res.body.data.id).toBe(id);
+    });
+
+    it('returns 400 for invalid unitId UUID', async () => {
+      const res = await landlord.agent.get('/api/leases/active?unitId=not-a-uuid');
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe(ErrorCode.VALIDATION_FAILED);
+    });
+
+    it('returns 404 when no active lease exists', async () => {
+      const res = await landlord.agent.get(`/api/leases/active?unitId=${unit2}`);
+      expect(res.status).toBe(404);
+      expect(res.body.error.code).toBe(ErrorCode.NOT_FOUND);
     });
   });
 

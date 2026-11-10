@@ -52,6 +52,7 @@ const {
   unitResponseSchema,
   unitsListResponseSchema,
   createLeaseSchema,
+  getActiveLeaseQuerySchema,
   recordDepositSchema,
   singleLeaseResponseSchema,
   leasesListResponseSchema,
@@ -369,6 +370,9 @@ registry.registerPath({
   path: '/api/leases/active',
   tags: ['Leases'],
   summary: 'Get active lease for current tenant or unit',
+  request: {
+    query: getActiveLeaseQuerySchema,
+  },
   responses: {
     200: { description: 'Active lease details.', content: json(singleLeaseResponseSchema) },
     400: errorResponse('Validation failed'),

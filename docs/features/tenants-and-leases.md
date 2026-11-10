@@ -8,14 +8,14 @@ Tenants and leases define the contractual, financial, and access relationships b
 
 Landlords initiate tenancies through an interactive 4-step stepper dialog: selecting an available unit, specifying the tenant's identity, defining start date, base rent, and agreed security deposit, attaching recurring charges (such as service charges or utilities), and recording initial meter readings. Creating a lease automatically registers a pending lease contract and issues a secure, time-limited invitation token sent to the prospective tenant's email address.
 
-When the tenant follows the invitation link, they can review tenancy terms, provide their name and a secure password (or authenticate with Google OAuth), accept the invitation, and immediately activate the lease. Their membership is linked, transforming the lease state from `pending` to `active`.
+When the tenant follows the invitation link, they can review tenancy terms, provide their name and a secure password (or authenticate with Google OAuth), and accept the invitation. If the lease start date in Asia/Dhaka calendar time has arrived (`startDate <= todayDhaka`), the lease state transitions from `pending` to `active` and marks the unit `occupied`. If the start date is in the future, the lease remains `pending` until its start date arrives, when the activation job activates it.
 
-Security deposits are handled with double-entry accounting integrity via an append-only ledger (`deposit_entries`). Landlords record initial cash or electronic payments, against which future rent deductions or damage offsets may be charged. A tenant portal allows residents to view their active lease details, house rules, rent obligations, and recurring charges at any time. Landlords can view complete historical records of every past and present tenant tenancy.
+Security deposits are handled with strict integrity via an immutable append-only ledger (`deposit_entries`) guarded by row-level database locks (`SELECT FOR UPDATE`). Landlords record initial cash or electronic payments, against which future rent deductions or damage offsets may be charged. A tenant portal allows residents to view their active lease details, house rules, rent obligations, and recurring charges at any time. Landlords can view complete historical records of every past and present tenant tenancy.
 
 Stories from `.agent/01-PRODUCT.md`:
 
 - **T1**: Create a lease and invite a tenant (4-step stepper modal, email invitation with 7-day token, outbox dispatch).
-- **T2**: Tenant accepts invitation (set password or Google OAuth, activate lease, establish unit membership).
+- **T2**: Tenant accepts invitation (set password or Google OAuth, activate lease if start date has arrived in Asia/Dhaka, establish unit membership).
 - **T4**: Security deposit ledger (append-only ledger tracking received, applied to dues, and refunded amounts).
 - **T5**: Tenant portal lease view & landlord tenant history (active lease details for tenant; chronological audit trail for landlord).
 
@@ -27,9 +27,9 @@ Stories from `.agent/01-PRODUCT.md`:
 >
 > Behind the scenes, the API checks that the unit doesn't already have an active or pending lease—if someone tries to double-book a unit, the database rejects it with a 409 Conflict. The server creates the lease with a 'pending' status, hashes a cryptographically secure invitation token, stores the hash in the database, and schedules an invite email through the transactional outbox.
 >
-> The prospective tenant receives an email with an invite link valid for 7 days. Clicking the link takes them to the onboarding page where they verify their details and choose a password or sign in with Google. Once submitted, their user account joins the organisation as a tenant, and their lease status immediately changes to 'active'.
+> The prospective tenant receives an email with an invite link valid for 7 days. Clicking the link takes them to the onboarding page where they verify their details and choose a password or sign in with Google. Once submitted, their user account joins the organisation as a tenant, and their lease status activates when its start date arrives in Asia/Dhaka calendar time.
 >
-> Money is never handled casually: security deposits are tracked through an append-only ledger. When the tenant pays their deposit in cash or via mobile money, the landlord records a 'received' deposit entry. The held deposit balance is always the mathematical sum of received funds minus deductions and refunds.
+> Money is never handled casually: security deposits are tracked through an append-only ledger with row-level locks. When the tenant pays their deposit in cash or via mobile money, the landlord records a 'received' deposit entry. The held deposit balance is always the mathematical sum of received funds minus deductions and refunds.
 >
 > Once moved in, tenants have their own mobile-first portal where they can check their lease start date, monthly charges, and deposit balance without ever having to call the landlord."
 

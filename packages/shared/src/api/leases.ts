@@ -1,5 +1,11 @@
 import { z } from 'zod';
 import { leaseStatusSchema, depositEntryKindSchema } from '../enums';
+import { uuidSchema } from './common';
+
+export const getActiveLeaseQuerySchema = z.object({
+  unitId: uuidSchema.optional(),
+});
+export type GetActiveLeaseQuery = z.infer<typeof getActiveLeaseQuerySchema>;
 
 export const leaseChargeInputSchema = z.object({
   name: z.string().trim().min(1, 'Charge name is required').max(100),
@@ -39,7 +45,7 @@ export type RecordDepositInput = z.infer<typeof recordDepositSchema>;
 export const leaseUnitResponseSchema = z.object({
   id: z.string().uuid(),
   label: z.string(),
-  floor: z.number().int(),
+  floor: z.number().int().nullable(),
   type: z.string(),
   buildingId: z.string().uuid(),
   buildingName: z.string(),

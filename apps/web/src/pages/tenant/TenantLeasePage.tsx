@@ -4,6 +4,7 @@ import { useOrg } from '../../lib/api/org';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { ErrorState } from '../../components/ui/ErrorState';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { formatMoney } from '../../lib/format';
 
 export default function TenantLeasePage() {
   const { t } = useTranslation();
@@ -41,23 +42,21 @@ export default function TenantLeasePage() {
     );
   }
 
-  const formatMoney = (poisha: number) => {
-    const bdt = Math.round(poisha / 100);
-    return `৳${bdt.toLocaleString('en-US')}`;
-  };
-
   const totalCharges = lease.charges.reduce((acc, c) => acc + c.amountPoisha, 0);
   const totalMonthly = lease.monthlyRentPoisha + totalCharges;
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto min-w-0">
       {/* Header */}
-      <div className="space-y-1">
+      <div className="space-y-1 min-w-0">
         <p className="text-xs uppercase tracking-wider text-fg-muted font-bold">
           {t('headings.tenantLease')}
         </p>
-        <h1 className="text-2xl sm:text-3xl font-bold text-fg">
-          Unit {lease.unit?.label}
+        <h1
+          className="text-2xl sm:text-3xl font-bold text-fg truncate"
+          title={`${t('leases.unitWithLabel', { label: lease.unit?.label ?? '—' })}${lease.unit?.buildingName ? ` · ${lease.unit.buildingName}` : ''}`}
+        >
+          {t('leases.unitWithLabel', { label: lease.unit?.label ?? '—' })}
           {lease.unit?.buildingName ? ` · ${lease.unit.buildingName}` : ''}
         </h1>
         <p className="text-sm text-fg-muted">{t('tenantPortal.leaseSubtitle')}</p>
@@ -68,13 +67,15 @@ export default function TenantLeasePage() {
         <div className="p-4 bg-surface border border-border rounded-lg space-y-1">
           <span className="text-xs text-fg-muted font-medium">{t('tenantPortal.monthlyRent')}</span>
           <p className="text-2xl font-bold num text-fg">{formatMoney(lease.monthlyRentPoisha)}</p>
-          <span className="text-xs text-fg-muted">billed monthly</span>
+          <span className="text-xs text-fg-muted">{t('leases.billedMonthly')}</span>
         </div>
 
         <div className="p-4 bg-surface border border-border rounded-lg space-y-1">
           <span className="text-xs text-fg-muted font-medium">{t('tenantPortal.depositHeld')}</span>
           <p className="text-2xl font-bold num text-accent">{formatMoney(lease.depositHeldPoisha)}</p>
-          <span className="text-xs text-fg-muted">agreed: {formatMoney(lease.depositPoisha)}</span>
+          <span className="text-xs text-fg-muted">
+            {t('leases.agreedDeposit', { amount: formatMoney(lease.depositPoisha) })}
+          </span>
         </div>
       </div>
 
@@ -87,7 +88,11 @@ export default function TenantLeasePage() {
           <div className="dl__row">
             <dt>{t('tenantPortal.buildingInfo')}</dt>
             <dd className="font-semibold text-fg">
-              Unit {lease.unit?.label} (Floor {lease.unit?.floor ?? 1}) · {lease.unit?.buildingName}
+              {t('leases.unitFloorInfo', {
+                label: lease.unit?.label ?? '—',
+                floor: lease.unit?.floor ?? 1,
+                building: lease.unit?.buildingName ?? '',
+              })}
             </dd>
           </div>
           <div className="dl__row">
@@ -96,18 +101,18 @@ export default function TenantLeasePage() {
           </div>
           <div className="dl__row">
             <dt>{t('tenantPortal.householdSize')}</dt>
-            <dd>
-              {lease.householdSize} {lease.householdSize === 1 ? 'resident' : 'residents'}
-            </dd>
+            <dd>{t('leases.residentCount', { count: lease.householdSize })}</dd>
           </div>
           {lease.moveInReading !== null && (
             <div className="dl__row">
               <dt>{t('tenantPortal.submeterReading')}</dt>
-              <dd className="num font-semibold">{lease.moveInReading} units</dd>
+              <dd className="num font-semibold">
+                {t('leases.electricityUnits', { count: lease.moveInReading })}
+              </dd>
             </div>
           )}
           <div className="dl__row">
-            <dt>Lease Status</dt>
+            <dt>{t('leases.statusLabel')}</dt>
             <dd>
               <span className={`badge ${lease.status === 'active' ? 'badge--success' : 'badge--warning'}`}>
                 {t(`leases.status.${lease.status}`)}
@@ -122,7 +127,7 @@ export default function TenantLeasePage() {
         <div className="card__head flex items-center justify-between">
           <h2 className="card__title">{t('tenantPortal.chargesBreakdown')}</h2>
           <span className="text-xs font-semibold num text-fg">
-            Total recurring: {formatMoney(totalCharges)}
+            {t('leases.totalRecurring', { amount: formatMoney(totalCharges) })}
           </span>
         </div>
         <div className="p-4 space-y-2">
@@ -149,7 +154,7 @@ export default function TenantLeasePage() {
           <h2 className="card__title">{t('tenantPortal.landlordContact')}</h2>
         </div>
         <div className="p-4 space-y-2 text-sm">
-          <p className="font-semibold text-fg">{org?.name ?? 'Building Management'}</p>
+          <p className="font-semibold text-fg">{org?.name ?? t('leases.buildingManagement')}</p>
           <p className="text-xs text-fg-muted">{t('tenantPortal.contactSupport')}</p>
         </div>
       </div>

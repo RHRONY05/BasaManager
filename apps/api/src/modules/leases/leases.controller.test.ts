@@ -8,6 +8,7 @@ describe('LeasesController', () => {
     createLease: vi.fn(),
     listLeases: vi.fn(),
     getLease: vi.fn(),
+    getActiveLease: vi.fn(),
     recordDeposit: vi.fn(),
     resendInvite: vi.fn(),
     getTenantHistory: vi.fn(),
@@ -15,11 +16,11 @@ describe('LeasesController', () => {
 
   const controller = new LeasesController(mockService);
 
-  const mockRes = () => {
+  const mockRes = (validated: { body?: unknown; query?: unknown } = {}) => {
     const res: Partial<Response> = {};
     res.status = vi.fn().mockReturnValue(res);
     res.json = vi.fn().mockReturnValue(res);
-    res.locals = {};
+    res.locals = { validated };
     return res as Response;
   };
 
@@ -28,9 +29,9 @@ describe('LeasesController', () => {
   it('createLease returns 201', async () => {
     const req = {
       tenantCtx: { orgId: 'org-1', userId: 'u-1', role: 'landlord' },
-      body: { unitId: 'unit-1', tenantEmail: 't@test.com' },
     } as unknown as Request;
-    const res = mockRes();
+    const body = { unitId: 'unit-1', tenantEmail: 't@test.com' };
+    const res = mockRes({ body });
     vi.mocked(mockService.createLease).mockResolvedValue({ id: 'lease-1' } as never);
 
     await controller.createLease(req, res, next);
@@ -41,9 +42,8 @@ describe('LeasesController', () => {
   it('listLeases returns 200', async () => {
     const req = {
       tenantCtx: { orgId: 'org-1', userId: 'u-1', role: 'landlord' },
-      query: {},
     } as unknown as Request;
-    const res = mockRes();
+    const res = mockRes({ query: {} });
     vi.mocked(mockService.listLeases).mockResolvedValue([{ id: 'lease-1' }] as never);
 
     await controller.listLeases(req, res, next);
@@ -64,13 +64,26 @@ describe('LeasesController', () => {
     expect(res.json).toHaveBeenCalledWith({ data: { id: 'lease-1' } });
   });
 
+  it('getActiveLease returns 200', async () => {
+    const req = {
+      tenantCtx: { orgId: 'org-1', userId: 'u-1', role: 'landlord' },
+    } as unknown as Request;
+    const res = mockRes({ query: { unitId: 'unit-1' } });
+    vi.mocked(mockService.getActiveLease).mockResolvedValue({ id: 'lease-1' } as never);
+
+    await controller.getActiveLease(req, res, next);
+    expect(mockService.getActiveLease).toHaveBeenCalledWith(req.tenantCtx, 'unit-1');
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ data: { id: 'lease-1' } });
+  });
+
   it('recordDeposit returns 201', async () => {
     const req = {
       tenantCtx: { orgId: 'org-1', userId: 'u-1', role: 'landlord' },
       params: { id: 'lease-1' },
-      body: { kind: 'received', amountPoisha: 1000 },
     } as unknown as Request;
-    const res = mockRes();
+    const body = { kind: 'received', amountPoisha: 1000 };
+    const res = mockRes({ body });
     vi.mocked(mockService.recordDeposit).mockResolvedValue({ id: 'dep-1' } as never);
 
     await controller.recordDeposit(req, res, next);

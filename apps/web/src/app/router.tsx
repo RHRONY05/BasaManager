@@ -96,6 +96,14 @@ export const router = createBrowserRouter([
         Component: page('/l/buildings/:id'),
       },
       {
+        path: 'tenants',
+        Component: page('/l/tenants'),
+      },
+      {
+        path: 'leases/new',
+        Component: page('/l/leases/new'),
+      },
+      {
         path: 'leases/:id',
         Component: page('/l/leases/:id'),
       },

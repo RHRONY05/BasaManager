@@ -59,6 +59,10 @@ describe('LeasesService', () => {
 
   function createMockDb(overrides: Record<string, Record<string, unknown>> = {}): Db {
     const tx = {
+      user: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        ...overrides.user,
+      },
       unit: {
         findFirst: vi.fn().mockResolvedValue(sampleUnit),
         ...overrides.unit,
@@ -73,6 +77,7 @@ describe('LeasesService', () => {
       },
       leaseCharge: {
         create: vi.fn().mockResolvedValue({ id: 'ch-1' }),
+        createMany: vi.fn().mockResolvedValue({ count: 1 }),
         ...overrides.leaseCharge,
       },
       invitation: {
@@ -98,6 +103,9 @@ describe('LeasesService', () => {
           note: 'Deposit paid',
           createdAt: new Date(),
         }),
+        findMany: vi
+          .fn()
+          .mockResolvedValue([{ id: 'dep-1', kind: 'received', amountPoisha: BigInt(4000000) }]),
         ...overrides.depositEntry,
       },
       membership: {
@@ -123,6 +131,7 @@ describe('LeasesService', () => {
         findMany: vi.fn().mockResolvedValue([]),
         ...overrides.payment,
       },
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'lease-1', status: 'active' }]),
     };
 
     return {
@@ -208,6 +217,58 @@ describe('LeasesService', () => {
           charges: [],
         }),
       ).rejects.toThrow(ApiError);
+    });
+
+    it('throws 409 if tenantEmail belongs to an active staff member in the organisation', async () => {
+      const db = createMockDb({
+        lease: { findFirst: vi.fn().mockResolvedValue(null) },
+        user: {
+          findFirst: vi.fn().mockResolvedValue({
+            id: 'u-caretaker',
+            email: 'caretaker@test.com',
+          }),
+        },
+      });
+      const service = new LeasesService(db);
+
+      await expect(
+        service.createLease(landlordCtx, {
+          unitId: 'unit-1',
+          tenantEmail: 'caretaker@test.com',
+          tenantName: 'Staff Member',
+          startDate: '2026-01-01',
+          monthlyRentPoisha: 2000000,
+          depositPoisha: 4000000,
+          householdSize: 2,
+          charges: [],
+        }),
+      ).rejects.toThrow(/Cannot invite staff member/);
+    });
+
+    it('maps P2002 on invitation email to distinct conflict message', async () => {
+      const db = createMockDb({
+        lease: {
+          findFirst: vi.fn().mockResolvedValue(null),
+          create: vi.fn().mockRejectedValue({
+            code: 'P2002',
+            meta: { target: ['invitations_one_open_per_email'] },
+          }),
+        },
+      });
+      const service = new LeasesService(db);
+
+      await expect(
+        service.createLease(landlordCtx, {
+          unitId: 'unit-1',
+          tenantEmail: 't@test.com',
+          tenantName: 'Tenant',
+          startDate: '2026-01-01',
+          monthlyRentPoisha: 2000000,
+          depositPoisha: 4000000,
+          householdSize: 2,
+          charges: [],
+        }),
+      ).rejects.toThrow(/An open invitation already exists for this email address/);
     });
 
     it('creates lease and returns DTO', async () => {
@@ -315,6 +376,39 @@ describe('LeasesService', () => {
       ).rejects.toThrow(ApiError);
     });
 
+    it('throws 409 if lease is ended', async () => {
+      const db = createMockDb();
+      (db as unknown as { $tx: unknown }).$tx = vi.fn().mockImplementation(async (_ctx, cb) =>
+        cb({
+          $queryRaw: vi.fn().mockResolvedValue([{ id: 'lease-1', status: 'ended' }]),
+        }),
+      );
+      const service = new LeasesService(db);
+
+      await expect(
+        service.recordDeposit(landlordCtx, 'lease-1', {
+          kind: 'received',
+          amountPoisha: 100000,
+        }),
+      ).rejects.toThrow(/Cannot record deposit on an ended lease/);
+    });
+
+    it('throws 400 if refund exceeds current held deposit balance', async () => {
+      const db = createMockDb({
+        depositEntry: {
+          findMany: vi.fn().mockResolvedValue([{ id: 'dep-1', kind: 'received', amountPoisha: 100000n }]),
+        },
+      });
+      const service = new LeasesService(db);
+
+      await expect(
+        service.recordDeposit(landlordCtx, 'lease-1', {
+          kind: 'refunded',
+          amountPoisha: 200000,
+        }),
+      ).rejects.toThrow(/cannot exceed held deposit balance/);
+    });
+
     it('records deposit entry', async () => {
       const db = createMockDb();
       const service = new LeasesService(db);
@@ -345,6 +439,19 @@ describe('LeasesService', () => {
       const service = new LeasesService(db);
 
       await expect(service.resendInvite(landlordCtx, 'lease-1')).rejects.toThrow(ApiError);
+    });
+
+    it('throws 409 if no invitation ever existed for this lease', async () => {
+      const db = createMockDb({
+        invitation: {
+          findFirst: vi.fn().mockResolvedValue(null),
+        },
+      });
+      const service = new LeasesService(db);
+
+      await expect(service.resendInvite(landlordCtx, 'lease-1')).rejects.toThrow(
+        /No invitation found to resend/,
+      );
     });
 
     it('resends invitation', async () => {

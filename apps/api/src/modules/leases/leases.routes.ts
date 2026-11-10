@@ -1,7 +1,12 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { idParam, uuidSchema } from '@bm/shared/api/common';
-import { createLeaseSchema, listLeasesQuerySchema, recordDepositSchema } from '@bm/shared/api/leases';
+import {
+  createLeaseSchema,
+  getActiveLeaseQuerySchema,
+  listLeasesQuerySchema,
+  recordDepositSchema,
+} from '@bm/shared/api/leases';
 import type { Db } from '../../config/db';
 import type { Env } from '../../config/env';
 import type { Redis } from '../../config/redis';
@@ -42,7 +47,7 @@ export function createLeasesRoutes(deps: LeasesRouteDeps): Router {
   router.post('/', requireRole('landlord'), validate({ body: createLeaseSchema }), controller.createLease);
 
   // Get active lease (T gets own active lease; L, C pass ?unitId=)
-  router.get('/active', controller.getActiveLease);
+  router.get('/active', validate({ query: getActiveLeaseQuerySchema }), controller.getActiveLease);
 
   // Get lease detail (L, C, T)
   router.get('/:id', validate({ params: idParam }), controller.getLease);

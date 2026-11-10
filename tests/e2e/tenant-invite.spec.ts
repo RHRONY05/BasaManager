@@ -123,7 +123,7 @@ test.describe('Tenant Invite & Lease Lifecycle (V7)', () => {
         unitId: unit3B.id,
         tenantEmail: uniqueEmail('second'),
         tenantName: 'Second Tenant',
-        startDate: new Date().toISOString().slice(0, 10),
+        startDate: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Dhaka' }).format(new Date()),
         monthlyRentPoisha: 2000000,
         depositPoisha: 4000000,
         householdSize: 1,

@@ -2,6 +2,7 @@ import { useState, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, Plus, Trash2, AlertCircle, ArrowLeft, ArrowRight, Check } from 'lucide-react';
 import { useCreateLease } from '../../lib/api/leases';
+import { formatMoney, parseTakaToPoisha, poishaToTakaInput } from '../../lib/format';
 import type { UnitSummary } from '@bm/shared';
 import type { LeaseDto } from '@bm/shared/api/leases';
 
@@ -16,7 +17,7 @@ export interface CreateLeaseDialogProps {
 interface ChargeRow {
   id: string;
   name: string;
-  amount: number;
+  amount: string;
 }
 
 export function CreateLeaseDialog({
@@ -30,64 +31,67 @@ export function CreateLeaseDialog({
   const titleId = useId();
   const createLeaseMutation = useCreateLease();
 
+  const initialUnit = preselectedUnit ?? units[0];
+
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
-  const [unitId, setUnitId] = useState<string>(preselectedUnit?.id ?? units[0]?.id ?? '');
+  const [unitId, setUnitId] = useState<string>(initialUnit?.id ?? '');
   const [tenantEmail, setTenantEmail] = useState('');
   const [tenantName, setTenantName] = useState('');
-  const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [monthlyRent, setMonthlyRent] = useState<number | ''>(
-    preselectedUnit?.defaultRentPoisha ? Math.round(preselectedUnit.defaultRentPoisha / 100) : 15000,
+  const [startDate, setStartDate] = useState(() =>
+    new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Dhaka' }).format(new Date()),
   );
-  const [deposit, setDeposit] = useState<number | ''>(30000);
-  const [householdSize, setHouseholdSize] = useState<number>(2);
-  const [moveInReading, setMoveInReading] = useState<number | ''>('');
+  const [monthlyRent, setMonthlyRent] = useState<string>(() =>
+    initialUnit?.defaultRentPoisha ? poishaToTakaInput(initialUnit.defaultRentPoisha) : '',
+  );
+  const [deposit, setDeposit] = useState<string>('0');
+  const [householdSize, setHouseholdSize] = useState<number>(1);
+  const [moveInReading, setMoveInReading] = useState<string>('');
   const [charges, setCharges] = useState<ChargeRow[]>(() => {
-    if (preselectedUnit?.charges?.length) {
-      return preselectedUnit.charges.map((c, i) => ({
+    if (initialUnit?.charges?.length) {
+      return initialUnit.charges.map((c, i) => ({
         id: String(i),
         name: c.name,
-        amount: Math.round(c.amountPoisha / 100),
+        amount: poishaToTakaInput(c.amountPoisha),
       }));
     }
-    return [
-      { id: '1', name: 'Service charge', amount: 1500 },
-      { id: '2', name: 'Water', amount: 500 },
-    ];
+    return [];
   });
   const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  const selectedUnit = units.find((u) => u.id === unitId) ?? preselectedUnit;
+  const selectedUnit = units.find((u) => u.id === unitId) ?? initialUnit;
 
   const handleUnitChange = (id: string) => {
     setUnitId(id);
     const u = units.find((unit) => unit.id === id);
     if (u) {
-      if (u.defaultRentPoisha) {
-        setMonthlyRent(Math.round(u.defaultRentPoisha / 100));
-      }
+      setMonthlyRent(u.defaultRentPoisha ? poishaToTakaInput(u.defaultRentPoisha) : '');
+      setDeposit('0');
+      setHouseholdSize(1);
       if (u.charges?.length) {
         setCharges(
           u.charges.map((c, i) => ({
             id: String(i),
             name: c.name,
-            amount: Math.round(c.amountPoisha / 100),
+            amount: poishaToTakaInput(c.amountPoisha),
           })),
         );
+      } else {
+        setCharges([]);
       }
     }
   };
 
   const handleAddCharge = () => {
-    setCharges((prev) => [...prev, { id: Date.now().toString(), name: '', amount: 0 }]);
+    setCharges((prev) => [...prev, { id: Date.now().toString(), name: '', amount: '0' }]);
   };
 
   const handleRemoveCharge = (id: string) => {
     setCharges((prev) => prev.filter((c) => c.id !== id));
   };
 
-  const handleChargeChange = (id: string, field: 'name' | 'amount', value: string | number) => {
+  const handleChargeChange = (id: string, field: 'name' | 'amount', value: string) => {
     setCharges((prev) => prev.map((c) => (c.id === id ? { ...c, [field]: value } : c)));
   };
 
@@ -95,28 +99,28 @@ export function CreateLeaseDialog({
     setError(null);
     if (currentStep === 1) {
       if (!unitId) {
-        setError('Please select a unit');
+        setError(t('leases.validation.selectUnit'));
         return false;
       }
       if (!tenantEmail.trim() || !tenantEmail.includes('@')) {
-        setError(t('leases.tenantEmail') + ' is invalid');
+        setError(t('leases.validation.emailInvalid'));
         return false;
       }
       if (!tenantName.trim()) {
-        setError(t('leases.tenantName') + ' is required');
+        setError(t('leases.validation.nameRequired'));
         return false;
       }
     } else if (currentStep === 2) {
       if (!startDate) {
-        setError(t('leases.startDate') + ' is required');
+        setError(t('leases.validation.startDateRequired'));
         return false;
       }
       if (monthlyRent === '' || Number(monthlyRent) < 0) {
-        setError(t('leases.monthlyRent') + ' must be 0 or greater');
+        setError(t('leases.validation.rentNonNegative'));
         return false;
       }
       if (deposit === '' || Number(deposit) < 0) {
-        setError(t('leases.deposit') + ' must be 0 or greater');
+        setError(t('leases.validation.depositNonNegative'));
         return false;
       }
     }
@@ -149,15 +153,15 @@ export function CreateLeaseDialog({
         tenantEmail: tenantEmail.trim().toLowerCase(),
         tenantName: tenantName.trim(),
         startDate,
-        monthlyRentPoisha: Math.round(Number(monthlyRent || 0) * 100),
-        depositPoisha: Math.round(Number(deposit || 0) * 100),
+        monthlyRentPoisha: parseTakaToPoisha(monthlyRent),
+        depositPoisha: parseTakaToPoisha(deposit),
         householdSize: Number(householdSize || 1),
         moveInReading: moveInReading !== '' ? Number(moveInReading) : undefined,
         charges: charges
-          .filter((c) => c.name.trim() && c.amount > 0)
+          .filter((c) => c.name.trim() && parseTakaToPoisha(c.amount) > 0)
           .map((c) => ({
             name: c.name.trim(),
-            amountPoisha: Math.round(Number(c.amount) * 100),
+            amountPoisha: parseTakaToPoisha(c.amount),
           })),
       });
 
@@ -169,8 +173,8 @@ export function CreateLeaseDialog({
     }
   };
 
-  const totalMonthlyCharges = charges.reduce((acc, c) => acc + (Number(c.amount) || 0), 0);
-  const totalMonthlyEstimate = (Number(monthlyRent) || 0) + totalMonthlyCharges;
+  const totalMonthlyChargesPoisha = charges.reduce((acc, c) => acc + parseTakaToPoisha(c.amount), 0);
+  const totalMonthlyEstimatePoisha = parseTakaToPoisha(monthlyRent) + totalMonthlyChargesPoisha;
 
   return (
     <div className="scrim flex items-center justify-center p-4 z-50">
@@ -234,7 +238,7 @@ export function CreateLeaseDialog({
                   >
                     {units.map((u) => (
                       <option key={u.id} value={u.id}>
-                        Unit {u.label} (Floor {u.floor ?? 1}, {u.type.replace('_', ' ')})
+                        Unit {u.label} (Floor {u.floor ?? 1})
                       </option>
                     ))}
                   </select>
@@ -243,7 +247,7 @@ export function CreateLeaseDialog({
                     id="lease-unit"
                     type="text"
                     disabled
-                    value={preselectedUnit ? `Unit ${preselectedUnit.label}` : 'Selected unit'}
+                    value={selectedUnit ? t('leases.unitWithLabel', { label: selectedUnit.label }) : ''}
                     className="input"
                   />
                 )}
@@ -322,13 +326,10 @@ export function CreateLeaseDialog({
                   <span className="input-group__affix">৳</span>
                   <input
                     id="lease-rent"
-                    type="number"
-                    min={0}
+                    type="text"
                     required
                     value={monthlyRent}
-                    onChange={(e) =>
-                      setMonthlyRent(e.target.value === '' ? '' : Math.max(0, Number(e.target.value)))
-                    }
+                    onChange={(e) => setMonthlyRent(e.target.value)}
                     className="input input--num"
                   />
                 </div>
@@ -342,13 +343,10 @@ export function CreateLeaseDialog({
                   <span className="input-group__affix">৳</span>
                   <input
                     id="lease-deposit"
-                    type="number"
-                    min={0}
+                    type="text"
                     required
                     value={deposit}
-                    onChange={(e) =>
-                      setDeposit(e.target.value === '' ? '' : Math.max(0, Number(e.target.value)))
-                    }
+                    onChange={(e) => setDeposit(e.target.value)}
                     className="input input--num"
                   />
                 </div>
@@ -365,9 +363,7 @@ export function CreateLeaseDialog({
                     type="number"
                     min={0}
                     value={moveInReading}
-                    onChange={(e) =>
-                      setMoveInReading(e.target.value === '' ? '' : Math.max(0, Number(e.target.value)))
-                    }
+                    onChange={(e) => setMoveInReading(e.target.value)}
                     placeholder="0"
                     className="input input--num"
                   />
@@ -404,12 +400,9 @@ export function CreateLeaseDialog({
                     <div className="input-group">
                       <span className="input-group__affix">৳</span>
                       <input
-                        type="number"
-                        min={0}
-                        value={charge.amount || ''}
-                        onChange={(e) =>
-                          handleChargeChange(charge.id, 'amount', Math.max(0, Number(e.target.value)))
-                        }
+                        type="text"
+                        value={charge.amount}
+                        onChange={(e) => handleChargeChange(charge.id, 'amount', e.target.value)}
                         className="input input--num"
                       />
                     </div>
@@ -430,7 +423,7 @@ export function CreateLeaseDialog({
 
               <div className="pt-2 border-t border-border flex justify-between text-sm font-semibold">
                 <span>{t('leases.reviewCharges')}:</span>
-                <span className="num">৳{totalMonthlyCharges.toLocaleString('en-US')}</span>
+                <span className="num">{formatMoney(totalMonthlyChargesPoisha)}</span>
               </div>
             </div>
           )}
@@ -448,7 +441,9 @@ export function CreateLeaseDialog({
                 </div>
                 <div className="flex justify-between py-1 border-b border-border/50">
                   <span className="text-fg-muted">{t('leases.reviewUnit')}:</span>
-                  <span className="font-semibold">Unit {selectedUnit?.label ?? unitId}</span>
+                  <span className="font-semibold">
+                    {t('leases.unitWithLabel', { label: selectedUnit?.label ?? unitId })}
+                  </span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-border/50">
                   <span className="text-fg-muted">{t('leases.reviewStartDate')}:</span>
@@ -456,23 +451,21 @@ export function CreateLeaseDialog({
                 </div>
                 <div className="flex justify-between py-1 border-b border-border/50">
                   <span className="text-fg-muted">{t('leases.reviewRent')}:</span>
-                  <span className="font-semibold num">
-                    ৳{Number(monthlyRent || 0).toLocaleString('en-US')}
-                  </span>
+                  <span className="font-semibold num">{formatMoney(parseTakaToPoisha(monthlyRent))}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-border/50">
                   <span className="text-fg-muted">{t('leases.reviewDeposit')}:</span>
                   <span className="num font-semibold text-accent">
-                    ৳{Number(deposit || 0).toLocaleString('en-US')}
+                    {formatMoney(parseTakaToPoisha(deposit))}
                   </span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-border/50">
                   <span className="text-fg-muted">{t('leases.reviewCharges')}:</span>
-                  <span className="num">৳{totalMonthlyCharges.toLocaleString('en-US')}</span>
+                  <span className="num">{formatMoney(totalMonthlyChargesPoisha)}</span>
                 </div>
                 <div className="flex justify-between py-1 pt-2 font-bold text-base text-fg">
                   <span>{t('leases.reviewTotalMonthly')}:</span>
-                  <span className="num text-accent">৳{totalMonthlyEstimate.toLocaleString('en-US')}</span>
+                  <span className="num text-accent">{formatMoney(totalMonthlyEstimatePoisha)}</span>
                 </div>
               </div>
               <p className="hint text-xs">{t('leases.tenantEmailHint')}</p>

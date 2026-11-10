@@ -83,6 +83,7 @@ in CI, so docs and code can't drift.
 |---|---|---|
 | `POST /leases` | L | `{unitId, tenantEmail, tenantName, startDate, monthlyRentPoisha, depositPoisha, householdSize, charges, moveInReading?}` → lease `pending` + tenant invite email. If the start is after this month's bill day, the first prorated bill is created when the lease becomes `active` (invite accepted or `startDate` reached, whichever is later) |
 | `GET /leases?status=&buildingId=` | L, C | |
+| `GET /leases/active?unitId=` | L, C, T(own) | Returns active lease. T passes no query (returns own active lease); L, C pass `?unitId=<uuid>`. `NOT_FOUND` if none |
 | `GET /leases/:id` | L, C, T(own) | lease, tenants, deposit held, credit, dues |
 | `POST /leases/:id/deposit` | L | deposit entry |
 | `POST /leases/:id/notice` | L, T(own) | `{moveOutDate}` → status `notice` |

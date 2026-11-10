@@ -11,6 +11,7 @@ import { sha256, generateRefreshToken, generateCsrfToken, signAccessToken } from
 import { setAuthCookies } from '../../lib/cookies';
 import { findInvitationByTokenHash } from '../../config/db';
 import type { AuthenticatedUser } from '../../middleware/auth';
+import { linkTenantToLease } from '../leases/lease-activation';
 
 export class InvitesService {
   constructor(
@@ -106,6 +107,17 @@ export class InvitesService {
           },
         });
 
+        // Blocker 1: Prevent staff member (landlord/caretaker) from being demoted to tenant
+        if (
+          existingMembership &&
+          (existingMembership.role === 'landlord' || existingMembership.role === 'caretaker') &&
+          inv.role === 'tenant'
+        ) {
+          throw ApiError.conflict(
+            'Cannot accept tenant invite: user is already a staff member in this organisation',
+          );
+        }
+
         let membershipId: string;
         if (existingMembership) {
           const updatedM = await tx.membership.update({
@@ -144,34 +156,8 @@ export class InvitesService {
           }
         }
 
-        if (inv.role === 'tenant' && inv.leaseId) {
-          const existingPrimary = await tx.leaseTenant.findFirst({
-            where: { orgId: inv.orgId, leaseId: inv.leaseId, isPrimary: true },
-          });
-          const isPrimary = !existingPrimary;
-
-          await tx.leaseTenant.create({
-            data: {
-              orgId: inv.orgId,
-              leaseId: inv.leaseId,
-              membershipId,
-              isPrimary,
-            },
-          });
-
-          const lease = await tx.lease.findUnique({
-            where: { id: inv.leaseId },
-          });
-          if (lease && lease.status === 'pending') {
-            const todayStr = now.toISOString().slice(0, 10);
-            const startStr = lease.startDate.toISOString().slice(0, 10);
-            if (startStr <= todayStr) {
-              await tx.lease.update({
-                where: { id: lease.id },
-                data: { status: 'active' },
-              });
-            }
-          }
+        if (inv.role === 'tenant') {
+          await linkTenantToLease(tx, inv, membershipId, now);
         }
       });
 
@@ -246,34 +232,8 @@ export class InvitesService {
           }
         }
 
-        if (inv.role === 'tenant' && inv.leaseId) {
-          const existingPrimary = await tx.leaseTenant.findFirst({
-            where: { orgId: inv.orgId, leaseId: inv.leaseId, isPrimary: true },
-          });
-          const isPrimary = !existingPrimary;
-
-          await tx.leaseTenant.create({
-            data: {
-              orgId: inv.orgId,
-              leaseId: inv.leaseId,
-              membershipId: m.id,
-              isPrimary,
-            },
-          });
-
-          const lease = await tx.lease.findUnique({
-            where: { id: inv.leaseId },
-          });
-          if (lease && lease.status === 'pending') {
-            const todayStr = now.toISOString().slice(0, 10);
-            const startStr = lease.startDate.toISOString().slice(0, 10);
-            if (startStr <= todayStr) {
-              await tx.lease.update({
-                where: { id: lease.id },
-                data: { status: 'active' },
-              });
-            }
-          }
+        if (inv.role === 'tenant') {
+          await linkTenantToLease(tx, inv, m.id, now);
         }
       });
     } catch (err) {

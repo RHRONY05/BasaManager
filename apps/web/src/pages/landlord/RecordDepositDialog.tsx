@@ -2,6 +2,7 @@ import { useState, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, AlertCircle, Check } from 'lucide-react';
 import { useRecordDeposit } from '../../lib/api/leases';
+import { parseTakaToPoisha, poishaToTakaInput } from '../../lib/format';
 import type { DepositEntryKind } from '@bm/shared';
 
 export interface RecordDepositDialogProps {
@@ -23,8 +24,8 @@ export function RecordDepositDialog({
   const titleId = useId();
   const recordMutation = useRecordDeposit(leaseId);
 
-  const [kind, setKind] = useState<DepositEntryKind>('received');
-  const [amount, setAmount] = useState<number | ''>(defaultAmount ?? 30000);
+  const [kind] = useState<DepositEntryKind>('received');
+  const [amount, setAmount] = useState<string>(defaultAmount ? poishaToTakaInput(defaultAmount) : '');
   const [note, setNote] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -34,15 +35,16 @@ export function RecordDepositDialog({
     e.preventDefault();
     setError(null);
 
-    if (amount === '' || Number(amount) <= 0) {
-      setError(t('leases.depositAmount') + ' must be greater than 0');
+    const poisha = parseTakaToPoisha(amount);
+    if (!amount.trim() || poisha <= 0) {
+      setError(t('leases.validation.amountGreaterThanZero'));
       return;
     }
 
     try {
       await recordMutation.mutateAsync({
         kind,
-        amountPoisha: Math.round(Number(amount) * 100),
+        amountPoisha: poisha,
         note: note.trim() || undefined,
       });
 
@@ -86,15 +88,8 @@ export function RecordDepositDialog({
             <label htmlFor="deposit-kind" className="label">
               {t('leases.depositKind')}
             </label>
-            <select
-              id="deposit-kind"
-              value={kind}
-              onChange={(e) => setKind(e.target.value as DepositEntryKind)}
-              className="select"
-            >
+            <select id="deposit-kind" value={kind} disabled className="select">
               <option value="received">{t('leases.kindReceived')}</option>
-              <option value="refunded">{t('leases.kindRefunded')}</option>
-              <option value="applied_to_dues">{t('leases.kindApplied')}</option>
             </select>
           </div>
 
@@ -106,11 +101,11 @@ export function RecordDepositDialog({
               <span className="input-group__affix">৳</span>
               <input
                 id="deposit-amount"
-                type="number"
-                min={1}
+                type="text"
                 required
                 value={amount}
-                onChange={(e) => setAmount(e.target.value === '' ? '' : Math.max(0, Number(e.target.value)))}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="0"
                 className="input input--num"
               />
             </div>

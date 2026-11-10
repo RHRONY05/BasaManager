@@ -36,7 +36,7 @@ const cookieFor = (invite?: string) => encryptOAuthState({ state: 'st', codeVeri
 
 interface Mocks {
   invitation: { updateMany: ReturnType<typeof vi.fn> };
-  membership: { create: ReturnType<typeof vi.fn> };
+  membership: { create: ReturnType<typeof vi.fn>; findFirst: ReturnType<typeof vi.fn> };
   organization: { create: ReturnType<typeof vi.fn> };
   user: { create: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn> };
   oauthAccount: { create: ReturnType<typeof vi.fn>; upsert: ReturnType<typeof vi.fn> };
@@ -46,7 +46,7 @@ interface Mocks {
 function mkDb() {
   const tx = {
     invitation: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
-    membership: { create: vi.fn().mockResolvedValue({}) },
+    membership: { create: vi.fn().mockResolvedValue({}), findFirst: vi.fn().mockResolvedValue(null) },
     organization: { create: vi.fn().mockResolvedValue({}) },
     user: {
       create: vi.fn().mockResolvedValue({ id: 'u-new', isPlatformAdmin: false }),
