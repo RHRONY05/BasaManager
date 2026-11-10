@@ -768,6 +768,614 @@
           }
         }
       }
+    },
+    "/api/leases": {
+      "get": {
+        "tags": ["Leases"],
+        "summary": "List leases (Landlord sees all, Caretaker sees assigned)",
+        "responses": {
+          "200": {
+            "description": "Leases list.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string", "format": "uuid" },
+                          "orgId": { "type": "string", "format": "uuid" },
+                          "unitId": { "type": "string", "format": "uuid" },
+                          "unit": {
+                            "type": "object",
+                            "properties": {
+                              "id": { "type": "string", "format": "uuid" },
+                              "label": { "type": "string" },
+                              "floor": { "type": "integer" },
+                              "type": { "type": "string" },
+                              "buildingId": { "type": "string", "format": "uuid" },
+                              "buildingName": { "type": "string" }
+                            },
+                            "required": ["id", "label", "floor", "type", "buildingId", "buildingName"]
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": ["pending", "active", "notice", "ended", "ended_with_dues"]
+                          },
+                          "startDate": { "type": "string" },
+                          "endDate": { "type": ["string", "null"] },
+                          "noticeDate": { "type": ["string", "null"] },
+                          "monthlyRentPoisha": { "type": "integer" },
+                          "depositPoisha": { "type": "integer" },
+                          "depositHeldPoisha": { "type": "integer" },
+                          "householdSize": { "type": "integer" },
+                          "moveInReading": { "type": ["integer", "null"] },
+                          "charges": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": { "type": "string", "format": "uuid" },
+                                "name": { "type": "string" },
+                                "amountPoisha": { "type": "integer" }
+                              },
+                              "required": ["id", "name", "amountPoisha"]
+                            }
+                          },
+                          "tenants": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "membershipId": { "type": "string", "format": "uuid" },
+                                "userId": { "type": "string", "format": "uuid" },
+                                "fullName": { "type": "string" },
+                                "email": { "type": "string" },
+                                "isPrimary": { "type": "boolean" },
+                                "joinedAt": { "type": "string" }
+                              },
+                              "required": [
+                                "membershipId",
+                                "userId",
+                                "fullName",
+                                "email",
+                                "isPrimary",
+                                "joinedAt"
+                              ]
+                            }
+                          },
+                          "creditPoisha": { "type": "integer" },
+                          "duesPoisha": { "type": "integer" },
+                          "createdAt": { "type": "string" },
+                          "updatedAt": { "type": "string" }
+                        },
+                        "required": [
+                          "id",
+                          "orgId",
+                          "unitId",
+                          "status",
+                          "startDate",
+                          "endDate",
+                          "noticeDate",
+                          "monthlyRentPoisha",
+                          "depositPoisha",
+                          "depositHeldPoisha",
+                          "householdSize",
+                          "moveInReading",
+                          "charges",
+                          "tenants",
+                          "creditPoisha",
+                          "duesPoisha",
+                          "createdAt",
+                          "updatedAt"
+                        ]
+                      }
+                    }
+                  },
+                  "required": ["data"]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Leases"],
+        "summary": "Create lease and invite tenant (Landlord only)",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "unitId": { "type": "string", "format": "uuid" },
+                  "tenantEmail": { "type": "string", "format": "email" },
+                  "tenantName": { "type": "string", "minLength": 1, "maxLength": 100 },
+                  "startDate": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+                  "monthlyRentPoisha": { "type": "integer", "minimum": 0 },
+                  "depositPoisha": { "type": "integer", "minimum": 0, "default": 0 },
+                  "householdSize": { "type": "integer", "minimum": 1, "maximum": 20, "default": 1 },
+                  "charges": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+                        "amountPoisha": { "type": "integer", "minimum": 0 }
+                      },
+                      "required": ["name", "amountPoisha"]
+                    },
+                    "default": []
+                  },
+                  "moveInReading": { "type": "integer", "minimum": 0 }
+                },
+                "required": ["unitId", "tenantEmail", "tenantName", "startDate", "monthlyRentPoisha"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Lease created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string", "format": "uuid" },
+                        "orgId": { "type": "string", "format": "uuid" },
+                        "unitId": { "type": "string", "format": "uuid" },
+                        "unit": {
+                          "type": "object",
+                          "properties": {
+                            "id": { "type": "string", "format": "uuid" },
+                            "label": { "type": "string" },
+                            "floor": { "type": "integer" },
+                            "type": { "type": "string" },
+                            "buildingId": { "type": "string", "format": "uuid" },
+                            "buildingName": { "type": "string" }
+                          },
+                          "required": ["id", "label", "floor", "type", "buildingId", "buildingName"]
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["pending", "active", "notice", "ended", "ended_with_dues"]
+                        },
+                        "startDate": { "type": "string" },
+                        "endDate": { "type": ["string", "null"] },
+                        "noticeDate": { "type": ["string", "null"] },
+                        "monthlyRentPoisha": { "type": "integer" },
+                        "depositPoisha": { "type": "integer" },
+                        "depositHeldPoisha": { "type": "integer" },
+                        "householdSize": { "type": "integer" },
+                        "moveInReading": { "type": ["integer", "null"] },
+                        "charges": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": { "type": "string", "format": "uuid" },
+                              "name": { "type": "string" },
+                              "amountPoisha": { "type": "integer" }
+                            },
+                            "required": ["id", "name", "amountPoisha"]
+                          }
+                        },
+                        "tenants": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "membershipId": { "type": "string", "format": "uuid" },
+                              "userId": { "type": "string", "format": "uuid" },
+                              "fullName": { "type": "string" },
+                              "email": { "type": "string" },
+                              "isPrimary": { "type": "boolean" },
+                              "joinedAt": { "type": "string" }
+                            },
+                            "required": [
+                              "membershipId",
+                              "userId",
+                              "fullName",
+                              "email",
+                              "isPrimary",
+                              "joinedAt"
+                            ]
+                          }
+                        },
+                        "creditPoisha": { "type": "integer" },
+                        "duesPoisha": { "type": "integer" },
+                        "createdAt": { "type": "string" },
+                        "updatedAt": { "type": "string" }
+                      },
+                      "required": [
+                        "id",
+                        "orgId",
+                        "unitId",
+                        "status",
+                        "startDate",
+                        "endDate",
+                        "noticeDate",
+                        "monthlyRentPoisha",
+                        "depositPoisha",
+                        "depositHeldPoisha",
+                        "householdSize",
+                        "moveInReading",
+                        "charges",
+                        "tenants",
+                        "creditPoisha",
+                        "duesPoisha",
+                        "createdAt",
+                        "updatedAt"
+                      ]
+                    }
+                  },
+                  "required": ["data"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "404": {
+            "description": "Unit not found",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "409": {
+            "description": "Unit already has active or pending lease",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          }
+        }
+      }
+    },
+    "/api/leases/active": {
+      "get": {
+        "tags": ["Leases"],
+        "summary": "Get active lease for current tenant or unit",
+        "responses": {
+          "200": {
+            "description": "Active lease details.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string", "format": "uuid" },
+                        "orgId": { "type": "string", "format": "uuid" },
+                        "unitId": { "type": "string", "format": "uuid" },
+                        "unit": {
+                          "type": "object",
+                          "properties": {
+                            "id": { "type": "string", "format": "uuid" },
+                            "label": { "type": "string" },
+                            "floor": { "type": "integer" },
+                            "type": { "type": "string" },
+                            "buildingId": { "type": "string", "format": "uuid" },
+                            "buildingName": { "type": "string" }
+                          },
+                          "required": ["id", "label", "floor", "type", "buildingId", "buildingName"]
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["pending", "active", "notice", "ended", "ended_with_dues"]
+                        },
+                        "startDate": { "type": "string" },
+                        "endDate": { "type": ["string", "null"] },
+                        "noticeDate": { "type": ["string", "null"] },
+                        "monthlyRentPoisha": { "type": "integer" },
+                        "depositPoisha": { "type": "integer" },
+                        "depositHeldPoisha": { "type": "integer" },
+                        "householdSize": { "type": "integer" },
+                        "moveInReading": { "type": ["integer", "null"] },
+                        "charges": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": { "type": "string", "format": "uuid" },
+                              "name": { "type": "string" },
+                              "amountPoisha": { "type": "integer" }
+                            },
+                            "required": ["id", "name", "amountPoisha"]
+                          }
+                        },
+                        "tenants": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "membershipId": { "type": "string", "format": "uuid" },
+                              "userId": { "type": "string", "format": "uuid" },
+                              "fullName": { "type": "string" },
+                              "email": { "type": "string" },
+                              "isPrimary": { "type": "boolean" },
+                              "joinedAt": { "type": "string" }
+                            },
+                            "required": [
+                              "membershipId",
+                              "userId",
+                              "fullName",
+                              "email",
+                              "isPrimary",
+                              "joinedAt"
+                            ]
+                          }
+                        },
+                        "creditPoisha": { "type": "integer" },
+                        "duesPoisha": { "type": "integer" },
+                        "createdAt": { "type": "string" },
+                        "updatedAt": { "type": "string" }
+                      },
+                      "required": [
+                        "id",
+                        "orgId",
+                        "unitId",
+                        "status",
+                        "startDate",
+                        "endDate",
+                        "noticeDate",
+                        "monthlyRentPoisha",
+                        "depositPoisha",
+                        "depositHeldPoisha",
+                        "householdSize",
+                        "moveInReading",
+                        "charges",
+                        "tenants",
+                        "creditPoisha",
+                        "duesPoisha",
+                        "createdAt",
+                        "updatedAt"
+                      ]
+                    }
+                  },
+                  "required": ["data"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "404": {
+            "description": "No active lease found",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          }
+        }
+      }
+    },
+    "/api/leases/{id}": {
+      "get": {
+        "tags": ["Leases"],
+        "summary": "Get lease details",
+        "responses": {
+          "200": {
+            "description": "Lease details.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string", "format": "uuid" },
+                        "orgId": { "type": "string", "format": "uuid" },
+                        "unitId": { "type": "string", "format": "uuid" },
+                        "unit": {
+                          "type": "object",
+                          "properties": {
+                            "id": { "type": "string", "format": "uuid" },
+                            "label": { "type": "string" },
+                            "floor": { "type": "integer" },
+                            "type": { "type": "string" },
+                            "buildingId": { "type": "string", "format": "uuid" },
+                            "buildingName": { "type": "string" }
+                          },
+                          "required": ["id", "label", "floor", "type", "buildingId", "buildingName"]
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["pending", "active", "notice", "ended", "ended_with_dues"]
+                        },
+                        "startDate": { "type": "string" },
+                        "endDate": { "type": ["string", "null"] },
+                        "noticeDate": { "type": ["string", "null"] },
+                        "monthlyRentPoisha": { "type": "integer" },
+                        "depositPoisha": { "type": "integer" },
+                        "depositHeldPoisha": { "type": "integer" },
+                        "householdSize": { "type": "integer" },
+                        "moveInReading": { "type": ["integer", "null"] },
+                        "charges": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": { "type": "string", "format": "uuid" },
+                              "name": { "type": "string" },
+                              "amountPoisha": { "type": "integer" }
+                            },
+                            "required": ["id", "name", "amountPoisha"]
+                          }
+                        },
+                        "tenants": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "membershipId": { "type": "string", "format": "uuid" },
+                              "userId": { "type": "string", "format": "uuid" },
+                              "fullName": { "type": "string" },
+                              "email": { "type": "string" },
+                              "isPrimary": { "type": "boolean" },
+                              "joinedAt": { "type": "string" }
+                            },
+                            "required": [
+                              "membershipId",
+                              "userId",
+                              "fullName",
+                              "email",
+                              "isPrimary",
+                              "joinedAt"
+                            ]
+                          }
+                        },
+                        "creditPoisha": { "type": "integer" },
+                        "duesPoisha": { "type": "integer" },
+                        "createdAt": { "type": "string" },
+                        "updatedAt": { "type": "string" }
+                      },
+                      "required": [
+                        "id",
+                        "orgId",
+                        "unitId",
+                        "status",
+                        "startDate",
+                        "endDate",
+                        "noticeDate",
+                        "monthlyRentPoisha",
+                        "depositPoisha",
+                        "depositHeldPoisha",
+                        "householdSize",
+                        "moveInReading",
+                        "charges",
+                        "tenants",
+                        "creditPoisha",
+                        "duesPoisha",
+                        "createdAt",
+                        "updatedAt"
+                      ]
+                    }
+                  },
+                  "required": ["data"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Lease not found",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          }
+        }
+      }
+    },
+    "/api/leases/{id}/deposit": {
+      "post": {
+        "tags": ["Leases"],
+        "summary": "Record deposit entry (Landlord only)",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "kind": { "type": "string", "enum": ["received", "refunded", "applied_to_dues"] },
+                  "amountPoisha": { "type": "integer", "exclusiveMinimum": 0 },
+                  "note": { "type": "string", "maxLength": 500 }
+                },
+                "required": ["kind", "amountPoisha"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Deposit recorded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string", "format": "uuid" },
+                        "kind": { "type": "string", "enum": ["received", "refunded", "applied_to_dues"] },
+                        "amountPoisha": { "type": "integer" },
+                        "note": { "type": ["string", "null"] },
+                        "createdAt": {
+                          "anyOf": [{ "type": "string", "format": "date-time" }, { "type": "string" }]
+                        }
+                      },
+                      "required": ["id", "kind", "amountPoisha", "note", "createdAt"]
+                    }
+                  },
+                  "required": ["data"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "404": {
+            "description": "Lease not found",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          }
+        }
+      }
+    },
+    "/api/leases/{id}/resend-invite": {
+      "post": {
+        "tags": ["Leases"],
+        "summary": "Resend tenant invite (Landlord only)",
+        "responses": {
+          "200": { "description": "Invite resent." },
+          "403": {
+            "description": "Forbidden",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "404": {
+            "description": "Lease not found",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "409": {
+            "description": "Lease is no longer pending",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          }
+        }
+      }
+    },
+    "/api/tenants/{membershipId}/history": {
+      "get": {
+        "tags": ["Tenants"],
+        "summary": "Get tenant full history (Landlord only)",
+        "responses": {
+          "200": { "description": "Tenant history details." },
+          "403": {
+            "description": "Forbidden",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "404": {
+            "description": "Tenant membership not found",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          }
+        }
+      }
     }
   },
   "webhooks": {}

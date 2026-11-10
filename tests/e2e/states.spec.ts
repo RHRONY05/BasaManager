@@ -112,13 +112,20 @@ test.describe('UI States Specs', () => {
     { href: '/t/notices', name: 'Notices' },
     { href: '/t/account', name: 'Account' },
   ];
+  const TENANT_EXTRA_LINKS = [{ href: '/t/lease', name: 'Lease' }];
 
   test('every routed role page is reached by a nav link checked below', () => {
     const covered = new Set([
       '/l',
       '/c',
       '/t',
-      ...[...LANDLORD_LINKS, ...LANDLORD_EXTRA_LINKS, ...CARETAKER_LINKS, ...TENANT_LINKS].map((l) => l.href),
+      ...[
+        ...LANDLORD_LINKS,
+        ...LANDLORD_EXTRA_LINKS,
+        ...CARETAKER_LINKS,
+        ...TENANT_LINKS,
+        ...TENANT_EXTRA_LINKS,
+      ].map((l) => l.href),
     ]);
     const roleRoutes = ROUTE_PATHS.filter((p) => /^\/(l|c|t)(\/|$)/.test(p) && !p.includes(':'));
     expect(roleRoutes.filter((p) => !covered.has(p))).toEqual([]);

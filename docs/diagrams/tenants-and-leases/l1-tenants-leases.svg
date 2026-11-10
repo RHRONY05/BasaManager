@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1700 800" width="1700" height="800" font-family="'Segoe UI', Inter, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1f1f1f"/>
+    </marker>
+  </defs>
+  <rect width="1700" height="800" fill="#ffffff"/>
+  <text x="40" y="52" font-size="28" font-weight="700" fill="#1f1f1f">Tenants &amp; leases, level 1: Guards, Subsystems &amp; Scoped Access</text>
+  <text x="40" y="82" font-size="16" fill="#3a3a3a">Express middleware guards, LeasesService domain methods, Mailer outbox dispatch, and RLS database transaction boundary.</text>
+  <g font-size="15" fill="#3a3a3a">
+    <line x1="1130" y1="36" x2="1190" y2="36" stroke="#1f1f1f" stroke-width="2.4" marker-end="url(#arrow)"/>
+    <text x="1202" y="41">call / request</text>
+    <line x1="1130" y1="62" x2="1190" y2="62" stroke="#1f1f1f" stroke-width="2.4" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <text x="1202" y="67">response / event</text>
+    <rect x="1370" y="24" width="26" height="18" rx="3" fill="#FEC8C3"/><text x="1406" y="39">caller</text>
+    <rect x="1530" y="24" width="26" height="18" rx="7" fill="#BFE3FD"/><text x="1566" y="39">service module</text>
+    <circle cx="1383" cy="62" r="9" fill="#E3CCFD"/><text x="1406" y="67">storage</text>
+    <rect x="1530" y="53" width="26" height="18" rx="3" fill="#C9F2D6"/><text x="1566" y="67">email / outbox</text>
+  </g>
+  <rect x="40" y="240" width="180" height="280" rx="8" fill="#FEC8C3"/>
+  <text x="130" y="280" font-size="20" font-weight="700" fill="#1f1f1f" text-anchor="middle">Clients</text>
+  <text x="130" y="320" font-size="15" font-weight="600" fill="#3a3a3a" text-anchor="middle">Landlord Web</text>
+  <text x="130" y="340" font-size="13" fill="#666666" text-anchor="middle">POST /api/leases</text>
+  <text x="130" y="360" font-size="13" fill="#666666" text-anchor="middle">POST /api/leases/:id/deposit</text>
+  <text x="130" y="400" font-size="15" font-weight="600" fill="#3a3a3a" text-anchor="middle">Tenant PWA</text>
+  <text x="130" y="420" font-size="13" fill="#666666" text-anchor="middle">GET /api/leases/active</text>
+  <text x="130" y="440" font-size="13" fill="#666666" text-anchor="middle">POST /api/invites/:token/accept</text>
+  <text x="130" y="480" font-size="15" font-weight="600" fill="#3a3a3a" text-anchor="middle">Caretaker Web</text>
+  <text x="130" y="500" font-size="13" fill="#666666" text-anchor="middle">GET /api/leases (scoped)</text>
+  <g fill="none" stroke="#1f1f1f" stroke-width="2.4">
+    <path d="M220,380 H294" marker-end="url(#arrow)"/>
+    <path d="M494,380 H564" marker-end="url(#arrow)"/>
+    <path d="M964,380 H1044" marker-end="url(#arrow)"/>
+    <path d="M760,532 V612" marker-end="url(#arrow)"/>
+    <path d="M840,612 V534" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <path d="M1244,380 H1324" marker-end="url(#arrow)"/>
+  </g>
+  <rect x="300" y="260" width="190" height="240" rx="8" fill="#BFE3FD"/>
+  <text x="395" y="300" font-size="18" font-weight="700" fill="#1f1f1f" text-anchor="middle">Security Guards</text>
+  <text x="395" y="335" font-size="14" fill="#3a3a3a" text-anchor="middle">requireAuth (JWT)</text>
+  <text x="395" y="365" font-size="14" fill="#3a3a3a" text-anchor="middle">requireRole('landlord'|'tenant')</text>
+  <text x="395" y="395" font-size="14" fill="#3a3a3a" text-anchor="middle">requireMembership (X-Org-Id)</text>
+  <text x="395" y="425" font-size="14" fill="#3a3a3a" text-anchor="middle">Zod Request Validation</text>
+  <text x="395" y="455" font-size="14" fill="#3a3a3a" text-anchor="middle">CSRF Header Check</text>
+  <rect x="570" y="220" width="390" height="310" rx="20" fill="#BFE3FD"/>
+  <text x="765" y="260" font-size="22" font-weight="700" fill="#1f1f1f" text-anchor="middle">LeasesService Subsystem</text>
+  <text x="765" y="295" font-size="14" fill="#3a3a3a" text-anchor="middle">• createLease: unit check + 409 conflict prevention</text>
+  <text x="765" y="320" font-size="14" fill="#3a3a3a" text-anchor="middle">• invitation token creation &amp; SHA-256 hash storage</text>
+  <text x="765" y="345" font-size="14" fill="#3a3a3a" text-anchor="middle">• recordDeposit: immutable received/applied ledger</text>
+  <text x="765" y="370" font-size="14" fill="#3a3a3a" text-anchor="middle">• getActiveLease: role-based lease resolution</text>
+  <text x="765" y="395" font-size="14" fill="#3a3a3a" text-anchor="middle">• resendInvite: revoke pending token &amp; issue fresh</text>
+  <text x="765" y="420" font-size="14" fill="#3a3a3a" text-anchor="middle">• getTenantHistory: comprehensive tenancy report</text>
+  <text x="765" y="445" font-size="14" fill="#3a3a3a" text-anchor="middle">• deliverOutboxNow: immediate test/dev mail trigger</text>
+  <text x="765" y="470" font-size="14" fill="#3a3a3a" text-anchor="middle">• caretakerBuilding filtering for staff access</text>
+  <rect x="1050" y="270" width="190" height="220" rx="8" fill="#C9F2D6"/>
+  <text x="1145" y="310" font-size="18" font-weight="700" fill="#1f1f1f" text-anchor="middle">Outbox Mailer</text>
+  <text x="1145" y="345" font-size="14" fill="#3a3a3a" text-anchor="middle">Transactional outbox</text>
+  <text x="1145" y="375" font-size="14" fill="#3a3a3a" text-anchor="middle">type: 'invite.sent'</text>
+  <text x="1145" y="405" font-size="14" fill="#3a3a3a" text-anchor="middle">React Email template</text>
+  <text x="1145" y="435" font-size="14" fill="#3a3a3a" text-anchor="middle">Immediate delivery / fallback</text>
+  <rect x="1330" y="310" width="160" height="140" rx="8" fill="#FEC8C3"/>
+  <text x="1410" y="355" font-size="18" font-weight="700" fill="#1f1f1f" text-anchor="middle">Mailpit / SMTP</text>
+  <text x="1410" y="385" font-size="14" fill="#3a3a3a" text-anchor="middle">Tenant invitation mail</text>
+  <text x="1410" y="405" font-size="13" fill="#666666" text-anchor="middle">with 7-day token link</text>
+  <circle cx="800" cy="700" r="70" fill="#E3CCFD"/>
+  <text x="800" y="685" font-size="18" font-weight="700" fill="#1f1f1f" text-anchor="middle">Postgres 17</text>
+  <text x="800" y="707" font-size="13" fill="#3a3a3a" text-anchor="middle">SET app.org_id / app.user_id</text>
+  <text x="800" y="725" font-size="13" fill="#3a3a3a" text-anchor="middle">RLS on leases, charges, deposits</text>
+</svg>

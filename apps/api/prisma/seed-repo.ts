@@ -117,3 +117,48 @@ export async function assignCaretaker(
 ): Promise<void> {
   await tx.caretakerBuilding.create({ data: { orgId, membershipId, buildingId } });
 }
+
+export type LeaseSeedInput = {
+  unitId: string;
+  tenantMembershipId: string;
+  startDate: Date;
+  monthlyRentPoisha: bigint;
+  depositPoisha: bigint;
+  householdSize: number;
+  status: 'active';
+  createdBy: string;
+  charges: { name: string; amountPoisha: bigint }[];
+};
+
+export async function createLease(tx: Tx, orgId: string, l: LeaseSeedInput): Promise<string> {
+  const lease = await tx.lease.create({
+    data: {
+      orgId,
+      unitId: l.unitId,
+      startDate: l.startDate,
+      monthlyRentPoisha: l.monthlyRentPoisha,
+      depositPoisha: l.depositPoisha,
+      householdSize: l.householdSize,
+      status: l.status,
+      createdBy: l.createdBy,
+      charges: {
+        create: l.charges.map((c) => ({
+          name: c.name,
+          amountPoisha: c.amountPoisha,
+        })),
+      },
+    },
+    select: { id: true },
+  });
+
+  await tx.leaseTenant.create({
+    data: {
+      orgId,
+      leaseId: lease.id,
+      membershipId: l.tenantMembershipId,
+      isPrimary: true,
+    },
+  });
+
+  return lease.id;
+}

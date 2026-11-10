@@ -9,4 +9,8 @@ export const keys = {
   buildings: () => ['buildings'] as const,
   building: (id: string) => ['buildings', id] as const,
   buildingUnits: (buildingId: string) => ['buildings', buildingId, 'units'] as const,
+  leases: (filters?: Record<string, unknown>) => ['leases', filters] as const,
+  lease: (id: string) => ['leases', id] as const,
+  activeLease: (unitId?: string) => ['leases', 'active', unitId] as const,
+  tenantHistory: (membershipId: string) => ['tenants', membershipId, 'history'] as const,
 };

@@ -857,6 +857,36 @@ export class AuthService {
                 }
               }
 
+              if (inv.role === 'tenant' && inv.leaseId) {
+                const existingPrimary = await tx.leaseTenant.findFirst({
+                  where: { orgId: inv.orgId, leaseId: inv.leaseId, isPrimary: true },
+                });
+                const isPrimary = !existingPrimary;
+
+                await tx.leaseTenant.create({
+                  data: {
+                    orgId: inv.orgId,
+                    leaseId: inv.leaseId,
+                    membershipId: m.id,
+                    isPrimary,
+                  },
+                });
+
+                const lease = await tx.lease.findUnique({
+                  where: { id: inv.leaseId },
+                });
+                if (lease && lease.status === 'pending') {
+                  const todayStr = now.toISOString().slice(0, 10);
+                  const startStr = lease.startDate.toISOString().slice(0, 10);
+                  if (startStr <= todayStr) {
+                    await tx.lease.update({
+                      where: { id: lease.id },
+                      data: { status: 'active' },
+                    });
+                  }
+                }
+              }
+
               return u;
             },
           );

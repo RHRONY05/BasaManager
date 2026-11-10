@@ -96,6 +96,14 @@ export const router = createBrowserRouter([
         Component: page('/l/buildings/:id'),
       },
       {
+        path: 'leases/:id',
+        Component: page('/l/leases/:id'),
+      },
+      {
+        path: 'tenants/:id',
+        Component: page('/l/tenants/:id'),
+      },
+      {
         path: 'team',
         Component: page('/l/team'),
       },
@@ -172,6 +180,10 @@ export const router = createBrowserRouter([
       {
         path: 'notices',
         Component: page('/t/notices'),
+      },
+      {
+        path: 'lease',
+        Component: page('/t/lease'),
       },
       {
         path: 'account',

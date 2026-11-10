@@ -21,6 +21,7 @@ import {
   createBuilding,
   createOrg,
   createUnit,
+  createLease,
   upsertUser,
   type BuildingInput,
   type UnitInput,
@@ -152,17 +153,115 @@ async function main(): Promise<void> {
       await createOrg(tx, { id: orgId, name: 'Rahman Properties', slug: DEMO_ORG_SLUG, isDemo: true, createdBy: landlordId });
       await addMember(tx, orgId, landlordId, 'landlord');
       const caretakerMembership = await addMember(tx, orgId, caretakerId, 'caretaker');
-      for (const id of tenantIds) await addMember(tx, orgId, id, 'tenant');
+      const tenantMemberships: string[] = [];
+      for (const id of tenantIds) {
+        tenantMemberships.push(await addMember(tx, orgId, id, 'tenant'));
+      }
 
       const villaId = await createBuilding(tx, orgId, VILLA);
       const towerId = await createBuilding(tx, orgId, TOWER);
-      for (const u of VILLA_UNITS) await createUnit(tx, orgId, villaId, u);
-      for (const u of TOWER_UNITS) await createUnit(tx, orgId, towerId, u);
+      const villaUnitIds: string[] = [];
+      for (const u of VILLA_UNITS) villaUnitIds.push(await createUnit(tx, orgId, villaId, u));
+      const towerUnitIds: string[] = [];
+      for (const u of TOWER_UNITS) towerUnitIds.push(await createUnit(tx, orgId, towerId, u));
       await assignCaretaker(tx, orgId, caretakerMembership, villaId);
+
+      // V7: 8 active leases across the 10 units (5 in Villa, 3 in Tower; Villa 3B & Tower 4-R1 vacant)
+      const startDate = new Date('2026-01-01');
+      // 5 Villa leases
+      await createLease(tx, orgId, {
+        unitId: villaUnitIds[0]!,
+        tenantMembershipId: tenantMemberships[0]!,
+        startDate,
+        monthlyRentPoisha: VILLA_UNITS[0]!.rentPoisha,
+        depositPoisha: VILLA_UNITS[0]!.rentPoisha * 2n,
+        householdSize: 3,
+        status: 'active',
+        createdBy: landlordId,
+        charges: villaCharges,
+      });
+      await createLease(tx, orgId, {
+        unitId: villaUnitIds[1]!,
+        tenantMembershipId: tenantMemberships[1]!,
+        startDate,
+        monthlyRentPoisha: VILLA_UNITS[1]!.rentPoisha,
+        depositPoisha: VILLA_UNITS[1]!.rentPoisha * 2n,
+        householdSize: 4,
+        status: 'active',
+        createdBy: landlordId,
+        charges: villaCharges,
+      });
+      await createLease(tx, orgId, {
+        unitId: villaUnitIds[2]!,
+        tenantMembershipId: tenantMemberships[2]!,
+        startDate,
+        monthlyRentPoisha: VILLA_UNITS[2]!.rentPoisha,
+        depositPoisha: VILLA_UNITS[2]!.rentPoisha * 2n,
+        householdSize: 2,
+        status: 'active',
+        createdBy: landlordId,
+        charges: villaCharges,
+      });
+      await createLease(tx, orgId, {
+        unitId: villaUnitIds[3]!,
+        tenantMembershipId: tenantMemberships[3]!,
+        startDate,
+        monthlyRentPoisha: VILLA_UNITS[3]!.rentPoisha,
+        depositPoisha: VILLA_UNITS[3]!.rentPoisha * 2n,
+        householdSize: 5,
+        status: 'active',
+        createdBy: landlordId,
+        charges: villaCharges,
+      });
+      await createLease(tx, orgId, {
+        unitId: villaUnitIds[4]!,
+        tenantMembershipId: tenantMemberships[4]!,
+        startDate,
+        monthlyRentPoisha: VILLA_UNITS[4]!.rentPoisha,
+        depositPoisha: VILLA_UNITS[4]!.rentPoisha * 2n,
+        householdSize: 3,
+        status: 'active',
+        createdBy: landlordId,
+        charges: villaCharges,
+      });
+      // 3 Tower leases
+      await createLease(tx, orgId, {
+        unitId: towerUnitIds[0]!,
+        tenantMembershipId: tenantMemberships[5]!,
+        startDate,
+        monthlyRentPoisha: TOWER_UNITS[0]!.rentPoisha,
+        depositPoisha: TOWER_UNITS[0]!.rentPoisha * 3n,
+        householdSize: 1,
+        status: 'active',
+        createdBy: landlordId,
+        charges: [towerCharges[0]!],
+      });
+      await createLease(tx, orgId, {
+        unitId: towerUnitIds[1]!,
+        tenantMembershipId: tenantMemberships[6]!,
+        startDate,
+        monthlyRentPoisha: TOWER_UNITS[1]!.rentPoisha,
+        depositPoisha: TOWER_UNITS[1]!.rentPoisha * 2n,
+        householdSize: 4,
+        status: 'active',
+        createdBy: landlordId,
+        charges: towerCharges,
+      });
+      await createLease(tx, orgId, {
+        unitId: towerUnitIds[2]!,
+        tenantMembershipId: tenantMemberships[7]!,
+        startDate,
+        monthlyRentPoisha: TOWER_UNITS[2]!.rentPoisha,
+        depositPoisha: TOWER_UNITS[2]!.rentPoisha * 2n,
+        householdSize: 2,
+        status: 'active',
+        createdBy: landlordId,
+        charges: towerCharges,
+      });
     }, { timeout: 30_000 }); // prettier-ignore
 
     say(
-      `created "Rahman Properties" (${orgId}): ${userCount} users, 2 buildings, ${VILLA_UNITS.length + TOWER_UNITS.length} units.`,
+      `created "Rahman Properties" (${orgId}): ${userCount} users, 2 buildings, ${VILLA_UNITS.length + TOWER_UNITS.length} units, 8 active leases.`,
     );
   } finally {
     await db.$disconnect();

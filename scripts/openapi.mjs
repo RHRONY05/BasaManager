@@ -51,6 +51,11 @@ const {
   updateUnitRequestSchema,
   unitResponseSchema,
   unitsListResponseSchema,
+  createLeaseSchema,
+  recordDepositSchema,
+  singleLeaseResponseSchema,
+  leasesListResponseSchema,
+  depositEntryResponseSchema,
 } = shared;
 
 // Schemas with `.meta({ id })` in packages/shared become named components automatically.
@@ -326,6 +331,100 @@ registry.registerPath({
     200: { description: 'Unit archived.' },
     403: errorResponse('Forbidden'),
     409: errorResponse('Active lease exists'),
+  },
+});
+
+// ── Leases & Tenants ────────────────────────────────────────────────────────
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/leases',
+  tags: ['Leases'],
+  summary: 'List leases (Landlord sees all, Caretaker sees assigned)',
+  responses: {
+    200: { description: 'Leases list.', content: json(leasesListResponseSchema) },
+    403: errorResponse('Forbidden'),
+  },
+});
+
+registry.registerPath({
+  method: 'post',
+  path: '/api/leases',
+  tags: ['Leases'],
+  summary: 'Create lease and invite tenant (Landlord only)',
+  request: {
+    body: { content: json(createLeaseSchema) },
+  },
+  responses: {
+    201: { description: 'Lease created.', content: json(singleLeaseResponseSchema) },
+    400: errorResponse('Validation failed'),
+    403: errorResponse('Forbidden'),
+    404: errorResponse('Unit not found'),
+    409: errorResponse('Unit already has active or pending lease'),
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/leases/active',
+  tags: ['Leases'],
+  summary: 'Get active lease for current tenant or unit',
+  responses: {
+    200: { description: 'Active lease details.', content: json(singleLeaseResponseSchema) },
+    400: errorResponse('Validation failed'),
+    404: errorResponse('No active lease found'),
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/leases/{id}',
+  tags: ['Leases'],
+  summary: 'Get lease details',
+  responses: {
+    200: { description: 'Lease details.', content: json(singleLeaseResponseSchema) },
+    404: errorResponse('Lease not found'),
+  },
+});
+
+registry.registerPath({
+  method: 'post',
+  path: '/api/leases/{id}/deposit',
+  tags: ['Leases'],
+  summary: 'Record deposit entry (Landlord only)',
+  request: {
+    body: { content: json(recordDepositSchema) },
+  },
+  responses: {
+    201: { description: 'Deposit recorded.', content: json(depositEntryResponseSchema) },
+    400: errorResponse('Validation failed'),
+    403: errorResponse('Forbidden'),
+    404: errorResponse('Lease not found'),
+  },
+});
+
+registry.registerPath({
+  method: 'post',
+  path: '/api/leases/{id}/resend-invite',
+  tags: ['Leases'],
+  summary: 'Resend tenant invite (Landlord only)',
+  responses: {
+    200: { description: 'Invite resent.' },
+    403: errorResponse('Forbidden'),
+    404: errorResponse('Lease not found'),
+    409: errorResponse('Lease is no longer pending'),
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/tenants/{membershipId}/history',
+  tags: ['Tenants'],
+  summary: 'Get tenant full history (Landlord only)',
+  responses: {
+    200: { description: 'Tenant history details.' },
+    403: errorResponse('Forbidden'),
+    404: errorResponse('Tenant membership not found'),
   },
 });
 

@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { X, Plus, Trash2, Home, DoorOpen, AlertCircle } from 'lucide-react';
+import { X, Plus, Trash2, Home, DoorOpen, AlertCircle, FileText, ArrowRight } from 'lucide-react';
 import { useUpdateUnit, useArchiveUnit } from '../../lib/api/buildings';
 import type { UnitSummary, UnitCharge } from '@bm/shared';
 
@@ -10,9 +11,10 @@ export interface UnitDrawerProps {
   unit: UnitSummary | null;
   isOpen: boolean;
   onClose: () => void;
+  onAddLease?: () => void;
 }
 
-export function UnitDrawer({ buildingId, buildingName, unit, isOpen, onClose }: UnitDrawerProps) {
+export function UnitDrawer({ buildingId, buildingName, unit, isOpen, onClose, onAddLease }: UnitDrawerProps) {
   const { t } = useTranslation();
   const updateMutation = useUpdateUnit(buildingId);
   const archiveMutation = useArchiveUnit(buildingId);
@@ -202,18 +204,45 @@ export function UnitDrawer({ buildingId, buildingName, unit, isOpen, onClose }: 
 
           {/* Current Lease Summary / Vacant Action */}
           <section className="card card--tight">
-            <div className="card__head">
+            <div className="card__head flex items-center justify-between">
               <h3 className="font-semibold text-sm text-fg">{t('units.currentLease')}</h3>
+              {isOccupied && unit.lease && (
+                <span className="badge badge--success text-xs capitalize">{unit.lease.status}</span>
+              )}
             </div>
-            {isOccupied ? (
-              <div className="space-y-2 text-sm">
-                <p className="text-fg-secondary">Active lease in progress.</p>
+            {isOccupied && unit.lease ? (
+              <div className="p-4 space-y-3">
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-fg-muted">{t('leases.monthlyRent')}:</span>
+                    <span className="num font-bold">
+                      {formatMoney(unit.lease.monthlyRentPoisha ?? unit.defaultRentPoisha)}
+                    </span>
+                  </div>
+                  {unit.lease.tenantName ? (
+                    <div className="flex justify-between">
+                      <span className="text-fg-muted">{t('leases.tenants')}:</span>
+                      <span className="font-medium text-fg">{unit.lease.tenantName}</span>
+                    </div>
+                  ) : null}
+                </div>
+                {unit.lease.id && (
+                  <Link to={`/l/leases/${unit.lease.id}`} className="btn btn--secondary btn--sm w-full">
+                    <FileText className="h-4 w-4 mr-1.5" />
+                    {t('leases.openLease')}
+                    <ArrowRight className="h-4 w-4 ml-1.5" />
+                  </Link>
+                )}
               </div>
             ) : (
-              <div className="py-2 text-center space-y-2">
+              <div className="p-4 py-3 text-center space-y-3">
                 <p className="text-sm text-fg-muted">
                   {t('units.statusVacant')} — unit is ready for leasing.
                 </p>
+                <button type="button" onClick={onAddLease} className="btn btn--primary btn--sm w-full">
+                  <Plus className="h-4 w-4 mr-1.5" />
+                  {t('leases.createLease')}
+                </button>
               </div>
             )}
           </section>
