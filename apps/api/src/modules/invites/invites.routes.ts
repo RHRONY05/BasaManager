@@ -26,6 +26,7 @@ export function createInvitesRoutes(deps: InvitesRouteDeps): Router {
   router.get('/:token', optionalUser, controller.preview);
   router.post(
     '/:token/accept',
+    rateLimiters.loginLimiter,
     optionalUser,
     validate({ body: acceptInviteRequestSchema }),
     controller.accept,

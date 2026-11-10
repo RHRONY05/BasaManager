@@ -249,7 +249,7 @@ describe('InvitesService.accept (existing user account)', () => {
     id: 'u-exist',
     email: 'new@test.local',
     fullName: 'Existing Person',
-    // hash of 'Str0ng-Passw0rd-xyz!'
+    // stub argon2id hash structure (tests testing password matching generate a real hash with hashPassword)
     passwordHash: '$argon2id$v=19$m=19456,t=2,p=1$c29tZXNhbHQ$qUfS7Fk7eG0qW480p2sYw8bXvB4u6u9uPqW480p2sYw',
     failedLoginCount: 0,
     lockedUntil: null,

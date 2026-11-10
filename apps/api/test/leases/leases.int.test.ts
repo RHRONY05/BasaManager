@@ -861,5 +861,46 @@ describe('V7: leases, deposit ledger, tenant invites, tenant history', () => {
         expect(depositRes.status).toBe(201);
       }
     });
+
+    it('concurrent race: resend vs accept never deadlocks or returns 500', async () => {
+      const { id, token } = await createLease({ startDate: FUTURE });
+
+      const [resendRes, acceptRes] = await Promise.all([
+        landlord.agent.post(`/api/leases/${id}/resend-invite`).send({}),
+        acceptInvite(token, 'Racer Tenant Resend'),
+      ]);
+
+      expect(resendRes.status).not.toBe(500);
+      expect(acceptRes.status).not.toBe(500);
+      expect([200, 409]).toContain(resendRes.status);
+      expect([200, 400]).toContain(acceptRes.status);
+    });
+
+    it('concurrent race: resend vs cancel never deadlocks or returns 500', async () => {
+      const { id } = await createLease({ startDate: FUTURE });
+
+      const [resendRes, cancelRes] = await Promise.all([
+        landlord.agent.post(`/api/leases/${id}/resend-invite`).send({}),
+        landlord.agent.post(`/api/leases/${id}/cancel`).send({}),
+      ]);
+
+      expect(resendRes.status).not.toBe(500);
+      expect(cancelRes.status).not.toBe(500);
+      // Either [200, 200] (resend committed first, then cancel cancelled it) or [200, 409] (cancel committed first, resend was rejected)
+      const statuses = [resendRes.status, cancelRes.status].sort();
+      expect([
+        [200, 200],
+        [200, 409],
+      ]).toContainEqual(statuses);
+
+      // In either outcome, the final lease state must be ended with 0 open invites
+      const lease = await q<{ status: string }>('select status from leases where id = $1', [id]);
+      expect(lease[0]?.status).toBe('ended');
+      const openInvs = await q<{ count: string }>(
+        'select count(*)::text as count from invitations where lease_id = $1 and revoked_at is null and accepted_at is null',
+        [id],
+      );
+      expect(openInvs[0]?.count).toBe('0');
+    });
   });
 });

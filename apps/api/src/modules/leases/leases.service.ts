@@ -603,6 +603,16 @@ export class LeasesService {
     const userId = ctx.userId;
 
     const result = await this.prisma.$tx(ctx, async (tx) => {
+      // Strict locking hierarchy: Invitations row(s) first, then Lease row.
+      // 1. Lock open invitations for this lease to prevent deadlocks with accept/cancel
+      await tx.$queryRaw`
+        SELECT id FROM invitations
+        WHERE org_id = ${orgId}::uuid AND lease_id = ${leaseId}::uuid
+          AND accepted_at IS NULL AND revoked_at IS NULL
+        FOR UPDATE
+      `;
+
+      // 2. Lock lease row
       const lockedLeases = await tx.$queryRaw<Array<{ id: string; status: string }>>`
         SELECT id, status
         FROM leases
@@ -900,10 +910,21 @@ export class LeasesService {
         throw ApiError.conflict('Cannot cancel lease with held deposit. Settle or refund deposit first');
       }
 
-      // 6. Transition lease status to 'ended'
+      // 6. Ensure any invitation created by a racing resend while we waited for the lease lock is also revoked
+      await tx.invitation.updateMany({
+        where: {
+          orgId,
+          leaseId,
+          acceptedAt: null,
+          revokedAt: null,
+        },
+        data: { revokedAt: clock.now() },
+      });
+
+      // 7. Transition lease status to 'ended'
       await tx.lease.update({
         where: { id: leaseId },
-        data: { status: 'ended' },
+        data: { status: 'ended', endDate: clock.now() },
       });
 
       return { success: true, message: 'Pending lease cancelled' };

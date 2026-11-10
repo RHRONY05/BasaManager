@@ -57,7 +57,23 @@ describe('LeasesService', () => {
     ],
   };
 
-  function createMockDb(overrides: Record<string, any> = {}): Db {
+  type MockDbOverrides = {
+    user?: Record<string, unknown>;
+    unit?: Record<string, unknown>;
+    lease?: Record<string, unknown>;
+    leaseCharge?: Record<string, unknown>;
+    invitation?: Record<string, unknown>;
+    outboxMessage?: Record<string, unknown>;
+    caretakerBuilding?: Record<string, unknown>;
+    depositEntry?: Record<string, unknown>;
+    membership?: Record<string, unknown>;
+    leaseTenant?: Record<string, unknown>;
+    bill?: Record<string, unknown>;
+    payment?: Record<string, unknown>;
+    $queryRaw?: unknown;
+  };
+
+  function createMockDb(overrides: MockDbOverrides = {}): Db {
     const tx = {
       user: {
         findFirst: vi.fn().mockResolvedValue(null),
@@ -133,7 +149,13 @@ describe('LeasesService', () => {
       },
       $queryRaw:
         (overrides as Record<string, unknown>).$queryRaw ??
-        vi.fn().mockResolvedValue([{ id: 'lease-1', status: 'pending' }]),
+        vi.fn().mockImplementation((queryParts: unknown) => {
+          const sql = String(Array.isArray(queryParts) ? queryParts[0] : (queryParts ?? ''));
+          if (sql.includes('invitations')) {
+            return Promise.resolve([{ id: 'inv-1' }]);
+          }
+          return Promise.resolve([{ id: 'lease-1', status: 'pending' }]);
+        }),
     };
 
     return {
@@ -436,7 +458,13 @@ describe('LeasesService', () => {
 
     it('throws 409 if lease is no longer pending', async () => {
       const db = createMockDb({
-        $queryRaw: vi.fn().mockResolvedValue([{ id: 'lease-1', status: 'active' }]),
+        $queryRaw: vi.fn().mockImplementation((queryParts: unknown) => {
+          const sql = String(Array.isArray(queryParts) ? queryParts[0] : (queryParts ?? ''));
+          if (sql.includes('invitations')) {
+            return Promise.resolve([{ id: 'inv-1' }]);
+          }
+          return Promise.resolve([{ id: 'lease-1', status: 'active' }]);
+        }),
       });
       const service = new LeasesService(db);
 

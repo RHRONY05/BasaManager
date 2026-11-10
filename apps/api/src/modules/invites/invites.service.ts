@@ -204,6 +204,12 @@ export class InvitesService {
       await verifyUserPasswordWithLockout(this.prisma, existingUser, body.password, now);
       userId = existingUser.id;
       isPlatformAdmin = Boolean(existingUser.isPlatformAdmin);
+      if (!existingUser.emailVerifiedAt) {
+        await this.prisma.user.update({
+          where: { id: existingUser.id },
+          data: { emailVerifiedAt: now },
+        });
+      }
     } else {
       if (!body.fullName || typeof body.fullName !== 'string' || body.fullName.trim().length === 0) {
         throw ApiError.validation([{ path: 'fullName', message: 'Full name is required' }]);

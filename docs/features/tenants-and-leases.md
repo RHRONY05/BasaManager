@@ -203,6 +203,7 @@ All lifecycle transitions execute within PostgreSQL transactions with `SET LOCAL
 2. **Invite Token Hashing**: Plaintext invitation tokens are never stored in the database. Only their SHA-256 digests (`token_hash`) are persisted. If the database is compromised, invitations cannot be intercepted.
 3. **Token Expiration & Single-Use**: Tokens expire after 7 days. When accepted, `accepted_at` is stamped in the same transaction as user registration, preventing replay attacks.
 4. **Immediate Outbox Processing**: Outbox events are enqueued transactionally with the lease record, preventing state drift where a lease is recorded but no invitation exists.
+5. **Strict Locking Hierarchy (Deadlock Prevention)**: Operations that touch both invitations and leases (`InvitesService.accept`, `cancelPendingLease`, `resendInvite`) always acquire row locks in the exact same order: first invitations (`updateMany` or `SELECT ... FOR UPDATE`), then leases (`SELECT ... FOR UPDATE`). This completely eliminates circular-wait deadlocks under concurrent execution.
 
 ## 12. Concepts used
 
