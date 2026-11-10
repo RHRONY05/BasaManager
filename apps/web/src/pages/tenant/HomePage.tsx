@@ -35,7 +35,17 @@ export default function HomePage() {
                 {lease.unit?.buildingName ? ` · ${lease.unit.buildingName}` : ''}
               </h2>
             </div>
-            <span className="badge badge--success capitalize">{t(`leases.status.${lease.status}`)}</span>
+            <span
+              className={`badge capitalize ${
+                lease.status === 'active'
+                  ? 'badge--success'
+                  : lease.status === 'notice' || lease.status === 'pending'
+                    ? 'badge--warning'
+                    : 'badge--neutral'
+              }`}
+            >
+              {t(`leases.status.${lease.status}`)}
+            </span>
           </div>
 
           <div className="grid grid-cols-2 gap-3 py-2 border-y border-border/50 text-sm">

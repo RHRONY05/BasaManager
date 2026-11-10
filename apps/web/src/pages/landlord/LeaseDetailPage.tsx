@@ -85,7 +85,10 @@ export default function LeaseDetailPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div className="space-y-1 min-w-0">
-          <p className="text-xs uppercase tracking-wider text-fg-muted font-bold">
+          <p
+            className="text-xs uppercase tracking-wider text-fg-muted font-bold truncate block"
+            title={t('headings.leaseDetail')}
+          >
             {t('headings.leaseDetail')}
           </p>
           <h1
@@ -194,7 +197,10 @@ export default function LeaseDetailPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="p-4 bg-surface border border-border rounded-lg space-y-1 min-w-0">
               <span className="text-xs text-fg-muted font-medium">{t('leases.monthlyRent')}</span>
-              <p className="text-2xl font-bold num text-fg truncate">
+              <p
+                className="text-2xl font-bold num text-fg truncate"
+                title={formatMoney(lease.monthlyRentPoisha)}
+              >
                 {formatMoney(lease.monthlyRentPoisha)}
               </p>
               <span className="text-xs text-fg-muted">{t('leases.perMonth')}</span>
@@ -202,7 +208,10 @@ export default function LeaseDetailPage() {
 
             <div className="p-4 bg-surface border border-border rounded-lg space-y-1 min-w-0">
               <span className="text-xs text-fg-muted font-medium">{t('leases.depositHeld')}</span>
-              <p className="text-2xl font-bold num text-accent truncate">
+              <p
+                className="text-2xl font-bold num text-accent truncate"
+                title={formatMoney(lease.depositHeldPoisha)}
+              >
                 {formatMoney(lease.depositHeldPoisha)}
               </p>
               <span

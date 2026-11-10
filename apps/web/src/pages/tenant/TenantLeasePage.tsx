@@ -49,7 +49,10 @@ export default function TenantLeasePage() {
     <div className="space-y-6 max-w-2xl mx-auto min-w-0">
       {/* Header */}
       <div className="space-y-1 min-w-0">
-        <p className="text-xs uppercase tracking-wider text-fg-muted font-bold">
+        <p
+          className="text-xs uppercase tracking-wider text-fg-muted font-bold truncate block"
+          title={t('headings.tenantLease')}
+        >
           {t('headings.tenantLease')}
         </p>
         <h1

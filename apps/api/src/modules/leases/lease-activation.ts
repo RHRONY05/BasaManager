@@ -67,6 +67,7 @@ export async function activateDueLeases(
   prisma: Db,
   now: Date = clock.now(),
   targetOrgId?: string | null,
+  logger?: { error: (obj: unknown, msg?: string) => void },
 ): Promise<number> {
   const todayDhaka = getDhakaDateString(now);
 
@@ -105,7 +106,7 @@ export async function activateDueLeases(
     return await activateForOrg(targetOrgId);
   }
 
-  // Find all organizations (accessible with app.is_admin = true)
+  // Find all active organizations (accessible with app.is_admin = true)
   const orgs = await prisma.$tx(
     {
       orgId: null,
@@ -114,13 +115,21 @@ export async function activateDueLeases(
       isAdmin: true,
     },
     async (tx) => {
-      return await tx.$queryRaw<Array<{ id: string }>>`SELECT id FROM organizations`;
+      return await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT id FROM organizations WHERE status = 'active'
+      `;
     },
   );
 
   let totalActivated = 0;
   for (const org of orgs) {
-    totalActivated += await activateForOrg(org.id);
+    try {
+      totalActivated += await activateForOrg(org.id);
+    } catch (err) {
+      if (logger) {
+        logger.error({ err, orgId: org.id }, 'activateDueLeases failed for org');
+      }
+    }
   }
   return totalActivated;
 }

@@ -24,9 +24,9 @@ export const activateDueLeasesJob: Job = {
   schedule: '5 0 * * *',
   ttlMs: 60_000,
   run: async ({ prisma, redis, logger, now }) => {
-    await withJobLock(redis, 'activate-due-leases', 60_000, async () => {
+    await withJobLock(redis, activateDueLeasesJob.name, activateDueLeasesJob.ttlMs, async () => {
       logger.info('Running activateDueLeases job...');
-      const activatedCount = await activateDueLeases(prisma, now ? now() : undefined);
+      const activatedCount = await activateDueLeases(prisma, now ? now() : undefined, undefined, logger);
       logger.info({ activatedCount }, 'activateDueLeases completed');
     });
   },

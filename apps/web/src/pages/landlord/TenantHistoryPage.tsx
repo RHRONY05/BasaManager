@@ -62,7 +62,10 @@ export default function TenantHistoryPage() {
             <p className="text-sm text-fg-muted truncate block" title={tenant.email}>
               {tenant.email}
             </p>
-            <p className="text-xs text-fg-muted mt-1 truncate block">
+            <p
+              className="text-xs text-fg-muted mt-1 truncate block"
+              title={t('tenantHistory.memberSince', { date: tenant.createdAt.slice(0, 10) })}
+            >
               {t('tenantHistory.memberSince', { date: tenant.createdAt.slice(0, 10) })}
             </p>
           </div>
