@@ -59,18 +59,21 @@ factor = 13/30 → rent = roundTaka(5,200.00) = ৳5,200; service = roundTaka(43
 ## Rule 4 — Late fee
 Checked by the daily job. If `balance > 0` after the end of `due_date + grace_days` and the bill has
 no `late_fee` line yet, add one:
-- `flat`: the building's flat amount.
-- `percent`: `roundTaka(balance × pct / 100)` using the balance **at that moment**.
-Applied **once per bill**, never compounding. A landlord can waive it (the line becomes 0, with a reason).
+- `flat`: the building's flat amount in poisha.
+- `percent`: stored in **basis points** (`500 = 5%`, `10000 = 100%`). Pure integer arithmetic: `roundTaka(balance * bp / 10000)` = `Math.round((balancePoisha * lateFeeBasisPoints) / 1_000_000) * 100` whole Taka rounding, zero float math.
+Applied **once per bill**, never compounding. A landlord can waive it (the line becomes 0, with a reason, and status is recomputed). If the tenant has already paid part or all of the late fee (`newTotal < paid_poisha`), waiving is rejected with 409 CONFLICT ("Cannot waive late fee that has already been paid").
 
-**Example 4.** Due 10 Dec, grace 2, 5% late fee. Bill ৳14,000, ৳9,000 paid on 5 Dec.
-On 13 Dec 00:00 the balance is ৳5,000 → fee ৳250. New balance ৳5,250. On 20 Dec nothing more is added.
+**Example 4.** Due 10 Dec, grace 2, 5% late fee (500 basis points). Bill ৳14,000, ৳9,000 paid on 5 Dec.
+On 13 Dec 00:00 the balance is ৳5,000 → fee ৳250 (25,000 poisha). New balance ৳5,250. On 20 Dec nothing more is added.
 
 ## Rule 5 — Payment allocation
 A confirmed payment for a lease is allocated **oldest unpaid bill first** (by `period_month`), filling
 each bill's balance before moving on. Anything left over becomes **lease credit**. When a bill is issued,
-available credit is allocated to it automatically. Allocation and the bill status update happen in
-**one transaction** with the payment confirmation; if any step fails, nothing is saved.
+available credit is allocated to it automatically. Available credit is recorded as a negative `credit_entries`
+row with `kind: 'applied_to_bill'` and `bill_id`, directly incrementing `bill.paid_poisha` without generating a
+synthetic `payment_allocations` row. The global financial invariant is:
+`bill.paid_poisha = Σ payment_allocations.amount_poisha + Σ (-credit_entries.amount_poisha where kind='applied_to_bill')`.
+Allocation and the bill status update happen in **one transaction**; if any step fails, nothing is saved.
 
 **Example 5.** Unpaid: Oct balance ৳3,000, Nov balance ৳14,000. Tenant pays ৳20,000 →
 Oct ৳3,000 (paid), Nov ৳14,000 (paid), credit ৳3,000. December bill ৳14,000 is issued →

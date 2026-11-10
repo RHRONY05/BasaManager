@@ -7,6 +7,7 @@ if (existsSync('.env.test') && typeof process.loadEnvFile === 'function') {
 
 export default defineConfig({
   testDir: 'tests/e2e',
+  grepInvert: process.env.CAPTURE_SCREENSHOTS ? undefined : /@capture/,
   retries: process.env.CI ? 1 : 0,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {

@@ -19,6 +19,7 @@ export const runBillingSchema = z.object({
 export type RunBillingInput = z.infer<typeof runBillingSchema>;
 
 export const listBillsQuerySchema = cursorQuerySchema.extend({
+  cursor: z.string().uuid('Cursor must be a valid UUID').optional(),
   status: billStatusSchema.optional(),
   buildingId: z.string().uuid().optional(),
   month: monthStringSchema.optional(),
@@ -41,6 +42,7 @@ export const billResponseSchema = z.object({
   id: z.string().uuid(),
   orgId: z.string().uuid(),
   leaseId: z.string().uuid(),
+  unitLabel: z.string().nullable().optional(),
   periodMonth: z.string(),
   dueDate: z.string(),
   status: billStatusSchema,

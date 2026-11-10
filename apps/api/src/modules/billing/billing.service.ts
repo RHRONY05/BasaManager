@@ -89,11 +89,13 @@ export function toBillDto(
   const balance = total - paid;
   const dueDateStr = toDateString(bill.dueDate);
   const isOverdue = (bill.status === 'issued' || bill.status === 'partially_paid') && todayStr > dueDateStr;
+  const unitLabel = (bill as { lease?: { unit?: { label?: string } } }).lease?.unit?.label;
 
   return {
     id: bill.id,
     orgId: bill.orgId,
     leaseId: bill.leaseId,
+    unitLabel: unitLabel ?? null,
     periodMonth: toDateString(bill.periodMonth),
     dueDate: dueDateStr,
     status: bill.status as BillResponse['status'],
@@ -470,7 +472,14 @@ export class BillingService {
               periodMonth: periodDate,
             },
           },
-          include: { lines: true },
+          include: {
+            lines: true,
+            lease: {
+              include: {
+                unit: true,
+              },
+            },
+          },
         });
 
         if (bill) {
@@ -876,7 +885,14 @@ export class BillingService {
           totalPoisha: BigInt(newTotal),
           status: newStatus,
         },
-        include: { lines: true },
+        include: {
+          lines: true,
+          lease: {
+            include: {
+              unit: true,
+            },
+          },
+        },
       });
 
       return toBillDto(updatedBill, todayStr);
@@ -897,7 +913,14 @@ export class BillingService {
             id: billId,
           },
         },
-        include: { lines: true },
+        include: {
+          lines: true,
+          lease: {
+            include: {
+              unit: true,
+            },
+          },
+        },
       });
 
       if (!bill) {
@@ -917,6 +940,11 @@ export class BillingService {
       }
 
       const currentFee = Number(lateFeeLine.amountPoisha);
+      const newTotal = Number(bill.totalPoisha) - currentFee;
+      if (newTotal < Number(bill.paidPoisha)) {
+        throw ApiError.conflict('Cannot waive late fee that has already been paid');
+      }
+
       const waiveResult = pureWaiveLateFee({
         currentFeePoisha: currentFee,
         reason: input.reason,
@@ -930,7 +958,6 @@ export class BillingService {
         },
       });
 
-      const newTotal = Number(bill.totalPoisha) - currentFee;
       let newStatus: 'draft' | 'issued' | 'partially_paid' | 'paid' = bill.status;
       if (bill.status !== 'draft') {
         const newBalance = newTotal - Number(bill.paidPoisha);
@@ -949,7 +976,14 @@ export class BillingService {
           totalPoisha: BigInt(newTotal),
           status: newStatus,
         },
-        include: { lines: true },
+        include: {
+          lines: true,
+          lease: {
+            include: {
+              unit: true,
+            },
+          },
+        },
       });
 
       return toBillDto(updatedBill, todayStr);
@@ -970,7 +1004,14 @@ export class BillingService {
             id: billId,
           },
         },
-        include: { lines: true },
+        include: {
+          lines: true,
+          lease: {
+            include: {
+              unit: true,
+            },
+          },
+        },
       });
 
       if (!bill) {
@@ -1013,7 +1054,14 @@ export class BillingService {
           status: 'void',
           voidReason: input?.reason ?? null,
         },
-        include: { lines: true },
+        include: {
+          lines: true,
+          lease: {
+            include: {
+              unit: true,
+            },
+          },
+        },
       });
 
       return toBillDto(updatedBill, todayStr);
@@ -1078,7 +1126,14 @@ export class BillingService {
       const limit = Number(query.limit) || 50;
       const findArgs: Prisma.BillFindManyArgs = {
         where,
-        include: { lines: true },
+        include: {
+          lines: true,
+          lease: {
+            include: {
+              unit: true,
+            },
+          },
+        },
         orderBy: [{ periodMonth: 'desc' }, { id: 'desc' }],
         take: limit + 1,
       };
@@ -1089,11 +1144,11 @@ export class BillingService {
       }
 
       const bills = await tx.bill.findMany(findArgs);
-      let nextCursor: string | null = null;
-      if (bills.length > limit) {
-        const nextItem = bills.pop();
-        nextCursor = nextItem?.id ?? null;
+      const hasMore = bills.length > limit;
+      if (hasMore) {
+        bills.pop();
       }
+      const nextCursor = hasMore && bills.length > 0 ? bills[bills.length - 1]!.id : null;
 
       return {
         bills: bills.map((b) => toBillDto(b, todayStr)),

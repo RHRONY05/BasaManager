@@ -9,7 +9,7 @@ import {
 } from '../helpers/e2e-auth';
 import path from 'node:path';
 
-test.describe('V8 Visual Evidence Capture', () => {
+test.describe('V8 Visual Evidence Capture @capture', () => {
   test.beforeEach(async () => {
     await clearRateLimits();
   });
@@ -130,14 +130,25 @@ test.describe('V8 Visual Evidence Capture', () => {
 
     // Helper to snap in both light and dark modes
     const snapModes = async (targetPage: typeof page, baseName: string) => {
+      await targetPage.addStyleTag({
+        content: `
+          *, *::before, *::after {
+            transition: none !important;
+            animation: none !important;
+          }
+        `,
+      });
+
       // Light
       await targetPage.evaluate(() => document.documentElement.removeAttribute('data-theme'));
       await targetPage.emulateMedia({ colorScheme: 'light' });
+      await targetPage.waitForTimeout(100);
       await targetPage.screenshot({ path: path.join(outDir, `${baseName}-light.png`), fullPage: true });
 
       // Dark
       await targetPage.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
       await targetPage.emulateMedia({ colorScheme: 'dark' });
+      await targetPage.waitForTimeout(150);
       await targetPage.screenshot({ path: path.join(outDir, `${baseName}-dark.png`), fullPage: true });
 
       // Restore

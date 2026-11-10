@@ -1528,6 +1528,7 @@
                     "id": { "type": "string", "format": "uuid" },
                     "orgId": { "type": "string", "format": "uuid" },
                     "leaseId": { "type": "string", "format": "uuid" },
+                    "unitLabel": { "type": ["string", "null"] },
                     "periodMonth": { "type": "string" },
                     "dueDate": { "type": "string" },
                     "status": {
@@ -1611,6 +1612,7 @@
                     "id": { "type": "string", "format": "uuid" },
                     "orgId": { "type": "string", "format": "uuid" },
                     "leaseId": { "type": "string", "format": "uuid" },
+                    "unitLabel": { "type": ["string", "null"] },
                     "periodMonth": { "type": "string" },
                     "dueDate": { "type": "string" },
                     "status": {
@@ -1708,6 +1710,7 @@
                     "id": { "type": "string", "format": "uuid" },
                     "orgId": { "type": "string", "format": "uuid" },
                     "leaseId": { "type": "string", "format": "uuid" },
+                    "unitLabel": { "type": ["string", "null"] },
                     "periodMonth": { "type": "string" },
                     "dueDate": { "type": "string" },
                     "status": {
@@ -1802,6 +1805,7 @@
                     "id": { "type": "string", "format": "uuid" },
                     "orgId": { "type": "string", "format": "uuid" },
                     "leaseId": { "type": "string", "format": "uuid" },
+                    "unitLabel": { "type": ["string", "null"] },
                     "periodMonth": { "type": "string" },
                     "dueDate": { "type": "string" },
                     "status": {
@@ -1895,6 +1899,7 @@
                     "id": { "type": "string", "format": "uuid" },
                     "orgId": { "type": "string", "format": "uuid" },
                     "leaseId": { "type": "string", "format": "uuid" },
+                    "unitLabel": { "type": ["string", "null"] },
                     "periodMonth": { "type": "string" },
                     "dueDate": { "type": "string" },
                     "status": {

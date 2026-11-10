@@ -178,19 +178,19 @@ sequenceDiagram
 
 ## 10. Edge cases & failure modes
 
-| Case                               | What happens                                                                                  | Where it's handled                                                  | Test proving it                                                            |
-| ---------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| Generation run twice               | Second run detects existing bill via DB unique constraint; returns 0 new drafts without error | `apps/api/src/modules/billing/billing.service.ts` (`runGeneration`) | `apps/api/test/billing/billing.int.test.ts` ("generation idempotent")      |
-| Mid-month lease start              | Calculates remaining days in month, rounds prorated rent to whole Taka                        | `packages/domain/src/billing/index.ts` (`prorate`)                  | `packages/domain/src/billing/billing.test.ts` (worked examples 2a & 2b)    |
-| Leap-year February proration       | Uses 29 days in leap year, 28 days otherwise                                                  | `packages/domain/src/billing/index.ts` (`prorationFactor`)          | `packages/domain/src/billing/billing.test.ts` ("Feb leap year")            |
-| Tie rounding at ৳x.50              | `Math.round(x / 100) * 100` rounds half-up to nearest whole Taka                              | `packages/domain/src/billing/index.ts` (`roundTaka`)                | `packages/domain/src/billing/billing.test.ts` ("tie rounding at ৳x.50")    |
-| Meter reading less than previous   | Throws `DomainError` / 400 Bad Request unless `meterReplaced: true`                           | `packages/domain/src/billing/index.ts` (`electricityCharge`)        | `packages/domain/src/billing/billing.test.ts` ("reading decreased throws") |
-| Meter replacement mid-cycle        | Uses `reading - newMeterStart` to calculate valid consumption                                 | `packages/domain/src/billing/index.ts` (`electricityCharge`)        | `packages/domain/src/billing/billing.test.ts` ("meter replacement")        |
-| Issuing bill without meter reading | Rejects with 400 Bad Request (`READING_REQUIRED`)                                             | `apps/api/src/modules/billing/billing.service.ts` (`issueBill`)     | `apps/api/test/billing/billing.int.test.ts` ("issue requires reading")     |
-| Tenant has credit on issuance      | Automatically creates negative adjustment line and reduces bill balance                       | `apps/api/src/modules/billing/billing.service.ts` (`issueBill`)     | `apps/api/test/billing/billing.int.test.ts` ("issue auto-applies credit")  |
-| Voiding bill with payments         | Rejects with 400 Bad Request (`CANNOT_VOID_PAID_BILL`)                                        | `apps/api/src/modules/billing/billing.service.ts` (`voidBill`)      | `apps/api/test/billing/billing.int.test.ts` ("void with payments fails")   |
-| Concurrent worker execution        | Redis distributed lock (`job:lock:generateBills`) ensures only one node runs                  | `apps/worker/src/lib/jobLock.ts` (`withJobLock`)                    | `apps/worker/src/jobs/billingJobs.test.ts` ("lock prevents double run")    |
-| Caretaker accesses other building  | RLS policy and caretaker building check block query (returns 403 or empty)                    | `apps/api/src/modules/billing/billing.service.ts`                   | `apps/api/test/billing/billing.int.test.ts` ("caretaker building scoping") |
+| Case                               | What happens                                                                                                                                  | Where it's handled                                                  | Test proving it                                                            |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Generation run twice               | Second run serialized by Postgres advisory transaction lock and detects existing bill via existence check; returns 0 new drafts without error | `apps/api/src/modules/billing/billing.service.ts` (`runGeneration`) | `apps/api/test/billing/billing.int.test.ts` ("generation idempotent")      |
+| Mid-month lease start              | Calculates remaining days in month, rounds prorated rent to whole Taka                                                                        | `packages/domain/src/billing/index.ts` (`prorate`)                  | `packages/domain/src/billing/billing.test.ts` (worked examples 2a & 2b)    |
+| Leap-year February proration       | Uses 29 days in leap year, 28 days otherwise                                                                                                  | `packages/domain/src/billing/index.ts` (`prorationFactor`)          | `packages/domain/src/billing/billing.test.ts` ("Feb leap year")            |
+| Tie rounding at ৳x.50              | `Math.round(x / 100) * 100` rounds half-up to nearest whole Taka                                                                              | `packages/domain/src/billing/index.ts` (`roundTaka`)                | `packages/domain/src/billing/billing.test.ts` ("tie rounding at ৳x.50")    |
+| Meter reading less than previous   | Throws `DomainError` / 400 Bad Request unless `meterReplaced: true`                                                                           | `packages/domain/src/billing/index.ts` (`electricityCharge`)        | `packages/domain/src/billing/billing.test.ts` ("reading decreased throws") |
+| Meter replacement mid-cycle        | Uses `reading - newMeterStart` to calculate valid consumption                                                                                 | `packages/domain/src/billing/index.ts` (`electricityCharge`)        | `packages/domain/src/billing/billing.test.ts` ("meter replacement")        |
+| Issuing bill without meter reading | Rejects with 400 Bad Request (`READING_REQUIRED`)                                                                                             | `apps/api/src/modules/billing/billing.service.ts` (`issueBill`)     | `apps/api/test/billing/billing.int.test.ts` ("issue requires reading")     |
+| Tenant has credit on issuance      | Creates negative `credit_entries` row, applies credit to `paid_poisha`, recomputes status                                                     | `apps/api/src/modules/billing/billing.service.ts` (`issueBill`)     | `apps/api/test/billing/billing.int.test.ts` ("issue auto-applies credit")  |
+| Voiding bill with payments/credit  | Rejects with 409 Conflict (`CONFLICT`) if `paid_poisha > 0` or payments allocated                                                             | `apps/api/src/modules/billing/billing.service.ts` (`voidBill`)      | `apps/api/test/billing/billing.int.test.ts` ("void with payments fails")   |
+| Concurrent worker execution        | Redis distributed lock (`job:lock:generateBills`) ensures only one node runs                                                                  | `apps/worker/src/lib/jobLock.ts` (`withJobLock`)                    | `apps/worker/src/jobs/billingJobs.test.ts` ("lock prevents double run")    |
+| Caretaker accesses other building  | RLS policy and caretaker building check block query (returns 403 or empty)                                                                    | `apps/api/src/modules/billing/billing.service.ts`                   | `apps/api/test/billing/billing.int.test.ts` ("caretaker building scoping") |
 
 ## 11. Security
 
@@ -287,7 +287,7 @@ Financial auditability requires an indelible record. If meter readings are updat
 
 <details>
 <summary>5. How does credit auto-application work when a bill is issued?</summary>
-When a bill is issued, the service sums all rows in <code>credit_entries</code> for the lease. If a positive credit balance exists, the system takes <code>Math.min(creditBalance, bill.balancePoisha)</code>, creates a negative <code>credit_entry</code> (reason: "Applied to bill #..."), inserts a negative adjustment line on the bill, and decrements the bill's total due, all within a single database transaction.
+When a bill is issued, the service sums all rows in <code>credit_entries</code> for the lease under a transaction lock. If a positive credit balance exists, the system takes <code>Math.min(creditBalance, bill.balancePoisha)</code>, creates a negative <code>credit_entry</code> row (kind: 'applied_to_bill', with <code>bill_id</code>), increments <code>bill.paid_poisha</code> by the applied credit, and recomputes the bill's status (<code>paid</code> or <code>partially_paid</code>), all within a single database transaction. No <code>payment_allocations</code> row is created; the accounting invariant across the system is <code>paid_poisha = Σ allocations + Σ (-applied_credit)</code>.
 </details>
 
 <details>
@@ -297,10 +297,10 @@ The domain engine throws a <code>DomainError</code> ("Reading cannot decrease wi
 
 <details>
 <summary>7. What happens if an issued bill is overdue and a late fee is applied, but the landlord later agrees to forgive it?</summary>
-The landlord clicks "Waive late fee" and provides an audit reason. The service sets the existing <code>late_fee</code> line item amount to 0 poisha, saves the reason in the line metadata, and decrements the bill's total and balance due by the waived fee amount.
+The landlord clicks "Waive late fee" and provides an audit reason. The service verifies the bill has not already been paid beyond the late fee amount (if <code>newTotal < paid_poisha</code>, the API rejects with 409 Conflict). It sets the existing <code>late_fee</code> line item amount to 0 poisha, saves the reason in the line metadata, decrements the bill's total, and recomputes status dynamically.
 </details>
 
 <details>
-<summary>8. Can an issued bill with partial payments be voided?</summary>
-No. Once a payment has been allocated to a bill (<code>paid_poisha > 0</code>), voiding is strictly forbidden by the domain and service layers (<code>CANNOT_VOID_PAID_BILL</code>). The payment must first be formally voided or refunded through the payments workflow before the bill can be voided.
+<summary>8. Can an issued bill with payments or applied credit be voided?</summary>
+No. Once a payment or credit allocation has been applied to a bill (<code>paid_poisha > 0</code> or allocation count > 0), voiding is strictly rejected with 409 Conflict (<code>CONFLICT</code>). This protects tenant money and maintains financial integrity.
 </details>

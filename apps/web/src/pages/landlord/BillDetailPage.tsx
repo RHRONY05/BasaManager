@@ -123,7 +123,7 @@ export default function BillDetailPage() {
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold text-fg">
                 {t('billing.billFor', {
-                  unit: bill.leaseId.slice(0, 8),
+                  unit: bill.unitLabel ? `Unit ${bill.unitLabel}` : bill.leaseId.slice(0, 8),
                   month: bill.periodMonth.slice(0, 7),
                 })}
               </h1>

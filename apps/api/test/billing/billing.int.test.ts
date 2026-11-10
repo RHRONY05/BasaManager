@@ -1,9 +1,13 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import pino from 'pino';
 import { ErrorCode } from '@bm/shared/errors';
 import { q } from '../helpers/pg';
 import { makeOrg, makeBuilding, makeUnit, makeLease, type Org } from '../helpers/factories';
 import { buildTestApp, resetAll, newAgent, type TestCtx } from '../helpers/auth';
 import { actorIn, landlordOf, type Actor } from '../helpers/roles';
+import { createPrisma } from '../../src/config/db';
+import { workerUrl } from '../helpers/env';
+import { runApplyLateFees } from '../../../../apps/worker/src/jobs/applyLateFees.js';
 
 /**
  * Interface (V8 brief): `month` in request bodies/queries is 'YYYY-MM'. Success bodies are `{ data: ... }`:
@@ -472,6 +476,46 @@ describe('V8: billing endpoints', () => {
       expect(res.status).toBe(403);
       expect(res.body.error.code).toBe(ErrorCode.FORBIDDEN);
     });
+
+    it('409 CONFLICT when the bill has already been fully paid', async () => {
+      const id = await billWithLateFee(); // total 1680000, late fee 80000
+      await q(`update bills set paid_poisha = 1680000, status = 'paid' where id=$1`, [id]);
+      const res = await landlord.agent.post(`/api/bills/${id}/late-fee/waive`).send({ reason: 'Bank delay' });
+      expect(res.status).toBe(409);
+      expect(res.body.error.code).toBe(ErrorCode.CONFLICT);
+      expect(res.body.error.message).toContain('Cannot waive late fee that has already been paid');
+      const b = await q<{ total_poisha: string; paid_poisha: string }>(
+        `select total_poisha::text, paid_poisha::text from bills where id=$1`,
+        [id],
+      );
+      expect(b[0]!.total_poisha).toBe('1680000');
+      expect(b[0]!.paid_poisha).toBe('1680000');
+    });
+
+    it('409 CONFLICT when paid_poisha exceeds newTotal after waiver', async () => {
+      const id = await billWithLateFee(); // total 1680000, rent 1600000, late fee 80000
+      // Tenant paid 1,650,000 (covers 50,000 of the late fee)
+      await q(`update bills set paid_poisha = 1650000, status = 'partially_paid' where id=$1`, [id]);
+      const res = await landlord.agent.post(`/api/bills/${id}/late-fee/waive`).send({ reason: 'Bank delay' });
+      expect(res.status).toBe(409);
+      expect(res.body.error.code).toBe(ErrorCode.CONFLICT);
+      expect(res.body.error.message).toContain('Cannot waive late fee that has already been paid');
+    });
+
+    it('200: waives late fee on partially paid bill when paid_poisha <= newTotal', async () => {
+      const id = await billWithLateFee(); // total 1680000, rent 1600000, late fee 80000
+      await q(`update bills set paid_poisha = 500000, status = 'partially_paid' where id=$1`, [id]);
+      const res = await landlord.agent
+        .post(`/api/bills/${id}/late-fee/waive`)
+        .send({ reason: 'Customer courtesy' });
+      expect(res.status).toBe(200);
+      expect(res.body.data).toMatchObject({
+        totalPoisha: 1600000,
+        paidPoisha: 500000,
+        balancePoisha: 1100000,
+        status: 'partially_paid',
+      });
+    });
   });
 
   describe('POST /bills/:id/void', () => {
@@ -597,6 +641,147 @@ describe('V8: billing endpoints', () => {
       const anon = newAgent(ctx);
       expect((await anon.get('/api/bills')).status).toBe(401);
       expect((await anon.get('/api/dues')).status).toBe(401);
+    });
+  });
+
+  describe('GET /api/bills pagination and validation', () => {
+    it('cursor pagination: pages through 3 bills with limit=1 without skipping or duplicates', async () => {
+      // Create 3 bills across 3 months for flat lease
+      const months = ['2026-03', '2026-04', '2026-05'];
+      for (const m of months) {
+        await run(m);
+      }
+      const b1 = (await billOf(leaseFlat, '2026-05-01'))!.id; // newest first by period_month desc, id desc
+      const b2 = (await billOf(leaseFlat, '2026-04-01'))!.id;
+      const b3 = (await billOf(leaseFlat, '2026-03-01'))!.id;
+
+      // Page 1: limit=1
+      const res1 = await landlord.agent.get('/api/bills').query({ leaseId: leaseFlat, limit: 1 });
+      expect(res1.status).toBe(200);
+      expect(res1.body.data).toHaveLength(1);
+      expect(res1.body.data[0].id).toBe(b1);
+      expect(res1.body.page.nextCursor).toBe(b1);
+
+      // Page 2: limit=1, cursor=nextCursor
+      const res2 = await landlord.agent.get('/api/bills').query({
+        leaseId: leaseFlat,
+        limit: 1,
+        cursor: res1.body.page.nextCursor,
+      });
+      expect(res2.status).toBe(200);
+      expect(res2.body.data).toHaveLength(1);
+      expect(res2.body.data[0].id).toBe(b2);
+      expect(res2.body.page.nextCursor).toBe(b2);
+
+      // Page 3: limit=1, cursor=nextCursor
+      const res3 = await landlord.agent.get('/api/bills').query({
+        leaseId: leaseFlat,
+        limit: 1,
+        cursor: res2.body.page.nextCursor,
+      });
+      expect(res3.status).toBe(200);
+      expect(res3.body.data).toHaveLength(1);
+      expect(res3.body.data[0].id).toBe(b3);
+      expect(res3.body.page.nextCursor).toBeNull();
+
+      // Combined IDs: exactly [b1, b2, b3], no duplicates, no missing bills
+      const collected = [res1.body.data[0].id, res2.body.data[0].id, res3.body.data[0].id];
+      expect(collected).toEqual([b1, b2, b3]);
+    });
+
+    it('returns 400 VALIDATION_FAILED when cursor is not a valid UUID', async () => {
+      const res = await landlord.agent.get('/api/bills').query({ cursor: 'not-a-valid-uuid' });
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe(ErrorCode.VALIDATION_FAILED);
+      expect(res.body.error.details.some((d: { path: string }) => d.path === 'cursor')).toBe(true);
+    });
+  });
+
+  describe('worker: runApplyLateFees (bm_worker) on Example 4 against real DB', () => {
+    it('applies 5% late fee (500 bp) on ৳5,000 balance as exactly ৳250, and second run on 20 Dec adds nothing', async () => {
+      // Building with 5% (500 bp) late fee, 2 grace days, due day 10
+      const bld = await makeBuilding(org.id, { billDay: 1, dueDay: 10 });
+      await q(
+        `update buildings set late_fee_type = 'percent', late_fee_value = 500, grace_days = 2 where id = $1`,
+        [bld],
+      );
+      const u = await makeUnit(org.id, bld, { label: 'EX4' });
+      const l = await makeLease(org.id, u, org.landlordUserId, { startDate: '2026-11-01' });
+
+      // Create issued bill for December 2026: total ৳14,000 (1,400,000 poisha), due 2026-12-10
+      const billRows = await q<{ id: string }>(
+        `insert into bills (org_id, lease_id, period_month, due_date, status, total_poisha, paid_poisha)
+         values ($1, $2, '2026-12-01', '2026-12-10', 'issued', 1400000, 0)
+         returning id`,
+        [org.id, l],
+      );
+      const billId = billRows[0]!.id;
+
+      // ৳9,000 paid on 5 Dec -> paid_poisha = 900,000, balance = 500,000 (৳5,000), status = 'partially_paid'
+      await q(`update bills set paid_poisha = 900000, status = 'partially_paid' where id = $1`, [billId]);
+
+      const workerPrisma = createPrisma(workerUrl());
+      const workerLogger = pino({ level: 'silent' });
+
+      try {
+        // Run on 13 Dec 00:00 Asia/Dhaka (+6) -> past due (10 Dec) + 2 grace days
+        const ctx13Dec = {
+          prisma: workerPrisma,
+          redis: {} as never,
+          logger: workerLogger,
+          now: () => new Date('2026-12-13T00:00:00+06:00'),
+        };
+
+        const res1 = await runApplyLateFees(ctx13Dec);
+        expect(res1.applied).toBe(1);
+        expect(res1.totalFeePoisha).toBe(25000); // ৳250 = 25,000 poisha
+
+        // Check DB row: total updated to 1,425,000 (balance 525,000 = ৳5,250)
+        const updatedBill = await q<{
+          total_poisha: string;
+          paid_poisha: string;
+          late_fee_applied_at: string;
+        }>(
+          `select total_poisha::text, paid_poisha::text, late_fee_applied_at::text from bills where id = $1`,
+          [billId],
+        );
+        expect(updatedBill[0]!.total_poisha).toBe('1425000');
+        expect(updatedBill[0]!.paid_poisha).toBe('900000');
+        expect(updatedBill[0]!.late_fee_applied_at).not.toBeNull();
+
+        // Check bill line
+        const feeLines = await q<{ kind: string; amount_poisha: string; label: string }>(
+          `select kind, amount_poisha::text, label from bill_lines where bill_id = $1 and kind = 'late_fee'`,
+          [billId],
+        );
+        expect(feeLines).toEqual([{ kind: 'late_fee', amount_poisha: '25000', label: 'Late fee' }]);
+
+        // Check outbox message
+        const outbox = await q<{ type: string; payload: unknown }>(
+          `select type, payload from outbox where org_id = $1 and type = 'bill.late_fee'`,
+          [org.id],
+        );
+        expect(outbox.length).toBeGreaterThanOrEqual(1);
+
+        // Run again on 20 Dec: nothing more is added
+        const ctx20Dec = {
+          prisma: workerPrisma,
+          redis: {} as never,
+          logger: workerLogger,
+          now: () => new Date('2026-12-20T00:00:00+06:00'),
+        };
+
+        const res2 = await runApplyLateFees(ctx20Dec);
+        expect(res2.applied).toBe(0);
+
+        const billAfter20Dec = await q<{ total_poisha: string }>(
+          `select total_poisha::text from bills where id = $1`,
+          [billId],
+        );
+        expect(billAfter20Dec[0]!.total_poisha).toBe('1425000');
+      } finally {
+        await workerPrisma.$disconnect();
+      }
     });
   });
 });
