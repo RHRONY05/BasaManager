@@ -23,9 +23,10 @@ export function createInvitesRoutes(deps: InvitesRouteDeps): Router {
   const optionalUser = createOptionalUser(deps.prisma, deps.env);
 
   router.use(rateLimiters.generalLimiter);
-  router.get('/:token', controller.preview);
+  router.get('/:token', optionalUser, controller.preview);
   router.post(
     '/:token/accept',
+    rateLimiters.loginLimiter,
     optionalUser,
     validate({ body: acceptInviteRequestSchema }),
     controller.accept,

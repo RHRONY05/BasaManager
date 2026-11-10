@@ -82,4 +82,14 @@ export class LeasesController {
       next(err);
     }
   };
+
+  cancelPendingLease = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = String(req.params.id);
+      const result = await this.leasesService.cancelPendingLease(req.tenantCtx!, id);
+      res.status(200).json({ data: result });
+    } catch (err) {
+      next(err);
+    }
+  };
 }

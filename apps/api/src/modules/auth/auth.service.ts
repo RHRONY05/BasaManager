@@ -28,6 +28,7 @@ import { getGoogleClient, encryptOAuthState, decryptOAuthState } from './google'
 import { findInvitationByTokenHash } from '../../config/db';
 import { createLogger } from '../../lib/logger';
 import { linkTenantToLease } from '../leases/lease-activation';
+import { verifyUserPasswordWithLockout } from './auth.helpers';
 
 const logger = createLogger({ level: 'info' });
 
@@ -258,7 +259,7 @@ export class AuthService {
 
     const now = clock.now();
 
-    if (!user || user.deletedAt) {
+    if (!user) {
       // Dummy hash verify to balance timing
       await verifyPassword(
         '$argon2id$v=19$m=19456,t=2,p=1$c29tZXNhbHQ$KIj3ijHkVAnYnt99Bpcr0QdHZdYXEPW4d2+eGsYZ/JU',
@@ -267,55 +268,7 @@ export class AuthService {
       throw new ApiError(ErrorCode.INVALID_CREDENTIALS, 'Invalid email or password');
     }
 
-    // Check account lockout
-    if (user.lockedUntil && user.lockedUntil > now) {
-      const remainingMinutes = Math.max(1, Math.ceil((user.lockedUntil.getTime() - now.getTime()) / 60000));
-      throw new ApiError(
-        ErrorCode.ACCOUNT_LOCKED,
-        `Account locked. Try again in ${remainingMinutes} minutes.`,
-      );
-    }
-
-    if (!user.passwordHash) {
-      throw new ApiError(ErrorCode.INVALID_CREDENTIALS, 'Invalid email or password');
-    }
-
-    const isValid = await verifyPassword(user.passwordHash, data.password);
-
-    if (!isValid) {
-      const lockUntil = new Date(now.getTime() + 15 * 60 * 1000);
-      const rows = await this.prisma.$queryRaw<
-        Array<{ failed_login_count: number; locked_until: Date | null }>
-      >`
-        update users
-        set failed_login_count = case
-            when locked_until is not null and locked_until <= ${now}::timestamptz then 1
-            else failed_login_count + 1
-          end,
-          locked_until = case
-            when (case when locked_until is not null and locked_until <= ${now}::timestamptz then 1 else failed_login_count + 1 end) >= 5
-            then ${lockUntil}::timestamptz
-            else null
-          end
-        where id = ${user.id}::uuid
-        returning failed_login_count, locked_until
-      `;
-
-      const updated = rows && rows[0];
-      if (updated?.locked_until && updated.locked_until > now) {
-        throw new ApiError(ErrorCode.ACCOUNT_LOCKED, 'Account locked. Try again in 15 minutes.');
-      }
-
-      throw new ApiError(ErrorCode.INVALID_CREDENTIALS, 'Invalid email or password');
-    }
-
-    // Success: reset failures
-    if (user.failedLoginCount > 0 || user.lockedUntil) {
-      await this.prisma.user.update({
-        where: { id: user.id },
-        data: { failedLoginCount: 0, lockedUntil: null },
-      });
-    }
+    await verifyUserPasswordWithLockout(this.prisma, user, data.password, now);
 
     // Create fresh session family
     const familyId = randomUUID();
@@ -843,14 +796,27 @@ export class AuthService {
                 },
               });
 
-              // Blocker 1: Prevent staff member (landlord/caretaker) from being demoted to tenant
+              // Prevent active staff member (landlord/caretaker) from being demoted to tenant
               if (
                 existingMembership &&
+                existingMembership.status === 'active' &&
                 (existingMembership.role === 'landlord' || existingMembership.role === 'caretaker') &&
                 inv.role === 'tenant'
               ) {
                 throw ApiError.conflict(
                   'Cannot accept tenant invite: user is already a staff member in this organisation',
+                );
+              }
+
+              // Prevent active tenant from being turned into caretaker
+              if (
+                existingMembership &&
+                existingMembership.status === 'active' &&
+                existingMembership.role === 'tenant' &&
+                inv.role === 'caretaker'
+              ) {
+                throw ApiError.conflict(
+                  'Cannot accept caretaker invite: user is already an active tenant in this organisation',
                 );
               }
 

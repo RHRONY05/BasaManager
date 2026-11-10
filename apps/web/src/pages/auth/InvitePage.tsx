@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -16,12 +16,12 @@ import { PasswordInput } from '../../components/ui/PasswordInput';
 import { PasswordStrength } from '../../components/ui/PasswordStrength';
 import { RouteSkeleton } from '../../components/ui/RouteSkeleton';
 
-const acceptFormSchema = z.object({
-  fullName: z.string().min(1, 'Full name is required').max(200),
-  password: z.string().min(10, 'Password must be at least 10 characters'),
+const baseAcceptSchema = z.object({
+  fullName: z.string().max(200).optional(),
+  password: z.string().min(1, 'Password is required'),
 });
 
-type AcceptFormValues = z.infer<typeof acceptFormSchema>;
+type AcceptFormValues = z.infer<typeof baseAcceptSchema>;
 
 export default function InvitePage() {
   const { t } = useTranslation();
@@ -39,14 +39,36 @@ export default function InvitePage() {
     isError,
     error,
   } = useQuery<InvitePreview>({
-    queryKey: keys.invite(token || ''),
+    queryKey: [...keys.invite(token || ''), user?.id ?? 'anon'],
     queryFn: () =>
       apiFetch<InvitePreview>(`/api/invites/${encodeURIComponent(token || '')}`, {
         schema: invitePreviewSchema,
       }),
     enabled: Boolean(token),
+    staleTime: 0,
     retry: false,
   });
+
+  const formSchema = useMemo(() => {
+    return baseAcceptSchema.superRefine((data, ctx) => {
+      if (!invite?.userExists) {
+        if (!data.fullName || data.fullName.trim().length === 0) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['fullName'],
+            message: t('auth.fullNameRequired', 'Full name is required'),
+          });
+        }
+        if (!data.password || data.password.length < 10) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['password'],
+            message: t('auth.passwordTooShort', 'Password must be at least 10 characters'),
+          });
+        }
+      }
+    });
+  }, [invite?.userExists, t]);
 
   const {
     register,
@@ -55,7 +77,7 @@ export default function InvitePage() {
     setFocus,
     formState: { errors, isSubmitting },
   } = useForm<AcceptFormValues>({
-    resolver: zodResolver(acceptFormSchema),
+    resolver: zodResolver(formSchema),
     defaultValues: {
       fullName: '',
       password: '',
@@ -129,8 +151,11 @@ export default function InvitePage() {
     );
   }
 
+  const isMatchingUser =
+    authStatus === 'signedIn' && Boolean(user) && user?.email.toLowerCase() === invite.email.toLowerCase();
+
   // Case 1: User is signed in with a different email
-  if (authStatus === 'signedIn' && user && user.email.toLowerCase() !== invite.email.toLowerCase()) {
+  if (authStatus === 'signedIn' && user && !isMatchingUser) {
     return (
       <div
         className="card card--tight bg-surface p-6 sm:p-8 rounded-xl border border-border shadow-md flex flex-col items-center text-center gap-5 w-full"
@@ -161,7 +186,7 @@ export default function InvitePage() {
   }
 
   // Case 2: User is signed in with the matching email -> just accept
-  if (authStatus === 'signedIn' && user && user.email.toLowerCase() === invite.email.toLowerCase()) {
+  if (isMatchingUser) {
     const handleAcceptExisting = async () => {
       setFormError(null);
       setAcceptingExisting(true);
@@ -245,6 +270,14 @@ export default function InvitePage() {
   // Case 3: Anonymous / new user -> name + password form or Google button
   const onSubmitNewUser = async (values: AcceptFormValues) => {
     setFormError(null);
+    if (!invite?.userExists && (!values.fullName || values.fullName.trim().length === 0)) {
+      setFormError(t('auth.fullNameRequired', 'Full name is required'));
+      return;
+    }
+    if (!invite?.userExists && (!values.password || values.password.length < 10)) {
+      setFormError(t('auth.passwordTooShort', 'Password must be at least 10 characters'));
+      return;
+    }
     try {
       await apiFetch(`/api/invites/${encodeURIComponent(token)}/accept`, {
         method: 'POST',
@@ -299,6 +332,25 @@ export default function InvitePage() {
         </div>
       )}
 
+      {invite.userExists && (
+        <div className="card bg-surface border border-accent/30 p-4 rounded-lg flex flex-col gap-1 text-sm">
+          <p className="font-semibold text-fg">{t('auth.existingAccountTitle', 'Account already exists')}</p>
+          <p className="text-xs text-fg-secondary">
+            {t(
+              'auth.existingAccountSub',
+              'An account with this email already exists. Enter your password below to accept, or',
+            )}{' '}
+            <Link
+              to={token ? `/login?next=${encodeURIComponent('/invite/' + token)}` : '/login'}
+              className="text-accent font-semibold hover:underline"
+            >
+              {t('auth.signInToAccept', 'sign in first')}
+            </Link>
+            .
+          </p>
+        </div>
+      )}
+
       {/* Google OAuth Button with invite token */}
       <GoogleButton inviteToken={token}>{t('auth.continueWithGoogle')}</GoogleButton>
 
@@ -321,31 +373,33 @@ export default function InvitePage() {
           <span className="hint text-xs text-fg-muted">{t('auth.inviteEmailHint')}</span>
         </div>
 
-        {/* Full Name */}
-        <div className="field flex flex-col gap-1.5 min-w-0">
-          <label htmlFor="fullName" className="label text-sm font-semibold text-fg">
-            {t('auth.fullName')}
-          </label>
-          <input
-            {...register('fullName')}
-            id="fullName"
-            autoComplete="name"
-            aria-invalid={errors.fullName ? 'true' : 'false'}
-            aria-describedby={errors.fullName ? 'fullname-error' : undefined}
-            placeholder={t('auth.fullNamePlaceholder')}
-            className={`input ${errors.fullName ? 'border-danger-primary' : ''}`}
-          />
-          {errors.fullName && (
-            <span
-              id="fullname-error"
-              className="field-error flex items-center gap-1.5 text-xs text-danger-text font-medium"
-              role="alert"
-            >
-              <AlertCircle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-              <span>{errors.fullName.message}</span>
-            </span>
-          )}
-        </div>
+        {/* Full Name (only for new accounts) */}
+        {!invite.userExists && (
+          <div className="field flex flex-col gap-1.5 min-w-0">
+            <label htmlFor="fullName" className="label text-sm font-semibold text-fg">
+              {t('auth.fullName')}
+            </label>
+            <input
+              {...register('fullName')}
+              id="fullName"
+              autoComplete="name"
+              aria-invalid={errors.fullName ? 'true' : 'false'}
+              aria-describedby={errors.fullName ? 'fullname-error' : undefined}
+              placeholder={t('auth.fullNamePlaceholder')}
+              className={`input ${errors.fullName ? 'border-danger-primary' : ''}`}
+            />
+            {errors.fullName && (
+              <span
+                id="fullname-error"
+                className="field-error flex items-center gap-1.5 text-xs text-danger-text font-medium"
+                role="alert"
+              >
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                <span>{errors.fullName.message}</span>
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Password */}
         <div className="field flex flex-col gap-1.5 min-w-0">
@@ -387,7 +441,10 @@ export default function InvitePage() {
 
       <p className="text-sm text-fg-secondary">
         {t('auth.notYouPrompt', { name: invite.email })}{' '}
-        <Link to="/login" className="text-accent-text font-medium hover:underline">
+        <Link
+          to={token ? `/login?next=${encodeURIComponent('/invite/' + token)}` : '/login'}
+          className="text-accent-text font-medium hover:underline"
+        >
           {t('auth.signInAnotherAccount')}
         </Link>{' '}
         {t('auth.explainMismatch')}

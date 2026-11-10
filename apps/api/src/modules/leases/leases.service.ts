@@ -157,18 +157,19 @@ export class LeasesService {
 
     try {
       const result = await this.prisma.$tx(ctx, async (tx) => {
-        // Verify unit exists in this org
+        // Verify unit exists in this org and building is not archived
         const unit = await tx.unit.findFirst({
           where: {
             orgId,
             id: data.unitId,
             archivedAt: null,
+            building: { archivedAt: null },
           },
           include: { building: true },
         });
 
         if (!unit) {
-          throw ApiError.notFound('Unit not found');
+          throw ApiError.notFound('Unit not found or building is archived');
         }
 
         // Verify no live lease exists on this unit
@@ -184,7 +185,7 @@ export class LeasesService {
           throw ApiError.conflict('Unit already has an active or pending lease');
         }
 
-        // Blocker 1: Prevent staff members from being invited as tenants
+        // Prevent staff members from being invited as tenants
         const normalizedEmail = data.tenantEmail.toLowerCase().trim();
         const existingStaffUser = await tx.user.findFirst({
           where: {
@@ -202,6 +203,47 @@ export class LeasesService {
           throw ApiError.conflict(
             'Cannot invite staff member (landlord or caretaker) as a tenant in this organisation',
           );
+        }
+
+        const openStaffInvite = await tx.invitation.findFirst({
+          where: {
+            orgId,
+            email: normalizedEmail,
+            role: 'caretaker',
+            acceptedAt: null,
+            revokedAt: null,
+            expiresAt: { gt: clock.now() },
+          },
+        });
+        if (openStaffInvite) {
+          throw ApiError.conflict('An active staff invitation already exists for this email');
+        }
+
+        // Auto-revoke any expired unrevoked tenant invites for this email
+        await tx.invitation.updateMany({
+          where: {
+            orgId,
+            email: normalizedEmail,
+            role: 'tenant',
+            acceptedAt: null,
+            revokedAt: null,
+            expiresAt: { lte: clock.now() },
+          },
+          data: { revokedAt: clock.now() },
+        });
+
+        const openTenantInvite = await tx.invitation.findFirst({
+          where: {
+            orgId,
+            email: normalizedEmail,
+            role: 'tenant',
+            acceptedAt: null,
+            revokedAt: null,
+            expiresAt: { gt: clock.now() },
+          },
+        });
+        if (openTenantInvite) {
+          throw ApiError.conflict('An active invitation already exists for this tenant email');
         }
 
         const now = clock.now();
@@ -561,17 +603,28 @@ export class LeasesService {
     const userId = ctx.userId;
 
     const result = await this.prisma.$tx(ctx, async (tx) => {
-      const lease = await tx.lease.findFirst({
-        where: {
-          orgId,
-          id: leaseId,
-        },
-      });
+      // Strict locking hierarchy: Invitations row(s) first, then Lease row.
+      // 1. Lock open invitations for this lease to prevent deadlocks with accept/cancel
+      await tx.$queryRaw`
+        SELECT id FROM invitations
+        WHERE org_id = ${orgId}::uuid AND lease_id = ${leaseId}::uuid
+          AND accepted_at IS NULL AND revoked_at IS NULL
+        FOR UPDATE
+      `;
 
-      if (!lease) {
+      // 2. Lock lease row
+      const lockedLeases = await tx.$queryRaw<Array<{ id: string; status: string }>>`
+        SELECT id, status
+        FROM leases
+        WHERE id = ${leaseId}::uuid AND org_id = ${orgId}::uuid
+        FOR UPDATE
+      `;
+
+      if (!lockedLeases || lockedLeases.length === 0) {
         throw ApiError.notFound('Lease not found');
       }
 
+      const lease = lockedLeases[0]!;
       if (lease.status !== 'pending') {
         throw ApiError.conflict('Lease is no longer pending invitation');
       }
@@ -781,6 +834,100 @@ export class LeasesService {
           createdAt: p.createdAt.toISOString(),
         })),
       };
+    });
+  }
+
+  /**
+   * Cancels a pending lease (e.g. if created with wrong email or before move-in).
+   * Marks lease status as 'ended' and revokes the associated open invitation.
+   * Guarded against concurrent activation, held deposits, and already-linked tenants.
+   */
+  async cancelPendingLease(tenantCtx: TenantCtx, leaseId: string) {
+    if (tenantCtx.role !== 'landlord') {
+      throw ApiError.forbidden('Only landlords can cancel leases');
+    }
+
+    const orgId = tenantCtx.orgId!;
+    return this.prisma.$tx(tenantCtx, async (tx) => {
+      // 1. Revoke the open invitations for this lease first.
+      // This locks invitation rows and waits for any in-flight accept to finish.
+      await tx.invitation.updateMany({
+        where: {
+          orgId,
+          leaseId,
+          acceptedAt: null,
+          revokedAt: null,
+        },
+        data: { revokedAt: clock.now() },
+      });
+
+      // 2. Reject if any invitation for this lease was already accepted
+      const acceptedInvite = await tx.invitation.findFirst({
+        where: {
+          orgId,
+          leaseId,
+          acceptedAt: { not: null },
+        },
+      });
+      if (acceptedInvite) {
+        throw ApiError.conflict('Cannot cancel lease that already has an accepted tenant');
+      }
+
+      // 3. Lock the lease row with SELECT ... FOR UPDATE inside tenant context transaction.
+      // This lines cancel up behind any in-flight recordDeposit or status change.
+      const lockedRows = await tx.$queryRaw<Array<{ id: string; status: string }>>`
+        SELECT id, status
+        FROM leases
+        WHERE id = ${leaseId}::uuid AND org_id = ${orgId}::uuid
+        FOR UPDATE
+      `;
+      if (!lockedRows || lockedRows.length === 0) {
+        throw ApiError.notFound('Lease not found');
+      }
+      const lease = lockedRows[0]!;
+      if (lease.status !== 'pending') {
+        throw ApiError.conflict('Only pending leases can be cancelled without a move-out settlement');
+      }
+
+      // 4. Reject if any tenant has already accepted/linked to this lease
+      const tenantCount = await tx.leaseTenant.count({
+        where: { leaseId, orgId },
+      });
+      if (tenantCount > 0) {
+        throw ApiError.conflict('Cannot cancel lease that already has an accepted tenant');
+      }
+
+      // 5. Reject if deposit held is above 0
+      const depositEntries = await tx.depositEntry.findMany({
+        where: { leaseId, orgId },
+      });
+      let held = 0n;
+      for (const e of depositEntries) {
+        if (e.kind === 'received') held += e.amountPoisha;
+        else if (e.kind === 'applied_to_dues' || e.kind === 'refunded') held -= e.amountPoisha;
+      }
+      if (held > 0n) {
+        throw ApiError.conflict('Cannot cancel lease with held deposit. Settle or refund deposit first');
+      }
+
+      // 6. Ensure any invitation created by a racing resend while we waited for the lease lock is also revoked
+      await tx.invitation.updateMany({
+        where: {
+          orgId,
+          leaseId,
+          acceptedAt: null,
+          revokedAt: null,
+        },
+        data: { revokedAt: clock.now() },
+      });
+
+      // 7. Transition lease status to 'ended'
+      await tx.lease.update({
+        where: { id: leaseId },
+        data: { status: 'ended', endDate: clock.now() },
+      });
+
+      return { success: true, message: 'Pending lease cancelled' };
     });
   }
 }

@@ -14,10 +14,10 @@ export type UnitCharge = z.infer<typeof unitChargeSchema>;
 
 export const createBuildingRequestSchema = z
   .object({
-    name: z.string().min(1, 'Building name is required').max(100),
-    address: z.string().min(1, 'Address is required').max(255),
-    area: z.string().min(1, 'Area is required').max(100),
-    city: z.string().min(1, 'City is required').max(100),
+    name: z.string().trim().min(1, 'Building name is required').max(100),
+    address: z.string().trim().min(1, 'Address is required').max(255),
+    area: z.string().trim().min(1, 'Area is required').max(100),
+    city: z.string().trim().min(1, 'City is required').max(100),
     lat: z.number().min(-90).max(90).nullable().optional(),
     lng: z.number().min(-180).max(180).nullable().optional(),
     billDay: z.number().int().min(1).max(28).default(1),
@@ -49,10 +49,10 @@ export type CreateBuildingRequest = z.infer<typeof createBuildingRequestSchema>;
 
 export const updateBuildingRequestSchema = z
   .object({
-    name: z.string().min(1).max(100).optional(),
-    address: z.string().min(1).max(255).optional(),
-    area: z.string().min(1).max(100).optional(),
-    city: z.string().min(1).max(100).optional(),
+    name: z.string().trim().min(1).max(100).optional(),
+    address: z.string().trim().min(1).max(255).optional(),
+    area: z.string().trim().min(1).max(100).optional(),
+    city: z.string().trim().min(1).max(100).optional(),
     lat: z.number().min(-90).max(90).nullable().optional(),
     lng: z.number().min(-180).max(180).nullable().optional(),
     billDay: z.number().int().min(1).max(28).optional(),
@@ -124,7 +124,7 @@ export type BuildingsListResponse = z.infer<typeof buildingsListResponseSchema>;
 
 export const createUnitRequestSchema = z
   .object({
-    label: z.string().min(1, 'Unit label is required').max(50),
+    label: z.string().trim().min(1, 'Unit label is required').max(50),
     floor: z.number().int().min(-5).max(150),
     type: unitTypeSchema,
     defaultRentPoisha: z.number().int().nonnegative('Rent must be non-negative'),
@@ -152,7 +152,7 @@ export type CreateUnitRequest = z.infer<typeof createUnitRequestSchema>;
 
 export const updateUnitRequestSchema = z
   .object({
-    label: z.string().min(1).max(50).optional(),
+    label: z.string().trim().min(1).max(50).optional(),
     floor: z.number().int().min(-5).max(150).optional(),
     type: unitTypeSchema.optional(),
     defaultRentPoisha: z.number().int().nonnegative().optional(),

@@ -1,5 +1,7 @@
 import { clock, getDhakaDateString } from '../../lib/clock';
 import type { Tx, Db } from '../../config/db';
+import { ApiError } from '../../lib/ApiError';
+import { ErrorCode } from '@bm/shared/errors';
 
 export interface LinkTenantInviteInfo {
   id: string;
@@ -10,6 +12,7 @@ export interface LinkTenantInviteInfo {
 /**
  * Associates a tenant membership with their lease upon accepting an invitation.
  * Activates the lease immediately if the lease startDate has arrived in Asia/Dhaka.
+ * Acquires a row lock on the lease to prevent racing with cancellation or status changes.
  */
 export async function linkTenantToLease(
   tx: Tx,
@@ -20,6 +23,23 @@ export async function linkTenantToLease(
   if (!inv.leaseId) {
     return;
   }
+
+  // Row-lock the lease and verify its status is still pending or active
+  const lockedLeases = await tx.$queryRaw<Array<{ id: string; status: string; start_date: Date }>>`
+    SELECT id, status, start_date
+    FROM leases
+    WHERE id = ${inv.leaseId}::uuid AND org_id = ${inv.orgId}::uuid
+    FOR UPDATE
+  `;
+
+  if (
+    !lockedLeases ||
+    lockedLeases.length === 0 ||
+    (lockedLeases[0]!.status !== 'pending' && lockedLeases[0]!.status !== 'active')
+  ) {
+    throw new ApiError(ErrorCode.TOKEN_INVALID, 'Cannot accept invitation on an ended or missing lease');
+  }
+  const lease = lockedLeases[0]!;
 
   // Check if primary tenant already exists on this lease
   const existingPrimary = await tx.leaseTenant.findFirst({
@@ -40,13 +60,9 @@ export async function linkTenantToLease(
     },
   });
 
-  const lease = await tx.lease.findUnique({
-    where: { id: inv.leaseId },
-  });
-
-  if (lease && lease.status === 'pending') {
+  if (lease.status === 'pending') {
     const todayDhaka = getDhakaDateString(now);
-    const startDhaka = getDhakaDateString(lease.startDate);
+    const startDhaka = getDhakaDateString(lease.start_date);
 
     if (startDhaka <= todayDhaka) {
       await tx.lease.update({
@@ -83,7 +99,8 @@ export async function activateDueLeases(
         const leases = await tx.$queryRaw<Array<{ id: string }>>`
           SELECT l.id
           FROM leases l
-          WHERE l.status = 'pending'
+          WHERE l.org_id = ${orgId}::uuid
+            AND l.status = 'pending'
             AND EXISTS (SELECT 1 FROM lease_tenants lt WHERE lt.lease_id = l.id)
             AND l.start_date <= ${todayDhaka}::date
         `;

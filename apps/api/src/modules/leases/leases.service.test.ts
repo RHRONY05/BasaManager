@@ -57,7 +57,23 @@ describe('LeasesService', () => {
     ],
   };
 
-  function createMockDb(overrides: Record<string, Record<string, unknown>> = {}): Db {
+  type MockDbOverrides = {
+    user?: Record<string, unknown>;
+    unit?: Record<string, unknown>;
+    lease?: Record<string, unknown>;
+    leaseCharge?: Record<string, unknown>;
+    invitation?: Record<string, unknown>;
+    outboxMessage?: Record<string, unknown>;
+    caretakerBuilding?: Record<string, unknown>;
+    depositEntry?: Record<string, unknown>;
+    membership?: Record<string, unknown>;
+    leaseTenant?: Record<string, unknown>;
+    bill?: Record<string, unknown>;
+    payment?: Record<string, unknown>;
+    $queryRaw?: unknown;
+  };
+
+  function createMockDb(overrides: MockDbOverrides = {}): Db {
     const tx = {
       user: {
         findFirst: vi.fn().mockResolvedValue(null),
@@ -73,6 +89,7 @@ describe('LeasesService', () => {
         findMany: vi.fn().mockResolvedValue([sampleLease]),
         create: vi.fn().mockResolvedValue(sampleLease),
         update: vi.fn().mockResolvedValue(sampleLease),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
         ...overrides.lease,
       },
       leaseCharge: {
@@ -82,7 +99,7 @@ describe('LeasesService', () => {
       },
       invitation: {
         create: vi.fn().mockResolvedValue({ id: 'inv-1' }),
-        findFirst: vi.fn().mockResolvedValue({ id: 'inv-1', email: 't@test.com' }),
+        findFirst: vi.fn().mockResolvedValue(null),
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
         ...overrides.invitation,
       },
@@ -103,9 +120,7 @@ describe('LeasesService', () => {
           note: 'Deposit paid',
           createdAt: new Date(),
         }),
-        findMany: vi
-          .fn()
-          .mockResolvedValue([{ id: 'dep-1', kind: 'received', amountPoisha: BigInt(4000000) }]),
+        findMany: vi.fn().mockResolvedValue([]),
         ...overrides.depositEntry,
       },
       membership: {
@@ -121,6 +136,7 @@ describe('LeasesService', () => {
       },
       leaseTenant: {
         findMany: vi.fn().mockResolvedValue([{ leaseId: 'lease-1', lease: sampleLease }]),
+        count: vi.fn().mockResolvedValue(0),
         ...overrides.leaseTenant,
       },
       bill: {
@@ -131,7 +147,15 @@ describe('LeasesService', () => {
         findMany: vi.fn().mockResolvedValue([]),
         ...overrides.payment,
       },
-      $queryRaw: vi.fn().mockResolvedValue([{ id: 'lease-1', status: 'active' }]),
+      $queryRaw:
+        (overrides as Record<string, unknown>).$queryRaw ??
+        vi.fn().mockImplementation((queryParts: unknown) => {
+          const sql = String(Array.isArray(queryParts) ? queryParts[0] : (queryParts ?? ''));
+          if (sql.includes('invitations')) {
+            return Promise.resolve([{ id: 'inv-1' }]);
+          }
+          return Promise.resolve([{ id: 'lease-1', status: 'pending' }]);
+        }),
     };
 
     return {
@@ -434,7 +458,13 @@ describe('LeasesService', () => {
 
     it('throws 409 if lease is no longer pending', async () => {
       const db = createMockDb({
-        lease: { findFirst: vi.fn().mockResolvedValue({ id: 'lease-1', status: 'active' }) },
+        $queryRaw: vi.fn().mockImplementation((queryParts: unknown) => {
+          const sql = String(Array.isArray(queryParts) ? queryParts[0] : (queryParts ?? ''));
+          if (sql.includes('invitations')) {
+            return Promise.resolve([{ id: 'inv-1' }]);
+          }
+          return Promise.resolve([{ id: 'lease-1', status: 'active' }]);
+        }),
       });
       const service = new LeasesService(db);
 
@@ -455,7 +485,16 @@ describe('LeasesService', () => {
     });
 
     it('resends invitation', async () => {
-      const db = createMockDb();
+      const db = createMockDb({
+        invitation: {
+          findFirst: vi.fn().mockResolvedValue({
+            id: 'inv-1',
+            email: 't@test.com',
+            role: 'tenant',
+            expiresAt: new Date(Date.now() + 86400000),
+          }),
+        },
+      });
       const service = new LeasesService(db);
 
       const result = await service.resendInvite(landlordCtx, 'lease-1');
@@ -487,6 +526,97 @@ describe('LeasesService', () => {
       const result = await service.getTenantHistory(landlordCtx, 'mem-1');
       expect(result.tenant.email).toBe('t@test.com');
       expect(result.leases).toHaveLength(1);
+    });
+  });
+
+  describe('cancelPendingLease', () => {
+    it('throws 403 if caller is not a landlord', async () => {
+      const db = createMockDb();
+      const service = new LeasesService(db);
+
+      await expect(service.cancelPendingLease(caretakerCtx, 'lease-1')).rejects.toThrow(ApiError);
+    });
+
+    it('throws 404 if lease is not found', async () => {
+      const db = createMockDb();
+      (db as unknown as { $tx: ReturnType<typeof vi.fn> }).$tx.mockImplementation(
+        async (_ctx: unknown, cb: (tx: unknown) => unknown) =>
+          cb({
+            invitation: {
+              updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+              findFirst: vi.fn().mockResolvedValue(null),
+            },
+            $queryRaw: vi.fn().mockResolvedValue([]),
+          }),
+      );
+      const service = new LeasesService(db);
+
+      await expect(service.cancelPendingLease(landlordCtx, 'missing-lease')).rejects.toThrow(ApiError);
+    });
+
+    it('throws 409 if invitation was already accepted', async () => {
+      const db = createMockDb({
+        invitation: {
+          updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+          findFirst: vi.fn().mockResolvedValue({ id: 'inv-1', acceptedAt: new Date() }),
+        },
+      });
+      const service = new LeasesService(db);
+
+      await expect(service.cancelPendingLease(landlordCtx, 'lease-1')).rejects.toThrow(
+        /already has an accepted tenant/,
+      );
+    });
+
+    it('throws 409 if lease status is not pending', async () => {
+      const db = createMockDb();
+      (db as unknown as { $tx: ReturnType<typeof vi.fn> }).$tx.mockImplementation(
+        async (_ctx: unknown, cb: (tx: unknown) => unknown) =>
+          cb({
+            invitation: {
+              updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+              findFirst: vi.fn().mockResolvedValue(null),
+            },
+            $queryRaw: vi.fn().mockResolvedValue([{ id: 'lease-1', status: 'active' }]),
+          }),
+      );
+      const service = new LeasesService(db);
+
+      await expect(service.cancelPendingLease(landlordCtx, 'lease-1')).rejects.toThrow(
+        /Only pending leases can be cancelled/,
+      );
+    });
+
+    it('throws 409 if tenant is already linked to the lease', async () => {
+      const db = createMockDb({
+        leaseTenant: { count: vi.fn().mockResolvedValue(1) },
+      });
+      const service = new LeasesService(db);
+
+      await expect(service.cancelPendingLease(landlordCtx, 'lease-1')).rejects.toThrow(
+        /already has an accepted tenant/,
+      );
+    });
+
+    it('throws 409 if held deposit is above 0', async () => {
+      const db = createMockDb({
+        depositEntry: {
+          findMany: vi.fn().mockResolvedValue([{ id: 'dep-1', kind: 'received', amountPoisha: 500000n }]),
+        },
+      });
+      const service = new LeasesService(db);
+
+      await expect(service.cancelPendingLease(landlordCtx, 'lease-1')).rejects.toThrow(
+        /Cannot cancel lease with held deposit/,
+      );
+    });
+
+    it('successfully cancels pending lease and revokes invitations', async () => {
+      const db = createMockDb();
+      const service = new LeasesService(db);
+
+      const res = await service.cancelPendingLease(landlordCtx, 'lease-1');
+      expect(res).toEqual({ success: true, message: 'Pending lease cancelled' });
     });
   });
 });

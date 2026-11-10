@@ -771,4 +771,136 @@ describe('V7: leases, deposit ledger, tenant invites, tenant history', () => {
       expect(rows[0]?.status).toBe('pending');
     });
   });
+
+  describe('POST /api/leases/:id/cancel', () => {
+    it('landlord cancels a pending lease and revokes its invitation', async () => {
+      const { id } = await createLease({ startDate: FUTURE });
+      const res = await landlord.agent.post(`/api/leases/${id}/cancel`).send({});
+      expect(res.status).toBe(200);
+      expect(res.body.data.success).toBe(true);
+
+      const lease = await q<{ status: string }>('select status from leases where id = $1', [id]);
+      expect(lease[0]?.status).toBe('ended');
+
+      const inv = await q<{ revoked_at: Date | null }>(
+        'select revoked_at from invitations where lease_id = $1',
+        [id],
+      );
+      expect(inv[0]?.revoked_at).not.toBeNull();
+    });
+
+    it('rejects cancellation if deposit is held on the lease', async () => {
+      const { id } = await createLease({ startDate: FUTURE });
+      await landlord.agent.post(`/api/leases/${id}/deposit`).send({
+        kind: 'received',
+        amountPoisha: 100000,
+        note: 'Advance deposit',
+      });
+
+      const res = await landlord.agent.post(`/api/leases/${id}/cancel`).send({});
+      expect(res.status).toBe(409);
+      expect(res.body.error.code).toBe(ErrorCode.CONFLICT);
+      expect(res.body.error.message).toContain('Cannot cancel lease with held deposit');
+    });
+
+    it('concurrent race: cancel vs accept on future lease never creates ended lease with tenant', async () => {
+      const { id, token } = await createLease({ startDate: FUTURE });
+
+      // Run cancel and accept concurrently
+      const [cancelRes, acceptRes] = await Promise.all([
+        landlord.agent.post(`/api/leases/${id}/cancel`).send({}),
+        acceptInvite(token, 'Racer Tenant'),
+      ]);
+
+      const lease = await q<{ status: string }>('select status from leases where id = $1', [id]);
+      const tenantCount = await q<{ count: string }>(
+        'select count(*)::text as count from lease_tenants where lease_id = $1',
+        [id],
+      );
+
+      if (lease[0]?.status === 'ended') {
+        // Cancel won: tenant count MUST be 0 and accept was rejected
+        expect(tenantCount[0]?.count).toBe('0');
+        expect(cancelRes.status).toBe(200);
+        expect(acceptRes.status).toBe(400); // TOKEN_INVALID because invite was revoked
+      } else {
+        // Accept won: cancel returned 409 conflict
+        expect(cancelRes.status).toBe(409);
+        expect(acceptRes.status).toBe(200);
+        expect(tenantCount[0]?.count).toBe('1');
+      }
+    });
+
+    it('concurrent race: cancel vs recordDeposit never leaves ended lease holding deposit', async () => {
+      const { id } = await createLease({ startDate: FUTURE });
+
+      const [cancelRes, depositRes] = await Promise.all([
+        landlord.agent.post(`/api/leases/${id}/cancel`).send({}),
+        landlord.agent.post(`/api/leases/${id}/deposit`).send({
+          kind: 'received',
+          amountPoisha: 500000,
+          note: 'Concurrent deposit',
+        }),
+      ]);
+
+      const lease = await q<{ status: string }>('select status from leases where id = $1', [id]);
+      const depositEntries = await q<{ kind: string; amount_poisha: string }>(
+        'select kind, amount_poisha from deposit_entries where lease_id = $1',
+        [id],
+      );
+
+      if (lease[0]?.status === 'ended') {
+        // Cancel won: no deposit recorded (recordDeposit rejected with 409 CONFLICT)
+        expect(depositEntries.length).toBe(0);
+        expect(cancelRes.status).toBe(200);
+        expect(depositRes.status).toBe(409); // cannot record on ended lease
+        expect(depositRes.body.error.code).toBe(ErrorCode.CONFLICT);
+      } else {
+        // Deposit won: cancel was rejected with 409 because held deposit > 0
+        expect(cancelRes.status).toBe(409);
+        expect(depositRes.status).toBe(201);
+      }
+    });
+
+    it('concurrent race: resend vs accept never deadlocks or returns 500', async () => {
+      const { id, token } = await createLease({ startDate: FUTURE });
+
+      const [resendRes, acceptRes] = await Promise.all([
+        landlord.agent.post(`/api/leases/${id}/resend-invite`).send({}),
+        acceptInvite(token, 'Racer Tenant Resend'),
+      ]);
+
+      expect(resendRes.status).not.toBe(500);
+      expect(acceptRes.status).not.toBe(500);
+      expect([200, 409]).toContain(resendRes.status);
+      expect([200, 400]).toContain(acceptRes.status);
+    });
+
+    it('concurrent race: resend vs cancel never deadlocks or returns 500', async () => {
+      const { id } = await createLease({ startDate: FUTURE });
+
+      const [resendRes, cancelRes] = await Promise.all([
+        landlord.agent.post(`/api/leases/${id}/resend-invite`).send({}),
+        landlord.agent.post(`/api/leases/${id}/cancel`).send({}),
+      ]);
+
+      expect(resendRes.status).not.toBe(500);
+      expect(cancelRes.status).not.toBe(500);
+      // Either [200, 200] (resend committed first, then cancel cancelled it) or [200, 409] (cancel committed first, resend was rejected)
+      const statuses = [resendRes.status, cancelRes.status].sort();
+      expect([
+        [200, 200],
+        [200, 409],
+      ]).toContainEqual(statuses);
+
+      // In either outcome, the final lease state must be ended with 0 open invites
+      const lease = await q<{ status: string }>('select status from leases where id = $1', [id]);
+      expect(lease[0]?.status).toBe('ended');
+      const openInvs = await q<{ count: string }>(
+        'select count(*)::text as count from invitations where lease_id = $1 and revoked_at is null and accepted_at is null',
+        [id],
+      );
+      expect(openInvs[0]?.count).toBe('0');
+    });
+  });
 });

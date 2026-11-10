@@ -257,6 +257,44 @@ describe('BuildingsService', () => {
         ApiError,
       );
     });
+
+    it('rejects update if patched billDay exceeds existing dueDay', async () => {
+      const mockDb = {
+        $tx: vi.fn().mockImplementation(async (_ctx, fn) => {
+          return fn({
+            building: {
+              findFirst: vi.fn().mockResolvedValue(sampleBuilding), // billDay: 1, dueDay: 10
+            },
+          });
+        }),
+      } as unknown as Db;
+
+      const service = new BuildingsService(mockDb);
+      await expect(service.updateBuilding(landlordCtx, 'b-1', { billDay: 15 })).rejects.toThrow(
+        /Validation failed/,
+      );
+    });
+
+    it('rejects update if percentage late fee exceeds 10000 bps (100%) against merged values', async () => {
+      const mockDb = {
+        $tx: vi.fn().mockImplementation(async (_ctx, fn) => {
+          return fn({
+            building: {
+              findFirst: vi.fn().mockResolvedValue({
+                ...sampleBuilding,
+                lateFeeType: 'percent',
+                lateFeeValue: 500,
+              }),
+            },
+          });
+        }),
+      } as unknown as Db;
+
+      const service = new BuildingsService(mockDb);
+      await expect(service.updateBuilding(landlordCtx, 'b-1', { lateFeeValue: 10500 })).rejects.toThrow(
+        /Validation failed/,
+      );
+    });
   });
 
   describe('archiveBuilding', () => {

@@ -4,6 +4,7 @@ import { InvitesService } from './invites.service';
 import type { Db } from '../../config/db';
 import type { Env } from '../../config/env';
 import { ApiError } from '../../lib/ApiError';
+import { hashPassword } from '../../lib/passwords';
 
 const env = {
   JWT_SECRET: 'test-secret-at-least-32-chars-long-123456',
@@ -35,7 +36,15 @@ interface Spies {
   sessionCreate: ReturnType<typeof vi.fn>;
 }
 
-function mkDb(invRow: unknown, opts: { count?: number; userCreateErr?: unknown } = {}) {
+function mkDb(
+  invRow: unknown,
+  opts: {
+    count?: number;
+    userCreateErr?: unknown;
+    existingUser?: unknown;
+    existingMembership?: unknown;
+  } = {},
+) {
   const s: Spies = {
     updateMany: vi.fn().mockResolvedValue({ count: opts.count ?? 1 }),
     membershipCreate: vi.fn().mockResolvedValue({ id: 'm1' }),
@@ -50,7 +59,7 @@ function mkDb(invRow: unknown, opts: { count?: number; userCreateErr?: unknown }
     invitation: { updateMany: s.updateMany },
     membership: {
       create: s.membershipCreate,
-      findFirst: vi.fn().mockResolvedValue(null),
+      findFirst: vi.fn().mockResolvedValue(opts.existingMembership ?? null),
       update: vi.fn().mockResolvedValue({ id: 'm-1' }),
     },
     caretakerBuilding: {
@@ -58,6 +67,14 @@ function mkDb(invRow: unknown, opts: { count?: number; userCreateErr?: unknown }
       deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
     organization: { findUnique: vi.fn().mockResolvedValue({ name: 'Acme' }) },
+    leaseTenant: {
+      findFirst: vi.fn().mockResolvedValue(null),
+      create: vi.fn().mockResolvedValue({ id: 'lt-1' }),
+    },
+    lease: {
+      update: vi.fn().mockResolvedValue({ id: 'l-1' }),
+    },
+    $queryRaw: vi.fn().mockResolvedValue([{ id: 'l-1', status: 'pending', start_date: new Date() }]),
   };
   const db = {
     $queryRaw: vi.fn().mockResolvedValue(invRow ? [invRow] : []),
@@ -65,11 +82,16 @@ function mkDb(invRow: unknown, opts: { count?: number; userCreateErr?: unknown }
     user: {
       create: s.userCreate,
       delete: s.userDelete,
-      findUnique: vi.fn().mockResolvedValue({ fullName: 'Lan Lord' }),
+      update: vi.fn().mockResolvedValue({}),
+      findUnique: vi.fn().mockImplementation(async (args: { where?: { id?: string; email?: string } }) => {
+        if (args?.where?.id) return { fullName: 'Lan Lord' };
+        if (args?.where?.email && opts.existingUser !== undefined) return opts.existingUser;
+        return null;
+      }),
     },
     session: { create: s.sessionCreate },
   } as unknown as Db;
-  return { db, s };
+  return { db, s, tx };
 }
 
 const req = { headers: { 'user-agent': 'UA' }, ip: '1.2.3.4' } as unknown as Request;
@@ -85,6 +107,8 @@ describe('InvitesService.preview', () => {
       role: 'caretaker',
       inviterName: 'Lan Lord',
       email: 'N***@Test.Local',
+      emailMatchesCurrentUser: false,
+      userExists: false,
     });
   });
 
@@ -99,6 +123,8 @@ describe('InvitesService.preview', () => {
     expect(out.orgName).toBe('');
     expect(out.inviterName).toBe('');
     expect(out.email).toBe('w***@');
+    expect(out.emailMatchesCurrentUser).toBe(false);
+    expect(out.userExists).toBe(false);
   });
 
   for (const [name, over] of [
@@ -215,5 +241,96 @@ describe('InvitesService.accept (new user)', () => {
       /already accepted/,
     );
     expect(s.userDelete).toHaveBeenCalledOnce();
+  });
+});
+
+describe('InvitesService.accept (existing user account)', () => {
+  const existingUserRecord = {
+    id: 'u-exist',
+    email: 'new@test.local',
+    fullName: 'Existing Person',
+    // stub argon2id hash structure (tests testing password matching generate a real hash with hashPassword)
+    passwordHash: '$argon2id$v=19$m=19456,t=2,p=1$c29tZXNhbHQ$qUfS7Fk7eG0qW480p2sYw8bXvB4u6u9uPqW480p2sYw',
+    failedLoginCount: 0,
+    lockedUntil: null,
+    deletedAt: null,
+    isPlatformAdmin: false,
+  };
+
+  it('rejects an existing user whose account is locked', async () => {
+    const lockedUser = {
+      ...existingUserRecord,
+      lockedUntil: new Date(Date.now() + 600000),
+    };
+    const { db } = mkDb(row(), { existingUser: lockedUser });
+    await expect(new InvitesService(db, env).accept('t', goodBody, undefined, req, mkRes())).rejects.toThrow(
+      /Account locked/,
+    );
+  });
+
+  it('rejects an existing user if the password is wrong', async () => {
+    const { db } = mkDb(row(), { existingUser: existingUserRecord });
+    (db.$queryRaw as unknown as ReturnType<typeof vi.fn>).mockResolvedValue([
+      { ...row(), failed_login_count: 1, locked_until: null },
+    ]);
+
+    await expect(
+      new InvitesService(db, env).accept(
+        't',
+        { password: 'WrongPassword123!' } as never,
+        undefined,
+        req,
+        mkRes(),
+      ),
+    ).rejects.toThrow(/Invalid email or password/);
+  });
+
+  it('accepts invite with existing account password without creating a new user', async () => {
+    const validHash = await hashPassword('Str0ng-Passw0rd-xyz!');
+    const validExistingUser = {
+      ...existingUserRecord,
+      passwordHash: validHash,
+    };
+    const { db, s } = mkDb(row(), { existingUser: validExistingUser });
+    const res = mkRes();
+    const r = await new InvitesService(db, env).accept('t', goodBody, undefined, req, res);
+    expect(r).toEqual({ accepted: true });
+    expect(s.userCreate).not.toHaveBeenCalled();
+    expect(s.sessionCreate).toHaveBeenCalledOnce();
+  });
+
+  it('rejects caretaker invite if user is already an active tenant', async () => {
+    const { db } = mkDb(row({ role: 'caretaker' }), {
+      existingUser: { ...existingUserRecord, passwordHash: null }, // won't reach here if role conflict checked
+      existingMembership: { id: 'm-ten', role: 'tenant', status: 'active' },
+    });
+
+    // When signed-in:
+    const signedInUser = { id: 'u-exist', email: 'new@test.local' } as never;
+    await expect(
+      new InvitesService(db, env).accept('t', {} as never, signedInUser, req, mkRes()),
+    ).rejects.toThrow(/already an active tenant/);
+  });
+
+  it('rejects tenant invite if user is already an active staff member', async () => {
+    const { db } = mkDb(row({ role: 'tenant' }), {
+      existingUser: { ...existingUserRecord, passwordHash: null },
+      existingMembership: { id: 'm-staff', role: 'caretaker', status: 'active' },
+    });
+
+    const signedInUser = { id: 'u-exist', email: 'new@test.local' } as never;
+    await expect(
+      new InvitesService(db, env).accept('t', {} as never, signedInUser, req, mkRes()),
+    ).rejects.toThrow(/already a staff member/);
+  });
+
+  it('rejects invitation acceptance if lease is already ended', async () => {
+    const { db, tx } = mkDb(row({ role: 'tenant', lease_id: 'l-1' }));
+    tx.$queryRaw = vi.fn().mockResolvedValue([{ id: 'l-1', status: 'ended', start_date: new Date() }]);
+
+    const signedInUser = { id: 'u-exist', email: 'new@test.local' } as never;
+    await expect(
+      new InvitesService(db, env).accept('t', {} as never, signedInUser, req, mkRes()),
+    ).rejects.toThrow(/Cannot accept invitation on an ended or missing lease/);
   });
 });
