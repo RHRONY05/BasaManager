@@ -603,17 +603,18 @@ export class LeasesService {
     const userId = ctx.userId;
 
     const result = await this.prisma.$tx(ctx, async (tx) => {
-      const lease = await tx.lease.findFirst({
-        where: {
-          orgId,
-          id: leaseId,
-        },
-      });
+      const lockedLeases = await tx.$queryRaw<Array<{ id: string; status: string }>>`
+        SELECT id, status
+        FROM leases
+        WHERE id = ${leaseId}::uuid AND org_id = ${orgId}::uuid
+        FOR UPDATE
+      `;
 
-      if (!lease) {
+      if (!lockedLeases || lockedLeases.length === 0) {
         throw ApiError.notFound('Lease not found');
       }
 
+      const lease = lockedLeases[0]!;
       if (lease.status !== 'pending') {
         throw ApiError.conflict('Lease is no longer pending invitation');
       }

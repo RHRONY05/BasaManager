@@ -67,6 +67,14 @@ function mkDb(
       deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
     organization: { findUnique: vi.fn().mockResolvedValue({ name: 'Acme' }) },
+    leaseTenant: {
+      findFirst: vi.fn().mockResolvedValue(null),
+      create: vi.fn().mockResolvedValue({ id: 'lt-1' }),
+    },
+    lease: {
+      update: vi.fn().mockResolvedValue({ id: 'l-1' }),
+    },
+    $queryRaw: vi.fn().mockResolvedValue([{ id: 'l-1', status: 'pending', start_date: new Date() }]),
   };
   const db = {
     $queryRaw: vi.fn().mockResolvedValue(invRow ? [invRow] : []),
@@ -314,5 +322,15 @@ describe('InvitesService.accept (existing user account)', () => {
     await expect(
       new InvitesService(db, env).accept('t', {} as never, signedInUser, req, mkRes()),
     ).rejects.toThrow(/already a staff member/);
+  });
+
+  it('rejects invitation acceptance if lease is already ended', async () => {
+    const { db, tx } = mkDb(row({ role: 'tenant', lease_id: 'l-1' }));
+    tx.$queryRaw = vi.fn().mockResolvedValue([{ id: 'l-1', status: 'ended', start_date: new Date() }]);
+
+    const signedInUser = { id: 'u-exist', email: 'new@test.local' } as never;
+    await expect(
+      new InvitesService(db, env).accept('t', {} as never, signedInUser, req, mkRes()),
+    ).rejects.toThrow(/Cannot accept invitation on an ended or missing lease/);
   });
 });

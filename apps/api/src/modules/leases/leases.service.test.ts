@@ -57,7 +57,7 @@ describe('LeasesService', () => {
     ],
   };
 
-  function createMockDb(overrides: Record<string, Record<string, unknown>> = {}): Db {
+  function createMockDb(overrides: Record<string, any> = {}): Db {
     const tx = {
       user: {
         findFirst: vi.fn().mockResolvedValue(null),
@@ -131,7 +131,9 @@ describe('LeasesService', () => {
         findMany: vi.fn().mockResolvedValue([]),
         ...overrides.payment,
       },
-      $queryRaw: vi.fn().mockResolvedValue([{ id: 'lease-1', status: 'pending' }]),
+      $queryRaw:
+        (overrides as Record<string, unknown>).$queryRaw ??
+        vi.fn().mockResolvedValue([{ id: 'lease-1', status: 'pending' }]),
     };
 
     return {
@@ -434,7 +436,7 @@ describe('LeasesService', () => {
 
     it('throws 409 if lease is no longer pending', async () => {
       const db = createMockDb({
-        lease: { findFirst: vi.fn().mockResolvedValue({ id: 'lease-1', status: 'active' }) },
+        $queryRaw: vi.fn().mockResolvedValue([{ id: 'lease-1', status: 'active' }]),
       });
       const service = new LeasesService(db);
 

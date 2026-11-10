@@ -118,6 +118,7 @@
     "existingAccountTitle": "Account already exists",
     "existingAccountSub": "An account with this email already exists. Enter your password below to accept, or",
     "signInToAccept": "sign in first",
+    "fullNameRequired": "Full name is required",
     "notYouPrompt": "Not {{name}}?",
     "signInAnotherAccount": "Sign in with another account",
     "explainMismatch": "and we'll explain what to do.",

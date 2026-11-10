@@ -850,10 +850,11 @@ describe('V7: leases, deposit ledger, tenant invites, tenant history', () => {
       );
 
       if (lease[0]?.status === 'ended') {
-        // Cancel won: no deposit recorded (or deposit failed with 400/409)
+        // Cancel won: no deposit recorded (recordDeposit rejected with 409 CONFLICT)
         expect(depositEntries.length).toBe(0);
         expect(cancelRes.status).toBe(200);
-        expect(depositRes.status).toBe(400); // cannot record on ended lease
+        expect(depositRes.status).toBe(409); // cannot record on ended lease
+        expect(depositRes.body.error.code).toBe(ErrorCode.CONFLICT);
       } else {
         // Deposit won: cancel was rejected with 409 because held deposit > 0
         expect(cancelRes.status).toBe(409);

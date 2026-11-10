@@ -255,6 +255,10 @@ export default function InvitePage() {
       setFormError(t('auth.fullNameRequired', 'Full name is required'));
       return;
     }
+    if (!invite?.userExists && (!values.password || values.password.length < 10)) {
+      setFormError(t('auth.passwordTooShort', 'Password must be at least 10 characters'));
+      return;
+    }
     try {
       await apiFetch(`/api/invites/${encodeURIComponent(token)}/accept`, {
         method: 'POST',
