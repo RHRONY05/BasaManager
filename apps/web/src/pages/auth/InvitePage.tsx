@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -16,12 +16,12 @@ import { PasswordInput } from '../../components/ui/PasswordInput';
 import { PasswordStrength } from '../../components/ui/PasswordStrength';
 import { RouteSkeleton } from '../../components/ui/RouteSkeleton';
 
-const acceptFormSchema = z.object({
+const baseAcceptSchema = z.object({
   fullName: z.string().max(200).optional(),
   password: z.string().min(1, 'Password is required'),
 });
 
-type AcceptFormValues = z.infer<typeof acceptFormSchema>;
+type AcceptFormValues = z.infer<typeof baseAcceptSchema>;
 
 export default function InvitePage() {
   const { t } = useTranslation();
@@ -49,6 +49,27 @@ export default function InvitePage() {
     retry: false,
   });
 
+  const formSchema = useMemo(() => {
+    return baseAcceptSchema.superRefine((data, ctx) => {
+      if (!invite?.userExists) {
+        if (!data.fullName || data.fullName.trim().length === 0) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['fullName'],
+            message: t('auth.fullNameRequired', 'Full name is required'),
+          });
+        }
+        if (!data.password || data.password.length < 10) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['password'],
+            message: t('auth.passwordTooShort', 'Password must be at least 10 characters'),
+          });
+        }
+      }
+    });
+  }, [invite?.userExists, t]);
+
   const {
     register,
     handleSubmit,
@@ -56,7 +77,7 @@ export default function InvitePage() {
     setFocus,
     formState: { errors, isSubmitting },
   } = useForm<AcceptFormValues>({
-    resolver: zodResolver(acceptFormSchema),
+    resolver: zodResolver(formSchema),
     defaultValues: {
       fullName: '',
       password: '',
@@ -131,9 +152,7 @@ export default function InvitePage() {
   }
 
   const isMatchingUser =
-    authStatus === 'signedIn' &&
-    Boolean(user) &&
-    (invite.emailMatchesCurrentUser ?? user?.email.toLowerCase() === invite.email.toLowerCase());
+    authStatus === 'signedIn' && Boolean(user) && user?.email.toLowerCase() === invite.email.toLowerCase();
 
   // Case 1: User is signed in with a different email
   if (authStatus === 'signedIn' && user && !isMatchingUser) {
