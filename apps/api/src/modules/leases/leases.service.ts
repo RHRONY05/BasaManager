@@ -157,18 +157,19 @@ export class LeasesService {
 
     try {
       const result = await this.prisma.$tx(ctx, async (tx) => {
-        // Verify unit exists in this org
+        // Verify unit exists in this org and building is not archived
         const unit = await tx.unit.findFirst({
           where: {
             orgId,
             id: data.unitId,
             archivedAt: null,
+            building: { archivedAt: null },
           },
           include: { building: true },
         });
 
         if (!unit) {
-          throw ApiError.notFound('Unit not found');
+          throw ApiError.notFound('Unit not found or building is archived');
         }
 
         // Verify no live lease exists on this unit
@@ -184,7 +185,7 @@ export class LeasesService {
           throw ApiError.conflict('Unit already has an active or pending lease');
         }
 
-        // Blocker 1: Prevent staff members from being invited as tenants
+        // Prevent staff members from being invited as tenants
         const normalizedEmail = data.tenantEmail.toLowerCase().trim();
         const existingStaffUser = await tx.user.findFirst({
           where: {
@@ -202,6 +203,47 @@ export class LeasesService {
           throw ApiError.conflict(
             'Cannot invite staff member (landlord or caretaker) as a tenant in this organisation',
           );
+        }
+
+        const openStaffInvite = await tx.invitation.findFirst({
+          where: {
+            orgId,
+            email: normalizedEmail,
+            role: 'caretaker',
+            acceptedAt: null,
+            revokedAt: null,
+            expiresAt: { gt: clock.now() },
+          },
+        });
+        if (openStaffInvite) {
+          throw ApiError.conflict('An active staff invitation already exists for this email');
+        }
+
+        // Auto-revoke any expired unrevoked tenant invites for this email
+        await tx.invitation.updateMany({
+          where: {
+            orgId,
+            email: normalizedEmail,
+            role: 'tenant',
+            acceptedAt: null,
+            revokedAt: null,
+            expiresAt: { lte: clock.now() },
+          },
+          data: { revokedAt: clock.now() },
+        });
+
+        const openTenantInvite = await tx.invitation.findFirst({
+          where: {
+            orgId,
+            email: normalizedEmail,
+            role: 'tenant',
+            acceptedAt: null,
+            revokedAt: null,
+            expiresAt: { gt: clock.now() },
+          },
+        });
+        if (openTenantInvite) {
+          throw ApiError.conflict('An active invitation already exists for this tenant email');
         }
 
         const now = clock.now();
@@ -781,6 +823,43 @@ export class LeasesService {
           createdAt: p.createdAt.toISOString(),
         })),
       };
+    });
+  }
+
+  /**
+   * Cancels a pending lease (e.g. if created with wrong email or before move-in).
+   * Marks lease status as 'ended' and revokes the associated open invitation.
+   */
+  async cancelPendingLease(tenantCtx: TenantCtx, leaseId: string) {
+    const orgId = tenantCtx.orgId!;
+    return this.prisma.$tx(tenantCtx, async (tx) => {
+      const lease = await tx.lease.findFirst({
+        where: { id: leaseId, orgId },
+      });
+      if (!lease) {
+        throw ApiError.notFound('Lease not found');
+      }
+      if (lease.status !== 'pending') {
+        throw ApiError.conflict('Only pending leases can be cancelled without a move-out settlement');
+      }
+
+      await tx.lease.update({
+        where: { id: leaseId },
+        data: { status: 'ended' },
+      });
+
+      // Revoke any open invite for this lease
+      await tx.invitation.updateMany({
+        where: {
+          orgId,
+          leaseId,
+          acceptedAt: null,
+          revokedAt: null,
+        },
+        data: { revokedAt: clock.now() },
+      });
+
+      return { success: true, message: 'Pending lease cancelled' };
     });
   }
 }

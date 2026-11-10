@@ -22,7 +22,7 @@ export type OrgDetailResponse = z.infer<typeof orgDetailResponseSchema>;
 
 export const updateOrgRequestSchema = z
   .object({
-    name: z.string().min(1, 'Name is required').max(200),
+    name: z.string().trim().min(1, 'Name is required').max(200),
   })
   .meta({ id: 'UpdateOrgRequest' });
 
@@ -73,7 +73,7 @@ export type UpdateCaretakerBuildingsRequest = z.infer<typeof updateCaretakerBuil
 
 export const inviteCaretakerRequestSchema = z
   .object({
-    email: z.string().email('Valid email is required'),
+    email: z.string().trim().toLowerCase().email('Valid email is required'),
     role: z.literal('caretaker'),
     buildingIds: z.array(uuidSchema),
   })

@@ -6,7 +6,7 @@ import type { Db } from '../../config/db';
 import type { Env } from '../../config/env';
 import { ApiError } from '../../lib/ApiError';
 import { clock } from '../../lib/clock';
-import { hashPassword, validatePassword } from '../../lib/passwords';
+import { hashPassword, validatePassword, verifyPassword } from '../../lib/passwords';
 import { sha256, generateRefreshToken, generateCsrfToken, signAccessToken } from '../../lib/tokens';
 import { setAuthCookies } from '../../lib/cookies';
 import { findInvitationByTokenHash } from '../../config/db';
@@ -22,7 +22,7 @@ export class InvitesService {
   /**
    * Preview invitation details (org name, role, inviter name, masked email) without requiring auth.
    */
-  async preview(token: string) {
+  async preview(token: string, currentUser?: AuthenticatedUser) {
     const tokenHash = sha256(token);
     const inv = await findInvitationByTokenHash(this.prisma, tokenHash);
     const now = clock.now();
@@ -50,11 +50,22 @@ export class InvitesService {
     const [local, domain] = inv.email.split('@');
     const maskedEmail = `${local ? local[0] : ''}***@${domain || ''}`;
 
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: inv.email.toLowerCase().trim() },
+      select: { id: true },
+    });
+
+    const emailMatchesCurrentUser = currentUser
+      ? currentUser.email.toLowerCase().trim() === inv.email.toLowerCase().trim()
+      : false;
+
     return {
       orgName: org ? org.name : '',
       role: inv.role,
       inviterName: inviter ? inviter.fullName : '',
       email: maskedEmail,
+      emailMatchesCurrentUser,
+      userExists: !!existingUser,
     };
   }
 
@@ -107,14 +118,27 @@ export class InvitesService {
           },
         });
 
-        // Blocker 1: Prevent staff member (landlord/caretaker) from being demoted to tenant
+        // Prevent staff member (landlord/caretaker) from being demoted to tenant
         if (
           existingMembership &&
+          existingMembership.status === 'active' &&
           (existingMembership.role === 'landlord' || existingMembership.role === 'caretaker') &&
           inv.role === 'tenant'
         ) {
           throw ApiError.conflict(
             'Cannot accept tenant invite: user is already a staff member in this organisation',
+          );
+        }
+
+        // Prevent active tenant from being turned into caretaker
+        if (
+          existingMembership &&
+          existingMembership.status === 'active' &&
+          existingMembership.role === 'tenant' &&
+          inv.role === 'caretaker'
+        ) {
+          throw ApiError.conflict(
+            'Cannot accept caretaker invite: user is already an active tenant in this organisation',
           );
         }
 
@@ -164,35 +188,52 @@ export class InvitesService {
       return { accepted: true };
     }
 
-    // New user registration flow
-    if (!body.fullName || typeof body.fullName !== 'string' || body.fullName.trim().length === 0) {
-      throw ApiError.validation([{ path: 'fullName', message: 'Full name is required' }]);
-    }
-
     if (!body.password) {
       throw ApiError.validation([{ path: 'password', message: 'Password is required' }]);
     }
 
-    validatePassword(body.password, 'password');
+    const normalizedEmail = inv.email.toLowerCase().trim();
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: normalizedEmail },
+    });
 
-    const userId = randomUUID();
-    const passwordHash = await hashPassword(body.password);
-
-    try {
-      await this.prisma.user.create({
-        data: {
-          id: userId,
-          email: inv.email.toLowerCase().trim(),
-          fullName: body.fullName.trim(),
-          passwordHash,
-          emailVerifiedAt: now, // Verified through invitation link
-        },
-      });
-    } catch (err: unknown) {
-      if (err && typeof err === 'object' && 'code' in err && (err as { code: unknown }).code === 'P2002') {
-        throw new ApiError(ErrorCode.TOKEN_INVALID, 'Invitation already accepted or expired');
+    let userId: string;
+    if (existingUser) {
+      if (!existingUser.passwordHash || !(await verifyPassword(existingUser.passwordHash, body.password))) {
+        throw ApiError.validation([
+          {
+            path: 'password',
+            message:
+              'An account with this email exists. Please enter your existing account password or sign in.',
+          },
+        ]);
       }
-      throw err;
+      userId = existingUser.id;
+    } else {
+      if (!body.fullName || typeof body.fullName !== 'string' || body.fullName.trim().length === 0) {
+        throw ApiError.validation([{ path: 'fullName', message: 'Full name is required' }]);
+      }
+      validatePassword(body.password, 'password');
+
+      userId = randomUUID();
+      const passwordHash = await hashPassword(body.password);
+
+      try {
+        await this.prisma.user.create({
+          data: {
+            id: userId,
+            email: normalizedEmail,
+            fullName: body.fullName.trim(),
+            passwordHash,
+            emailVerifiedAt: now, // Verified through invitation link
+          },
+        });
+      } catch (err: unknown) {
+        if (err && typeof err === 'object' && 'code' in err && (err as { code: unknown }).code === 'P2002') {
+          throw new ApiError(ErrorCode.TOKEN_INVALID, 'Invitation already accepted or expired');
+        }
+        throw err;
+      }
     }
 
     try {
@@ -211,21 +252,67 @@ export class InvitesService {
           throw new ApiError(ErrorCode.TOKEN_INVALID, 'Invitation already accepted or expired');
         }
 
-        const m = await tx.membership.create({
-          data: {
+        const existingMembership = await tx.membership.findFirst({
+          where: {
             orgId: inv.orgId,
             userId,
-            role: inv.role,
-            status: 'active',
           },
         });
+
+        if (
+          existingMembership &&
+          existingMembership.status === 'active' &&
+          (existingMembership.role === 'landlord' || existingMembership.role === 'caretaker') &&
+          inv.role === 'tenant'
+        ) {
+          throw ApiError.conflict(
+            'Cannot accept tenant invite: user is already a staff member in this organisation',
+          );
+        }
+
+        if (
+          existingMembership &&
+          existingMembership.status === 'active' &&
+          existingMembership.role === 'tenant' &&
+          inv.role === 'caretaker'
+        ) {
+          throw ApiError.conflict(
+            'Cannot accept caretaker invite: user is already an active tenant in this organisation',
+          );
+        }
+
+        let membershipId: string;
+        if (existingMembership) {
+          const updatedM = await tx.membership.update({
+            where: { id: existingMembership.id },
+            data: {
+              status: 'active',
+              removedAt: null,
+              role: inv.role,
+            },
+          });
+          membershipId = updatedM.id;
+          await tx.caretakerBuilding.deleteMany({
+            where: { orgId: inv.orgId, membershipId },
+          });
+        } else {
+          const m = await tx.membership.create({
+            data: {
+              orgId: inv.orgId,
+              userId,
+              role: inv.role,
+              status: 'active',
+            },
+          });
+          membershipId = m.id;
+        }
 
         if (inv.role === 'caretaker' && inv.buildingIds && inv.buildingIds.length > 0) {
           for (const buildingId of inv.buildingIds) {
             await tx.caretakerBuilding.create({
               data: {
                 orgId: inv.orgId,
-                membershipId: m.id,
+                membershipId,
                 buildingId,
               },
             });
@@ -233,12 +320,14 @@ export class InvitesService {
         }
 
         if (inv.role === 'tenant') {
-          await linkTenantToLease(tx, inv, m.id, now);
+          await linkTenantToLease(tx, inv, membershipId, now);
         }
       });
     } catch (err) {
-      // If invitation was already accepted by concurrent request, cleanup created user
-      await this.prisma.user.delete({ where: { id: userId } }).catch(() => {});
+      // If invitation was already accepted by concurrent request, cleanup newly created user
+      if (!existingUser) {
+        await this.prisma.user.delete({ where: { id: userId } }).catch(() => {});
+      }
       throw err;
     }
 

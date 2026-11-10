@@ -129,8 +129,13 @@ export default function InvitePage() {
     );
   }
 
+  const isMatchingUser =
+    authStatus === 'signedIn' &&
+    Boolean(user) &&
+    (invite.emailMatchesCurrentUser ?? user?.email.toLowerCase() === invite.email.toLowerCase());
+
   // Case 1: User is signed in with a different email
-  if (authStatus === 'signedIn' && user && user.email.toLowerCase() !== invite.email.toLowerCase()) {
+  if (authStatus === 'signedIn' && user && !isMatchingUser) {
     return (
       <div
         className="card card--tight bg-surface p-6 sm:p-8 rounded-xl border border-border shadow-md flex flex-col items-center text-center gap-5 w-full"
@@ -161,7 +166,7 @@ export default function InvitePage() {
   }
 
   // Case 2: User is signed in with the matching email -> just accept
-  if (authStatus === 'signedIn' && user && user.email.toLowerCase() === invite.email.toLowerCase()) {
+  if (isMatchingUser) {
     const handleAcceptExisting = async () => {
       setFormError(null);
       setAcceptingExisting(true);
@@ -299,6 +304,25 @@ export default function InvitePage() {
         </div>
       )}
 
+      {invite.userExists && (
+        <div className="card bg-surface border border-accent/30 p-4 rounded-lg flex flex-col gap-1 text-sm">
+          <p className="font-semibold text-fg">{t('auth.existingAccountTitle', 'Account already exists')}</p>
+          <p className="text-xs text-fg-secondary">
+            {t(
+              'auth.existingAccountSub',
+              'An account with this email already exists. Enter your password below to accept, or',
+            )}{' '}
+            <Link
+              to={token ? `/login?next=${encodeURIComponent('/invite/' + token)}` : '/login'}
+              className="text-accent font-semibold hover:underline"
+            >
+              {t('auth.signInToAccept', 'sign in first')}
+            </Link>
+            .
+          </p>
+        </div>
+      )}
+
       {/* Google OAuth Button with invite token */}
       <GoogleButton inviteToken={token}>{t('auth.continueWithGoogle')}</GoogleButton>
 
@@ -387,7 +411,10 @@ export default function InvitePage() {
 
       <p className="text-sm text-fg-secondary">
         {t('auth.notYouPrompt', { name: invite.email })}{' '}
-        <Link to="/login" className="text-accent-text font-medium hover:underline">
+        <Link
+          to={token ? `/login?next=${encodeURIComponent('/invite/' + token)}` : '/login'}
+          className="text-accent-text font-medium hover:underline"
+        >
           {t('auth.signInAnotherAccount')}
         </Link>{' '}
         {t('auth.explainMismatch')}

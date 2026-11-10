@@ -9,7 +9,7 @@ export class InvitesController {
   preview = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const token = req.params.token as string;
-      const result = await this.invitesService.preview(token);
+      const result = await this.invitesService.preview(token, req.user);
       res.status(200).json({ data: result });
     } catch (err) {
       next(err);

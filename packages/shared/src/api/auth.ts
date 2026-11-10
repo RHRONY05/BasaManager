@@ -64,6 +64,8 @@ export const invitePreviewSchema = z
     role: z.string(),
     inviterName: z.string(),
     email: z.string(),
+    emailMatchesCurrentUser: z.boolean().optional(),
+    userExists: z.boolean().optional(),
   })
   .meta({ id: 'InvitePreview' });
 

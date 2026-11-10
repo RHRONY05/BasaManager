@@ -843,14 +843,27 @@ export class AuthService {
                 },
               });
 
-              // Blocker 1: Prevent staff member (landlord/caretaker) from being demoted to tenant
+              // Prevent active staff member (landlord/caretaker) from being demoted to tenant
               if (
                 existingMembership &&
+                existingMembership.status === 'active' &&
                 (existingMembership.role === 'landlord' || existingMembership.role === 'caretaker') &&
                 inv.role === 'tenant'
               ) {
                 throw ApiError.conflict(
                   'Cannot accept tenant invite: user is already a staff member in this organisation',
+                );
+              }
+
+              // Prevent active tenant from being turned into caretaker
+              if (
+                existingMembership &&
+                existingMembership.status === 'active' &&
+                existingMembership.role === 'tenant' &&
+                inv.role === 'caretaker'
+              ) {
+                throw ApiError.conflict(
+                  'Cannot accept caretaker invite: user is already an active tenant in this organisation',
                 );
               }
 

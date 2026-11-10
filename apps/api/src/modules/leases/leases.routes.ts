@@ -68,6 +68,14 @@ export function createLeasesRoutes(deps: LeasesRouteDeps): Router {
     controller.resendInvite,
   );
 
+  // Cancel pending lease (L only)
+  router.post(
+    '/:id/cancel',
+    requireRole('landlord'),
+    validate({ params: idParam }),
+    controller.cancelPendingLease,
+  );
+
   return router;
 }
 

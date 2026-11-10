@@ -83,7 +83,8 @@ export async function activateDueLeases(
         const leases = await tx.$queryRaw<Array<{ id: string }>>`
           SELECT l.id
           FROM leases l
-          WHERE l.status = 'pending'
+          WHERE l.org_id = ${orgId}::uuid
+            AND l.status = 'pending'
             AND EXISTS (SELECT 1 FROM lease_tenants lt WHERE lt.lease_id = l.id)
             AND l.start_date <= ${todayDhaka}::date
         `;

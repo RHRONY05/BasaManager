@@ -65,7 +65,10 @@ function mkDb(invRow: unknown, opts: { count?: number; userCreateErr?: unknown }
     user: {
       create: s.userCreate,
       delete: s.userDelete,
-      findUnique: vi.fn().mockResolvedValue({ fullName: 'Lan Lord' }),
+      findUnique: vi.fn().mockImplementation(async (args: { where?: { id?: string } }) => {
+        if (args?.where?.id) return { fullName: 'Lan Lord' };
+        return null;
+      }),
     },
     session: { create: s.sessionCreate },
   } as unknown as Db;
@@ -85,6 +88,8 @@ describe('InvitesService.preview', () => {
       role: 'caretaker',
       inviterName: 'Lan Lord',
       email: 'N***@Test.Local',
+      emailMatchesCurrentUser: false,
+      userExists: false,
     });
   });
 
@@ -99,6 +104,8 @@ describe('InvitesService.preview', () => {
     expect(out.orgName).toBe('');
     expect(out.inviterName).toBe('');
     expect(out.email).toBe('w***@');
+    expect(out.emailMatchesCurrentUser).toBe(false);
+    expect(out.userExists).toBe(false);
   });
 
   for (const [name, over] of [

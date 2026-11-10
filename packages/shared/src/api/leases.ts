@@ -20,7 +20,17 @@ export const createLeaseSchema = z.object({
     .email()
     .transform((e) => e.toLowerCase().trim()),
   tenantName: z.string().trim().min(1, 'Tenant name is required').max(100),
-  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Start date must be YYYY-MM-DD'),
+  startDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Start date must be YYYY-MM-DD')
+    .refine((val) => {
+      const parts = val.split('-').map(Number);
+      const year = parts[0]!;
+      const month = parts[1]!;
+      const day = parts[2]!;
+      const d = new Date(year, month - 1, day);
+      return d.getFullYear() === year && d.getMonth() === month - 1 && d.getDate() === day;
+    }, 'Start date must be a valid calendar date'),
   monthlyRentPoisha: z.number().int().nonnegative('Rent must be non-negative integer'),
   depositPoisha: z.number().int().nonnegative('Deposit must be non-negative integer').default(0),
   householdSize: z.number().int().min(1, 'Household size must be at least 1').max(20).default(1),

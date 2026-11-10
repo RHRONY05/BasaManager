@@ -82,7 +82,7 @@ describe('LeasesService', () => {
       },
       invitation: {
         create: vi.fn().mockResolvedValue({ id: 'inv-1' }),
-        findFirst: vi.fn().mockResolvedValue({ id: 'inv-1', email: 't@test.com' }),
+        findFirst: vi.fn().mockResolvedValue(null),
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
         ...overrides.invitation,
       },
@@ -455,7 +455,16 @@ describe('LeasesService', () => {
     });
 
     it('resends invitation', async () => {
-      const db = createMockDb();
+      const db = createMockDb({
+        invitation: {
+          findFirst: vi.fn().mockResolvedValue({
+            id: 'inv-1',
+            email: 't@test.com',
+            role: 'tenant',
+            expiresAt: new Date(Date.now() + 86400000),
+          }),
+        },
+      });
       const service = new LeasesService(db);
 
       const result = await service.resendInvite(landlordCtx, 'lease-1');

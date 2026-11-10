@@ -105,6 +105,7 @@ describe('OrgsService', () => {
           },
           invitation: {
             findFirst: vi.fn().mockResolvedValue(null),
+            updateMany: vi.fn().mockResolvedValue({ count: 0 }),
             create: vi.fn().mockResolvedValue({
               id: 'inv-1',
               email: 'caretaker@test.com',

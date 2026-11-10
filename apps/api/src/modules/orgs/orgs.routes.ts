@@ -1,4 +1,6 @@
 import { Router } from 'express';
+import { z } from 'zod';
+import { uuidSchema } from '@bm/shared/api/common';
 import {
   updateOrgRequestSchema,
   inviteCaretakerRequestSchema,
@@ -49,11 +51,19 @@ export function createOrgsRoutes(deps: OrgsRouteDeps): Router {
   router.put(
     '/members/:membershipId/buildings',
     requireRole('landlord'),
-    validate({ body: updateCaretakerBuildingsRequestSchema }),
+    validate({
+      params: z.object({ membershipId: uuidSchema }),
+      body: updateCaretakerBuildingsRequestSchema,
+    }),
     controller.updateCaretakerBuildings,
   );
 
-  router.delete('/members/:membershipId', requireRole('landlord'), controller.removeMember);
+  router.delete(
+    '/members/:membershipId',
+    requireRole('landlord'),
+    validate({ params: z.object({ membershipId: uuidSchema }) }),
+    controller.removeMember,
+  );
 
   // Caretaker Invites
   router.post(
@@ -65,7 +75,12 @@ export function createOrgsRoutes(deps: OrgsRouteDeps): Router {
 
   router.get('/invites', requireRole('landlord'), controller.getInvites);
 
-  router.delete('/invites/:id', requireRole('landlord'), controller.revokeInvite);
+  router.delete(
+    '/invites/:id',
+    requireRole('landlord'),
+    validate({ params: z.object({ id: uuidSchema }) }),
+    controller.revokeInvite,
+  );
 
   return router;
 }

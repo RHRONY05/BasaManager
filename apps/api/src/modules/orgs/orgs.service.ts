@@ -162,6 +162,34 @@ export class OrgsService {
         throw ApiError.conflict('An active invitation already exists for this email and role');
       }
 
+      const openTenantInvite = await tx.invitation.findFirst({
+        where: {
+          orgId: tenantCtx.orgId!,
+          email,
+          role: 'tenant',
+          acceptedAt: null,
+          revokedAt: null,
+          expiresAt: { gt: clock.now() },
+        },
+      });
+
+      if (openTenantInvite) {
+        throw ApiError.conflict('An active tenant invitation already exists for this email');
+      }
+
+      // Auto-revoke any expired unrevoked invites so the partial unique index allows the new one
+      await tx.invitation.updateMany({
+        where: {
+          orgId: tenantCtx.orgId!,
+          email,
+          role: 'caretaker',
+          acceptedAt: null,
+          revokedAt: null,
+          expiresAt: { lte: clock.now() },
+        },
+        data: { revokedAt: clock.now() },
+      });
+
       const rawToken = randomBytes(32).toString('hex');
       const tokenHash = sha256(rawToken);
       const expiresAt = new Date(clock.now().getTime() + 7 * 24 * 3600 * 1000);
@@ -266,6 +294,14 @@ export class OrgsService {
 
       if (!inv) {
         throw ApiError.notFound('Invitation not found');
+      }
+
+      if (inv.acceptedAt !== null) {
+        throw ApiError.conflict('Cannot revoke an invitation that has already been accepted');
+      }
+
+      if (inv.revokedAt !== null) {
+        throw ApiError.conflict('Invitation is already revoked');
       }
 
       await tx.invitation.update({

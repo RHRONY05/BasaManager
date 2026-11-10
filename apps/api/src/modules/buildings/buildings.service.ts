@@ -278,6 +278,20 @@ export class BuildingsService {
         throw ApiError.notFound('Building not found');
       }
 
+      const mergedBillDay = data.billDay ?? existing.billDay;
+      const mergedDueDay = data.dueDay ?? existing.dueDay;
+      if (mergedDueDay < mergedBillDay) {
+        throw ApiError.validation([{ path: 'dueDay', message: 'Due day must be on or after bill day' }]);
+      }
+
+      const mergedLateFeeType = data.lateFeeType ?? existing.lateFeeType;
+      const mergedLateFeeValue = data.lateFeeValue ?? existing.lateFeeValue;
+      if (mergedLateFeeType === 'percent' && mergedLateFeeValue > 10000) {
+        throw ApiError.validation([
+          { path: 'lateFeeValue', message: 'Percent late fee cannot exceed 10000 basis points (100%)' },
+        ]);
+      }
+
       const updated = await tx.building.update({
         where: { id: buildingId },
         data: {
@@ -491,6 +505,7 @@ export class BuildingsService {
           id: unitId,
           orgId: tenantCtx.orgId!,
           archivedAt: null,
+          building: { archivedAt: null },
         },
       });
 
