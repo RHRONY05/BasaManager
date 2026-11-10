@@ -24,6 +24,33 @@ export function formatMoney(poisha: number | bigint): string {
 }
 
 /**
+ * Parses user input in Taka (string or number, e.g. "15000" or "15000.50") into integer poisha.
+ * Avoids floating-point rounding issues by parsing whole and fractional parts directly.
+ */
+export function parseTakaToPoisha(taka: string | number): number {
+  if (typeof taka === 'number') {
+    return Math.round(taka * 100);
+  }
+  const clean = taka.trim().replace(/,/g, '');
+  if (!clean || isNaN(Number(clean))) return 0;
+  const parts = clean.split('.');
+  const whole = parseInt(parts[0] || '0', 10);
+  const fraction = parts.length > 1 ? (parts[1] + '00').slice(0, 2) : '00';
+  return whole * 100 + parseInt(fraction, 10);
+}
+
+/**
+ * Formats integer poisha for numeric input fields in whole taka or 2 decimals (e.g. 15000 or 15000.50).
+ */
+export function poishaToTakaInput(poisha: number | bigint): string {
+  const num = typeof poisha === 'bigint' ? Number(poisha) : poisha;
+  if (num % 100 === 0) {
+    return String(num / 100);
+  }
+  return (num / 100).toFixed(2);
+}
+
+/**
  * Formats date into '10 Nov 2026' in Asia/Dhaka.
  */
 export function formatDate(date: string | Date | number): string {

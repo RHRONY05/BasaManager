@@ -100,6 +100,10 @@ test.describe('UI States Specs', () => {
     { href: '/l/team', name: 'Team' },
     { href: '/l/settings', name: 'Organisation Settings' },
   ];
+  const LANDLORD_PAGE_LINKS = [
+    { href: '/l/tenants', name: 'Tenants & Leases' },
+    { href: '/l/leases/new', name: 'Create Lease' },
+  ];
   const CARETAKER_LINKS = [
     { href: '/c/billing', name: 'Billing' },
     { href: '/c/payments', name: 'Payments' },
@@ -112,13 +116,21 @@ test.describe('UI States Specs', () => {
     { href: '/t/notices', name: 'Notices' },
     { href: '/t/account', name: 'Account' },
   ];
+  const TENANT_EXTRA_LINKS = [{ href: '/t/lease', name: 'Lease' }];
 
   test('every routed role page is reached by a nav link checked below', () => {
     const covered = new Set([
       '/l',
       '/c',
       '/t',
-      ...[...LANDLORD_LINKS, ...LANDLORD_EXTRA_LINKS, ...CARETAKER_LINKS, ...TENANT_LINKS].map((l) => l.href),
+      ...[
+        ...LANDLORD_LINKS,
+        ...LANDLORD_EXTRA_LINKS,
+        ...LANDLORD_PAGE_LINKS,
+        ...CARETAKER_LINKS,
+        ...TENANT_LINKS,
+        ...TENANT_EXTRA_LINKS,
+      ].map((l) => l.href),
     ]);
     const roleRoutes = ROUTE_PATHS.filter((p) => /^\/(l|c|t)(\/|$)/.test(p) && !p.includes(':'));
     expect(roleRoutes.filter((p) => !covered.has(p))).toEqual([]);
@@ -254,6 +266,75 @@ test.describe('UI States Specs', () => {
 
     // Content appears on success within 3000 ms
     await expect(page.getByRole('heading', { name: /Getting started/i })).toBeVisible({ timeout: 3000 });
+  });
+
+  test('check 1d: slow API - lease detail navigation updates URL and renders within 300ms, CLS < 0.05', async ({
+    page,
+  }) => {
+    await signInAs(page, 'landlord');
+    const meRes = await page.request.get('/api/me');
+    const meData = await meRes.json();
+    const orgId = meData.data?.memberships?.[0]?.orgId;
+    const cookies = await page.context().cookies();
+    const csrf = cookies.find((c) => c.name === 'bm_csrf')?.value ?? '';
+    const origin = new URL(page.url()).origin;
+
+    const bldRes = await page.request.post('/api/buildings', {
+      data: { name: 'State Tower', address: 'Banani, Dhaka', area: 'Banani', city: 'Dhaka' },
+      headers: { 'X-CSRF-Token': csrf, 'X-Org-Id': orgId, Origin: origin },
+    });
+    const bldId = (await bldRes.json()).data.id;
+
+    const unitRes = await page.request.post(`/api/buildings/${bldId}/units`, {
+      data: {
+        label: '1A',
+        floor: 1,
+        type: 'family_flat',
+        defaultRentPoisha: 1500000,
+        electricityMode: 'submeter',
+      },
+      headers: { 'X-CSRF-Token': csrf, 'X-Org-Id': orgId, Origin: origin },
+    });
+    const unitId = (await unitRes.json()).data.id;
+
+    const leaseRes = await page.request.post('/api/leases', {
+      data: {
+        unitId,
+        tenantEmail: uniqueEmail('state-tenant'),
+        tenantName: 'State Tenant',
+        startDate: '2026-01-01',
+        monthlyRentPoisha: 1500000,
+        depositPoisha: 3000000,
+        householdSize: 2,
+      },
+      headers: { 'X-CSRF-Token': csrf, 'X-Org-Id': orgId, Origin: origin },
+    });
+    const leaseId = (await leaseRes.json()).data.id;
+
+    // Navigate to /l/tenants where the lease link exists
+    await page.goto('/l/tenants');
+    await page.locator('h1').waitFor({ state: 'visible' });
+
+    // Delay API responses by 2s
+    await page.route('**/api/**', async (route) => {
+      await new Promise((r) => setTimeout(r, 2000));
+      await route.continue();
+    });
+
+    await startClsObserver(page);
+    const link = page.locator(`a[href="/l/leases/${leaseId}"]`).first();
+    await expect(link).toBeVisible();
+
+    const startNav = Date.now();
+    await link.click();
+    await expect(page).toHaveURL(new RegExp(`/l/leases/${leaseId}`), { timeout: 300 });
+    expect(Date.now() - startNav).toBeLessThanOrEqual(400);
+
+    const skeleton = page.locator('main [data-skeleton]');
+    await expect(skeleton.first()).toBeVisible({ timeout: 300 });
+    await expect(page.locator('h1')).toBeVisible({ timeout: 4000 });
+    const cls = await getClsScore(page);
+    expect(cls).toBeLessThan(0.05);
   });
 
   // enabled in V5 (first mutation)

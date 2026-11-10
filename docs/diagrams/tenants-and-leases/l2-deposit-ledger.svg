@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1700 800" width="1700" height="800" font-family="'Segoe UI', Inter, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1f1f1f"/>
+    </marker>
+  </defs>
+  <rect width="1700" height="800" fill="#ffffff"/>
+  <text x="40" y="52" font-size="28" font-weight="700" fill="#1f1f1f">Tenants &amp; leases, level 2: Security Deposit Ledger</text>
+  <text x="40" y="82" font-size="16" fill="#3a3a3a">Append-only deposit transactions, balance calculation, and move-out settlement lifecycle.</text>
+  <g font-size="15" fill="#3a3a3a">
+    <line x1="1130" y1="36" x2="1190" y2="36" stroke="#1f1f1f" stroke-width="2.4" marker-end="url(#arrow)"/>
+    <text x="1202" y="41">ledger transaction</text>
+    <line x1="1130" y1="62" x2="1190" y2="62" stroke="#1f1f1f" stroke-width="2.4" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <text x="1202" y="67">balance output</text>
+    <rect x="1370" y="24" width="26" height="18" rx="3" fill="#FEC8C3"/><text x="1406" y="39">entry kind</text>
+    <rect x="1530" y="24" width="26" height="18" rx="7" fill="#BFE3FD"/><text x="1566" y="39">ledger engine</text>
+    <circle cx="1383" cy="62" r="9" fill="#E3CCFD"/><text x="1406" y="67">data store</text>
+    <rect x="1530" y="53" width="26" height="18" rx="3" fill="#C9F2D6"/><text x="1566" y="67">computed state</text>
+  </g>
+  <rect x="60" y="180" width="260" height="130" rx="8" fill="#C9F2D6"/>
+  <text x="190" y="215" font-size="18" font-weight="700" fill="#1f1f1f" text-anchor="middle">1. Deposit Received (+)</text>
+  <text x="190" y="245" font-size="14" fill="#3a3a3a" text-anchor="middle">Recorded at signing</text>
+  <text x="190" y="265" font-size="14" fill="#3a3a3a" text-anchor="middle">Cash / bank / bKash claim</text>
+  <text x="190" y="285" font-size="13" fill="#666666" text-anchor="middle">kind: 'received'</text>
+  <rect x="60" y="340" width="260" height="130" rx="8" fill="#FEC8C3"/>
+  <text x="190" y="375" font-size="18" font-weight="700" fill="#1f1f1f" text-anchor="middle">2. Applied to Dues (-)</text>
+  <text x="190" y="405" font-size="14" fill="#3a3a3a" text-anchor="middle">Late rent deduction</text>
+  <text x="190" y="425" font-size="14" fill="#3a3a3a" text-anchor="middle">or unpaid utility bills</text>
+  <text x="190" y="445" font-size="13" fill="#666666" text-anchor="middle">kind: 'applied_to_dues'</text>
+  <rect x="60" y="500" width="260" height="130" rx="8" fill="#FEC8C3"/>
+  <text x="190" y="535" font-size="18" font-weight="700" fill="#1f1f1f" text-anchor="middle">3. Deposit Refunded (-)</text>
+  <text x="190" y="565" font-size="14" fill="#3a3a3a" text-anchor="middle">Returned upon lease exit</text>
+  <text x="190" y="585" font-size="14" fill="#3a3a3a" text-anchor="middle">After final damages check</text>
+  <text x="190" y="605" font-size="13" fill="#666666" text-anchor="middle">kind: 'refunded'</text>
+  <g fill="none" stroke="#1f1f1f" stroke-width="2.4">
+    <path d="M320,245 H494" marker-end="url(#arrow)"/>
+    <path d="M320,405 H494" marker-end="url(#arrow)"/>
+    <path d="M320,565 H494" marker-end="url(#arrow)"/>
+    <path d="M1014,405 H1144" marker-end="url(#arrow)"/>
+    <path d="M754,582 V662" marker-end="url(#arrow)"/>
+    <path d="M834,662 V584" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+  </g>
+  <rect x="500" y="220" width="510" height="360" rx="24" fill="#BFE3FD"/>
+  <text x="755" y="265" font-size="22" font-weight="700" fill="#1f1f1f" text-anchor="middle">Deposit Ledger Calculator</text>
+  <text x="755" y="305" font-size="15" fill="#3a3a3a" text-anchor="middle">Formula: Held Balance = Σ(received) - Σ(applied) - Σ(refunded)</text>
+  <text x="755" y="340" font-size="14" fill="#3a3a3a" text-anchor="middle">• Append-Only: entries can never be modified or deleted</text>
+  <text x="755" y="370" font-size="14" fill="#3a3a3a" text-anchor="middle">• Corrections require reversing entries or adjustment records</text>
+  <text x="755" y="400" font-size="14" fill="#3a3a3a" text-anchor="middle">• Integer poisha precision avoids float rounding errors</text>
+  <text x="755" y="430" font-size="14" fill="#3a3a3a" text-anchor="middle">• Landlord records deposit payments directly on lease screen</text>
+  <text x="755" y="460" font-size="14" fill="#3a3a3a" text-anchor="middle">• Real-time balance shown on Landlord &amp; Tenant portal views</text>
+  <text x="755" y="490" font-size="14" fill="#3a3a3a" text-anchor="middle">• Non-negative balance invariant enforced on refunds</text>
+  <text x="755" y="520" font-size="14" fill="#3a3a3a" text-anchor="middle">• Feeds move-out final settlement in task V15</text>
+  <rect x="1150" y="300" width="460" height="210" rx="12" fill="#C9F2D6"/>
+  <text x="1380" y="345" font-size="20" font-weight="700" fill="#1f1f1f" text-anchor="middle">Computed Lease DTO Status</text>
+  <text x="1380" y="380" font-size="15" fill="#3a3a3a" text-anchor="middle">depositPoisha: ৳40,000 (Agreed target in lease)</text>
+  <text x="1380" y="410" font-size="15" font-weight="600" fill="#1f1f1f" text-anchor="middle">depositHeldPoisha: ৳40,000 (Currently held)</text>
+  <text x="1380" y="440" font-size="14" fill="#3a3a3a" text-anchor="middle">status: 'active' | pending | notice | ended</text>
+  <text x="1380" y="470" font-size="13" fill="#666666" text-anchor="middle">Immutable audit log with timestamps &amp; notes</text>
+  <circle cx="794" cy="710" r="48" fill="#E3CCFD"/>
+  <text x="794" y="705" font-size="16" font-weight="700" fill="#1f1f1f" text-anchor="middle">Postgres</text>
+  <text x="794" y="725" font-size="12" fill="#3a3a3a" text-anchor="middle">deposit_entries</text>
+</svg>

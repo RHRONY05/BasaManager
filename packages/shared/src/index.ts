@@ -4,5 +4,6 @@ export * from './api/health';
 export * from './api/auth';
 export * from './api/org';
 export * from './api/buildings';
+export * from './api/leases';
 export * from './enums';
 export * from './ids';

@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { MapPin, Pencil, Plus, Home, DoorOpen, ChevronRight, Clock } from 'lucide-react';
+import { MapPin, Pencil, Plus, Home, DoorOpen, ChevronRight, Clock, UserPlus } from 'lucide-react';
 import { useBuilding, useBuildingUnits, useUpdateBuilding } from '../../lib/api/buildings';
 import { AddBuildingDialog } from './AddBuildingDialog';
 import { AddUnitDialog } from './AddUnitDialog';
+import { CreateLeaseDialog } from './CreateLeaseDialog';
 import { UnitDrawer } from './UnitDrawer';
 import { BuildingMap } from '../../components/domain/BuildingMap';
 import { Skeleton } from '../../components/ui/Skeleton';
@@ -40,7 +41,9 @@ export default function BuildingDetailPage() {
   const [unitFilter, setUnitFilter] = useState<'all' | 'occupied' | 'notice' | 'vacant'>('all');
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isAddUnitOpen, setIsAddUnitOpen] = useState(false);
+  const [isAddLeaseOpen, setIsAddLeaseOpen] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState<UnitSummary | null>(null);
+  const [selectedUnitForLease, setSelectedUnitForLease] = useState<UnitSummary | null>(null);
 
   // Map location editing
   const [mapLat, setMapLat] = useState<number | null>(null);
@@ -183,6 +186,14 @@ export default function BuildingDetailPage() {
           >
             <Pencil className="h-4 w-4 mr-1.5" />
             {t('buildings.editBuilding')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsAddLeaseOpen(true)}
+            className="btn btn--secondary btn--sm"
+          >
+            <UserPlus className="h-4 w-4 mr-1.5" />
+            {t('leases.createLease')}
           </button>
           <button type="button" onClick={() => setIsAddUnitOpen(true)} className="btn btn--primary btn--sm">
             <Plus className="h-4 w-4 mr-1.5" />
@@ -351,7 +362,7 @@ export default function BuildingDetailPage() {
                           {u.label}
                         </button>
                       </td>
-                      <td className="num">{u.floor ?? 1}</td>
+                      <td className="num">{u.floor != null ? u.floor : '—'}</td>
                       <td className="capitalize">{u.type.replace('_', ' ')}</td>
                       <td className="r num font-semibold">{formatMoney(u.defaultRentPoisha)}</td>
                       <td>
@@ -643,6 +654,26 @@ export default function BuildingDetailPage() {
         onClose={() => setIsAddUnitOpen(false)}
       />
 
+      {isAddLeaseOpen && (
+        <CreateLeaseDialog
+          isOpen={isAddLeaseOpen}
+          onClose={() => {
+            setIsAddLeaseOpen(false);
+            setSelectedUnitForLease(null);
+          }}
+          preselectedUnit={selectedUnitForLease}
+          units={units?.filter(
+            (u) => !u.lease || u.lease.status === 'ended' || u.lease.status === 'ended_with_dues',
+          )}
+          onSuccess={() => {
+            setIsAddLeaseOpen(false);
+            setSelectedUnitForLease(null);
+            void refetchUnits();
+            void refetchBuilding();
+          }}
+        />
+      )}
+
       {selectedUnit && (
         <UnitDrawer
           key={selectedUnit.id}
@@ -651,6 +682,11 @@ export default function BuildingDetailPage() {
           unit={selectedUnit}
           isOpen={!!selectedUnit}
           onClose={() => setSelectedUnit(null)}
+          onAddLease={() => {
+            setSelectedUnitForLease(selectedUnit);
+            setSelectedUnit(null);
+            setIsAddLeaseOpen(true);
+          }}
         />
       )}
     </div>

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { clock } from './clock';
+import { clock, getDhakaDateString } from './clock';
 
 describe('clock', () => {
   const originalEnv = process.env.CLOCK_OVERRIDE;
@@ -55,5 +55,19 @@ describe('clock', () => {
     // Reset restores CLOCK_OVERRIDE
     clock.set(null);
     expect(clock.now().toISOString()).toBe('2026-05-01T10:30:00.000Z');
+  });
+
+  describe('getDhakaDateString', () => {
+    it('returns Dhaka calendar date matching UTC+6 offset', () => {
+      // 19:30 UTC on 10 Nov is 01:30 Dhaka time on 11 Nov
+      const date = new Date('2026-11-10T19:30:00.000Z');
+      expect(getDhakaDateString(date)).toBe('2026-11-11');
+    });
+
+    it('returns date for early morning UTC', () => {
+      // 02:00 UTC on 10 Nov is 08:00 Dhaka time on 10 Nov
+      const date = new Date('2026-11-10T02:00:00.000Z');
+      expect(getDhakaDateString(date)).toBe('2026-11-10');
+    });
   });
 });

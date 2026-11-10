@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1700 800" width="1700" height="800" font-family="'Segoe UI', Inter, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1f1f1f"/>
+    </marker>
+  </defs>
+  <rect width="1700" height="800" fill="#ffffff"/>
+  <text x="40" y="52" font-size="28" font-weight="700" fill="#1f1f1f">Tenants &amp; leases, level 0</text>
+  <text x="40" y="82" font-size="16" fill="#3a3a3a">Lease lifecycle, tenant invitations, security deposit accounting, and tenant portal under multi-tenant RLS isolation.</text>
+  <g font-size="15" fill="#3a3a3a">
+    <line x1="1130" y1="36" x2="1190" y2="36" stroke="#1f1f1f" stroke-width="2.4" marker-end="url(#arrow)"/>
+    <text x="1202" y="41">call / read</text>
+    <line x1="1130" y1="62" x2="1190" y2="62" stroke="#1f1f1f" stroke-width="2.4" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <text x="1202" y="67">write / return</text>
+    <rect x="1370" y="24" width="26" height="18" rx="3" fill="#FEC8C3"/><text x="1406" y="39">people / external</text>
+    <rect x="1530" y="24" width="26" height="18" rx="7" fill="#BFE3FD"/><text x="1566" y="39">our code</text>
+    <circle cx="1383" cy="62" r="9" fill="#E3CCFD"/><text x="1406" y="67">data store</text>
+    <rect x="1530" y="53" width="26" height="18" rx="3" fill="#C9F2D6"/><text x="1566" y="67">output</text>
+  </g>
+  <g fill="none" stroke="#1f1f1f" stroke-width="2.4">
+    <path d="M250,370 H514" marker-end="url(#arrow)"/>
+    <path d="M514,410 H254" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <path d="M250,530 H514" marker-end="url(#arrow)"/>
+    <path d="M514,570 H254" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <path d="M1084,400 H1374" marker-end="url(#arrow)"/>
+    <path d="M740,612 V672" marker-end="url(#arrow)"/>
+    <path d="M860,672 V614" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+  </g>
+  <rect x="40" y="300" width="210" height="140" rx="6" fill="#FEC8C3"/>
+  <text x="145" y="345" font-size="20" font-weight="700" fill="#1f1f1f" text-anchor="middle">Landlord &amp; Staff</text>
+  <text x="145" y="375" font-size="15" fill="#3a3a3a" text-anchor="middle">web client / PWA</text>
+  <text x="145" y="397" font-size="15" fill="#3a3a3a" text-anchor="middle">lease stepper &amp; deposit ledger</text>
+  <text x="145" y="419" font-size="14" fill="#666666" text-anchor="middle">(caretakers read-only)</text>
+  <text x="382" y="360" font-size="16" fill="#1f1f1f" text-anchor="middle">create lease &amp; record deposit</text>
+  <text x="382" y="435" font-size="16" fill="#1f1f1f" text-anchor="middle">lease DTO &amp; audit history</text>
+  <rect x="40" y="490" width="210" height="130" rx="6" fill="#FEC8C3"/>
+  <text x="145" y="535" font-size="20" font-weight="700" fill="#1f1f1f" text-anchor="middle">Tenant User</text>
+  <text x="145" y="565" font-size="15" fill="#3a3a3a" text-anchor="middle">mobile-first PWA</text>
+  <text x="145" y="587" font-size="15" fill="#3a3a3a" text-anchor="middle">accept invite / /t/lease</text>
+  <text x="382" y="525" font-size="16" fill="#1f1f1f" text-anchor="middle">accept invite &amp; view lease</text>
+  <text x="382" y="595" font-size="16" fill="#1f1f1f" text-anchor="middle">active lease &amp; rent details</text>
+  <rect x="520" y="240" width="560" height="370" rx="56" fill="#BFE3FD"/>
+  <text x="800" y="300" font-size="24" font-weight="700" fill="#1f1f1f" text-anchor="middle">Tenants &amp; Leases Service</text>
+  <text x="800" y="335" font-size="15" fill="#3a3a3a" text-anchor="middle">enforce org ownership &amp; single active lease per unit constraint</text>
+  <text x="800" y="360" font-size="15" fill="#3a3a3a" text-anchor="middle">create pending lease, recurring charges &amp; cryptographically hashed invite</text>
+  <text x="800" y="385" font-size="15" fill="#3a3a3a" text-anchor="middle">enqueue transactional outbox invitation message with 7-day expiry</text>
+  <text x="800" y="410" font-size="15" fill="#3a3a3a" text-anchor="middle">atomic invitation acceptance: link user membership &amp; activate lease</text>
+  <text x="800" y="435" font-size="15" fill="#3a3a3a" text-anchor="middle">append-only deposit ledger: received, applied to dues, refunded</text>
+  <text x="800" y="460" font-size="15" fill="#3a3a3a" text-anchor="middle">calculate held security deposit balance (received - applied - refunded)</text>
+  <text x="800" y="485" font-size="15" fill="#3a3a3a" text-anchor="middle">tenant portal /t/lease view restricted to current active lease</text>
+  <text x="800" y="510" font-size="15" fill="#3a3a3a" text-anchor="middle">tenant historical audit trail: all past/present leases, bills &amp; payments</text>
+  <text x="800" y="535" font-size="15" fill="#3a3a3a" text-anchor="middle">support invite resend with revocation of previous pending tokens</text>
+  <rect x="1380" y="340" width="220" height="130" rx="6" fill="#C9F2D6"/>
+  <text x="1490" y="380" font-size="18" font-weight="700" fill="#1f1f1f" text-anchor="middle">Downstream Systems</text>
+  <text x="1490" y="410" font-size="14" fill="#3a3a3a" text-anchor="middle">Billing monthly run (V8)</text>
+  <text x="1490" y="430" font-size="14" fill="#3a3a3a" text-anchor="middle">Payment processing (V9)</text>
+  <text x="1490" y="450" font-size="14" fill="#3a3a3a" text-anchor="middle">Move-out settlement (V15)</text>
+  <text x="1232" y="390" font-size="16" fill="#1f1f1f" text-anchor="middle">lease rent &amp; charges</text>
+  <circle cx="800" cy="735" r="55" fill="#E3CCFD"/>
+  <text x="800" y="730" font-size="17" font-weight="700" fill="#1f1f1f" text-anchor="middle">Postgres 17</text>
+  <text x="800" y="750" font-size="13" fill="#3a3a3a" text-anchor="middle">RLS &amp; Outbox</text>
+</svg>

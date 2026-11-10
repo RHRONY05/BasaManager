@@ -27,6 +27,7 @@ import { emitSessionRevoked } from '../../realtime/emit';
 import { getGoogleClient, encryptOAuthState, decryptOAuthState } from './google';
 import { findInvitationByTokenHash } from '../../config/db';
 import { createLogger } from '../../lib/logger';
+import { linkTenantToLease } from '../leases/lease-activation';
 
 const logger = createLogger({ level: 'info' });
 
@@ -835,14 +836,49 @@ export class AuthService {
                 throw new ApiError(ErrorCode.TOKEN_INVALID, 'Invitation already accepted or expired');
               }
 
-              const m = await tx.membership.create({
-                data: {
+              const existingMembership = await tx.membership.findFirst({
+                where: {
                   orgId: inv.orgId,
                   userId: u.id,
-                  role: inv.role,
-                  status: 'active',
                 },
               });
+
+              // Blocker 1: Prevent staff member (landlord/caretaker) from being demoted to tenant
+              if (
+                existingMembership &&
+                (existingMembership.role === 'landlord' || existingMembership.role === 'caretaker') &&
+                inv.role === 'tenant'
+              ) {
+                throw ApiError.conflict(
+                  'Cannot accept tenant invite: user is already a staff member in this organisation',
+                );
+              }
+
+              let membershipId: string;
+              if (existingMembership) {
+                const updatedM = await tx.membership.update({
+                  where: { id: existingMembership.id },
+                  data: {
+                    status: 'active',
+                    removedAt: null,
+                    role: inv.role,
+                  },
+                });
+                membershipId = updatedM.id;
+                await tx.caretakerBuilding.deleteMany({
+                  where: { orgId: inv.orgId, membershipId },
+                });
+              } else {
+                const m = await tx.membership.create({
+                  data: {
+                    orgId: inv.orgId,
+                    userId: u.id,
+                    role: inv.role,
+                    status: 'active',
+                  },
+                });
+                membershipId = m.id;
+              }
 
               // Issue #13 fix: Assign caretaker buildings on Google acceptance
               if (inv.role === 'caretaker' && inv.buildingIds && inv.buildingIds.length > 0) {
@@ -850,11 +886,15 @@ export class AuthService {
                   await tx.caretakerBuilding.create({
                     data: {
                       orgId: inv.orgId,
-                      membershipId: m.id,
+                      membershipId,
                       buildingId,
                     },
                   });
                 }
+              }
+
+              if (inv.role === 'tenant') {
+                await linkTenantToLease(tx, inv, membershipId, now);
               }
 
               return u;

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, Plus, Trash2, Home, DoorOpen, AlertCircle } from 'lucide-react';
+import { X, Plus, Trash2, Home, DoorOpen, AlertCircle, FileText, ArrowRight } from 'lucide-react';
 import { useUpdateUnit, useArchiveUnit } from '../../lib/api/buildings';
+import { PrefetchLink } from '../../lib/router/PrefetchLink';
 import type { UnitSummary, UnitCharge } from '@bm/shared';
 
 export interface UnitDrawerProps {
@@ -10,9 +11,10 @@ export interface UnitDrawerProps {
   unit: UnitSummary | null;
   isOpen: boolean;
   onClose: () => void;
+  onAddLease?: () => void;
 }
 
-export function UnitDrawer({ buildingId, buildingName, unit, isOpen, onClose }: UnitDrawerProps) {
+export function UnitDrawer({ buildingId, buildingName, unit, isOpen, onClose, onAddLease }: UnitDrawerProps) {
   const { t } = useTranslation();
   const updateMutation = useUpdateUnit(buildingId);
   const archiveMutation = useArchiveUnit(buildingId);
@@ -87,7 +89,8 @@ export function UnitDrawer({ buildingId, buildingName, unit, isOpen, onClose }: 
         <header className="drawer__head">
           <div className="flex-1 min-w-0">
             <p className="text-xs text-fg-muted font-medium">
-              {buildingName} · Floor {unit.floor ?? 1}
+              {buildingName}
+              {unit.floor != null ? ` · ${t('units.floor')} ${unit.floor}` : ''}
             </p>
             <h2 className="text-xl font-bold text-fg truncate">Unit {unit.label}</h2>
             <div className="mt-1">
@@ -138,7 +141,7 @@ export function UnitDrawer({ buildingId, buildingName, unit, isOpen, onClose }: 
             </div>
             <div className="dl__row">
               <dt>{t('units.floor')}</dt>
-              <dd className="num">{unit.floor ?? 1}</dd>
+              <dd className="num">{unit.floor != null ? unit.floor : '—'}</dd>
             </div>
           </dl>
 
@@ -202,18 +205,50 @@ export function UnitDrawer({ buildingId, buildingName, unit, isOpen, onClose }: 
 
           {/* Current Lease Summary / Vacant Action */}
           <section className="card card--tight">
-            <div className="card__head">
+            <div className="card__head flex items-center justify-between">
               <h3 className="font-semibold text-sm text-fg">{t('units.currentLease')}</h3>
+              {isOccupied && unit.lease && (
+                <span className="badge badge--success text-xs">
+                  {t(`leases.status.${unit.lease.status}`, { defaultValue: unit.lease.status })}
+                </span>
+              )}
             </div>
-            {isOccupied ? (
-              <div className="space-y-2 text-sm">
-                <p className="text-fg-secondary">Active lease in progress.</p>
+            {isOccupied && unit.lease ? (
+              <div className="p-4 space-y-3">
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-fg-muted">{t('leases.monthlyRent')}:</span>
+                    <span className="num font-bold">
+                      {formatMoney(unit.lease.monthlyRentPoisha ?? unit.defaultRentPoisha)}
+                    </span>
+                  </div>
+                  {unit.lease.tenantName ? (
+                    <div className="flex justify-between">
+                      <span className="text-fg-muted">{t('leases.tenants')}:</span>
+                      <span className="font-medium text-fg">{unit.lease.tenantName}</span>
+                    </div>
+                  ) : null}
+                </div>
+                {unit.lease.id && (
+                  <PrefetchLink
+                    to={`/l/leases/${unit.lease.id}`}
+                    className="btn btn--secondary btn--sm w-full"
+                  >
+                    <FileText className="h-4 w-4 mr-1.5" />
+                    {t('leases.openLease')}
+                    <ArrowRight className="h-4 w-4 ml-1.5" />
+                  </PrefetchLink>
+                )}
               </div>
             ) : (
-              <div className="py-2 text-center space-y-2">
+              <div className="p-4 py-3 text-center space-y-3">
                 <p className="text-sm text-fg-muted">
                   {t('units.statusVacant')} — unit is ready for leasing.
                 </p>
+                <button type="button" onClick={onAddLease} className="btn btn--primary btn--sm w-full">
+                  <Plus className="h-4 w-4 mr-1.5" />
+                  {t('leases.createLease')}
+                </button>
               </div>
             )}
           </section>

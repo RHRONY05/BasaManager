@@ -47,10 +47,10 @@ export function OrgSwitcher({ className = '' }: OrgSwitcherProps) {
   if (memberships.length <= 1) {
     return (
       <div
-        className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-fg min-w-0 ${className}`}
+        className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 text-sm font-semibold text-fg min-w-0 ${className}`}
         data-testid="org-display"
       >
-        <span className="truncate max-w-48" title={activeOrg?.orgName ?? ''}>
+        <span className="truncate max-w-28 sm:max-w-48" title={activeOrg?.orgName ?? ''}>
           {activeOrg?.orgName ?? ''}
         </span>
       </div>

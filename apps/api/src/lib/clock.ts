@@ -53,3 +53,11 @@ export class Clock {
 }
 
 export const clock = new Clock();
+
+/**
+ * Returns the calendar date in Asia/Dhaka formatted as YYYY-MM-DD.
+ * Bangladesh is UTC+6 without daylight saving time.
+ */
+export function getDhakaDateString(date: Date = clock.now()): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Dhaka' }).format(date);
+}

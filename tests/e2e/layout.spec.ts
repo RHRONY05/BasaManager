@@ -4,11 +4,16 @@ import { ROUTE_PATHS } from '../../apps/web/src/lib/router/preload';
 import { STRESS_BUILDING, STRESS_IDS, STRESS_NAMES } from '../fixtures/stress';
 import {
   GOOD_PASSWORD,
+  apiContext,
   clearRateLimits,
   createVerifiedLandlord,
+  csrfOf,
   insertInvite,
   uiLogin,
   uniqueEmail,
+  waitForMail,
+  tokenFromMail,
+  withOwnerDb,
 } from '../helpers/e2e-auth';
 
 /**
@@ -198,6 +203,172 @@ test.describe('Auth pages layout (stress states)', () => {
   });
 
   for (const scenario of AUTH_SCENARIOS) {
+    for (const colorScheme of COLOR_SCHEMES) {
+      for (const lng of LOCALES) {
+        test(`${scenario.name} ${colorScheme} lng=${lng}`, async ({ page }) => {
+          await page.emulateMedia({ colorScheme });
+          await page.setViewportSize({ width: AUTH_WIDTHS[0]!, height: 844 });
+          await scenario.setup(page, lng === 'en-XA' ? '?lng=en-XA' : '');
+
+          for (const width of AUTH_WIDTHS) {
+            await page.setViewportSize({ width, height: 844 });
+            const violations = await auditLayout(page);
+            if (violations.length > 0) {
+              console.error(
+                `Layout violations in "${scenario.name}" (${width}px, ${colorScheme}, ${lng}):`,
+                JSON.stringify(violations, null, 2),
+              );
+            }
+            expect(violations, `${scenario.name} at ${width}px`).toEqual([]);
+          }
+        });
+      }
+    }
+  }
+});
+
+test.describe('V7 Lease & tenant pages layout (stress states)', () => {
+  let llUser: { email: string; password: string };
+  let tenantUser: { email: string; password: string };
+  let leaseId = '';
+  let membershipId = '';
+  let bldId = '';
+
+  test.beforeAll(async () => {
+    llUser = await createVerifiedLandlord({
+      fullName: STRESS_NAMES[0],
+      email: uniqueEmail('stress-landlord'),
+      orgName: STRESS_BUILDING,
+    });
+
+    const ctx = await apiContext();
+    try {
+      const loginRes = await ctx.post('/api/auth/login', {
+        data: { email: llUser.email, password: llUser.password },
+      });
+      expect(loginRes.status()).toBe(200);
+
+      const csrf = await csrfOf(ctx);
+      const meRes = await ctx.get('/api/me');
+      const meData = await meRes.json();
+      const orgId = meData.data?.memberships?.[0]?.orgId;
+      expect(orgId).toBeTruthy();
+
+      const bldRes = await ctx.post('/api/buildings', {
+        data: {
+          name: STRESS_BUILDING,
+          address: 'Road 11, Block D, Banani, Dhaka',
+          area: 'Banani',
+          city: 'Dhaka',
+        },
+        headers: { 'X-CSRF-Token': csrf, 'X-Org-Id': orgId },
+      });
+      expect(bldRes.status()).toBe(201);
+      bldId = (await bldRes.json()).data.id;
+
+      const unitRes = await ctx.post(`/api/buildings/${bldId}/units`, {
+        data: {
+          label: '5A',
+          floor: 5,
+          type: 'family_flat',
+          defaultRentPoisha: 2500000,
+          electricityMode: 'submeter',
+        },
+        headers: { 'X-CSRF-Token': csrf, 'X-Org-Id': orgId },
+      });
+      expect(unitRes.status()).toBe(201);
+      const unitId = (await unitRes.json()).data.id;
+
+      const tenantEmail = uniqueEmail('stress-tenant');
+      const leaseRes = await ctx.post('/api/leases', {
+        data: {
+          unitId,
+          tenantEmail,
+          tenantName: STRESS_NAMES[1],
+          startDate: '2026-01-01',
+          monthlyRentPoisha: 2500000,
+          depositPoisha: 5000000,
+          householdSize: 4,
+          charges: [
+            { name: 'Generator & Security', amountPoisha: 120000 },
+            { name: 'Common Water & Cleaning', amountPoisha: 80000 },
+          ],
+        },
+        headers: { 'X-CSRF-Token': csrf, 'X-Org-Id': orgId },
+      });
+      expect(leaseRes.status()).toBe(201);
+      leaseId = (await leaseRes.json()).data.id;
+
+      const mailBody = await waitForMail(tenantEmail, /invit/i);
+      const inviteToken = tokenFromMail(mailBody, '/invite');
+      const tenantCtx = await apiContext();
+      try {
+        const acceptRes = await tenantCtx.post(`/api/invites/${inviteToken}/accept`, {
+          data: { fullName: STRESS_NAMES[1], password: GOOD_PASSWORD },
+        });
+        expect(acceptRes.status()).toBe(200);
+      } finally {
+        await tenantCtx.dispose();
+      }
+      tenantUser = { email: tenantEmail, password: GOOD_PASSWORD };
+
+      const memRows = await withOwnerDb(async (db) => {
+        const r = await db.query(
+          `select m.id from memberships m join users u on u.id=m.user_id where u.email=$1 and m.org_id=$2`,
+          [tenantEmail, orgId],
+        );
+        return r.rows as { id: string }[];
+      });
+      membershipId = memRows[0]!.id;
+    } finally {
+      await ctx.dispose();
+    }
+  });
+
+  const LEASE_SCENARIOS = [
+    {
+      name: 'lease detail page with stress content',
+      setup: async (page: Page, q: string) => {
+        await uiLogin(page, llUser.email, llUser.password);
+        await page.goto(`/l/leases/${leaseId}${q}`);
+        await page.locator('h1').waitFor();
+      },
+    },
+    {
+      name: 'tenant history page with stress content',
+      setup: async (page: Page, q: string) => {
+        await uiLogin(page, llUser.email, llUser.password);
+        await page.goto(`/l/tenants/${membershipId}${q}`);
+        await page.locator('h1').waitFor();
+      },
+    },
+    {
+      name: 'tenant portal active lease with stress content',
+      setup: async (page: Page, q: string) => {
+        await uiLogin(page, tenantUser.email, tenantUser.password, /\/t$/);
+        await page.goto(`/t/lease${q}`);
+        await page.locator('h1').waitFor();
+      },
+    },
+    {
+      name: 'tenants directory list with stress content',
+      setup: async (page: Page, q: string) => {
+        await uiLogin(page, llUser.email, llUser.password);
+        await page.goto(`/l/tenants${q}`);
+        await page.locator('h1').waitFor();
+      },
+    },
+    {
+      name: 'create lease stepper dialog with stress content',
+      setup: async (page: Page, q: string) => {
+        await uiLogin(page, llUser.email, llUser.password);
+        await page.goto(`/l/leases/new${q}`);
+        await page.locator('h2').waitFor();
+      },
+    },
+  ];
+
+  for (const scenario of LEASE_SCENARIOS) {
     for (const colorScheme of COLOR_SCHEMES) {
       for (const lng of LOCALES) {
         test(`${scenario.name} ${colorScheme} lng=${lng}`, async ({ page }) => {

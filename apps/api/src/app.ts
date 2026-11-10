@@ -17,6 +17,7 @@ import { createUsersRoutes } from './modules/users/users.routes';
 import { createInvitesRoutes } from './modules/invites/invites.routes';
 import { createOrgsRoutes } from './modules/orgs/orgs.routes';
 import { createBuildingsRoutes, createUnitsRoutes } from './modules/buildings/buildings.routes';
+import { createLeasesRoutes, createTenantsRoutes } from './modules/leases/leases.routes';
 
 export interface AppDeps {
   env: Env;
@@ -105,6 +106,22 @@ export function createApp(deps: AppDeps): Express {
   app.use(
     '/api/units',
     createUnitsRoutes({
+      env: deps.env,
+      prisma: deps.prisma,
+      redis: deps.redis,
+    }),
+  );
+  app.use(
+    '/api/leases',
+    createLeasesRoutes({
+      env: deps.env,
+      prisma: deps.prisma,
+      redis: deps.redis,
+    }),
+  );
+  app.use(
+    '/api/tenants',
+    createTenantsRoutes({
       env: deps.env,
       prisma: deps.prisma,
       redis: deps.redis,

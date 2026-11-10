@@ -66,7 +66,7 @@ Coverage thresholds (CI fails below): `packages/domain` **95%** lines and branch
 |---|---|
 | `auth.spec.ts` | signup (email from Mailpit) → verify → onboarding; logout; login errors; forgot/reset |
 | `onboarding.spec.ts` | landlord adds building, units with charges, billing settings; map pin (desktop) |
-| `tenant-invite.spec.ts` | landlord creates lease → tenant accepts invite (new account) → sees lease |
+| `tenant-invite.spec.ts` | landlord creates lease → refusal of second lease on same unit (409) → tenant accepts invite → sees lease → landlord records deposit |
 | `billing.spec.ts` | clock to bill day → drafts → caretaker enters readings → landlord issues → tenant sees explained bill |
 | `pay-online.spec.ts` | tenant pays with mock gateway → result page → paid + receipt download; failed/cancel paths |
 | `pay-claim.spec.ts` | tenant submits bKash claim with photo → caretaker confirms (live update on tenant home) / rejects with reason |
