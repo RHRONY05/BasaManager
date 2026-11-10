@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiFetch } from './client';
+import { apiFetch, ApiRequestError } from './client';
 import { keys } from './keys';
 import type {
   CreateLeaseInput,
@@ -34,7 +34,16 @@ export function useActiveLease(unitId?: string) {
   const url = unitId ? `/api/leases/active?unitId=${encodeURIComponent(unitId)}` : '/api/leases/active';
   return useQuery({
     queryKey: keys.activeLease(unitId),
-    queryFn: () => apiFetch<LeaseDto>(url),
+    queryFn: async () => {
+      try {
+        return await apiFetch<LeaseDto>(url);
+      } catch (err) {
+        if (err instanceof ApiRequestError && err.status === 404) {
+          return null;
+        }
+        throw err;
+      }
+    },
   });
 }
 

@@ -60,11 +60,53 @@ export async function linkTenantToLease(
 /**
  * Daily job / scheduled task to activate any accepted pending leases
  * whose start date has arrived in Asia/Dhaka.
+ * Follows 03-DATABASE.md convention: iterates per-org using db.$tx({ orgId })
+ * so RLS is cleanly set and respected across all roles and environments.
  */
-export async function activateDueLeases(prisma: Db, now: Date = clock.now()): Promise<number> {
+export async function activateDueLeases(
+  prisma: Db,
+  now: Date = clock.now(),
+  targetOrgId?: string | null,
+): Promise<number> {
   const todayDhaka = getDhakaDateString(now);
 
-  return await prisma.$tx(
+  const activateForOrg = async (orgId: string): Promise<number> => {
+    return await prisma.$tx(
+      {
+        orgId,
+        userId: '00000000-0000-0000-0000-000000000000',
+        role: null,
+        isAdmin: true,
+      },
+      async (tx) => {
+        const leases = await tx.$queryRaw<Array<{ id: string }>>`
+          SELECT l.id
+          FROM leases l
+          WHERE l.status = 'pending'
+            AND EXISTS (SELECT 1 FROM lease_tenants lt WHERE lt.lease_id = l.id)
+            AND l.start_date <= ${todayDhaka}::date
+        `;
+
+        let activated = 0;
+        for (const l of leases) {
+          await tx.$executeRaw`
+            UPDATE leases
+            SET status = 'active'
+            WHERE id = ${l.id}::uuid
+          `;
+          activated++;
+        }
+        return activated;
+      },
+    );
+  };
+
+  if (targetOrgId) {
+    return await activateForOrg(targetOrgId);
+  }
+
+  // Find all organizations (accessible with app.is_admin = true)
+  const orgs = await prisma.$tx(
     {
       orgId: null,
       userId: '00000000-0000-0000-0000-000000000000',
@@ -72,24 +114,13 @@ export async function activateDueLeases(prisma: Db, now: Date = clock.now()): Pr
       isAdmin: true,
     },
     async (tx) => {
-      const leases = await tx.$queryRaw<Array<{ id: string; org_id: string; start_date: Date }>>`
-        SELECT l.id, l.org_id, l.start_date
-        FROM leases l
-        WHERE l.status = 'pending'
-          AND EXISTS (SELECT 1 FROM lease_tenants lt WHERE lt.lease_id = l.id)
-          AND (l.start_date AT TIME ZONE 'Asia/Dhaka')::date <= ${todayDhaka}::date
-      `;
-
-      let activated = 0;
-      for (const l of leases) {
-        await tx.$executeRaw`
-          UPDATE leases
-          SET status = 'active'
-          WHERE id = ${l.id}::uuid
-        `;
-        activated++;
-      }
-      return activated;
+      return await tx.$queryRaw<Array<{ id: string }>>`SELECT id FROM organizations`;
     },
   );
+
+  let totalActivated = 0;
+  for (const org of orgs) {
+    totalActivated += await activateForOrg(org.id);
+  }
+  return totalActivated;
 }

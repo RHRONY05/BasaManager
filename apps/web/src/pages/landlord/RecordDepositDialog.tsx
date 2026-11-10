@@ -13,6 +13,8 @@ export interface RecordDepositDialogProps {
   onSuccess?: () => void;
 }
 
+const MONEY_REGEX = /^\d+(\.\d{1,2})?$/;
+
 export function RecordDepositDialog({
   leaseId,
   isOpen,
@@ -36,7 +38,7 @@ export function RecordDepositDialog({
     setError(null);
 
     const poisha = parseTakaToPoisha(amount);
-    if (!amount.trim() || poisha <= 0) {
+    if (!amount.trim() || !MONEY_REGEX.test(amount) || poisha <= 0) {
       setError(t('leases.validation.amountGreaterThanZero'));
       return;
     }

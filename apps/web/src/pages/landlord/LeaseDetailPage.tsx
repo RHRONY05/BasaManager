@@ -233,11 +233,16 @@ export default function LeaseDetailPage() {
                 <div className="dl__row">
                   <dt>{t('leases.reviewUnit')}</dt>
                   <dd>
-                    {t('leases.unitFloorInfo', {
-                      label: lease.unit?.label ?? '—',
-                      floor: lease.unit?.floor ?? 1,
-                      building: lease.unit?.buildingName ?? '',
-                    })}
+                    {lease.unit?.floor != null
+                      ? t('leases.unitFloorInfo', {
+                          label: lease.unit?.label ?? '—',
+                          floor: lease.unit.floor,
+                          building: lease.unit?.buildingName ?? '',
+                        })
+                      : t('leases.unitInfo', {
+                          label: lease.unit?.label ?? '—',
+                          building: lease.unit?.buildingName ?? '',
+                        })}
                   </dd>
                 </div>
                 <div className="dl__row">
@@ -362,9 +367,7 @@ export default function LeaseDetailPage() {
         isOpen={isDepositDialogOpen}
         onClose={() => setIsDepositDialogOpen(false)}
         defaultAmount={
-          lease.depositPoisha > lease.depositHeldPoisha
-            ? lease.depositPoisha - lease.depositHeldPoisha
-            : lease.depositPoisha
+          lease.depositPoisha > lease.depositHeldPoisha ? lease.depositPoisha - lease.depositHeldPoisha : 0
         }
         onSuccess={() => void refetch()}
       />

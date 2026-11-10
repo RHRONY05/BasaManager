@@ -1,8 +1,10 @@
 import { loadEnv } from '@bm/api/config/env';
 import { createRedis } from '@bm/api/config/redis';
+import { createPrisma } from '@bm/api/config/db';
 import { createLogger } from '@bm/api/lib/logger';
 import { initSentry } from '@bm/api/config/sentry';
 import { startWorker } from './boot';
+import { jobs } from './jobs';
 
 async function bootstrap() {
   let env;
@@ -18,8 +20,9 @@ async function bootstrap() {
   const logger = createLogger({ level: env.LOG_LEVEL });
 
   const redis = createRedis(env.REDIS_URL);
+  const prisma = createPrisma(env.DATABASE_URL);
 
-  const worker = await startWorker({ env, logger, redis, exit: (code) => process.exit(code) });
+  const worker = await startWorker({ env, logger, redis, prisma, jobs, exit: (code) => process.exit(code) });
   if (!worker) return;
 
   // Graceful shutdown

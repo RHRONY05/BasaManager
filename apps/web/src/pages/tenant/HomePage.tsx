@@ -2,12 +2,17 @@ import { useTranslation } from 'react-i18next';
 import { Home, FileText, ArrowRight } from 'lucide-react';
 import { useActiveLease } from '../../lib/api/leases';
 import { Skeleton } from '../../components/ui/Skeleton';
+import { ErrorState } from '../../components/ui/ErrorState';
 import { PrefetchLink } from '../../lib/router/PrefetchLink';
 import { formatMoney } from '../../lib/format';
 
 export default function HomePage() {
   const { t } = useTranslation();
-  const { data: lease, isPending } = useActiveLease();
+  const { data: lease, isPending, isError, error, refetch } = useActiveLease();
+
+  if (isError) {
+    return <ErrorState message={error?.message ?? t('status.error')} onRetry={() => void refetch()} />;
+  }
 
   return (
     <div className="space-y-6 max-w-xl min-w-0">

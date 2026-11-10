@@ -350,6 +350,22 @@ test.describe('V7 Lease & tenant pages layout (stress states)', () => {
         await page.locator('h1').waitFor();
       },
     },
+    {
+      name: 'tenants directory list with stress content',
+      setup: async (page: Page, q: string) => {
+        await uiLogin(page, llUser.email, llUser.password);
+        await page.goto(`/l/tenants${q}`);
+        await page.locator('h1').waitFor();
+      },
+    },
+    {
+      name: 'create lease stepper dialog with stress content',
+      setup: async (page: Page, q: string) => {
+        await uiLogin(page, llUser.email, llUser.password);
+        await page.goto(`/l/leases/new${q}`);
+        await page.locator('h2').waitFor();
+      },
+    },
   ];
 
   for (const scenario of LEASE_SCENARIOS) {

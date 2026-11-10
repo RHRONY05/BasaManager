@@ -13,6 +13,7 @@ import {
 } from '../helpers/factories';
 import { buildTestApp, resetAll, newAgent, sha256, uniqEmail, PASSWORD, type TestCtx } from '../helpers/auth';
 import { actorIn, landlordOf, type Actor } from '../helpers/roles';
+import { activateDueLeases } from '../../src/modules/leases/lease-activation';
 
 const PAST = '2020-01-01';
 const FUTURE = '2099-01-01';
@@ -711,6 +712,63 @@ describe('V7: leases, deposit ledger, tenant invites, tenant history', () => {
         expect(res.status).toBe(404);
         expect(res.body.error.code).toBe(ErrorCode.NOT_FOUND);
       }
+    });
+  });
+
+  describe('activateDueLeases scheduled job', () => {
+    it('activates pending accepted leases whose start date has arrived in Dhaka', async () => {
+      const leaseId = await makeLease(org.id, unit, org.landlordUserId, {
+        status: 'pending',
+        startDate: '2025-06-01',
+      });
+      await tenantOn(leaseId);
+
+      // Before start date (e.g. 2025-05-31 in Dhaka)
+      const countBefore = await activateDueLeases(ctx.prisma, new Date('2025-05-31T12:00:00.000Z'));
+      expect(countBefore).toBe(0);
+
+      const rowsBefore = await q<{ status: string }>('select status from leases where id = $1', [leaseId]);
+      expect(rowsBefore[0]?.status).toBe('pending');
+
+      // On start date (2025-06-01 in Dhaka)
+      const countOn = await activateDueLeases(ctx.prisma, new Date('2025-06-01T04:00:00.000Z'));
+      expect(countOn).toBe(1);
+
+      const rowsAfter = await q<{ status: string }>('select status from leases where id = $1', [leaseId]);
+      expect(rowsAfter[0]?.status).toBe('active');
+
+      // Idempotency check: running again activates 0
+      const countAgain = await activateDueLeases(ctx.prisma, new Date('2025-06-01T04:00:00.000Z'));
+      expect(countAgain).toBe(0);
+    });
+
+    it('activates lease when clock is 19:30Z and lease start date is the next calendar day (Asia/Dhaka)', async () => {
+      const leaseId = await makeLease(org.id, unit2, org.landlordUserId, {
+        status: 'pending',
+        startDate: '2025-07-15',
+      });
+      await tenantOn(leaseId);
+
+      // 19:30 UTC on 2025-07-14 is 01:30 AM on 2025-07-15 in Asia/Dhaka (+06:00)
+      const dhakaNextDayInUtc = new Date('2025-07-14T19:30:00.000Z');
+      const count = await activateDueLeases(ctx.prisma, dhakaNextDayInUtc);
+      expect(count).toBe(1);
+
+      const rows = await q<{ status: string }>('select status from leases where id = $1', [leaseId]);
+      expect(rows[0]?.status).toBe('active');
+    });
+
+    it('does not activate pending leases with no tenants attached', async () => {
+      const leaseId = await makeLease(org.id, otherUnit, org.landlordUserId, {
+        status: 'pending',
+        startDate: '2025-01-01',
+      });
+      // No tenant accepted yet
+      const count = await activateDueLeases(ctx.prisma, new Date('2025-06-01T12:00:00.000Z'));
+      expect(count).toBe(0);
+
+      const rows = await q<{ status: string }>('select status from leases where id = $1', [leaseId]);
+      expect(rows[0]?.status).toBe('pending');
     });
   });
 });

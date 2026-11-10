@@ -362,7 +362,7 @@ export default function BuildingDetailPage() {
                           {u.label}
                         </button>
                       </td>
-                      <td className="num">{u.floor ?? 1}</td>
+                      <td className="num">{u.floor != null ? u.floor : '—'}</td>
                       <td className="capitalize">{u.type.replace('_', ' ')}</td>
                       <td className="r num font-semibold">{formatMoney(u.defaultRentPoisha)}</td>
                       <td>

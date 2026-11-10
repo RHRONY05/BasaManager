@@ -52,15 +52,17 @@ export default function TenantsPage() {
           type="search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by tenant, unit or building…"
+          placeholder={t('leases.searchPlaceholder')}
+          aria-label={t('leases.searchPlaceholder')}
           className="input flex-1"
         />
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
+          aria-label={t('leases.allStatuses')}
           className="select sm:w-48"
         >
-          <option value="">All statuses</option>
+          <option value="">{t('leases.allStatuses')}</option>
           <option value="pending">{t('leases.status.pending')}</option>
           <option value="active">{t('leases.status.active')}</option>
           <option value="notice">{t('leases.status.notice')}</option>
@@ -79,7 +81,7 @@ export default function TenantsPage() {
           <EmptyState title={t('tenantHistory.noLeases')} description="" />
         </div>
       ) : (
-        <div className="table-wrap">
+        <div className="table-wrap overflow-x-auto" data-scroll-x>
           <table className="table">
             <thead>
               <tr>

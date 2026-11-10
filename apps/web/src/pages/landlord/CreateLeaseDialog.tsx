@@ -20,6 +20,8 @@ interface ChargeRow {
   amount: string;
 }
 
+const MONEY_REGEX = /^\d+(\.\d{1,2})?$/;
+
 export function CreateLeaseDialog({
   isOpen,
   onClose,
@@ -115,13 +117,24 @@ export function CreateLeaseDialog({
         setError(t('leases.validation.startDateRequired'));
         return false;
       }
-      if (monthlyRent === '' || Number(monthlyRent) < 0) {
-        setError(t('leases.validation.rentNonNegative'));
+      if (!monthlyRent || !MONEY_REGEX.test(monthlyRent)) {
+        setError(t('leases.validation.rentInvalid'));
         return false;
       }
-      if (deposit === '' || Number(deposit) < 0) {
-        setError(t('leases.validation.depositNonNegative'));
+      if (!deposit || !MONEY_REGEX.test(deposit)) {
+        setError(t('leases.validation.depositInvalid'));
         return false;
+      }
+    } else if (currentStep === 3) {
+      for (const ch of charges) {
+        if (!ch.name.trim()) {
+          setError(t('leases.validation.chargeNameRequired'));
+          return false;
+        }
+        if (!ch.amount || !MONEY_REGEX.test(ch.amount)) {
+          setError(t('leases.validation.chargeAmountInvalid'));
+          return false;
+        }
       }
     }
     return true;
@@ -144,7 +157,7 @@ export function CreateLeaseDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateStep(1) || !validateStep(2)) return;
+    if (!validateStep(1) || !validateStep(2) || !validateStep(3)) return;
 
     setError(null);
     try {
@@ -202,7 +215,7 @@ export function CreateLeaseDialog({
         </div>
 
         {/* Stepper Progress */}
-        <div className="flex items-center gap-2 py-2" aria-label="Progress steps">
+        <div className="flex items-center gap-2 py-2" aria-label={t('leases.progressSteps')}>
           {[1, 2, 3, 4].map((s) => (
             <div
               key={s}
@@ -238,7 +251,9 @@ export function CreateLeaseDialog({
                   >
                     {units.map((u) => (
                       <option key={u.id} value={u.id}>
-                        Unit {u.label} (Floor {u.floor ?? 1})
+                        {u.floor != null
+                          ? t('leases.unitFloorWithNumber', { label: u.label, floor: u.floor })
+                          : t('leases.unitWithLabel', { label: u.label })}
                       </option>
                     ))}
                   </select>
@@ -479,7 +494,7 @@ export function CreateLeaseDialog({
                 key="step-btn-back"
                 type="button"
                 onClick={handleBack}
-                className="btn btn--secondary btn--sm"
+                className="btn btn--secondary min-h-tap"
               >
                 <ArrowLeft className="h-4 w-4 mr-1.5" />
                 {t('actions.back')}
@@ -489,7 +504,7 @@ export function CreateLeaseDialog({
                 key="step-btn-cancel"
                 type="button"
                 onClick={onClose}
-                className="btn btn--ghost btn--sm"
+                className="btn btn--ghost min-h-tap"
               >
                 {t('actions.cancel')}
               </button>
@@ -500,7 +515,7 @@ export function CreateLeaseDialog({
                 key="step-btn-next"
                 type="button"
                 onClick={handleNext}
-                className="btn btn--primary btn--sm"
+                className="btn btn--primary min-h-tap"
               >
                 {t('actions.next')}
                 <ArrowRight className="h-4 w-4 ml-1.5" />
@@ -511,7 +526,7 @@ export function CreateLeaseDialog({
                 type="submit"
                 disabled={createLeaseMutation.isPending}
                 aria-busy={createLeaseMutation.isPending}
-                className="btn btn--primary btn--sm"
+                className="btn btn--primary min-h-tap"
               >
                 {createLeaseMutation.isPending ? (
                   <>

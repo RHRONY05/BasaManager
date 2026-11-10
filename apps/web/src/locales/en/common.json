@@ -459,7 +459,8 @@
       "pending": "Pending invitation",
       "active": "Active",
       "notice": "Notice given",
-      "ended": "Ended"
+      "ended": "Ended",
+      "ended_with_dues": "Ended with dues"
     },
     "depositLedger": "Deposit ledger",
     "recordDeposit": "Record deposit",
@@ -489,7 +490,12 @@
     "viewHistory": "View tenant history",
     "openLease": "View lease details",
     "unitWithLabel": "Unit {{label}}",
+    "unitFloorWithNumber": "Unit {{label}} (Floor {{floor}})",
     "unitFloorInfo": "Unit {{label}} (Floor {{floor}}) · {{building}}",
+    "unitInfo": "Unit {{label}} · {{building}}",
+    "progressSteps": "Progress steps",
+    "searchPlaceholder": "Search by tenant, unit or building…",
+    "allStatuses": "All statuses",
     "billedMonthly": "billed monthly",
     "perMonth": "per month",
     "agreedDeposit": "agreed: {{amount}}",
@@ -515,7 +521,11 @@
       "startDateRequired": "Lease start date is required",
       "rentNonNegative": "Monthly rent must be 0 or greater",
       "depositNonNegative": "Security deposit must be 0 or greater",
-      "amountGreaterThanZero": "Deposit amount must be greater than 0"
+      "amountGreaterThanZero": "Deposit amount must be greater than 0",
+      "rentInvalid": "Monthly rent must be a valid non-negative amount (e.g. 15000 or 15000.50)",
+      "depositInvalid": "Security deposit must be a valid non-negative amount",
+      "chargeNameRequired": "Charge name is required",
+      "chargeAmountInvalid": "Charge amount must be a valid non-negative amount"
     }
   },
   "tenantPortal": {

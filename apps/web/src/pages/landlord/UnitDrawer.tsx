@@ -89,7 +89,8 @@ export function UnitDrawer({ buildingId, buildingName, unit, isOpen, onClose, on
         <header className="drawer__head">
           <div className="flex-1 min-w-0">
             <p className="text-xs text-fg-muted font-medium">
-              {buildingName} · Floor {unit.floor ?? 1}
+              {buildingName}
+              {unit.floor != null ? ` · ${t('units.floor')} ${unit.floor}` : ''}
             </p>
             <h2 className="text-xl font-bold text-fg truncate">Unit {unit.label}</h2>
             <div className="mt-1">
@@ -140,7 +141,7 @@ export function UnitDrawer({ buildingId, buildingName, unit, isOpen, onClose, on
             </div>
             <div className="dl__row">
               <dt>{t('units.floor')}</dt>
-              <dd className="num">{unit.floor ?? 1}</dd>
+              <dd className="num">{unit.floor != null ? unit.floor : '—'}</dd>
             </div>
           </dl>
 
