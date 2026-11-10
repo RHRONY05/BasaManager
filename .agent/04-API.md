@@ -90,7 +90,7 @@ in CI, so docs and code can't drift.
 | `GET /leases/:id/settlement-preview` | L | Rule 7 numbers for a given `moveOutDate` |
 | `POST /leases/:id/end` | L | `{moveOutDate, moveOutReading?}` final prorated bill + settlement in one tx; PDF queued |
 | `POST /leases/:id/resend-invite` | L | |
-| `POST /leases/:id/cancel` | L | Cancels pending lease (no held deposit, no accepted tenant) and revokes open invitations | `CONFLICT`, `NOT_FOUND` |
+| `POST /leases/:id/cancel` | L | Cancels pending lease (no held deposit, no accepted tenant) and revokes open invitations (`CONFLICT`, `NOT_FOUND`) |
 | `GET /tenants/:membershipId/history` | L | T5 |
 
 ## Billing

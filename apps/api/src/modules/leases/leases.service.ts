@@ -838,18 +838,47 @@ export class LeasesService {
 
     const orgId = tenantCtx.orgId!;
     return this.prisma.$tx(tenantCtx, async (tx) => {
-      // 1. Check if lease exists
-      const lease = await tx.lease.findFirst({
-        where: { id: leaseId, orgId },
+      // 1. Revoke the open invitations for this lease first.
+      // This locks invitation rows and waits for any in-flight accept to finish.
+      await tx.invitation.updateMany({
+        where: {
+          orgId,
+          leaseId,
+          acceptedAt: null,
+          revokedAt: null,
+        },
+        data: { revokedAt: clock.now() },
       });
-      if (!lease) {
+
+      // 2. Reject if any invitation for this lease was already accepted
+      const acceptedInvite = await tx.invitation.findFirst({
+        where: {
+          orgId,
+          leaseId,
+          acceptedAt: { not: null },
+        },
+      });
+      if (acceptedInvite) {
+        throw ApiError.conflict('Cannot cancel lease that already has an accepted tenant');
+      }
+
+      // 3. Lock the lease row with SELECT ... FOR UPDATE inside tenant context transaction.
+      // This lines cancel up behind any in-flight recordDeposit or status change.
+      const lockedRows = await tx.$queryRaw<Array<{ id: string; status: string }>>`
+        SELECT id, status
+        FROM leases
+        WHERE id = ${leaseId}::uuid AND org_id = ${orgId}::uuid
+        FOR UPDATE
+      `;
+      if (!lockedRows || lockedRows.length === 0) {
         throw ApiError.notFound('Lease not found');
       }
+      const lease = lockedRows[0]!;
       if (lease.status !== 'pending') {
         throw ApiError.conflict('Only pending leases can be cancelled without a move-out settlement');
       }
 
-      // 2. Reject if any tenant has already accepted this lease
+      // 4. Reject if any tenant has already accepted/linked to this lease
       const tenantCount = await tx.leaseTenant.count({
         where: { leaseId, orgId },
       });
@@ -857,7 +886,7 @@ export class LeasesService {
         throw ApiError.conflict('Cannot cancel lease that already has an accepted tenant');
       }
 
-      // 3. Reject if deposit held is above 0
+      // 5. Reject if deposit held is above 0
       const depositEntries = await tx.depositEntry.findMany({
         where: { leaseId, orgId },
       });
@@ -870,24 +899,10 @@ export class LeasesService {
         throw ApiError.conflict('Cannot cancel lease with held deposit. Settle or refund deposit first');
       }
 
-      // 4. Atomic conditional update to prevent race conditions with acceptance
-      const updated = await tx.lease.updateMany({
-        where: { id: leaseId, orgId, status: 'pending' },
+      // 6. Transition lease status to 'ended'
+      await tx.lease.update({
+        where: { id: leaseId },
         data: { status: 'ended' },
-      });
-      if (updated.count === 0) {
-        throw ApiError.conflict('Only pending leases can be cancelled without a move-out settlement');
-      }
-
-      // 5. Revoke any open invite for this lease
-      await tx.invitation.updateMany({
-        where: {
-          orgId,
-          leaseId,
-          acceptedAt: null,
-          revokedAt: null,
-        },
-        data: { revokedAt: clock.now() },
       });
 
       return { success: true, message: 'Pending lease cancelled' };

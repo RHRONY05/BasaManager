@@ -194,7 +194,7 @@ All lifecycle transitions execute within PostgreSQL transactions with `SET LOCAL
 | Landlord attempts to record negative deposit                | Zod schema validation requires positive integer               | `400 BAD_REQUEST` validation error                             |
 | Caretaker attempts to view leases outside assigned property | Leases service filters queries by `caretaker_buildings`       | Returns empty array or `404 NOT_FOUND`                         |
 | Tenant tries to view other tenant's lease                   | RLS policy and membership check verify lease assignment       | `404 NOT_FOUND` (no leak of lease existence)                   |
-| Cancelling pending lease with held deposit or linked tenant | API returns `409 CONFLICT` ("Cannot cancel lease with...")    | `LeasesService.cancelPendingLease`                             | `leases.service.test.ts` |
+| Cancelling pending lease with held deposit or linked tenant | Checked inside transaction before status update               | `409 CONFLICT` ("Cannot cancel lease with...")                 |
 | Non-landlord attempts to create lease or record deposit     | Role guard checks `ctx.role === 'landlord'`                   | `403 FORBIDDEN`                                                |
 
 ## 11. Security

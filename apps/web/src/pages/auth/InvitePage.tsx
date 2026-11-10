@@ -17,8 +17,8 @@ import { PasswordStrength } from '../../components/ui/PasswordStrength';
 import { RouteSkeleton } from '../../components/ui/RouteSkeleton';
 
 const acceptFormSchema = z.object({
-  fullName: z.string().min(1, 'Full name is required').max(200),
-  password: z.string().min(10, 'Password must be at least 10 characters'),
+  fullName: z.string().max(200).optional(),
+  password: z.string().min(1, 'Password is required'),
 });
 
 type AcceptFormValues = z.infer<typeof acceptFormSchema>;
@@ -251,6 +251,10 @@ export default function InvitePage() {
   // Case 3: Anonymous / new user -> name + password form or Google button
   const onSubmitNewUser = async (values: AcceptFormValues) => {
     setFormError(null);
+    if (!invite?.userExists && (!values.fullName || values.fullName.trim().length === 0)) {
+      setFormError(t('auth.fullNameRequired', 'Full name is required'));
+      return;
+    }
     try {
       await apiFetch(`/api/invites/${encodeURIComponent(token)}/accept`, {
         method: 'POST',
@@ -346,31 +350,33 @@ export default function InvitePage() {
           <span className="hint text-xs text-fg-muted">{t('auth.inviteEmailHint')}</span>
         </div>
 
-        {/* Full Name */}
-        <div className="field flex flex-col gap-1.5 min-w-0">
-          <label htmlFor="fullName" className="label text-sm font-semibold text-fg">
-            {t('auth.fullName')}
-          </label>
-          <input
-            {...register('fullName')}
-            id="fullName"
-            autoComplete="name"
-            aria-invalid={errors.fullName ? 'true' : 'false'}
-            aria-describedby={errors.fullName ? 'fullname-error' : undefined}
-            placeholder={t('auth.fullNamePlaceholder')}
-            className={`input ${errors.fullName ? 'border-danger-primary' : ''}`}
-          />
-          {errors.fullName && (
-            <span
-              id="fullname-error"
-              className="field-error flex items-center gap-1.5 text-xs text-danger-text font-medium"
-              role="alert"
-            >
-              <AlertCircle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-              <span>{errors.fullName.message}</span>
-            </span>
-          )}
-        </div>
+        {/* Full Name (only for new accounts) */}
+        {!invite.userExists && (
+          <div className="field flex flex-col gap-1.5 min-w-0">
+            <label htmlFor="fullName" className="label text-sm font-semibold text-fg">
+              {t('auth.fullName')}
+            </label>
+            <input
+              {...register('fullName')}
+              id="fullName"
+              autoComplete="name"
+              aria-invalid={errors.fullName ? 'true' : 'false'}
+              aria-describedby={errors.fullName ? 'fullname-error' : undefined}
+              placeholder={t('auth.fullNamePlaceholder')}
+              className={`input ${errors.fullName ? 'border-danger-primary' : ''}`}
+            />
+            {errors.fullName && (
+              <span
+                id="fullname-error"
+                className="field-error flex items-center gap-1.5 text-xs text-danger-text font-medium"
+                role="alert"
+              >
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                <span>{errors.fullName.message}</span>
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Password */}
         <div className="field flex flex-col gap-1.5 min-w-0">
