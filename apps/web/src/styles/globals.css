@@ -10,22 +10,65 @@
 
   --color-fg: var(--fg-default);
   --color-fg-muted: var(--fg-muted);
+  --color-fg-secondary: var(--fg-secondary);
+  --color-fg-inverse: var(--fg-inverse);
+  --color-inverse: var(--bg-inverse);
 
   --color-border: var(--border-default);
   --color-border-muted: var(--border-muted);
+  --color-border-strong: var(--border-strong);
 
   --color-accent: var(--accent-primary);
   --color-accent-hover: var(--accent-hover);
+  --color-accent-pressed: var(--accent-pressed);
   --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-soft-hover: var(--accent-soft-hover);
+  --color-accent-text: var(--accent-text);
 
   --color-danger: var(--danger-primary);
+  --color-danger-primary: var(--danger-primary);
   --color-danger-hover: var(--danger-hover);
   --color-danger-fg: var(--danger-fg);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-text: var(--danger-text);
+  --color-danger-border: var(--danger-border);
+
+  --color-success-primary: var(--success-primary);
+  --color-success-soft: var(--success-soft);
+  --color-success-text: var(--success-text);
+  --color-success-border: var(--success-border);
+
+  --color-warning-primary: var(--warning-primary);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-text: var(--warning-text);
+  --color-warning-border: var(--warning-border);
+
+  --color-info-primary: var(--info-primary);
+  --color-info-soft: var(--info-soft);
+  --color-info-text: var(--info-text);
+  --color-info-border: var(--info-border);
+
+  --color-neutral-soft: var(--neutral-soft);
 
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius-md);
   --radius-lg: var(--radius-lg);
   --radius-full: var(--radius-full);
+  --radius-card-lg: var(--radius-card-lg);
+  --radius-panel: var(--radius-panel);
+
+  --text-micro: var(--text-micro);
+  --text-display: var(--text-display);
+  --text-section: var(--text-section);
+  --text-cta: var(--text-cta);
+  --text-panel: var(--text-panel);
+  --leading-display: var(--leading-display);
+  --leading-heading: var(--leading-heading);
+  --tracking-display: var(--tracking-display);
+  --tracking-heading: var(--tracking-heading);
+  --tracking-stamp: var(--tracking-stamp);
+  --color-illo-ink: var(--illo-ink);
 
   --font-sans: var(--font-body);
   --font-display: var(--font-display);
@@ -35,6 +78,20 @@
   --spacing-bottom-nav: var(--size-bottom-nav);
   --spacing-content: var(--width-content);
   --container-content: var(--width-content);
+}
+
+@layer base {
+  body {
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: var(--tracking-tight);
+  }
 }
 
 *:focus-visible {
