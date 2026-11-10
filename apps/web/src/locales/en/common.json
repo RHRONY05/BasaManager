@@ -621,6 +621,7 @@
   },
   "billing": {
     "title": "Billing",
+    "unitLabel": "Unit {{label}}",
     "monthPicker": "Month",
     "buildingPicker": "Building",
     "allBuildings": "All Buildings",

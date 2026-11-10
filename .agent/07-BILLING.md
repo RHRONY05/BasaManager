@@ -70,9 +70,9 @@ On 13 Dec 00:00 the balance is ৳5,000 → fee ৳250 (25,000 poisha). New bala
 A confirmed payment for a lease is allocated **oldest unpaid bill first** (by `period_month`), filling
 each bill's balance before moving on. Anything left over becomes **lease credit**. When a bill is issued,
 available credit is allocated to it automatically. Available credit is recorded as a negative `credit_entries`
-row with `kind: 'applied_to_bill'` and `bill_id`, directly incrementing `bill.paid_poisha` without generating a
+row with `kind: 'applied'` and `bill_id`, directly incrementing `bill.paid_poisha` without generating a
 synthetic `payment_allocations` row. The global financial invariant is:
-`bill.paid_poisha = Σ payment_allocations.amount_poisha + Σ (-credit_entries.amount_poisha where kind='applied_to_bill')`.
+`bill.paid_poisha = Σ payment_allocations.amount_poisha + Σ (-credit_entries.amount_poisha where kind='applied')`.
 Allocation and the bill status update happen in **one transaction**; if any step fails, nothing is saved.
 
 **Example 5.** Unpaid: Oct balance ৳3,000, Nov balance ৳14,000. Tenant pays ৳20,000 →

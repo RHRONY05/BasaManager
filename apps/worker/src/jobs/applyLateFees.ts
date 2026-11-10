@@ -50,10 +50,13 @@ export async function runApplyLateFees(
       await ctx.prisma.$tx(
         { orgId: bill.orgId, userId: '00000000-0000-4000-8000-000000000000', role: null },
         async (tx) => {
-          // 1. Lock the lease row per the rules
+          // 1. Lock the bill row first to serialize concurrent modifications
+          await tx.$queryRawUnsafe('SELECT id FROM bills WHERE id = $1 FOR UPDATE', bill.id);
+
+          // 2. Also lock the lease row per financial rules
           await tx.$queryRawUnsafe('SELECT id FROM leases WHERE id = $1 FOR UPDATE', bill.leaseId);
 
-          // 2. Re-read bill under lock with its lines
+          // 3. Re-read bill under lock with its lines
           const freshBill = await tx.bill.findUnique({
             where: { id: bill.id },
             include: { lines: true },

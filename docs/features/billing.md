@@ -165,7 +165,7 @@ sequenceDiagram
 
 1. **Creation**:
    - Draft bills are created by `runGeneration` or `generateBillsJob`.
-   - Idempotency is enforced by the unique constraint on `(lease_id, period_month)`. Re-running generation skips existing bills without error.
+   - Idempotency is enforced by a PostgreSQL session advisory lock on the building and period date, serializing concurrent runs, followed by an existence check on existing bills. The composite unique constraint on `(lease_id, period_month)` acts as the last-resort guard. Re-running generation returns existing bills as skipped without error.
 2. **Update**:
    - Meter reading entry updates the `electricity` line item and sets `needs_reading: false`.
    - Issuing a bill updates `status: 'issued'`, sets `issued_at`, and decrements `total_poisha` if credit was applied.
@@ -272,7 +272,7 @@ Floating-point math in computers suffers from IEEE 754 precision issues (e.g. <c
 
 <details>
 <summary>2. How does the billing engine ensure that running bill generation multiple times doesn't create duplicate bills?</summary>
-The database schema has a strict composite unique constraint on <code>bills(lease_id, period_month)</code>. When generation runs, the query filters out leases that already have a bill for that month. Even if two workers or requests execute simultaneously, Postgres enforces the unique constraint and rejects the second insert with a 409/unique violation.
+Bill generation serializes on a PostgreSQL transaction advisory lock hashed from the building ID and period month. The service checks for existing bills for that month and returns them as skipped without error. Even if two concurrent requests run, the advisory lock serializes execution, while the composite unique constraint on <code>bills(lease_id, period_month)</code> provides a last-resort constraint guard.
 </details>
 
 <details>
@@ -287,7 +287,7 @@ Financial auditability requires an indelible record. If meter readings are updat
 
 <details>
 <summary>5. How does credit auto-application work when a bill is issued?</summary>
-When a bill is issued, the service sums all rows in <code>credit_entries</code> for the lease under a transaction lock. If a positive credit balance exists, the system takes <code>Math.min(creditBalance, bill.balancePoisha)</code>, creates a negative <code>credit_entry</code> row (kind: 'applied_to_bill', with <code>bill_id</code>), increments <code>bill.paid_poisha</code> by the applied credit, and recomputes the bill's status (<code>paid</code> or <code>partially_paid</code>), all within a single database transaction. No <code>payment_allocations</code> row is created; the accounting invariant across the system is <code>paid_poisha = Σ allocations + Σ (-applied_credit)</code>.
+When a bill is issued, the service sums all rows in <code>credit_entries</code> for the lease under a transaction lock. If a positive credit balance exists, the system takes <code>Math.min(creditBalance, bill.balancePoisha)</code>, creates a negative <code>credit_entry</code> row (kind: 'applied', with <code>bill_id</code>), increments <code>bill.paid_poisha</code> by the applied credit, and recomputes the bill's status (<code>paid</code> or <code>partially_paid</code>), all within a single database transaction. No <code>payment_allocations</code> row is created; the accounting invariant across the system is <code>paid_poisha = Σ allocations + Σ (-applied_credit)</code>.
 </details>
 
 <details>

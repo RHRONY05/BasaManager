@@ -300,7 +300,9 @@ export default function BillingPage() {
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-fg">
                         {t('billing.billFor', {
-                          unit: bill.unitLabel ? `Unit ${bill.unitLabel}` : bill.leaseId.slice(0, 8),
+                          unit: bill.unitLabel
+                            ? t('billing.unitLabel', { label: bill.unitLabel })
+                            : bill.leaseId.slice(0, 8),
                           month: bill.periodMonth.slice(0, 7),
                         })}
                       </span>
@@ -392,7 +394,9 @@ export default function BillingPage() {
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-fg">
                         {t('billing.billFor', {
-                          unit: bill.unitLabel ? `Unit ${bill.unitLabel}` : bill.leaseId.slice(0, 8),
+                          unit: bill.unitLabel
+                            ? t('billing.unitLabel', { label: bill.unitLabel })
+                            : bill.leaseId.slice(0, 8),
                           month: bill.periodMonth.slice(0, 7),
                         })}
                       </span>

@@ -81,7 +81,7 @@ The composite unique index <code>@@unique([leaseId, periodMonth])</code> defined
 
 <details>
 <summary>2. What happens if a landlord clicks the "Generate Drafts" button twice within 100 milliseconds?</summary>
-Both requests reach the server. The first request generates the draft bills. The second request either sees that bills already exist (pre-flight check) or is rejected by the database unique constraint if racing simultaneously. Zero duplicate bills are created.
+Both requests reach the server. The first request takes a PostgreSQL advisory lock on the building and period month and generates the draft bills. The second request waits on the advisory lock, then sees that bills already exist and reports 0 new drafts created. The composite unique constraint on <code>bills(lease_id, period_month)</code> acts as the last-resort guard. Zero duplicate bills are created.
 </details>
 
 <details>

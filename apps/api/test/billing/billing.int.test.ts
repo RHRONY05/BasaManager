@@ -92,6 +92,18 @@ describe('V8: billing endpoints', () => {
     expect((await run()).status).toBe(200);
     return (await billOf(leaseFlat))!.id;
   }
+  async function billWithLateFee(): Promise<string> {
+    const id = await draftFlat();
+    await landlord.agent.post(`/api/bills/${id}/issue`);
+    await q(
+      `insert into bill_lines (org_id, bill_id, kind, label, amount_poisha) values ($1,$2,'late_fee','Late fee',80000)`,
+      [org.id, id],
+    );
+    await q(`update bills set total_poisha = total_poisha + 80000, late_fee_applied_at = now() where id=$1`, [
+      id,
+    ]);
+    return id;
+  }
   const setCredit = (leaseId: string, poisha: number) =>
     q(`insert into credit_entries (org_id, lease_id, amount_poisha, kind) values ($1,$2,$3,'overpayment')`, [
       org.id,
@@ -432,23 +444,67 @@ describe('V8: billing endpoints', () => {
       expect(res.body.data.status).toBe('paid');
       expect((await billOf(leaseFlat))!.status).toBe('paid');
     });
+
+    it('handles 5 concurrent adjustments without lost updates: total_poisha equals original + 50,000 and matches sum of bill_lines', async () => {
+      const id = await draftFlat();
+      await landlord.agent.post(`/api/bills/${id}/issue`);
+      // Initial total: 1,600,000 poisha
+
+      // Fire 5 concurrent adjustments of +10,000 poisha (৳100)
+      const results = await Promise.all([
+        landlord.agent.post(`/api/bills/${id}/adjustments`).send({ amountPoisha: 10000, reason: 'Adj 1' }),
+        landlord.agent.post(`/api/bills/${id}/adjustments`).send({ amountPoisha: 10000, reason: 'Adj 2' }),
+        landlord.agent.post(`/api/bills/${id}/adjustments`).send({ amountPoisha: 10000, reason: 'Adj 3' }),
+        landlord.agent.post(`/api/bills/${id}/adjustments`).send({ amountPoisha: 10000, reason: 'Adj 4' }),
+        landlord.agent.post(`/api/bills/${id}/adjustments`).send({ amountPoisha: 10000, reason: 'Adj 5' }),
+      ]);
+
+      for (const res of results) {
+        expect(res.status).toBe(201);
+      }
+
+      const billRow = await q<{ total_poisha: string }>(
+        `select total_poisha::text from bills where id = $1`,
+        [id],
+      );
+      expect(billRow[0]!.total_poisha).toBe('1650000');
+
+      const linesSum = await q<{ sum: string }>(
+        `select sum(amount_poisha)::text as sum from bill_lines where bill_id = $1`,
+        [id],
+      );
+      expect(linesSum[0]!.sum).toBe('1650000');
+    });
+
+    it('handles concurrent adjustment (+10,000) and late fee waiver correctly without lost updates', async () => {
+      const id = await billWithLateFee(); // total = 1,680,000 (rent 1,600,000 + late fee 80,000)
+
+      const [adjRes, waiveRes] = await Promise.all([
+        landlord.agent
+          .post(`/api/bills/${id}/adjustments`)
+          .send({ amountPoisha: 10000, reason: 'Extra charge' }),
+        landlord.agent.post(`/api/bills/${id}/late-fee/waive`).send({ reason: 'Bank delay' }),
+      ]);
+
+      expect(adjRes.status).toBe(201);
+      expect(waiveRes.status).toBe(200);
+
+      // Expected total: 1,600,000 + 10,000 = 1,610,000
+      const billRow = await q<{ total_poisha: string }>(
+        `select total_poisha::text from bills where id = $1`,
+        [id],
+      );
+      expect(billRow[0]!.total_poisha).toBe('1610000');
+
+      const linesSum = await q<{ sum: string }>(
+        `select sum(amount_poisha)::text as sum from bill_lines where bill_id = $1`,
+        [id],
+      );
+      expect(linesSum[0]!.sum).toBe('1610000');
+    });
   });
 
   describe('POST /bills/:id/late-fee/waive', () => {
-    async function billWithLateFee(): Promise<string> {
-      const id = await draftFlat();
-      await landlord.agent.post(`/api/bills/${id}/issue`);
-      await q(
-        `insert into bill_lines (org_id, bill_id, kind, label, amount_poisha) values ($1,$2,'late_fee','Late fee',80000)`,
-        [org.id, id],
-      );
-      await q(
-        `update bills set total_poisha = total_poisha + 80000, late_fee_applied_at = now() where id=$1`,
-        [id],
-      );
-      return id;
-    }
-
     it('200: the late-fee line becomes 0 with the reason and the total drops', async () => {
       const id = await billWithLateFee();
       const res = await landlord.agent.post(`/api/bills/${id}/late-fee/waive`).send({ reason: 'Bank delay' });

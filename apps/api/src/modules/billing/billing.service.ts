@@ -654,6 +654,21 @@ export class BillingService {
     billId: string,
     todayStr: string,
   ): Promise<BillResponse> {
+    // 1. Lock the bill row first to serialize concurrent issue attempts
+    const lockedRows = await tx.$queryRawUnsafe<Array<{ id: string; lease_id: string }>>(
+      'SELECT id, lease_id FROM bills WHERE org_id = $1 AND id = $2 FOR UPDATE',
+      ctx.orgId,
+      billId,
+    );
+
+    if (!lockedRows || lockedRows.length === 0) {
+      throw ApiError.notFound('Bill not found');
+    }
+
+    // 2. Also lock the lease row per financial rules
+    await tx.$queryRawUnsafe('SELECT id FROM leases WHERE id = $1 FOR UPDATE', lockedRows[0]!.lease_id);
+
+    // 3. Read fresh bill under lock
     const bill = await tx.bill.findUnique({
       where: {
         orgId_id: {
@@ -677,9 +692,6 @@ export class BillingService {
     if (bill.needsReading) {
       throw new ApiError(ErrorCode.READING_REQUIRED, 'Submeter reading required before issuing bill');
     }
-
-    // Lock the lease row per the rules
-    await tx.$queryRawUnsafe('SELECT id FROM leases WHERE id = $1 FOR UPDATE', bill.leaseId);
 
     // Check available credit on the lease under lock
     const creditSumRow = await tx.$queryRaw<Array<{ sum: string | null }>>`
@@ -822,6 +834,21 @@ export class BillingService {
     const todayStr = toDateString(clock.now());
 
     return this.prisma.$tx(this.getTenantCtx(ctx), async (tx) => {
+      // 1. Lock the bill row first to serialize concurrent modifications
+      const lockedRows = await tx.$queryRawUnsafe<Array<{ id: string; lease_id: string }>>(
+        'SELECT id, lease_id FROM bills WHERE org_id = $1 AND id = $2 FOR UPDATE',
+        ctx.orgId,
+        billId,
+      );
+
+      if (!lockedRows || lockedRows.length === 0) {
+        throw ApiError.notFound('Bill not found');
+      }
+
+      // 2. Also lock lease row per financial rules
+      await tx.$queryRawUnsafe('SELECT id FROM leases WHERE id = $1 FOR UPDATE', lockedRows[0]!.lease_id);
+
+      // 3. Read fresh bill under lock
       const bill = await tx.bill.findUnique({
         where: {
           orgId_id: {
@@ -838,9 +865,6 @@ export class BillingService {
       if (bill.status === 'paid' || bill.status === 'void') {
         throw ApiError.conflict('Adjustments cannot be added to paid or void bills');
       }
-
-      // Lock lease row per financial rules
-      await tx.$queryRawUnsafe('SELECT id FROM leases WHERE id = $1 FOR UPDATE', bill.leaseId);
 
       const newTotal = Number(bill.totalPoisha) + input.amountPoisha;
       if (newTotal < 0) {
@@ -906,6 +930,21 @@ export class BillingService {
     const todayStr = toDateString(clock.now());
 
     return this.prisma.$tx(this.getTenantCtx(ctx), async (tx) => {
+      // 1. Lock the bill row first to serialize concurrent modifications
+      const lockedRows = await tx.$queryRawUnsafe<Array<{ id: string; lease_id: string }>>(
+        'SELECT id, lease_id FROM bills WHERE org_id = $1 AND id = $2 FOR UPDATE',
+        ctx.orgId,
+        billId,
+      );
+
+      if (!lockedRows || lockedRows.length === 0) {
+        throw ApiError.notFound('Bill not found');
+      }
+
+      // 2. Also lock lease row per financial rules
+      await tx.$queryRawUnsafe('SELECT id FROM leases WHERE id = $1 FOR UPDATE', lockedRows[0]!.lease_id);
+
+      // 3. Read fresh bill under lock
       const bill = await tx.bill.findUnique({
         where: {
           orgId_id: {
@@ -930,9 +969,6 @@ export class BillingService {
       if (bill.status === 'void') {
         throw ApiError.conflict('Cannot waive late fee on a void bill');
       }
-
-      // Lock lease row per financial rules
-      await tx.$queryRawUnsafe('SELECT id FROM leases WHERE id = $1 FOR UPDATE', bill.leaseId);
 
       const lateFeeLine = bill.lines.find((l) => l.kind === 'late_fee');
       if (!lateFeeLine) {
@@ -997,6 +1033,21 @@ export class BillingService {
     const todayStr = toDateString(clock.now());
 
     return this.prisma.$tx(this.getTenantCtx(ctx), async (tx) => {
+      // 1. Lock the bill row first to serialize concurrent modifications
+      const lockedRows = await tx.$queryRawUnsafe<Array<{ id: string; lease_id: string }>>(
+        'SELECT id, lease_id FROM bills WHERE org_id = $1 AND id = $2 FOR UPDATE',
+        ctx.orgId,
+        billId,
+      );
+
+      if (!lockedRows || lockedRows.length === 0) {
+        throw ApiError.notFound('Bill not found');
+      }
+
+      // 2. Also lock lease row per financial rules
+      await tx.$queryRawUnsafe('SELECT id FROM leases WHERE id = $1 FOR UPDATE', lockedRows[0]!.lease_id);
+
+      // 3. Read fresh bill under lock
       const bill = await tx.bill.findUnique({
         where: {
           orgId_id: {
@@ -1029,9 +1080,6 @@ export class BillingService {
       if (bill.status !== 'draft' && bill.status !== 'issued') {
         throw ApiError.conflict(`Cannot void a bill with status ${bill.status}`);
       }
-
-      // Lock lease row per financial rules
-      await tx.$queryRawUnsafe('SELECT id FROM leases WHERE id = $1 FOR UPDATE', bill.leaseId);
 
       if (Number(bill.paidPoisha) > 0) {
         throw ApiError.conflict('Cannot void a bill that has payments or credit applied');
