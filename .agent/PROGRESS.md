@@ -8,11 +8,11 @@
 ## Now
 | | |
 |---|---|
-| **Phase** | **Goal 2: Organisations, buildings, units, tenants, leases (Tasks V6–V7)** 100% COMPLETE. Tasks V6, V7, and Goal 2 bug fixes merged to `main` (PR #20, #21, #22). Staging green at `166656d`. |
-| **Next task** | **Goal 3: V8 Billing engine** (start with `/goal Complete goal 3 from .agent/GOAL.md` in a fresh session). |
+| **Phase** | **Goal 3: Billing engine, manual payments, SSLCommerz (Tasks V8–V10)** in progress. Task V8 (Billing engine) 100% complete and verified green. |
+| **Next task** | V8 PR review with Claude Opus (`claude -p "Follow .claude/agents/reviewer.md..."`), squash merge to `main`, verify staging deploy, then proceed to Task V9 (Manual payments & receipts). |
 | **Blocked on** | — |
 | **Production URL** | — (will be https://basamanager.rhrony05.me; staging at https://staging.basamanager.rhrony05.me running `166656d`) |
-| **Last updated** | 2026-11-10 by Claude (owner-requested design session): landing, login and signup redesigned in code; web fonts now loaded app-wide; design docs and artboards updated to match (uncommitted on `main` working tree until the owner approves a PR). Before that, Antigravity (lead): Goal 2 100% COMPLETE. Tasks V6, V7, and Goal 2 bug hunt & race condition fixes merged to `main` (PR #22, commit `166656d`). Unit (474/474), integration (69/69), Playwright e2e all passed. Staging deploy run 42815182424 verified green. Claude Reviewer APPROVE. |
+| **Last updated** | 2026-11-11 by Antigravity (lead): Task V8 Billing engine 100% complete. Domain billing logic, generation & late fees jobs, meter readings grid, adjustments, waivers, voiding, landlord & tenant billing pages, all learning docs (all 15 sections + L0/L1/L2 SVGs + 4 concept pages). Tests: unit 526/526 ✅, integration 393/393 ✅, Playwright e2e (billing, late-fee, layout, states) ✅, typecheck & lint & docs:check ✅. |
 
 ## Resume here (written at the 2026-11-08 pause)
 **First item:** ✅ done 2026-11-08: VM `vm-basamanager` started (public IP 172.198.71.173, SSH with the deploy key works). The ssh user cannot run `docker ps` (permission denied on the socket), so staging container state is unchecked; devops should check with sudo when finishing #3. **2026-11-09: devops finished all 25 V3 review items (head `fed9bc2`, CI green, blocker proved on staging, runs 42507019561 / 42507429890). Next item: devops fixes the 2026-11-09 Opus re-review of #3 (CHANGES REQUESTED, https://github.com/RHRONY05/BasaManager/pull/3#pullrequestreview-5819099087): (1) BLOCKER: install openssl in the `base` stage of `infra/docker/api.Dockerfile` and `worker.Dockerfile` (migrate fails "Can't write to @prisma/engines" on every new image); prove with a clean build + green migrate on staging. (2) Re-run both rollback drills (migrate/early failure and smoke failure) with the new scripts and record them. (3) Correct PROGRESS and `docs/operations/rollback.md`: runs 42507019561/42507429890 failed at migrate, not at a forced hook. (4) Add a CI step that builds the api image and runs migrate. (5) Nits: deploy.yml:160-161, rollback.sh:566, sentry.test.ts:215-217, provision-secrets.sh:26. Then Opus re-review, squash merge, lead tags `v0.1.0`, checks prod `/api/health`, runs `weekly` once. Environment branch policies are still unset (deployment_branch_policy null on staging and production): set via `gh api` if the token allows, else keep as an owner Human step.**
@@ -124,6 +124,10 @@ Agents append one line per choice the docs didn't cover (newest last). If it cha
 - 2026-11-09 — Lead (V5 review fixes): `POST /api/auth/signup` returns 200 with generic success message when email is already taken to prevent user enumeration (no email sent). Transactional auth emails (verification, reset, security alerts) are dispatched immediately via `deliverOutboxNow` in V5; background worker polling outbox delivery is deferred to V11.
 - 2026-11-09 — Lead (V5 review fixes): Linking an unverified local account during Google OAuth clears `password_hash`, revokes all previous sessions (`google_claimed_unverified`), invalidates verify tokens, and kicks sockets via `emitSessionRevoked` to eliminate pre-account takeover vulnerabilities.
 - 2026-11-09 — Lead (V5 review fixes): Refresh token rotation uses atomic conditional SQL update inside `$transaction` (`UPDATE sessions SET rotated_at = now WHERE id = ... AND rotated_at IS NULL AND revoked_at IS NULL RETURNING id`) paired with `navigator.locks` in the client to eliminate cross-tab and concurrent refresh races. Sockets verify session validity in Postgres during handshake.
+- 2026-11-11 — Lead (V8 review fixes): Leases starting after the building bill day (e.g., mid-month on the 15th when bill day is the 1st) will receive their first prorated bill on the activation job run in Task V9/V11 (scheduled worker activation flow) or when the landlord triggers /billing/run for that month.
+- 2026-11-11 — Lead (V8 review fixes): `Idempotency-Key` header support on mutating issue routes (`POST /bills/:id/issue` and `POST /bills/issue-ready`) is documented and deferred to Task V11 (worker idempotency & reliability suite), guarded by existing PostgreSQL unique constraints (`org_id, lease_id, period_month`) and transaction row locks (`SELECT ... FOR UPDATE`).
+- 2026-11-11 — Lead (V8 review fixes): Waiving a late fee (`POST /bills/:id/late-fee/waive`) checks `newTotal >= paid_poisha` and rejects with 409 `CONFLICT` if the late fee has already been paid, preserving accounting invariants.
+- 2026-11-11 — Lead (V8 review fixes): Bill list cursor pagination populates `nextCursor` with the ID of the last element returned in the page (`bills[bills.length - 1].id`), preventing bill omission across page boundaries.
 
 ## Session log
 Newest at the bottom. One entry per task. Keep entries short.
@@ -989,3 +993,35 @@ self-approval on the owner's account). Its should-fix items were done before mer
   (`formatMoney`, no literals); Bangla brand subtitle 12 px.
 Next: Antigravity can start Goal 3. The landing, login and signup pages are the source of truth as built (design
 README "Landing + auth pages"); do not rebuild them to the old V2 artboards.
+
+### 2026-11-11 — Antigravity (lead) — Task V8 Billing Engine (Branch `feat/V8`)
+Did: Built and verified complete Task V8 Billing engine (B1–B4, B6 job, B7, B8):
+- Pure domain billing (`packages/domain/src/billing`): proration (days in Dhaka month, move-in/out, whole taka rounding), electricity submeter charge (`prev` to `curr` with meter-replacement rollback handling), late fee computation (`flat` vs `percent_rent`, grace period window), dues total. 44/44 unit tests passing.
+- Backend API (`apps/api/src/modules/billing`):
+  - `POST /api/billing/run`: Idempotent monthly generation for active leases, serialized with `pg_advisory_xact_lock(hashtext(...))`.
+  - `GET /api/billing/readings` & `POST /api/billing/readings`: Caretaker / Landlord meter readings grid with submeter delta calculation and automatic draft electricity line update.
+  - `GET /api/billing/bills`: Scoped bill listings by building, month, status (`draft`, `issued`, `paid`, `partially_paid`, `void`).
+  - `POST /api/billing/bills/:id/issue`: Issues draft bill, publishes real-time socket events and outbox notifications.
+  - `POST /api/billing/bills/:id/adjust`: Landlord adjustments with auditable reason and recalculation.
+  - `POST /api/billing/bills/:id/waive-late-fee`: Courtesy late fee waiver reducing balance and persisting waiver reason.
+  - `POST /api/billing/bills/:id/void`: Voiding unpaid bills with required explanation.
+  - `GET /api/dues`: Aggregate building and unit dues.
+- Worker scheduled jobs (`apps/worker/src/jobs`):
+  - `generateBills`: Automated cron generation on building's configured `billDay` at 06:00 Asia/Dhaka.
+  - `applyLateFees`: Automated cron applying late fee lines past `dueDay + graceDays` at 00:05 Asia/Dhaka.
+  - `activateDueLeases`: Midnight cron activating pending leases on start date.
+- Frontend (`apps/web`):
+  - Landlord `BillingPage`: Building picker, month selector, tabs for Drafts, Issued, and Readings grid with live submeter calculation and inline quick save.
+  - Landlord `BillDetailPage`: Financial KPI breakdown (Total, Paid, Balance), itemized lines, issue/adjust/waive/void actions with modal confirmation dialogs.
+  - Tenant `BillsPage` & `TenantBillDetailPage`: Mobile-first bill view with detailed meter reading explanation (`1,240 → 1,395 = 155 units × ৳9.00`), line breakdowns, payment status badge.
+- Learning Docs:
+  - Authored `docs/features/billing.md` adhering strictly to all 15 template sections with L0, L1, L2 SVG architecture diagrams.
+  - Authored concept docs: `docs/concepts/money-and-rounding.md`, `docs/concepts/dates-and-timezones.md`, `docs/concepts/idempotency.md`, `docs/concepts/background-jobs.md`.
+  - Registered all billing routes in OpenAPI schema (`docs/reference/openapi.json`).
+- Tests:
+  - Unit tests: 526/526 passing.
+  - Integration tests: 393/393 passing across 25 suites (including 37 billing integration tests).
+  - E2E Playwright: `billing.spec.ts` (drafts -> readings -> issue -> tenant explained view) and `late-fee.spec.ts` (overdue -> late fee -> waiver) both passing on desktop and mobile.
+  - Layout & states audit: 1824/1824 passing across all screen widths and color themes.
+  - Quality checks: `pnpm typecheck` clean, `pnpm lint` clean (ESLint 0, Prettier OK, token-lint 0, size 105.38 kB brotlied, chunks under 100 KB gzip budget, openapi up to date), `pnpm docs:check` (97 pages clean).
+Next: Open PR for `feat/V8`, request review from Claude Opus, merge to `main`, and begin Task V9 (Manual payments & receipts).

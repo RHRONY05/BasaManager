@@ -76,7 +76,7 @@ V0 Preflight ─▶ V1 Monorepo + CI ─▶ V2 Design ─▶ V3 Infra walking sk
   - **Tests:** one live lease per unit (concurrent create → one wins with 409); invite flows; `tenant-invite.spec.ts`.
   - **AC:** tenant accepts invite on mobile, sees the lease; second lease on the same unit refused.
 
-- [ ] **V8 Billing engine** — B1–B4, B6 (job), B7, B8
+- [x] **V8 Billing engine** — B1–B4, B6 (job), B7, B8
   - test-designer first: every `07-BILLING.md` example + listed cases as unit tests (red). ∥ agy: `packages/domain/billing`, then generation job, readings grid, issue flow, bill pages (landlord + tenant), dues.
   - Docs: `features/billing.md` (L0/L1/L2 SVG: generation → readings → issue → credit; proration and late-fee worked examples), `concepts/money-and-rounding.md`, `concepts/dates-and-timezones.md`, `concepts/idempotency.md`, `concepts/background-jobs.md`.
   - **Tests:** all billing unit tests; billing integration list; `billing.spec.ts`, `late-fee.spec.ts`.

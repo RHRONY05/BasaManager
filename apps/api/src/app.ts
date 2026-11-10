@@ -18,6 +18,12 @@ import { createInvitesRoutes } from './modules/invites/invites.routes';
 import { createOrgsRoutes } from './modules/orgs/orgs.routes';
 import { createBuildingsRoutes, createUnitsRoutes } from './modules/buildings/buildings.routes';
 import { createLeasesRoutes, createTenantsRoutes } from './modules/leases/leases.routes';
+import {
+  createBillsRoutes,
+  createBillingRunRoutes,
+  createReadingsRoutes,
+  createDuesRoutes,
+} from './modules/billing/billing.routes';
 
 export interface AppDeps {
   env: Env;
@@ -122,6 +128,38 @@ export function createApp(deps: AppDeps): Express {
   app.use(
     '/api/tenants',
     createTenantsRoutes({
+      env: deps.env,
+      prisma: deps.prisma,
+      redis: deps.redis,
+    }),
+  );
+  app.use(
+    '/api/bills',
+    createBillsRoutes({
+      env: deps.env,
+      prisma: deps.prisma,
+      redis: deps.redis,
+    }),
+  );
+  app.use(
+    '/api/billing',
+    createBillingRunRoutes({
+      env: deps.env,
+      prisma: deps.prisma,
+      redis: deps.redis,
+    }),
+  );
+  app.use(
+    '/api/readings',
+    createReadingsRoutes({
+      env: deps.env,
+      prisma: deps.prisma,
+      redis: deps.redis,
+    }),
+  );
+  app.use(
+    '/api/dues',
+    createDuesRoutes({
       env: deps.env,
       prisma: deps.prisma,
       redis: deps.redis,

@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1700 800" width="1700" height="800" font-family="'Segoe UI', Inter, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1f1f1f"/>
+    </marker>
+  </defs>
+  <rect width="1700" height="800" fill="#ffffff"/>
+  <text x="40" y="52" font-size="28" font-weight="700" fill="#1f1f1f">Billing Engine, level 2: Proration, Meter Calculations &amp; Credit Ledger</text>
+  <text x="40" y="82" font-size="16" fill="#3a3a3a">Detailed algorithmic mechanics of integer math, submeter rollover, and credit application.</text>
+  <g font-size="15" fill="#3a3a3a">
+    <line x1="1130" y1="36" x2="1190" y2="36" stroke="#1f1f1f" stroke-width="2.4" marker-end="url(#arrow)"/>
+    <text x="1202" y="41">call / read</text>
+    <line x1="1130" y1="62" x2="1190" y2="62" stroke="#1f1f1f" stroke-width="2.4" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <text x="1202" y="67">write / return</text>
+    <rect x="1370" y="24" width="26" height="18" rx="3" fill="#FEC8C3"/><text x="1406" y="39">people / external</text>
+    <rect x="1530" y="24" width="26" height="18" rx="7" fill="#BFE3FD"/><text x="1566" y="39">our code</text>
+    <circle cx="1383" cy="62" r="9" fill="#E3CCFD"/><text x="1406" y="67">data store</text>
+    <rect x="1530" y="53" width="26" height="18" rx="3" fill="#C9F2D6"/><text x="1566" y="67">output</text>
+  </g>
+
+  <!-- Panel 1: Proration Formula -->
+  <rect x="50" y="160" width="480" height="560" rx="10" fill="#ffffff" stroke="#1f1f1f" stroke-width="1.8"/>
+  <rect x="50" y="160" width="480" height="50" rx="10" fill="#BFE3FD"/>
+  <text x="290" y="195" font-size="18" font-weight="700" fill="#1f1f1f" text-anchor="middle">1. Mid-Month Lease Proration</text>
+
+  <rect x="80" y="240" width="420" height="90" rx="6" fill="#FEF3D6" stroke="#1f1f1f" stroke-width="1.2"/>
+  <text x="290" y="270" font-size="14" font-weight="700" fill="#1f1f1f" text-anchor="middle">Proration Factor Formula</text>
+  <text x="290" y="295" font-size="13" fill="#3a3a3a" text-anchor="middle">factor = (daysInMonth - startDay + 1) / daysInMonth</text>
+  <text x="290" y="315" font-size="12" fill="#666666" text-anchor="middle">e.g. 15 Sep: (30 - 15 + 1) / 30 = 16 / 30 = 0.5333...</text>
+
+  <rect x="80" y="350" width="420" height="90" rx="6" fill="#FEF3D6" stroke="#1f1f1f" stroke-width="1.2"/>
+  <text x="290" y="380" font-size="14" font-weight="700" fill="#1f1f1f" text-anchor="middle">Whole Taka Rounding</text>
+  <text x="290" y="405" font-size="13" fill="#3a3a3a" text-anchor="middle">prorated = Math.round((monthlyPoisha * factor) / 100) * 100</text>
+  <text x="290" y="425" font-size="12" fill="#666666" text-anchor="middle">All money rounds to nearest 100 poisha (৳1.00)</text>
+
+  <rect x="80" y="460" width="420" height="120" rx="6" fill="#C9F2D6" stroke="#1f1f1f" stroke-width="1.2"/>
+  <text x="290" y="490" font-size="14" font-weight="700" fill="#1f1f1f" text-anchor="middle">Example Calculation</text>
+  <text x="290" y="515" font-size="13" fill="#3a3a3a" text-anchor="middle">Rent ৳20,000 started 15 Sep (16 days active):</text>
+  <text x="290" y="540" font-size="13" font-weight="600" fill="#1f1f1f" text-anchor="middle">৳20,000 × (16 / 30) = ৳10,666.67 → ৳10,667</text>
+  <text x="290" y="560" font-size="12" fill="#3a3a3a" text-anchor="middle">Prorated rent stored as 1,066,700 poisha</text>
+
+  <!-- Panel 2: Meter Readings -->
+  <rect x="580" y="160" width="480" height="560" rx="10" fill="#ffffff" stroke="#1f1f1f" stroke-width="1.8"/>
+  <rect x="580" y="160" width="480" height="50" rx="10" fill="#BFE3FD"/>
+  <text x="820" y="195" font-size="18" font-weight="700" fill="#1f1f1f" text-anchor="middle">2. Electricity &amp; Meter Calculations</text>
+
+  <rect x="610" y="240" width="420" height="110" rx="6" fill="#FEF3D6" stroke="#1f1f1f" stroke-width="1.2"/>
+  <text x="820" y="270" font-size="14" font-weight="700" fill="#1f1f1f" text-anchor="middle">Standard Consumption</text>
+  <text x="820" y="295" font-size="13" fill="#3a3a3a" text-anchor="middle">units = currentReading - prevReading (>= 0)</text>
+  <text x="820" y="315" font-size="13" fill="#3a3a3a" text-anchor="middle">chargePoisha = units * electricityRatePoisha</text>
+  <text x="820" y="335" font-size="12" fill="#666666" text-anchor="middle">Stored on electricity bill_line with units metadata</text>
+
+  <rect x="610" y="370" width="420" height="130" rx="6" fill="#FEF3D6" stroke="#1f1f1f" stroke-width="1.2"/>
+  <text x="820" y="400" font-size="14" font-weight="700" fill="#1f1f1f" text-anchor="middle">Meter Replacement Handling</text>
+  <text x="820" y="425" font-size="13" fill="#3a3a3a" text-anchor="middle">When meter is replaced mid-cycle:</text>
+  <text x="820" y="445" font-size="13" fill="#3a3a3a" text-anchor="middle">units = reading - newMeterStart</text>
+  <text x="820" y="465" font-size="13" fill="#3a3a3a" text-anchor="middle">e.g. old meter dead, new meter starts at 0, reading is 155</text>
+  <text x="820" y="485" font-size="12" fill="#666666" text-anchor="middle">Prev reading history preserved in meter_readings table</text>
+
+  <rect x="610" y="520" width="420" height="90" rx="6" fill="#C9F2D6" stroke="#1f1f1f" stroke-width="1.2"/>
+  <text x="820" y="550" font-size="14" font-weight="700" fill="#1f1f1f" text-anchor="middle">Explained Tenant Line</text>
+  <text x="820" y="575" font-size="13" font-weight="600" fill="#1f1f1f" text-anchor="middle">"1,240 → 1,395 = 155 units × ৳9.00 = ৳1,395"</text>
+  <text x="820" y="595" font-size="12" fill="#3a3a3a" text-anchor="middle">Transparent audit line visible to both tenant &amp; staff</text>
+
+  <!-- Panel 3: Credit Application -->
+  <rect x="1110" y="160" width="540" height="560" rx="10" fill="#ffffff" stroke="#1f1f1f" stroke-width="1.8"/>
+  <rect x="1110" y="160" width="540" height="50" rx="10" fill="#BFE3FD"/>
+  <text x="1380" y="195" font-size="18" font-weight="700" fill="#1f1f1f" text-anchor="middle">3. Automatic Credit Balance Application</text>
+
+  <rect x="1140" y="240" width="480" height="110" rx="6" fill="#FEF3D6" stroke="#1f1f1f" stroke-width="1.2"/>
+  <text x="1380" y="270" font-size="14" font-weight="700" fill="#1f1f1f" text-anchor="middle">Credit Balance Query</text>
+  <text x="1380" y="295" font-size="13" fill="#3a3a3a" text-anchor="middle">creditBalance = SUM(amount_poisha) FROM credit_entries</text>
+  <text x="1380" y="315" font-size="12" fill="#666666" text-anchor="middle">Positive (+) for overpayment, negative (-) for applied</text>
+  <text x="1380" y="335" font-size="12" fill="#666666" text-anchor="middle">Runs atomically inside lease transaction during bill issuance</text>
+
+  <rect x="1140" y="370" width="480" height="130" rx="6" fill="#FEF3D6" stroke="#1f1f1f" stroke-width="1.2"/>
+  <text x="1380" y="400" font-size="14" font-weight="700" fill="#1f1f1f" text-anchor="middle">Credit Application Logic</text>
+  <text x="1380" y="425" font-size="13" fill="#3a3a3a" text-anchor="middle">toApply = Math.min(creditBalance, bill.balancePoisha)</text>
+  <text x="1380" y="445" font-size="13" fill="#3a3a3a" text-anchor="middle">1. INSERT INTO credit_entries (-toApply, reason: 'Applied to bill #...')</text>
+  <text x="1380" y="465" font-size="13" fill="#3a3a3a" text-anchor="middle">2. INSERT INTO bill_lines (kind: 'adjustment', -toApply)</text>
+  <text x="1380" y="485" font-size="13" fill="#3a3a3a" text-anchor="middle">3. UPDATE bills SET total_poisha -= toApply</text>
+
+  <rect x="1140" y="520" width="480" height="100" rx="6" fill="#C9F2D6" stroke="#1f1f1f" stroke-width="1.2"/>
+  <text x="1380" y="550" font-size="14" font-weight="700" fill="#1f1f1f" text-anchor="middle">Guaranteed Zero Overdraft</text>
+  <text x="1380" y="575" font-size="13" font-weight="600" fill="#1f1f1f" text-anchor="middle">Credit cannot exceed bill balance or available credit</text>
+  <text x="1380" y="595" font-size="12" fill="#3a3a3a" text-anchor="middle">Full audit trail: no money vanishes or is double-credited</text>
+</svg>

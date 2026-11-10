@@ -1,8 +1,9 @@
-import { activateDueLeases } from '@bm/api/modules/leases/lease-activation';
+import { activateDueLeasesJob } from './activateDueLeases.js';
+import { generateBillsJob } from './generateBills.js';
+import { applyLateFeesJob } from './applyLateFees.js';
 import type { Db } from '@bm/api/config/db';
 import type { RedisClient } from '@bm/api/config/redis';
 import type { Logger } from 'pino';
-import { withJobLock } from '../lib/jobLock';
 
 export interface JobContext {
   prisma: Db;
@@ -18,21 +19,11 @@ export interface Job {
   run: (ctx: JobContext) => Promise<void>;
 }
 
-export const activateDueLeasesJob: Job = {
-  name: 'activate-due-leases',
-  // Daily at 00:05 Asia/Dhaka time
-  schedule: '5 0 * * *',
-  ttlMs: 60_000,
-  run: async ({ prisma, redis, logger, now }) => {
-    await withJobLock(redis, activateDueLeasesJob.name, activateDueLeasesJob.ttlMs, async () => {
-      logger.info('Running activateDueLeases job...');
-      const activatedCount = await activateDueLeases(prisma, now ? now() : undefined, undefined, logger);
-      logger.info({ activatedCount }, 'activateDueLeases completed');
-    });
-  },
-};
+export { activateDueLeasesJob } from './activateDueLeases.js';
+export { generateBillsJob } from './generateBills.js';
+export { applyLateFeesJob } from './applyLateFees.js';
 
 /**
  * Registry of background worker jobs.
  */
-export const jobs: Job[] = [activateDueLeasesJob];
+export const jobs: Job[] = [activateDueLeasesJob, generateBillsJob, applyLateFeesJob];

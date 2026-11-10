@@ -1384,6 +1384,636 @@
           }
         }
       }
+    },
+    "/api/billing/generate": {
+      "post": {
+        "tags": ["Billing"],
+        "summary": "Generate monthly bills for a building (Landlord only)",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "buildingId": { "type": "string", "format": "uuid" },
+                  "month": { "type": "string", "pattern": "^\\d{4}-\\d{2}$" }
+                },
+                "required": ["buildingId", "month"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Generated bills summary." },
+          "400": {
+            "description": "Validation failed",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          }
+        }
+      }
+    },
+    "/api/billing/issue-ready": {
+      "post": {
+        "tags": ["Billing"],
+        "summary": "Batch issue ready bills for a building (Landlord only)",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "buildingId": { "type": "string", "format": "uuid" },
+                  "month": { "type": "string", "pattern": "^\\d{4}-\\d{2}$" }
+                },
+                "required": ["buildingId", "month"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Issued bills count." },
+          "400": {
+            "description": "Validation failed",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          }
+        }
+      }
+    },
+    "/api/readings": {
+      "get": {
+        "tags": ["Billing"],
+        "summary": "Get meter readings grid for a building (Landlord/Caretaker)",
+        "responses": {
+          "200": { "description": "Meter readings grid." },
+          "400": {
+            "description": "Validation failed",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Billing"],
+        "summary": "Enter meter reading (Landlord/Caretaker)",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "unitId": { "type": "string", "format": "uuid" },
+                  "month": { "type": "string", "pattern": "^\\d{4}-\\d{2}$" },
+                  "reading": { "type": "integer", "minimum": 0 },
+                  "meterReplaced": { "type": "boolean" },
+                  "newMeterStart": { "type": "integer", "minimum": 0 }
+                },
+                "required": ["unitId", "month", "reading"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Meter reading entered." },
+          "400": {
+            "description": "Validation failed",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          }
+        }
+      }
+    },
+    "/api/bills": {
+      "get": {
+        "tags": ["Billing"],
+        "summary": "List bills (Landlord/Caretaker/Tenant)",
+        "responses": {
+          "200": { "description": "List of bills." },
+          "401": {
+            "description": "Unauthenticated",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          }
+        }
+      }
+    },
+    "/api/bills/{id}": {
+      "get": {
+        "tags": ["Billing"],
+        "summary": "Get single bill details",
+        "responses": {
+          "200": {
+            "description": "Bill details.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string", "format": "uuid" },
+                    "orgId": { "type": "string", "format": "uuid" },
+                    "leaseId": { "type": "string", "format": "uuid" },
+                    "unitLabel": { "type": ["string", "null"] },
+                    "periodMonth": { "type": "string" },
+                    "dueDate": { "type": "string" },
+                    "status": {
+                      "type": "string",
+                      "enum": ["draft", "issued", "partially_paid", "paid", "void"]
+                    },
+                    "needsReading": { "type": "boolean" },
+                    "totalPoisha": { "type": "integer" },
+                    "paidPoisha": { "type": "integer" },
+                    "balancePoisha": { "type": "integer" },
+                    "overdue": { "type": "boolean" },
+                    "issuedAt": { "type": ["string", "null"] },
+                    "issuedBy": { "type": ["string", "null"] },
+                    "lateFeeAppliedAt": { "type": ["string", "null"] },
+                    "voidReason": { "type": ["string", "null"] },
+                    "createdAt": { "type": "string" },
+                    "lines": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string", "format": "uuid" },
+                          "kind": {
+                            "type": "string",
+                            "enum": ["rent", "fixed_charge", "electricity", "adjustment", "late_fee"]
+                          },
+                          "label": { "type": "string" },
+                          "amountPoisha": { "type": "integer" },
+                          "meta": { "type": "object", "additionalProperties": {}, "default": {} },
+                          "reason": { "type": ["string", "null"] }
+                        },
+                        "required": ["id", "kind", "label", "amountPoisha"]
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "orgId",
+                    "leaseId",
+                    "periodMonth",
+                    "dueDate",
+                    "status",
+                    "needsReading",
+                    "totalPoisha",
+                    "paidPoisha",
+                    "balancePoisha",
+                    "overdue",
+                    "createdAt"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "404": {
+            "description": "Bill not found",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          }
+        }
+      }
+    },
+    "/api/bills/{id}/issue": {
+      "post": {
+        "tags": ["Billing"],
+        "summary": "Issue a draft bill (Landlord only)",
+        "responses": {
+          "200": {
+            "description": "Bill issued.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string", "format": "uuid" },
+                    "orgId": { "type": "string", "format": "uuid" },
+                    "leaseId": { "type": "string", "format": "uuid" },
+                    "unitLabel": { "type": ["string", "null"] },
+                    "periodMonth": { "type": "string" },
+                    "dueDate": { "type": "string" },
+                    "status": {
+                      "type": "string",
+                      "enum": ["draft", "issued", "partially_paid", "paid", "void"]
+                    },
+                    "needsReading": { "type": "boolean" },
+                    "totalPoisha": { "type": "integer" },
+                    "paidPoisha": { "type": "integer" },
+                    "balancePoisha": { "type": "integer" },
+                    "overdue": { "type": "boolean" },
+                    "issuedAt": { "type": ["string", "null"] },
+                    "issuedBy": { "type": ["string", "null"] },
+                    "lateFeeAppliedAt": { "type": ["string", "null"] },
+                    "voidReason": { "type": ["string", "null"] },
+                    "createdAt": { "type": "string" },
+                    "lines": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string", "format": "uuid" },
+                          "kind": {
+                            "type": "string",
+                            "enum": ["rent", "fixed_charge", "electricity", "adjustment", "late_fee"]
+                          },
+                          "label": { "type": "string" },
+                          "amountPoisha": { "type": "integer" },
+                          "meta": { "type": "object", "additionalProperties": {}, "default": {} },
+                          "reason": { "type": ["string", "null"] }
+                        },
+                        "required": ["id", "kind", "label", "amountPoisha"]
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "orgId",
+                    "leaseId",
+                    "periodMonth",
+                    "dueDate",
+                    "status",
+                    "needsReading",
+                    "totalPoisha",
+                    "paidPoisha",
+                    "balancePoisha",
+                    "overdue",
+                    "createdAt"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cannot issue without reading or already issued",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "404": {
+            "description": "Bill not found",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          }
+        }
+      }
+    },
+    "/api/bills/{id}/adjustments": {
+      "post": {
+        "tags": ["Billing"],
+        "summary": "Add an adjustment line to a bill (Landlord only)",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amountPoisha": { "type": "integer" },
+                  "reason": { "type": "string", "minLength": 1, "maxLength": 255 }
+                },
+                "required": ["amountPoisha", "reason"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Adjustment added.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string", "format": "uuid" },
+                    "orgId": { "type": "string", "format": "uuid" },
+                    "leaseId": { "type": "string", "format": "uuid" },
+                    "unitLabel": { "type": ["string", "null"] },
+                    "periodMonth": { "type": "string" },
+                    "dueDate": { "type": "string" },
+                    "status": {
+                      "type": "string",
+                      "enum": ["draft", "issued", "partially_paid", "paid", "void"]
+                    },
+                    "needsReading": { "type": "boolean" },
+                    "totalPoisha": { "type": "integer" },
+                    "paidPoisha": { "type": "integer" },
+                    "balancePoisha": { "type": "integer" },
+                    "overdue": { "type": "boolean" },
+                    "issuedAt": { "type": ["string", "null"] },
+                    "issuedBy": { "type": ["string", "null"] },
+                    "lateFeeAppliedAt": { "type": ["string", "null"] },
+                    "voidReason": { "type": ["string", "null"] },
+                    "createdAt": { "type": "string" },
+                    "lines": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string", "format": "uuid" },
+                          "kind": {
+                            "type": "string",
+                            "enum": ["rent", "fixed_charge", "electricity", "adjustment", "late_fee"]
+                          },
+                          "label": { "type": "string" },
+                          "amountPoisha": { "type": "integer" },
+                          "meta": { "type": "object", "additionalProperties": {}, "default": {} },
+                          "reason": { "type": ["string", "null"] }
+                        },
+                        "required": ["id", "kind", "label", "amountPoisha"]
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "orgId",
+                    "leaseId",
+                    "periodMonth",
+                    "dueDate",
+                    "status",
+                    "needsReading",
+                    "totalPoisha",
+                    "paidPoisha",
+                    "balancePoisha",
+                    "overdue",
+                    "createdAt"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "404": {
+            "description": "Bill not found",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          }
+        }
+      }
+    },
+    "/api/bills/{id}/waive-late-fee": {
+      "post": {
+        "tags": ["Billing"],
+        "summary": "Waive late fee on a bill (Landlord only)",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": { "reason": { "type": "string", "minLength": 1, "maxLength": 255 } },
+                "required": ["reason"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Late fee waived.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string", "format": "uuid" },
+                    "orgId": { "type": "string", "format": "uuid" },
+                    "leaseId": { "type": "string", "format": "uuid" },
+                    "unitLabel": { "type": ["string", "null"] },
+                    "periodMonth": { "type": "string" },
+                    "dueDate": { "type": "string" },
+                    "status": {
+                      "type": "string",
+                      "enum": ["draft", "issued", "partially_paid", "paid", "void"]
+                    },
+                    "needsReading": { "type": "boolean" },
+                    "totalPoisha": { "type": "integer" },
+                    "paidPoisha": { "type": "integer" },
+                    "balancePoisha": { "type": "integer" },
+                    "overdue": { "type": "boolean" },
+                    "issuedAt": { "type": ["string", "null"] },
+                    "issuedBy": { "type": ["string", "null"] },
+                    "lateFeeAppliedAt": { "type": ["string", "null"] },
+                    "voidReason": { "type": ["string", "null"] },
+                    "createdAt": { "type": "string" },
+                    "lines": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string", "format": "uuid" },
+                          "kind": {
+                            "type": "string",
+                            "enum": ["rent", "fixed_charge", "electricity", "adjustment", "late_fee"]
+                          },
+                          "label": { "type": "string" },
+                          "amountPoisha": { "type": "integer" },
+                          "meta": { "type": "object", "additionalProperties": {}, "default": {} },
+                          "reason": { "type": ["string", "null"] }
+                        },
+                        "required": ["id", "kind", "label", "amountPoisha"]
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "orgId",
+                    "leaseId",
+                    "periodMonth",
+                    "dueDate",
+                    "status",
+                    "needsReading",
+                    "totalPoisha",
+                    "paidPoisha",
+                    "balancePoisha",
+                    "overdue",
+                    "createdAt"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "404": {
+            "description": "Bill not found",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          }
+        }
+      }
+    },
+    "/api/bills/{id}/void": {
+      "post": {
+        "tags": ["Billing"],
+        "summary": "Void an issued bill (Landlord only)",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": { "reason": { "type": "string", "maxLength": 255 } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bill voided.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string", "format": "uuid" },
+                    "orgId": { "type": "string", "format": "uuid" },
+                    "leaseId": { "type": "string", "format": "uuid" },
+                    "unitLabel": { "type": ["string", "null"] },
+                    "periodMonth": { "type": "string" },
+                    "dueDate": { "type": "string" },
+                    "status": {
+                      "type": "string",
+                      "enum": ["draft", "issued", "partially_paid", "paid", "void"]
+                    },
+                    "needsReading": { "type": "boolean" },
+                    "totalPoisha": { "type": "integer" },
+                    "paidPoisha": { "type": "integer" },
+                    "balancePoisha": { "type": "integer" },
+                    "overdue": { "type": "boolean" },
+                    "issuedAt": { "type": ["string", "null"] },
+                    "issuedBy": { "type": ["string", "null"] },
+                    "lateFeeAppliedAt": { "type": ["string", "null"] },
+                    "voidReason": { "type": ["string", "null"] },
+                    "createdAt": { "type": "string" },
+                    "lines": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string", "format": "uuid" },
+                          "kind": {
+                            "type": "string",
+                            "enum": ["rent", "fixed_charge", "electricity", "adjustment", "late_fee"]
+                          },
+                          "label": { "type": "string" },
+                          "amountPoisha": { "type": "integer" },
+                          "meta": { "type": "object", "additionalProperties": {}, "default": {} },
+                          "reason": { "type": ["string", "null"] }
+                        },
+                        "required": ["id", "kind", "label", "amountPoisha"]
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "orgId",
+                    "leaseId",
+                    "periodMonth",
+                    "dueDate",
+                    "status",
+                    "needsReading",
+                    "totalPoisha",
+                    "paidPoisha",
+                    "balancePoisha",
+                    "overdue",
+                    "createdAt"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed or has payments",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "404": {
+            "description": "Bill not found",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          }
+        }
+      }
+    },
+    "/api/dues": {
+      "get": {
+        "tags": ["Billing"],
+        "summary": "Get dues for logged-in tenant (Tenant only)",
+        "responses": {
+          "200": {
+            "description": "Dues summary.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "bills": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string", "format": "uuid" },
+                          "periodMonth": { "type": "string" },
+                          "dueDate": { "type": "string" },
+                          "totalPoisha": { "type": "integer" },
+                          "paidPoisha": { "type": "integer" },
+                          "balancePoisha": { "type": "integer" },
+                          "overdue": { "type": "boolean" }
+                        },
+                        "required": ["id", "periodMonth", "balancePoisha"]
+                      }
+                    },
+                    "creditPoisha": { "type": "integer" },
+                    "totalPoisha": { "type": "integer" }
+                  },
+                  "required": ["bills", "creditPoisha", "totalPoisha"]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorBody" } } }
+          }
+        }
+      }
     }
   },
   "webhooks": {}
