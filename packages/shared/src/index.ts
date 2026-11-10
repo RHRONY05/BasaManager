@@ -6,5 +6,7 @@ export * from './api/org';
 export * from './api/buildings';
 export * from './api/leases';
 export * from './api/billing';
+export * from './api/payments';
+export * from './api/files';
 export * from './enums';
 export * from './ids';
