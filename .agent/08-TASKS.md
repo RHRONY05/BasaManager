@@ -88,7 +88,7 @@ V0 Preflight ─▶ V1 Monorepo + CI ─▶ V2 Design ─▶ V3 Infra walking sk
   - **Tests:** payments integration list; `pay-claim.spec.ts`.
   - **AC:** 20 concurrent payments → receipts 1…20 with no gaps; void after credit use recalculates correctly; receipt PDF downloads.
 
-- [ ] **V10 SSLCommerz online payments** — P1
+- [x] **V10 SSLCommerz online payments** — P1
   - Init, IPN + validation, return pages, intent polling, re-check job, mock gateway for dev/test.
   - Docs: `features/payments.md` (online part: sequence diagram with the "never trust the redirect" failure path), `concepts/payment-gateways-and-webhooks.md`.
   - **Tests:** SSLCommerz integration list; `pay-online.spec.ts`. Manual staging check with an SSLCommerz sandbox test card, logged with screenshots.

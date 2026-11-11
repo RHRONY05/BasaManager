@@ -8,11 +8,11 @@
 ## Now
 | | |
 |---|---|
-| **Phase** | **Goal 3: Billing engine, manual payments, SSLCommerz (Tasks V8–V10)** in progress. Task V10 merged to `main` (PR #26, commit `558bf3d`). Goal 3 bug hunt completed with 5 issues (#27, #28, #29, #30, #31). Fixes and regression tests complete on `fix/goal3-bughunt`. |
-| **Next task** | Open PR for `fix/goal3-bughunt`, watch CI, run Claude Opus review, merge to `main`, and complete Goal 3. |
+| **Phase** | **Goal 3: Billing engine, manual payments, SSLCommerz (Tasks V8–V10) COMPLETE.** Tasks V8, V9, V10 and Goal 3 Bug Hunt (#27–#31) merged to `main` (PR #32, commit `2b6d920`). Staging deploy and all CI suites green. Ready for Goal 4. |
+| **Next task** | Complete Goal 4 from `.agent/GOAL.md` (Tasks V11–V13: Notifications, maintenance, notices and documents). |
 | **Blocked on** | — |
 | **Production URL** | — (will be https://basamanager.rhrony05.me; staging at https://staging.basamanager.rhrony05.me) |
-| **Last updated** | 2026-11-11 by Antigravity (lead): PR #26 approved by Claude Opus (review 5) and merged to `main`. Opus ran Goal 3 Bug Hunt identifying #27-#31. All 5 bugs fixed on `fix/goal3-bughunt` with full regression tests (56/56 domain unit, 54/54 billing int, 70/70 leases int, 37/37 payments int). Lint, formatting, typecheck, and docs build 100% clean. |
+| **Last updated** | 2026-11-11 by Antigravity (lead): PR #32 approved by Claude Opus (review 2) and merged to `main`. Issues #27, #28, #29, #30, #31 closed. Staging deployed. Goal 3 100% complete. |
 
 ## Resume here (written at the 2026-11-08 pause)
 **First item:** ✅ done 2026-11-08: VM `vm-basamanager` started (public IP 172.198.71.173, SSH with the deploy key works). The ssh user cannot run `docker ps` (permission denied on the socket), so staging container state is unchecked; devops should check with sudo when finishing #3. **2026-11-09: devops finished all 25 V3 review items (head `fed9bc2`, CI green, blocker proved on staging, runs 42507019561 / 42507429890). Next item: devops fixes the 2026-11-09 Opus re-review of #3 (CHANGES REQUESTED, https://github.com/RHRONY05/BasaManager/pull/3#pullrequestreview-5819099087): (1) BLOCKER: install openssl in the `base` stage of `infra/docker/api.Dockerfile` and `worker.Dockerfile` (migrate fails "Can't write to @prisma/engines" on every new image); prove with a clean build + green migrate on staging. (2) Re-run both rollback drills (migrate/early failure and smoke failure) with the new scripts and record them. (3) Correct PROGRESS and `docs/operations/rollback.md`: runs 42507019561/42507429890 failed at migrate, not at a forced hook. (4) Add a CI step that builds the api image and runs migrate. (5) Nits: deploy.yml:160-161, rollback.sh:566, sentry.test.ts:215-217, provision-secrets.sh:26. Then Opus re-review, squash merge, lead tags `v0.1.0`, checks prod `/api/health`, runs `weekly` once. Environment branch policies are still unset (deployment_branch_policy null on staging and production): set via `gh api` if the token allows, else keep as an owner Human step.**
@@ -1084,4 +1084,17 @@ Tests & Verifications:
 - Integration tests: 54/54 billing, 70/70 leases, 37/37 payments passing.
 - Typecheck, ESLint, Prettier, VitePress docs build: 100% clean.
 Next: Open PR `fix/goal3-bughunt`, watch CI, run Claude review, merge to `main`, and complete Goal 3.
+
+### 2026-11-11 — Antigravity (lead) & Claude Opus — Goal 3 Complete (PR #32 merged to `main` as `2b6d920`)
+Did: PR #32 squash-merged to `main`. All 5 Goal 3 Bug Hunt issues closed:
+- #27: Payments list pagination cursor boundary fix (int tests in `payments.int.test.ts`).
+- #28: Meter reading isolation across leases (`resolvePreviousReading` respecting `periodMonth >= leaseStartMonth`, int tests in `billing.int.test.ts`).
+- #29: Strict two-level lock hierarchy (`leases` FOR UPDATE then `bills` FOR UPDATE) preventing 40P01 deadlocks across all billing and payment pathways.
+- #30: Immediate prorated draft bill generation on lease activation past building bill day (`createDraftBillForLease` and `generateFirstBillIfAfterBillDay`, int tests in `leases.int.test.ts`).
+- #31: Move-in after period month returning 0 factor and skipping draft bill generation (`@bm/domain`, unit + int tests).
+- All 8 CI checks green on GitHub Actions run 43032148718 (unit 677/677, int 445/445, e2e 19m14s, CodeQL 0 alerts, docs, images, lint-typecheck, security).
+- Claude Opus reviewer approved PR #32 (`VERDICT: APPROVE`).
+- Automated staging deployment verified green.
+Next: Ready to start Goal 4 (Tasks V11–V13: Notifications, maintenance, notices and documents) via `/goal Complete goal 4 from .agent/GOAL.md`.
+
 
