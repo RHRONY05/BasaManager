@@ -76,9 +76,16 @@ class LocalStorageDriver implements StorageDriver {
   }
 
   private filePath(subpath: string): string {
+    if (subpath.includes('..') || path.isAbsolute(subpath) || !/^[a-zA-Z0-9_\-\/]+$/.test(subpath)) {
+      throw new Error('Path traversal detected');
+    }
     const base = path.resolve(this.getBaseDir());
     const resolved = path.resolve(base, subpath);
-    if (!resolved.startsWith(base + path.sep) && resolved !== base) {
+    if (!resolved.startsWith(base)) {
+      throw new Error('Path traversal detected');
+    }
+    const relative = path.relative(base, resolved);
+    if (relative.startsWith('..') || path.isAbsolute(relative)) {
       throw new Error('Path traversal detected');
     }
     return resolved;
@@ -92,23 +99,62 @@ class LocalStorageDriver implements StorageDriver {
     fileId?: string;
     resourceType: 'image' | 'raw';
   }): Promise<void> {
-    const fullPath = this.filePath(params.publicId);
+    if (
+      params.publicId.includes('..') ||
+      path.isAbsolute(params.publicId) ||
+      !/^[a-zA-Z0-9_\-\/]+$/.test(params.publicId)
+    ) {
+      throw new Error('Path traversal detected');
+    }
+    const rootDir = path.resolve(this.getBaseDir());
+    const fullPath = path.resolve(rootDir, params.publicId);
+    if (!fullPath.startsWith(rootDir)) {
+      throw new Error('Path traversal detected');
+    }
+    const rel = path.relative(rootDir, fullPath);
+    if (rel.startsWith('..') || path.isAbsolute(rel)) {
+      throw new Error('Path traversal detected');
+    }
+
     await fs.mkdir(path.dirname(fullPath), { recursive: true });
     await fs.writeFile(fullPath, params.buffer);
 
     if (params.thumbBuffer) {
-      await fs.writeFile(`${fullPath}_thumb`, params.thumbBuffer);
+      const thumbPath = path.resolve(rootDir, `${rel}_thumb`);
+      if (!thumbPath.startsWith(rootDir)) {
+        throw new Error('Path traversal detected');
+      }
+      await fs.writeFile(thumbPath, params.thumbBuffer);
     }
 
     if (params.fileId) {
-      const byIdDir = this.filePath('byId');
+      const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!UUID_REGEX.test(params.fileId)) {
+        throw new Error('Invalid fileId');
+      }
+      const byIdDir = path.resolve(rootDir, 'byId');
+      if (!byIdDir.startsWith(rootDir)) {
+        throw new Error('Path traversal detected');
+      }
       await fs.mkdir(byIdDir, { recursive: true });
-      await fs.writeFile(path.join(byIdDir, params.fileId), params.buffer);
+      const targetFilePath = path.resolve(byIdDir, params.fileId);
+      if (!targetFilePath.startsWith(byIdDir)) {
+        throw new Error('Path traversal detected');
+      }
+      await fs.writeFile(targetFilePath, params.buffer);
       if (params.thumbBuffer) {
-        await fs.writeFile(path.join(byIdDir, `${params.fileId}_thumb`), params.thumbBuffer);
+        const thumbFilePath = path.resolve(byIdDir, `${params.fileId}_thumb`);
+        if (!thumbFilePath.startsWith(byIdDir)) {
+          throw new Error('Path traversal detected');
+        }
+        await fs.writeFile(thumbFilePath, params.thumbBuffer);
+      }
+      const metaFilePath = path.resolve(byIdDir, `${params.fileId}.meta.json`);
+      if (!metaFilePath.startsWith(byIdDir)) {
+        throw new Error('Path traversal detected');
       }
       await fs.writeFile(
-        path.join(byIdDir, `${params.fileId}.meta.json`),
+        metaFilePath,
         JSON.stringify({
           mime: params.mime,
           publicId: params.publicId,
@@ -140,7 +186,14 @@ class LocalStorageDriver implements StorageDriver {
   }
 
   async read(publicId: string): Promise<Buffer> {
-    const fullPath = this.filePath(publicId);
+    if (publicId.includes('..') || path.isAbsolute(publicId) || !/^[a-zA-Z0-9_\-\/]+$/.test(publicId)) {
+      throw new Error('Path traversal detected');
+    }
+    const rootDir = path.resolve(this.getBaseDir());
+    const fullPath = path.resolve(rootDir, publicId);
+    if (!fullPath.startsWith(rootDir)) {
+      throw new Error('Path traversal detected');
+    }
     return await fs.readFile(fullPath);
   }
 
@@ -174,19 +227,44 @@ class LocalStorageDriver implements StorageDriver {
 
   async delete(publicId: string): Promise<void> {
     try {
-      const fullPath = this.filePath(publicId);
+      if (publicId.includes('..') || path.isAbsolute(publicId) || !/^[a-zA-Z0-9_\-\/]+$/.test(publicId)) {
+        return;
+      }
+      const rootDir = path.resolve(this.getBaseDir());
+      const fullPath = path.resolve(rootDir, publicId);
+      if (!fullPath.startsWith(rootDir)) {
+        return;
+      }
       await fs.unlink(fullPath);
       try {
-        await fs.unlink(`${fullPath}_thumb`);
+        const rel = path.relative(rootDir, fullPath);
+        const thumbPath = path.resolve(rootDir, `${rel}_thumb`);
+        if (thumbPath.startsWith(rootDir)) {
+          await fs.unlink(thumbPath);
+        }
       } catch {
         // Thumbnail unlink error ignored
       }
       try {
         const fileId = path.basename(publicId);
-        const byIdDir = this.filePath('byId');
-        await fs.unlink(path.join(byIdDir, fileId));
-        await fs.unlink(path.join(byIdDir, `${fileId}.meta.json`));
-        await fs.unlink(path.join(byIdDir, `${fileId}_thumb`));
+        const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (UUID_REGEX.test(fileId)) {
+          const byIdDir = path.resolve(rootDir, 'byId');
+          if (byIdDir.startsWith(rootDir)) {
+            const targetPath = path.resolve(byIdDir, fileId);
+            if (targetPath.startsWith(byIdDir)) {
+              await fs.unlink(targetPath);
+            }
+            const metaPath = path.resolve(byIdDir, `${fileId}.meta.json`);
+            if (metaPath.startsWith(byIdDir)) {
+              await fs.unlink(metaPath);
+            }
+            const thumbPath = path.resolve(byIdDir, `${fileId}_thumb`);
+            if (thumbPath.startsWith(byIdDir)) {
+              await fs.unlink(thumbPath);
+            }
+          }
+        }
       } catch {
         // byId unlink error ignored
       }
