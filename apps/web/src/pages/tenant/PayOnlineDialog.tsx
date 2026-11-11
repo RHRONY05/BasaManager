@@ -10,9 +10,9 @@ import { parseTakaToPoisha, formatMoney } from '../../lib/format.js';
 const payOnlineFormSchema = z.object({
   amountTaka: z
     .string()
-    .min(1, 'Please enter a valid amount')
+    .min(1, 'payments.invalidAmount')
     .refine((val) => parseTakaToPoisha(val) >= 100_00, {
-      message: 'Minimum online payment amount is ৳100',
+      message: 'payments.minOnlinePayment',
     }),
 });
 
@@ -162,7 +162,16 @@ export function PayOnlineDialog({ leaseId, dueAmountPoisha, isOpen, onClose }: P
                 {...register('amountTaka')}
               />
             </div>
-            {errors.amountTaka && <p className="text-xs text-danger">{errors.amountTaka.message}</p>}
+            {errors.amountTaka && (
+              <p className="text-xs text-danger">
+                {t(
+                  errors.amountTaka.message || 'payments.invalidAmount',
+                  errors.amountTaka.message === 'payments.minOnlinePayment'
+                    ? 'Minimum online payment amount is ৳100'
+                    : 'Please enter a valid amount',
+                )}
+              </p>
+            )}
             <p className="text-xs text-fg-muted">
               {t('payments.minAmountNote', 'Minimum ৳100. Any excess over dues is kept as credit.')}
             </p>

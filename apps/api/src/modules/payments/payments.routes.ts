@@ -7,6 +7,8 @@ import {
   voidPaymentSchema,
   listPaymentsQuerySchema,
   initOnlinePaymentSchema,
+  sslcommerzIpnSchema,
+  paymentIntentParamSchema,
 } from '@bm/shared/api/payments';
 import type { Db } from '../../config/db.js';
 import type { Env } from '../../config/env.js';
@@ -52,7 +54,11 @@ export function createPaymentsRoutes(deps: PaymentsRouteDeps): {
   paymentsRouter.use(rateLimiters.generalLimiter);
 
   // ── Public SSLCommerz Webhooks & Callbacks (exempt from auth and CSRF) ──────
-  paymentsRouter.post('/sslcommerz/ipn', sslcommerzController.handleIpn);
+  paymentsRouter.post(
+    '/sslcommerz/ipn',
+    validate({ body: sslcommerzIpnSchema }),
+    sslcommerzController.handleIpn,
+  );
   paymentsRouter.post('/sslcommerz/return/:result', sslcommerzController.handleReturn);
   paymentsRouter.get('/sslcommerz/return/:result', sslcommerzController.handleReturn);
 
@@ -142,6 +148,7 @@ export function createPaymentsRoutes(deps: PaymentsRouteDeps): {
     '/sslcommerz/intents/:tranId',
     requireUser,
     requireMembership,
+    validate({ params: paymentIntentParamSchema }),
     sslcommerzController.getIntent,
   );
 

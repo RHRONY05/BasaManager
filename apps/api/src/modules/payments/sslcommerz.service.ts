@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import type { Db, Tx, MembershipRole } from '../../config/db.js';
 import type { Env } from '../../config/env.js';
 import { env as defaultEnv } from '../../config/env.js';
+import { clock, getDhakaDateString } from '../../lib/clock.js';
 import { ApiError } from '../../lib/ApiError.js';
 import { ErrorCode } from '@bm/shared/errors';
 import type {
@@ -10,12 +11,15 @@ import type {
   PaymentIntentResponse,
 } from '@bm/shared/api/payments';
 import { SslcommerzClient } from './sslcommerz.client.js';
+import { processPaymentAllocationAndReceipt } from './allocation.js';
 
 export interface SslcommerzServiceContext {
   orgId: string;
   userId: string;
   role: MembershipRole | null;
 }
+
+const WORKER_SYSTEM_USER_ID = '00000000-0000-4000-8000-000000000000';
 
 export class SslcommerzService {
   private readonly client: SslcommerzClient;
@@ -49,10 +53,10 @@ export class SslcommerzService {
       throw new ApiError(ErrorCode.FORBIDDEN, 'Only tenants can initiate online payments');
     }
 
-    const { gatewayUrl, tranId } = await this.prisma.$tx(
+    // 1. Validate lease, membership, and compute maxAllowed inside a short tx
+    const leaseData = await this.prisma.$tx(
       { orgId: ctx.orgId, userId: ctx.userId, role: ctx.role },
       async (tx: Tx) => {
-        // 1. Validate lease exists in this organisation
         const lease = await tx.lease.findFirst({
           where: { id: input.leaseId, orgId: ctx.orgId },
           include: {
@@ -68,7 +72,6 @@ export class SslcommerzService {
           throw new ApiError(ErrorCode.NOT_FOUND, 'Lease not found');
         }
 
-        // 2. Verify that the caller is a tenant on this specific lease
         const isTenantOnLease = await tx.leaseTenant.findFirst({
           where: {
             leaseId: input.leaseId,
@@ -83,7 +86,6 @@ export class SslcommerzService {
           throw new ApiError(ErrorCode.NOT_FOUND, 'Lease not found or not accessible');
         }
 
-        // 3. Calculate open dues + one month's rent as the upper limit
         const unpaidBills = await tx.bill.findMany({
           where: {
             leaseId: input.leaseId,
@@ -108,48 +110,49 @@ export class SslcommerzService {
           );
         }
 
-        // 4. Generate unique transaction ID
-        const tranId = `BM-${Date.now()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
-
-        // 5. Query user details for customer information
         const user = await tx.user.findUnique({
           where: { id: ctx.userId },
           select: { fullName: true, email: true },
         });
 
-        const appUrl = this.envConfig.APP_URL || process.env.APP_URL || 'http://localhost:4000';
-
-        // 6. Call SSLCommerz Gateway Init API
-        const initRes = await this.client.initPayment({
-          tranId,
-          amountPoisha: input.amountPoisha,
-          appUrl,
-          cusName: user?.fullName || 'Tenant',
-          cusEmail: user?.email || 'tenant@example.com',
-        });
-
-        // 7. Store PaymentIntent record in initiated status
-        await tx.paymentIntent.create({
-          data: {
-            id: crypto.randomUUID(),
-            orgId: ctx.orgId,
-            leaseId: input.leaseId,
-            tranId,
-            amountPoisha: BigInt(input.amountPoisha),
-            status: 'initiated',
-            sessionKey: initRes.sessionkey,
-            createdBy: ctx.userId,
-          },
-        });
-
-        return {
-          gatewayUrl: initRes.GatewayPageURL,
-          tranId,
-        };
+        return { user };
       },
     );
 
-    return { gatewayUrl, tranId };
+    // 2. Generate unique transaction ID using clock.now()
+    const nowMs = clock.now().getTime();
+    const tranId = `BM-${nowMs}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+    const appUrl = this.envConfig.APP_URL || process.env.APP_URL || 'http://localhost:4000';
+
+    // 3. Call SSLCommerz Gateway Init API OUTSIDE database transaction
+    const initRes = await this.client.initPayment({
+      tranId,
+      amountPoisha: input.amountPoisha,
+      appUrl,
+      cusName: leaseData.user?.fullName || 'Tenant',
+      cusEmail: leaseData.user?.email || 'tenant@example.com',
+    });
+
+    // 4. Store PaymentIntent record in initiated status inside a short tx
+    await this.prisma.$tx({ orgId: ctx.orgId, userId: ctx.userId, role: ctx.role }, async (tx: Tx) => {
+      await tx.paymentIntent.create({
+        data: {
+          id: crypto.randomUUID(),
+          orgId: ctx.orgId,
+          leaseId: input.leaseId,
+          tranId,
+          amountPoisha: BigInt(input.amountPoisha),
+          status: 'initiated',
+          sessionKey: initRes.sessionkey,
+          createdBy: ctx.userId,
+        },
+      });
+    });
+
+    return {
+      gatewayUrl: initRes.GatewayPageURL,
+      tranId,
+    };
   }
 
   /**
@@ -166,8 +169,6 @@ export class SslcommerzService {
     if (!tranId) {
       return { status: 'ignored' };
     }
-
-    const workerUserId = '00000000-0000-4000-8000-000000000000';
 
     // 1. Locate intent across all organisations using security-definer lookup
     const rows = await this.prisma.$queryRaw<
@@ -207,36 +208,29 @@ export class SslcommerzService {
       return { status: 'already_confirmed' };
     }
 
-    // 2. Check if IPN payload itself declares failure
-    if (body.status === 'FAILED' || body.status === 'CANCELLED') {
-      await this.prisma.$tx({ orgId: intent.orgId, userId: workerUserId, role: null }, async (tx) => {
-        if (intent.status === 'initiated') {
-          await tx.paymentIntent.update({
-            where: { id: intent.id },
-            data: { status: 'failed' },
-          });
-        }
-      });
-      return { status: 'failed' };
-    }
-
+    // 2. Blocker 2: Never trust unauthenticated form body status alone.
+    // If no val_id is provided, or the form claims failure/cancellation,
+    // ignore the unauthenticated form payload and leave the intent 'initiated'.
+    // The background recheck job will securely query SSLCommerz by tran_id.
     const valId = body.val_id;
-    if (!valId) {
+    if (!valId || body.status === 'FAILED' || body.status === 'CANCELLED') {
       return { status: 'ignored' };
     }
 
-    // 3. Call SSLCommerz server-to-server validation API (never trust form data alone)
+    // 3. Call SSLCommerz server-to-server validation API
     const valRes = await this.client.validatePayment(valId);
 
-    if (valRes.status !== 'VALID') {
-      await this.prisma.$tx({ orgId: intent.orgId, userId: workerUserId, role: null }, async (tx) => {
-        if (intent.status === 'initiated') {
-          await tx.paymentIntent.update({
-            where: { id: intent.id },
+    // Blocker 3: Both VALID and VALIDATED are accepted as successful
+    if (valRes.status !== 'VALID' && valRes.status !== 'VALIDATED') {
+      await this.prisma.$tx(
+        { orgId: intent.orgId, userId: WORKER_SYSTEM_USER_ID, role: null },
+        async (tx) => {
+          await tx.paymentIntent.updateMany({
+            where: { id: intent.id, status: 'initiated' },
             data: { status: 'failed', valId },
           });
-        }
-      });
+        },
+      );
       return { status: 'failed' };
     }
 
@@ -249,12 +243,15 @@ export class SslcommerzService {
       currency !== 'BDT' ||
       validatedPoisha !== Number(intent.amountPoisha)
     ) {
-      await this.prisma.$tx({ orgId: intent.orgId, userId: workerUserId, role: null }, async (tx) => {
-        await tx.paymentIntent.update({
-          where: { id: intent.id },
-          data: { status: 'flagged', valId },
-        });
-      });
+      await this.prisma.$tx(
+        { orgId: intent.orgId, userId: WORKER_SYSTEM_USER_ID, role: null },
+        async (tx) => {
+          await tx.paymentIntent.updateMany({
+            where: { id: intent.id, status: 'initiated' },
+            data: { status: 'flagged', valId },
+          });
+        },
+      );
       return { status: 'flagged' };
     }
 
@@ -266,33 +263,15 @@ export class SslcommerzService {
 
   /**
    * Handles browser return callback from SSLCommerz.
-   * NEVER changes money.
+   * NEVER changes money or modifies payment intent state.
    */
   async handleReturn(result: string, body: { tran_id?: string }): Promise<{ redirectUrl: string }> {
     if (result !== 'success' && result !== 'fail' && result !== 'cancel') {
       throw new ApiError(ErrorCode.VALIDATION_FAILED, 'Invalid return result parameter');
     }
 
+    // Blocker 1: Browser returns NEVER modify payment_intents or financial state.
     const tranId = body.tran_id;
-    const workerUserId = '00000000-0000-4000-8000-000000000000';
-
-    if (tranId && (result === 'fail' || result === 'cancel')) {
-      const targetStatus = result === 'fail' ? 'failed' : 'cancelled';
-      const rows = await this.prisma.$queryRaw<
-        { id: string; org_id: string; status: string }[]
-      >`SELECT id, org_id, status::text FROM app_find_payment_intent_by_tran_id(${tranId})`;
-
-      const intent = rows[0];
-      if (intent && intent.status === 'initiated') {
-        await this.prisma.$tx({ orgId: intent.org_id, userId: workerUserId, role: null }, async (tx) => {
-          await tx.paymentIntent.update({
-            where: { id: intent.id },
-            data: { status: targetStatus },
-          });
-        });
-      }
-    }
-
     const appUrl = this.envConfig.APP_URL || process.env.APP_URL || 'http://localhost:4000';
     const redirectUrl = `${appUrl}/pay/result?tran=${encodeURIComponent(tranId || '')}`;
     return { redirectUrl };
@@ -364,158 +343,68 @@ export class SslcommerzService {
     },
     valId: string,
   ): Promise<void> {
-    const workerUserId = '00000000-0000-4000-8000-000000000000';
-
-    await this.prisma.$tx({ orgId: intent.orgId, userId: workerUserId, role: null }, async (tx: Tx) => {
-      // 1. Lock payment intent row to avoid double-processing
-      const lockedIntent = await tx.$queryRaw<{ id: string; status: string }[]>`
+    await this.prisma.$tx(
+      { orgId: intent.orgId, userId: WORKER_SYSTEM_USER_ID, role: null },
+      async (tx: Tx) => {
+        // 1. Lock payment intent row to avoid double-processing
+        const lockedIntent = await tx.$queryRaw<{ id: string; status: string }[]>`
           SELECT id, status::text
           FROM payment_intents
           WHERE id = ${intent.id}::uuid
           FOR UPDATE
         `;
 
-      if (!lockedIntent[0] || lockedIntent[0].status === 'confirmed') {
-        return;
-      }
+        if (!lockedIntent[0] || lockedIntent[0].status === 'confirmed') {
+          return;
+        }
 
-      // 2. Lock lease row first
-      await tx.$queryRaw`
+        // 2. Lock lease row first
+        await tx.$queryRaw`
           SELECT id FROM leases WHERE id = ${intent.leaseId}::uuid FOR UPDATE
         `;
 
-      // 3. Lock unpaid and partially paid bills in period_month ASC order
-      const bills = await tx.$queryRaw<
-        { id: string; period_month: Date; total_poisha: bigint; paid_poisha: bigint; status: string }[]
-      >`
-          SELECT id, period_month, total_poisha, paid_poisha, status::text
-          FROM bills
-          WHERE lease_id = ${intent.leaseId}::uuid
-            AND status IN ('issued', 'partially_paid')
-          ORDER BY period_month ASC
-          FOR UPDATE
-        `;
+        const now = new Date(clock.now());
+        const paidDateDhaka = getDhakaDateString(now);
 
-      // 4. Create confirmed Payment record
-      const paymentId = crypto.randomUUID();
-      const payment = await tx.payment.create({
-        data: {
-          id: paymentId,
-          orgId: intent.orgId,
-          leaseId: intent.leaseId,
-          amountPoisha: intent.amountPoisha,
-          method: 'sslcommerz',
-          status: 'confirmed',
-          reference: valId,
-          paidOn: new Date(),
-          submittedBy: intent.createdBy,
-          confirmedBy: intent.createdBy,
-          confirmedAt: new Date(),
-        },
-      });
-
-      // 5. Allocate payment amount to bills (oldest first)
-      let remainingPoisha = Number(intent.amountPoisha);
-
-      for (const b of bills) {
-        if (remainingPoisha <= 0) break;
-
-        const total = Number(b.total_poisha);
-        const paid = Number(b.paid_poisha);
-        const due = Math.max(0, total - paid);
-
-        if (due <= 0) continue;
-
-        const allocateAmount = Math.min(remainingPoisha, due);
-        remainingPoisha -= allocateAmount;
-
-        await tx.paymentAllocation.create({
+        // 3. Create confirmed Payment record
+        const paymentId = crypto.randomUUID();
+        const payment = await tx.payment.create({
           data: {
-            id: crypto.randomUUID(),
-            orgId: intent.orgId,
-            paymentId: payment.id,
-            billId: b.id,
-            amountPoisha: BigInt(allocateAmount),
-          },
-        });
-
-        const newPaid = paid + allocateAmount;
-        const newStatus = newPaid >= total ? 'paid' : 'partially_paid';
-
-        await tx.bill.update({
-          where: { id: b.id },
-          data: {
-            paidPoisha: BigInt(newPaid),
-            status: newStatus,
-          },
-        });
-      }
-
-      // 6. Overpayment becomes credit entry
-      if (remainingPoisha > 0) {
-        await tx.creditEntry.create({
-          data: {
-            id: crypto.randomUUID(),
+            id: paymentId,
             orgId: intent.orgId,
             leaseId: intent.leaseId,
-            paymentId: payment.id,
-            amountPoisha: BigInt(remainingPoisha),
-            kind: 'overpayment',
+            amountPoisha: intent.amountPoisha,
+            method: 'sslcommerz',
+            status: 'confirmed',
+            reference: valId,
+            paidOn: new Date(paidDateDhaka),
+            submittedBy: intent.createdBy,
+            confirmedBy: intent.createdBy,
+            confirmedAt: now,
           },
         });
-      }
 
-      // 7. Atomic gapless receipt numbering per org and calendar year
-      const year = new Date().getUTCFullYear();
-      const counterRes = await tx.$queryRaw<{ last_seq: number }[]>`
-          INSERT INTO receipt_counters (org_id, year, last_seq)
-          VALUES (${intent.orgId}::uuid, ${year}, 1)
-          ON CONFLICT (org_id, year)
-          DO UPDATE SET last_seq = receipt_counters.last_seq + 1
-          RETURNING last_seq
-        `;
-
-      const seq = counterRes[0]?.last_seq ?? 1;
-      const receiptNumber = `BM-${year}-${String(seq).padStart(6, '0')}`;
-
-      await tx.receipt.create({
-        data: {
-          id: crypto.randomUUID(),
+        // 4. Shared Rule 5 bill allocation, credit entry, gapless receipt, outbox
+        await processPaymentAllocationAndReceipt(tx, {
           orgId: intent.orgId,
           paymentId: payment.id,
-          number: receiptNumber,
-          status: 'valid',
-          fileId: null,
-        },
-      });
+          leaseId: intent.leaseId,
+          amountPoisha: Number(intent.amountPoisha),
+          method: 'sslcommerz',
+          outboxType: 'payment.confirmed',
+        });
 
-      // 8. Update PaymentIntent status to confirmed
-      await tx.paymentIntent.update({
-        where: { id: intent.id },
-        data: {
-          status: 'confirmed',
-          paymentId: payment.id,
-          valId: valId,
-        },
-      });
-
-      // 9. Enqueue outbox notification (createMany avoids RETURNING * since bm_app has no SELECT on outbox)
-      await tx.outboxMessage.createMany({
-        data: [
-          {
-            id: crypto.randomUUID(),
-            orgId: intent.orgId,
-            type: 'payment.confirmed',
-            payload: {
-              paymentId: payment.id,
-              leaseId: intent.leaseId,
-              amountPoisha: Number(intent.amountPoisha),
-              receiptNumber,
-            },
+        // 5. Update payment intent status to confirmed
+        await tx.paymentIntent.update({
+          where: { id: intent.id },
+          data: {
+            status: 'confirmed',
+            valId,
+            paymentId: payment.id,
           },
-        ],
-      });
-    });
+        });
+      },
+    );
   }
 
   /**
@@ -524,9 +413,15 @@ export class SslcommerzService {
   async recheckPaymentIntents(options?: {
     cutoffMinutes?: number;
     logger?: { info: (obj: unknown, msg: string) => void; error: (obj: unknown, msg: string) => void };
-  }): Promise<{ checked: number; confirmed: number; flagged: number; failed: number }> {
+  }): Promise<{ checked: number; confirmed: number; flagged: number; failed: number; expired: number }> {
     const cutoffMinutes = options?.cutoffMinutes ?? 30;
-    const workerUserId = '00000000-0000-4000-8000-000000000000';
+
+    // Check credentials if not mock
+    const isMock = this.envConfig.PAYMENTS_MOCK === true || process.env.PAYMENTS_MOCK === 'true';
+    const storeId = this.envConfig.SSLCOMMERZ_STORE_ID || process.env.SSLCOMMERZ_STORE_ID;
+    if (!isMock && !storeId) {
+      options?.logger?.error({}, 'SSLCOMMERZ_STORE_ID missing for recheckPaymentIntents');
+    }
 
     // 1. Find all intents initiated more than cutoffMinutes ago across all orgs
     const pendingIntents = await this.prisma.$queryRaw<
@@ -537,9 +432,10 @@ export class SslcommerzService {
         tran_id: string;
         amount_poisha: bigint;
         created_by: string;
+        created_at: Date;
       }[]
     >`
-      SELECT id, org_id, lease_id, tran_id, amount_poisha, created_by
+      SELECT id, org_id, lease_id, tran_id, amount_poisha, created_by, created_at
       FROM app_find_stale_payment_intents(${cutoffMinutes})
       ORDER BY created_at ASC
       LIMIT 50
@@ -548,6 +444,8 @@ export class SslcommerzService {
     let confirmedCount = 0;
     let flaggedCount = 0;
     let failedCount = 0;
+    let expiredCount = 0;
+    const nowMs = clock.now().getTime();
 
     for (const raw of pendingIntents) {
       const intent = {
@@ -557,34 +455,65 @@ export class SslcommerzService {
         tranId: raw.tran_id,
         amountPoisha: raw.amount_poisha,
         createdBy: raw.created_by,
+        createdAt: raw.created_at,
       };
 
       try {
         const queryRes = await this.client.queryTransaction(intent.tranId);
-        const trans = queryRes.element?.[0];
+        if (queryRes.APIConnect !== 'DONE' && !isMock) {
+          options?.logger?.error(
+            { tranId: intent.tranId, apiConnect: queryRes.APIConnect },
+            'SSLCommerz queryTransaction APIConnect was not DONE',
+          );
+        }
 
-        if (!trans || trans.status !== 'VALID') {
+        const trans = queryRes.element?.[0];
+        const ageHours = (nowMs - new Date(intent.createdAt).getTime()) / (1000 * 60 * 60);
+
+        if (!trans || (trans.status !== 'VALID' && trans.status !== 'VALIDATED')) {
           // If transaction was not found or failed
-          if (queryRes.no_of_trans_found === 0 || trans?.status === 'FAILED') {
-            await this.prisma.$tx({ orgId: intent.orgId, userId: workerUserId, role: null }, async (tx) => {
-              await tx.paymentIntent.update({
-                where: { id: intent.id },
-                data: { status: 'failed' },
-              });
-            });
+          if (
+            queryRes.no_of_trans_found === 0 ||
+            trans?.status === 'FAILED' ||
+            trans?.status === 'CANCELLED'
+          ) {
+            await this.prisma.$tx(
+              { orgId: intent.orgId, userId: WORKER_SYSTEM_USER_ID, role: null },
+              async (tx) => {
+                await tx.paymentIntent.updateMany({
+                  where: { id: intent.id, status: 'initiated' },
+                  data: { status: 'failed' },
+                });
+              },
+            );
             failedCount++;
+          } else if (ageHours >= 24) {
+            // Should 7: After 24 h with no VALID/VALIDATED, set expired
+            await this.prisma.$tx(
+              { orgId: intent.orgId, userId: WORKER_SYSTEM_USER_ID, role: null },
+              async (tx) => {
+                await tx.paymentIntent.updateMany({
+                  where: { id: intent.id, status: 'initiated' },
+                  data: { status: 'expired' },
+                });
+              },
+            );
+            expiredCount++;
           }
           continue;
         }
 
         const gatewayPoisha = Math.round(parseFloat(trans.amount) * 100);
         if (gatewayPoisha !== Number(intent.amountPoisha)) {
-          await this.prisma.$tx({ orgId: intent.orgId, userId: workerUserId, role: null }, async (tx) => {
-            await tx.paymentIntent.update({
-              where: { id: intent.id },
-              data: { status: 'flagged', valId: trans.val_id },
-            });
-          });
+          await this.prisma.$tx(
+            { orgId: intent.orgId, userId: WORKER_SYSTEM_USER_ID, role: null },
+            async (tx) => {
+              await tx.paymentIntent.updateMany({
+                where: { id: intent.id, status: 'initiated' },
+                data: { status: 'flagged', valId: trans.val_id },
+              });
+            },
+          );
           flaggedCount++;
           continue;
         }
@@ -602,6 +531,7 @@ export class SslcommerzService {
       confirmed: confirmedCount,
       flagged: flaggedCount,
       failed: failedCount,
+      expired: expiredCount,
     };
   }
 }

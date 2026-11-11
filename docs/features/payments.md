@@ -193,13 +193,13 @@ sequenceDiagram
     T->>API: GET /api/payments/sslcommerz/intents/:tranId (polling)
     API-->>T: 200 { status: 'confirmed', paymentId, receiptNumber }
   else Unhappy path: Network drops IPN or customer closes tab early
-    Note over W: Worker runs recheckPaymentIntents cron (every 5 min)
-    W->>DB: SELECT app_find_stale_payment_intents(5)
-    W->>GW: Query transaction status by tran_id / val_id
-    alt Valid on gateway
+    Note over W: Worker runs recheckPaymentIntents cron (every 10 min)
+    W->>DB: SELECT app_find_stale_payment_intents(30)
+    W->>GW: Query transaction status by tran_id
+    alt Valid or Validated on gateway
       W->>DB: Confirm intent, allocate bills, issue receipt
     else Expired or failed
-      W->>DB: Mark payment_intent status = 'failed'
+      W->>DB: Mark payment_intent status = 'failed' (or 'expired' after 24h)
     end
   end
 ```
@@ -218,7 +218,7 @@ sequenceDiagram
 - `apps/api/src/modules/payments/sslcommerz.client.ts`: SSLCommerz HTTP client with retry logic for session initialization (`initiateSession`), IPN server validation (`validateTransaction`), and order queries.
 - `apps/api/src/modules/payments/sslcommerz.service.ts`: Handles payment initiation (`initiateOnlinePayment`), IPN webhook (`handleIpn`), browser returns (`handleReturn`), intent polling (`getPaymentIntentByTranId`), and background recheck verification (`recheckStaleIntents`). Enforces zero-trust redirects and sequential lock ordering (`payment_intents` -> `leases` -> `bills`).
 - `apps/api/src/modules/payments/sslcommerz.controller.ts`: Express controllers mapping SSLCommerz routes to the service with proper DTO parsing.
-- `apps/worker/src/jobs/recheckPaymentIntents.ts`: Scheduled cron job running every 5 minutes with a Redis mutex lock to reconcile unfinalized payment intents older than 5 minutes against the SSLCommerz validation API.
+- `apps/worker/src/jobs/recheckPaymentIntents.ts`: Scheduled cron job running every 10 minutes with a Redis mutex lock to reconcile unfinalized payment intents older than 30 minutes against the SSLCommerz validation API (marking unverified intents older than 24 hours as `expired`).
 - `apps/worker/src/pdf/pdf.service.ts`: Headless Puppeteer engine rendering A4 receipts using `receipt.template.ts`, persisting PDFs to storage, and linking `fileId` to `receipts`.
 - `apps/web/src/pages/landlord/PaymentsPage.tsx`: Desktop-first queue for staff to confirm/reject claims, record manual cash, and trigger void operations.
 - `apps/web/src/pages/tenant/ClaimPaymentDialog.tsx`: Mobile-first modal for tenants to enter amount, method, TrxID, and upload payment screenshots.
@@ -227,15 +227,15 @@ sequenceDiagram
 
 ## 8. Where the data lives
 
-| Table                 | Critical Columns                                                                                                                                  | Invariants & Constraints                                                                                                                                                                    |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `payments`            | `org_id`, `lease_id`, `amount_poisha`, `method`, `status`, `reference`, `proof_file_id`, `paid_on`, `submitted_by`, `confirmed_by`, `void_reason` | Partial unique `(method, reference) WHERE method IN ('bkash','nagad') AND status <> 'rejected'`. History never deleted (`REVOKE DELETE FROM bm_app`).                                       |
-| `payment_intents`     | `id`, `org_id`, `lease_id`, `tran_id`, `amount_poisha`, `status`, `val_id`, `raw_init_response`, `raw_ipn_payload`                                | Unique `tran_id`. Status: `initiated`, `confirmed`, `failed`, `cancelled`, `flagged`. Multi-tenant RLS `org_isolation` with `app_find_payment_intent_by_tran_id` for cross-tenant webhooks. |
-| `payment_allocations` | `org_id`, `payment_id`, `bill_id`, `amount_poisha`                                                                                                | Foreign key to `(org_id, payment_id)` and `(org_id, bill_id)`. Sum per bill equals `bill.paid_poisha`.                                                                                      |
-| `receipt_counters`    | `org_id`, `year`, `last_seq`                                                                                                                      | Primary key `(org_id, year)`. Gapless atomic sequence via `ON CONFLICT DO UPDATE`.                                                                                                          |
-| `receipts`            | `org_id`, `payment_id`, `number`, `status`, `file_id`                                                                                             | Unique `(org_id, payment_id)` and `(org_id, number)`. Status is `'valid'` or `'void'`.                                                                                                      |
-| `credit_entries`      | `org_id`, `lease_id`, `amount_poisha`, `kind`, `payment_id`, `bill_id`                                                                            | Signed integers. Total lease balance `SUM(amount_poisha)` is never negative.                                                                                                                |
-| `files`               | `org_id`, `public_id`, `resource_type`, `mime`, `size_bytes`, `kind`, `uploaded_by`                                                               | Private access only. Max 5 MB limit.                                                                                                                                                        |
+| Table                 | Critical Columns                                                                                                                                  | Invariants & Constraints                                                                                                                                                                               |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `payments`            | `org_id`, `lease_id`, `amount_poisha`, `method`, `status`, `reference`, `proof_file_id`, `paid_on`, `submitted_by`, `confirmed_by`, `void_reason` | Partial unique `(method, reference) WHERE method IN ('bkash','nagad') AND status <> 'rejected'`. History never deleted (`REVOKE DELETE FROM bm_app`).                                                  |
+| `payment_intents`     | `id`, `org_id`, `lease_id`, `tran_id`, `amount_poisha`, `status`, `val_id`, `session_key`, `payment_id`                                           | Unique `tran_id`. Status: `initiated`, `confirmed`, `failed`, `cancelled`, `flagged`, `expired`. Multi-tenant RLS `org_isolation` with `app_find_payment_intent_by_tran_id` for cross-tenant webhooks. |
+| `payment_allocations` | `org_id`, `payment_id`, `bill_id`, `amount_poisha`                                                                                                | Foreign key to `(org_id, payment_id)` and `(org_id, bill_id)`. Sum per bill equals `bill.paid_poisha`.                                                                                                 |
+| `receipt_counters`    | `org_id`, `year`, `last_seq`                                                                                                                      | Primary key `(org_id, year)`. Gapless atomic sequence via `ON CONFLICT DO UPDATE`.                                                                                                                     |
+| `receipts`            | `org_id`, `payment_id`, `number`, `status`, `file_id`                                                                                             | Unique `(org_id, payment_id)` and `(org_id, number)`. Status is `'valid'` or `'void'`.                                                                                                                 |
+| `credit_entries`      | `org_id`, `lease_id`, `amount_poisha`, `kind`, `payment_id`, `bill_id`                                                                            | Signed integers. Total lease balance `SUM(amount_poisha)` is never negative.                                                                                                                           |
+| `files`               | `org_id`, `public_id`, `resource_type`, `mime`, `size_bytes`, `kind`, `uploaded_by`                                                               | Private access only. Max 5 MB limit.                                                                                                                                                                   |
 
 ## 9. Data lifecycle
 

@@ -27,20 +27,15 @@ export function createCsrfMiddleware(env: Env): RequestHandler {
       return next();
     }
 
-    // 1. Origin check: If Origin is provided, it must match APP_URL. If auth/csrf cookies are present, Origin is required.
+    // 1. Origin check: Origin must match APP_URL
     const origin = req.headers['origin'];
-    const csrfCookie = req.cookies?.[COOKIE_CSRF_NAME];
-    const hasAuthCookie = Boolean(req.cookies?.[COOKIE_ACCESS_NAME] || req.cookies?.[COOKIE_REFRESH_NAME]);
-
-    if (origin && origin !== env.APP_URL) {
-      return next(new ApiError(ErrorCode.FORBIDDEN, 'Invalid or missing Origin header'));
-    }
-
-    if ((csrfCookie || hasAuthCookie) && !origin) {
+    if (!origin || origin !== env.APP_URL) {
       return next(new ApiError(ErrorCode.FORBIDDEN, 'Invalid or missing Origin header'));
     }
 
     // 2. Double-submit token check
+    const csrfCookie = req.cookies?.[COOKIE_CSRF_NAME];
+    const hasAuthCookie = Boolean(req.cookies?.[COOKIE_ACCESS_NAME] || req.cookies?.[COOKIE_REFRESH_NAME]);
     if (csrfCookie || hasAuthCookie) {
       const csrfHeader = req.headers['x-csrf-token'];
       if (!csrfHeader || !csrfCookie || csrfHeader !== csrfCookie) {

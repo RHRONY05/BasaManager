@@ -374,15 +374,15 @@ describe('V10: SSLCommerz online payments', () => {
       expect(validationCalls).toBe(0);
     });
 
-    it('fail and cancel returns redirect and never create a payment', async () => {
+    it('fail and cancel returns redirect and never create a payment, leaving intent initiated', async () => {
       await issuedBill(lease, '2026-03-01', 500000);
       const t1 = await startIntent(500000);
       const t2 = await startIntent(500000);
       expect((await back('fail', t1)).status).toBe(303);
       expect((await back('cancel', t2)).status).toBe(303);
       expect(await count('payments')).toBe(0);
-      expect((await intentRow(t1)).status).toBe('failed');
-      expect((await intentRow(t2)).status).toBe('cancelled');
+      expect((await intentRow(t1)).status).toBe('initiated');
+      expect((await intentRow(t2)).status).toBe('initiated');
     });
 
     it('a late fail return cannot undo a payment the IPN already confirmed', async () => {

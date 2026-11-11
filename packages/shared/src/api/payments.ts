@@ -168,3 +168,20 @@ export type PaymentIntentResponse = z.infer<typeof paymentIntentResponseSchema>;
 
 export const sslcommerzReturnResultSchema = z.enum(['success', 'fail', 'cancel']);
 export type SslcommerzReturnResult = z.infer<typeof sslcommerzReturnResultSchema>;
+
+export const sslcommerzIpnSchema = z
+  .object({
+    tran_id: z.string().optional(),
+    val_id: z.string().optional(),
+    status: z.string().optional(),
+    amount: z.string().optional(),
+    currency: z.string().optional(),
+    currency_type: z.string().optional(),
+  })
+  .passthrough();
+export type SslcommerzIpnInput = z.infer<typeof sslcommerzIpnSchema>;
+
+export const paymentIntentParamSchema = z.object({
+  tranId: z.string().min(1, 'Transaction ID is required'),
+});
+export type PaymentIntentParam = z.infer<typeof paymentIntentParamSchema>;

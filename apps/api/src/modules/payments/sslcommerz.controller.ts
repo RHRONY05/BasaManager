@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { SslcommerzService } from './sslcommerz.service.js';
-import type { InitOnlinePaymentInput } from '@bm/shared/api/payments';
+import type { InitOnlinePaymentInput, SslcommerzIpnInput } from '@bm/shared/api/payments';
 import { ApiError } from '../../lib/ApiError.js';
 import { ErrorCode } from '@bm/shared/errors';
 
@@ -25,9 +25,10 @@ export class SslcommerzController {
     }
   };
 
-  handleIpn = async (req: Request, res: Response, next: NextFunction) => {
+  handleIpn = async (_req: Request, res: Response, next: NextFunction) => {
     try {
-      const result = await this.service.handleIpn(req.body);
+      const body = (res.locals.validated?.body || _req.body) as SslcommerzIpnInput;
+      const result = await this.service.handleIpn(body);
       res.status(200).json({ data: result });
     } catch (err) {
       next(err);

@@ -11,7 +11,7 @@ describe('SslcommerzService', () => {
     leaseTenant: { findFirst: vi.fn() },
     bill: { findMany: vi.fn(), update: vi.fn() },
     user: { findUnique: vi.fn() },
-    paymentIntent: { create: vi.fn(), findUnique: vi.fn(), update: vi.fn() },
+    paymentIntent: { create: vi.fn(), findUnique: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
     payment: { create: vi.fn() },
     paymentAllocation: { create: vi.fn() },
     creditEntry: { create: vi.fn() },
@@ -112,18 +112,20 @@ describe('SslcommerzService', () => {
     it('redirects to /pay/result on success without modifying intent', async () => {
       const res = await service.handleReturn('success', { tran_id: 'TRAN-1' });
       expect(res.redirectUrl).toBe('http://localhost:4000/pay/result?tran=TRAN-1');
+      expect(mockTx.paymentIntent.update).not.toHaveBeenCalled();
+      expect(mockTx.paymentIntent.updateMany).not.toHaveBeenCalled();
     });
 
-    it('updates initiated intent to failed on fail return', async () => {
-      vi.mocked(mockPrisma.$queryRaw).mockResolvedValue([
-        { id: 'pi-1', org_id: 'org-1', status: 'initiated' },
-      ]);
-
+    it('redirects to /pay/result on fail and cancel without modifying intent', async () => {
       const res = await service.handleReturn('fail', { tran_id: 'TRAN-1' });
       expect(res.redirectUrl).toBe('http://localhost:4000/pay/result?tran=TRAN-1');
-      expect(mockTx.paymentIntent.update).toHaveBeenCalledWith(
-        expect.objectContaining({ data: { status: 'failed' } }),
-      );
+      expect(mockTx.paymentIntent.update).not.toHaveBeenCalled();
+      expect(mockTx.paymentIntent.updateMany).not.toHaveBeenCalled();
+
+      const cancelRes = await service.handleReturn('cancel', { tran_id: 'TRAN-1' });
+      expect(cancelRes.redirectUrl).toBe('http://localhost:4000/pay/result?tran=TRAN-1');
+      expect(mockTx.paymentIntent.update).not.toHaveBeenCalled();
+      expect(mockTx.paymentIntent.updateMany).not.toHaveBeenCalled();
     });
   });
 
@@ -177,22 +179,51 @@ describe('SslcommerzService', () => {
       expect(res.status).toBe('already_confirmed');
     });
 
-    it('marks intent failed when payload has status FAILED', async () => {
+    it('ignores unauthenticated IPN payload without val_id and leaves intent initiated', async () => {
       vi.mocked(mockPrisma.$queryRaw).mockResolvedValue([
         {
           id: 'pi-1',
           org_id: 'org-1',
           lease_id: 'l-1',
           tran_id: 'TRAN-1',
-          amount_poisha: 10000,
+          amount_poisha: 10000n,
           status: 'initiated',
         },
       ]);
 
       const res = await service.handleIpn({ tran_id: 'TRAN-1', status: 'FAILED' });
+      expect(res.status).toBe('ignored');
+      expect(mockTx.paymentIntent.update).not.toHaveBeenCalled();
+      expect(mockTx.paymentIntent.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('marks intent failed when validation API returns FAILED', async () => {
+      vi.mocked(mockPrisma.$queryRaw).mockResolvedValue([
+        {
+          id: 'pi-1',
+          org_id: 'org-1',
+          lease_id: 'l-1',
+          tran_id: 'TRAN-1',
+          amount_poisha: 10000n,
+          status: 'initiated',
+        },
+      ]);
+
+      vi.mocked(mockClient.validatePayment).mockResolvedValue({
+        status: 'FAILED',
+        tran_id: 'TRAN-1',
+        val_id: 'VAL-1',
+        amount: '100.00',
+        currency: 'BDT',
+      });
+
+      const res = await service.handleIpn({ tran_id: 'TRAN-1', val_id: 'VAL-1' });
       expect(res.status).toBe('failed');
-      expect(mockTx.paymentIntent.update).toHaveBeenCalledWith(
-        expect.objectContaining({ data: { status: 'failed' } }),
+      expect(mockTx.paymentIntent.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'pi-1', status: 'initiated' },
+          data: { status: 'failed', valId: 'VAL-1' },
+        }),
       );
     });
 
@@ -218,8 +249,9 @@ describe('SslcommerzService', () => {
 
       const res = await service.handleIpn({ tran_id: 'TRAN-1', val_id: 'VAL-1', status: 'VALID' });
       expect(res.status).toBe('flagged');
-      expect(mockTx.paymentIntent.update).toHaveBeenCalledWith(
+      expect(mockTx.paymentIntent.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
+          where: { id: 'pi-1', status: 'initiated' },
           data: expect.objectContaining({ status: 'flagged' }),
         }),
       );
@@ -258,7 +290,7 @@ describe('SslcommerzService', () => {
             status: 'issued',
           },
         ]) // bills lock
-        .mockResolvedValueOnce([{ next_seq: 42 }]); // receipt counter upsert
+        .mockResolvedValueOnce([{ last_seq: 42 }]); // receipt counter upsert
 
       mockTx.payment.create.mockResolvedValue({ id: 'pay-1' });
 
@@ -274,6 +306,39 @@ describe('SslcommerzService', () => {
           data: expect.objectContaining({ status: 'confirmed' }),
         }),
       );
+    });
+
+    it('confirms payment when gateway validation response is VALIDATED', async () => {
+      vi.mocked(mockPrisma.$queryRaw).mockResolvedValue([
+        {
+          id: 'pi-1',
+          org_id: 'org-1',
+          lease_id: 'l-1',
+          tran_id: 'TRAN-1',
+          amount_poisha: 10000n,
+          status: 'initiated',
+          created_by: 'u-1',
+        },
+      ]);
+
+      vi.mocked(mockClient.validatePayment).mockResolvedValue({
+        status: 'VALIDATED',
+        tran_id: 'TRAN-1',
+        val_id: 'VAL-1',
+        amount: '100.00',
+        currency: 'BDT',
+      });
+
+      mockTx.$queryRaw
+        .mockResolvedValueOnce([{ id: 'pi-1', status: 'initiated' }]) // lockedIntent
+        .mockResolvedValueOnce([{ id: 'l-1' }]) // lease lock
+        .mockResolvedValueOnce([]) // bills lock
+        .mockResolvedValueOnce([{ last_seq: 42 }]); // receipt counter upsert
+
+      mockTx.payment.create.mockResolvedValue({ id: 'pay-1' });
+
+      const res = await service.handleIpn({ tran_id: 'TRAN-1', val_id: 'VAL-1', status: 'VALIDATED' });
+      expect(res.status).toBe('confirmed');
     });
   });
 
@@ -308,11 +373,87 @@ describe('SslcommerzService', () => {
         .mockResolvedValueOnce([{ id: 'pi-1', status: 'initiated' }])
         .mockResolvedValueOnce([{ id: 'l-1' }])
         .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([{ next_seq: 1 }]);
+        .mockResolvedValueOnce([{ last_seq: 1 }]);
 
       const summary = await service.recheckPaymentIntents({ cutoffMinutes: 30 });
       expect(summary.checked).toBe(1);
       expect(summary.confirmed).toBe(1);
+    });
+
+    it('checks stale intents and confirms when gateway reports VALIDATED', async () => {
+      vi.mocked(mockPrisma.$queryRaw).mockResolvedValueOnce([
+        {
+          id: 'pi-1',
+          org_id: 'org-1',
+          lease_id: 'l-1',
+          tran_id: 'TRAN-1',
+          amount_poisha: 10000n,
+          created_by: 'u-1',
+          created_at: new Date(),
+        },
+      ]);
+
+      vi.mocked(mockClient.queryTransaction).mockResolvedValue({
+        APIConnect: 'DONE',
+        no_of_trans_found: 1,
+        element: [
+          {
+            status: 'VALIDATED',
+            tran_id: 'TRAN-1',
+            val_id: 'VAL-1',
+            amount: '100.00',
+            currency_type: 'BDT',
+          },
+        ],
+      });
+
+      mockTx.$queryRaw
+        .mockResolvedValueOnce([{ id: 'pi-1', status: 'initiated' }])
+        .mockResolvedValueOnce([{ id: 'l-1' }])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([{ last_seq: 1 }]);
+
+      const summary = await service.recheckPaymentIntents({ cutoffMinutes: 30 });
+      expect(summary.checked).toBe(1);
+      expect(summary.confirmed).toBe(1);
+    });
+
+    it('marks intent expired when age exceeds 24h with unattempted gateway status', async () => {
+      const yesterday = new Date(Date.now() - 25 * 3600 * 1000);
+      vi.mocked(mockPrisma.$queryRaw).mockResolvedValueOnce([
+        {
+          id: 'pi-1',
+          org_id: 'org-1',
+          lease_id: 'l-1',
+          tran_id: 'TRAN-1',
+          amount_poisha: 10000n,
+          created_by: 'u-1',
+          created_at: yesterday,
+        },
+      ]);
+
+      vi.mocked(mockClient.queryTransaction).mockResolvedValue({
+        APIConnect: 'DONE',
+        no_of_trans_found: 1,
+        element: [
+          {
+            status: 'UNATTEMPTED',
+            tran_id: 'TRAN-1',
+            val_id: '',
+            amount: '100.00',
+          },
+        ],
+      });
+
+      const summary = await service.recheckPaymentIntents({ cutoffMinutes: 30 });
+      expect(summary.checked).toBe(1);
+      expect(summary.expired).toBe(1);
+      expect(mockTx.paymentIntent.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'pi-1', status: 'initiated' },
+          data: { status: 'expired' },
+        }),
+      );
     });
 
     it('marks intent failed when gateway query returns FAILED', async () => {

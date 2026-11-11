@@ -13,6 +13,11 @@ export const recheckPaymentIntentsJob: Job = {
       const { prisma, logger, env } = ctx;
       logger.info('Starting recheckPaymentIntents job...');
       const sslEnv = env && 'SSLCOMMERZ_STORE_ID' in env ? (env as Env) : undefined;
+      const isMock = sslEnv?.PAYMENTS_MOCK === true || process.env.PAYMENTS_MOCK === 'true';
+      const storeId = sslEnv?.SSLCOMMERZ_STORE_ID || process.env.SSLCOMMERZ_STORE_ID;
+      if (!isMock && !storeId) {
+        logger.error('SSLCOMMERZ_STORE_ID is missing in worker environment; cannot query SSLCommerz');
+      }
       const service = new SslcommerzService(prisma, sslEnv);
       const result = await service.recheckPaymentIntents({
         cutoffMinutes: 30,

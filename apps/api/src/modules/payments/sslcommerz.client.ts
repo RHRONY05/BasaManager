@@ -46,6 +46,7 @@ export interface SslcommerzQueryResponse {
 }
 
 export class SslcommerzClient {
+  private static readonly mockAmounts = new Map<string, string>();
   private readonly initUrl: string;
   private readonly validateUrl: string;
   private readonly queryUrl: string;
@@ -60,6 +61,7 @@ export class SslcommerzClient {
 
   async initPayment(params: InitPaymentParams): Promise<SslcommerzInitResponse> {
     const totalAmount = (params.amountPoisha / 100).toFixed(2);
+    SslcommerzClient.mockAmounts.set(params.tranId, totalAmount);
     const isMock = this.config.isMock || process.env.PAYMENTS_MOCK === 'true';
     if (isMock) {
       return {
@@ -98,6 +100,7 @@ export class SslcommerzClient {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: body.toString(),
+        signal: AbortSignal.timeout(10_000),
       });
 
       if (!response.ok) {
@@ -153,7 +156,10 @@ export class SslcommerzClient {
     });
 
     const url = `${this.validateUrl}?${params.toString()}`;
-    const response = await fetch(url, { method: 'GET' });
+    const response = await fetch(url, {
+      method: 'GET',
+      signal: AbortSignal.timeout(10_000),
+    });
 
     if (!response.ok) {
       throw new ApiError(ErrorCode.INTERNAL, `SSLCommerz validation HTTP error: ${response.status}`);
@@ -165,6 +171,7 @@ export class SslcommerzClient {
   async queryTransaction(tranId: string): Promise<SslcommerzQueryResponse> {
     const isMock = this.config.isMock || process.env.PAYMENTS_MOCK === 'true';
     if (isMock) {
+      const mockAmount = SslcommerzClient.mockAmounts.get(tranId) || '0.00';
       return {
         APIConnect: 'DONE',
         no_of_trans_found: 1,
@@ -172,8 +179,8 @@ export class SslcommerzClient {
           {
             status: 'VALID',
             tran_id: tranId,
-            val_id: `MOCK_VAL_${tranId}_0.00`,
-            amount: '0.00',
+            val_id: `MOCK_VAL_${tranId}_${mockAmount}`,
+            amount: mockAmount,
             currency_type: 'BDT',
           },
         ],
@@ -188,7 +195,10 @@ export class SslcommerzClient {
     });
 
     const url = `${this.queryUrl}?${params.toString()}`;
-    const response = await fetch(url, { method: 'GET' });
+    const response = await fetch(url, {
+      method: 'GET',
+      signal: AbortSignal.timeout(10_000),
+    });
 
     if (!response.ok) {
       throw new ApiError(ErrorCode.INTERNAL, `SSLCommerz query HTTP error: ${response.status}`);

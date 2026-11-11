@@ -342,4 +342,13 @@ test.describe('UI States Specs', () => {
 
   // enabled in V6 (first filter)
   test.skip('check 6: filters - old results stay visible dimmed with aria-busy', async () => {});
+
+  test('check 7: pay result page renders without layout shift', async ({ page }) => {
+    await signInAs(page, 'tenant');
+    await startClsObserver(page);
+    await page.goto('/pay/result?tran=BM-TEST-123456');
+    await expect(page.getByText('Transaction ID')).toBeVisible();
+    const cls = await getClsScore(page);
+    expect(cls).toBeLessThan(0.05);
+  });
 });
