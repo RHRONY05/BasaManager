@@ -110,12 +110,12 @@ jobs:
           DATABASE_OWNER_URL: postgresql://bm_owner:bm_owner_dev@localhost:5433/basamanager_test
         run: pnpm --filter @bm/api db:migrate
       - uses: actions/cache@v4
+        id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
-      - name: Workaround Azure mirror DNS failure on GitHub runners
-        run: sudo sed -i 's/azure\.archive\.ubuntu\.com/archive.ubuntu.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/* /etc/apt/apt-mirrors.txt 2>/dev/null || true
-      - run: pnpm exec playwright install --with-deps chromium
+      - if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm exec playwright install chromium
       - run: pnpm test:e2e
       - name: Upload Playwright report
         if: failure()
