@@ -123,8 +123,8 @@ test.describe('SSLCommerz Online Payments (V10)', () => {
     await payOnlineBtn.click();
 
     // Dialog appears with default/full amount
-    await expect(page.getByRole('heading', { name: /Pay Bill Online/i })).toBeVisible();
-    const amountInput = page.getByLabel(/Amount \(BDT\)/i);
+    await expect(page.getByRole('heading', { name: /Pay Online/i })).toBeVisible();
+    const amountInput = page.locator('#amountTaka');
     await expect(amountInput).toBeVisible();
     await amountInput.fill('15000');
 
