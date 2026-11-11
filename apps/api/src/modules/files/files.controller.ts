@@ -75,11 +75,13 @@ export class FilesController {
       const fileId = req.params.id as string;
       const exp = req.query.exp as string;
       const sig = req.query.sig as string;
+      const variant = req.query.variant as string | undefined;
 
       const result = await this.service.serveLocalFile({
         fileId,
         exp,
         sig,
+        variant,
       });
 
       res.setHeader('Content-Type', result.mime);

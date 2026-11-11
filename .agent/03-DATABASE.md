@@ -97,6 +97,7 @@ The architect owns this file and the schema; implementers never change the schem
 | `20261108000200_rls` | RLS enable + force + policies (below), incl. `no_caretaker` on documents and `no_caretaker_documents` on files |
 | `20261108000300_constraints_grants_views` | Check constraints, the history-table DELETE revokes, outbox revokes, `_prisma_migrations` revokes, the two admin views |
 | `20261108000400_user_scoped_access` | `own_memberships` (no-org context only); `organizations` policies split per command (`org_self_select`, `member_orgs` (no-org context only), `org_self_insert`, `org_self_update`, no delete); function `app_find_invitation` |
+| `20261108000500_payment_void` | Function `app_void_payment(p_org_id uuid, p_payment_id uuid)` `SECURITY DEFINER` running as `bm_owner` to safely delete `payment_allocations` and `credit_entries` for a voided payment while verifying `current_setting('app.org_id')` |
 
 All expand-only. Staging/prod run `prisma migrate deploy`. Tests build a fresh database per run (09).
 
@@ -104,7 +105,7 @@ All expand-only. Staging/prod run `prisma migrate deploy`. Tests build a fresh d
 | Role | Used by | Rights |
 |---|---|---|
 | `bm_owner` | migrations only | owns all tables, incl. Prisma's `_prisma_migrations` (bm_app/bm_worker: no rights on it; bm_readonly: `select`) |
-| `bm_app` | API | `select/insert/update/delete` on tables, `NOBYPASSRLS`. No `delete` grant on `payments`, `bill_lines`, `payment_allocations`, `receipts`, `maintenance_events`, `credit_entries` (history is never deleted). On `outbox` only `insert` (no select/update/delete). On the admin views only `select` |
+| `bm_app` | API | `select/insert/update/delete` on tables, `NOBYPASSRLS`. No `delete` grant on `payments`, `bill_lines`, `payment_allocations`, `receipts`, `maintenance_events`, `credit_entries` (history is never deleted directly by bm_app; Rule 6 voiding removes allocations and overpayment credit via `app_void_payment` SECURITY DEFINER). On `outbox` only `insert` (no select/update/delete). On the admin views only `select` |
 | `bm_worker` | worker | same grants as `bm_app` (incl. no `delete` on history) + full access to `outbox` + `BYPASSRLS` |
 | `bm_readonly` | `db-docs`, backups verification | `select` only (RLS still applies: it sees no org rows) |
 

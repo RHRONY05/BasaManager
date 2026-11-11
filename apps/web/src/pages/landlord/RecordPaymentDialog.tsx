@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Upload, X, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { useRecordPayment, uploadFile } from '../../lib/api/payments.js';
@@ -14,6 +14,7 @@ export interface RecordPaymentDialogProps {
 
 export function RecordPaymentDialog({ isOpen, onClose, onSuccess }: RecordPaymentDialogProps) {
   const { t } = useTranslation();
+  const titleId = useId();
   const recordPayment = useRecordPayment();
   const { data: leases = [] } = useLeases({ status: 'active' });
 
@@ -26,6 +27,15 @@ export function RecordPaymentDialog({ isOpen, onClose, onSuccess }: RecordPaymen
   const [proofFileId, setProofFileId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -91,14 +101,18 @@ export function RecordPaymentDialog({ isOpen, onClose, onSuccess }: RecordPaymen
     <div
       role="dialog"
       aria-modal="true"
+      aria-labelledby={titleId}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
     >
       <div className="card w-full max-w-md p-6 space-y-5 bg-bg border border-border shadow-2xl relative animate-in fade-in zoom-in-95">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-fg">{t('payments.recordTitle', 'Record Payment')}</h2>
+          <h2 id={titleId} className="text-lg font-bold text-fg">
+            {t('payments.recordTitle', 'Record Payment')}
+          </h2>
           <button
             type="button"
             onClick={onClose}
+            aria-label={t('actions.close', 'Close')}
             className="text-fg-muted hover:text-fg p-1 rounded-md transition-colors"
           >
             <X className="h-5 w-5" />
@@ -144,7 +158,7 @@ export function RecordPaymentDialog({ isOpen, onClose, onSuccess }: RecordPaymen
               required
               value={amountTaka}
               onChange={(e) => setAmountTaka(e.target.value)}
-              placeholder="e.g. 20000"
+              placeholder={t('payments.amountPlaceholder', 'e.g. 20000')}
               className="input w-full"
             />
           </div>
@@ -152,23 +166,23 @@ export function RecordPaymentDialog({ isOpen, onClose, onSuccess }: RecordPaymen
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-fg-muted uppercase tracking-wider mb-1.5">
-                {t('payments.method', 'Payment Method')} *
+                {t('payments.paymentMethod', 'Method')} *
               </label>
               <select
                 value={method}
                 onChange={(e) => setMethod(e.target.value as ManualMethod)}
                 className="input w-full"
               >
-                <option value="cash">Cash</option>
-                <option value="bkash">bKash</option>
-                <option value="nagad">Nagad</option>
-                <option value="bank">Bank Transfer</option>
+                <option value="cash">{t('payments.methodCash', 'Cash')}</option>
+                <option value="bkash">{t('payments.methodBkash', 'bKash')}</option>
+                <option value="nagad">{t('payments.methodNagad', 'Nagad')}</option>
+                <option value="bank">{t('payments.methodBank', 'Bank Transfer')}</option>
               </select>
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-fg-muted uppercase tracking-wider mb-1.5">
-                {t('payments.paidOn', 'Date Paid')} *
+                {t('payments.paidOn', 'Payment Date')} *
               </label>
               <input
                 type="date"
@@ -182,61 +196,47 @@ export function RecordPaymentDialog({ isOpen, onClose, onSuccess }: RecordPaymen
 
           <div>
             <label className="block text-xs font-semibold text-fg-muted uppercase tracking-wider mb-1.5">
-              {t('payments.reference', 'TrxID / Reference Note')}
+              {t('payments.reference', 'Reference / TrxID / Note')}
             </label>
             <input
               type="text"
               value={reference}
               onChange={(e) => setReference(e.target.value)}
-              placeholder={method === 'cash' ? 'Cash collected in person' : 'e.g. TrxID or Cheque #'}
+              placeholder={t('payments.referencePlaceholder', 'e.g. Cash collected / Bank Ref BL92A8ZK1')}
               className="input w-full"
             />
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-fg-muted uppercase tracking-wider mb-1.5">
-              {t('payments.proofAttachment', 'Attachment (Optional)')}
+              {t('payments.proofPhoto', 'Proof Document / Receipt Photo')} (Optional)
             </label>
-            <div className="border border-dashed border-border rounded-lg p-3 text-center">
-              {proofFile ? (
-                <div className="flex items-center justify-between p-2 bg-muted/40 rounded-md">
-                  <div className="flex items-center gap-2 truncate">
-                    <CheckCircle2 className="h-4 w-4 text-success shrink-0" />
-                    <span className="text-xs text-fg truncate">{proofFile.name}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setProofFile(null);
-                      setProofFileId(null);
-                    }}
-                    className="text-fg-muted hover:text-danger p-1"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
+            <div className="flex items-center gap-3">
+              <label className="btn btn--secondary text-xs cursor-pointer flex items-center gap-2">
+                <Upload className="h-4 w-4" />
+                <span>
+                  {isUploading
+                    ? t('payments.uploading', 'Uploading...')
+                    : t('payments.chooseFile', 'Choose Photo')}
+                </span>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,application/pdf"
+                  className="hidden"
+                  onChange={handleFileChange}
+                  disabled={isUploading}
+                />
+              </label>
+              {proofFile && (
+                <div className="flex items-center gap-1.5 text-xs text-success font-medium">
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span className="truncate max-w-48">{proofFile.name}</span>
                 </div>
-              ) : (
-                <label className="cursor-pointer block">
-                  <Upload className="h-5 w-5 text-fg-muted mx-auto mb-1" />
-                  <span className="text-xs text-accent font-medium">
-                    {isUploading
-                      ? t('status.uploading', 'Uploading...')
-                      : t('actions.browsePhoto', 'Upload document / receipt')}
-                  </span>
-                  <p className="text-xs text-fg-muted mt-0.5">JPG, PNG, WebP up to 5 MB</p>
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    className="hidden"
-                    onChange={handleFileChange}
-                    disabled={isUploading}
-                  />
-                </label>
               )}
             </div>
           </div>
 
-          <div className="pt-2 flex items-center justify-end gap-3">
+          <div className="pt-2 flex items-center justify-end gap-3 border-t border-border">
             <button type="button" onClick={onClose} className="btn btn--secondary text-xs">
               {t('actions.cancel', 'Cancel')}
             </button>
@@ -245,8 +245,8 @@ export function RecordPaymentDialog({ isOpen, onClose, onSuccess }: RecordPaymen
               disabled={recordPayment.isPending || isUploading}
               className="btn btn--primary text-xs flex items-center gap-1.5"
             >
-              {(recordPayment.isPending || isUploading) && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-              <span>{t('payments.savePayment', 'Save & Allocate')}</span>
+              {recordPayment.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              <span>{t('payments.recordBtn', 'Save & Allocate')}</span>
             </button>
           </div>
         </form>

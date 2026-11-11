@@ -100,7 +100,7 @@ export class PdfService {
     const pdfBuffer = await this.renderHtmlToPdf(html);
 
     const fileId = crypto.randomUUID();
-    const publicId = `basamanager/org/${receipt.orgId}/receipts/${fileId}`;
+    const publicId = `basamanager/${env.APP_ENV}/org/${receipt.orgId}/receipts/${fileId}`;
     const sha256 = crypto.createHash('sha256').update(pdfBuffer).digest('hex');
 
     await storage.save({

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, AlertTriangle, Loader2 } from 'lucide-react';
 import { useVoidPayment } from '../../lib/api/payments.js';
@@ -19,9 +19,19 @@ export function VoidPaymentDialog({
   onSuccess,
 }: VoidPaymentDialogProps) {
   const { t } = useTranslation();
+  const titleId = useId();
   const voidPayment = useVoidPayment();
   const [reason, setReason] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen || !paymentId) return null;
 
@@ -48,17 +58,23 @@ export function VoidPaymentDialog({
     <div
       role="dialog"
       aria-modal="true"
+      aria-labelledby={titleId}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
     >
       <div className="card w-full max-w-md p-6 space-y-4 bg-bg border border-border shadow-2xl relative animate-in fade-in zoom-in-95">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-danger shrink-0" />
-            <h2 className="text-base font-bold text-fg">
+            <h2 id={titleId} className="text-base font-bold text-fg">
               {t('payments.voidTitle', 'Void Recorded Payment')}
             </h2>
           </div>
-          <button type="button" onClick={onClose} className="text-fg-muted hover:text-fg p-1 rounded-md">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t('actions.close', 'Close')}
+            className="text-fg-muted hover:text-fg p-1 rounded-md"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -90,7 +106,10 @@ export function VoidPaymentDialog({
               rows={3}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="e.g. Payment recorded twice by mistake / cheque bounced"
+              placeholder={t(
+                'payments.voidReasonPlaceholder',
+                'e.g. Payment recorded twice by mistake / cheque bounced',
+              )}
               className="input w-full"
             />
           </div>

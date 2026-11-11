@@ -6,16 +6,27 @@
 
 CREATE OR REPLACE FUNCTION app_void_payment(
   p_org_id uuid,
-  p_payment_id uuid,
-  p_unwound_bill_ids uuid[] DEFAULT ARRAY[]::uuid[],
-  p_delete_credit_ids uuid[] DEFAULT ARRAY[]::uuid[]
+  p_payment_id uuid
 )
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
+DECLARE
+  v_session_org_id uuid;
 BEGIN
+  -- Verify the session's app.org_id matches p_org_id to prevent cross-tenant invocation
+  v_session_org_id := nullif(current_setting('app.org_id', true), '')::uuid;
+  IF v_session_org_id IS NULL OR v_session_org_id <> p_org_id THEN
+    RAISE EXCEPTION 'Unauthorized: org_id mismatch' USING ERRCODE = '42501';
+  END IF;
+
+  -- Verify payment belongs to this org
+  IF NOT EXISTS (SELECT 1 FROM public.payments WHERE id = p_payment_id AND org_id = p_org_id) THEN
+    RAISE EXCEPTION 'Payment not found in organisation' USING ERRCODE = 'P0002';
+  END IF;
+
   -- Delete allocations for this payment
   DELETE FROM public.payment_allocations
    WHERE org_id = p_org_id AND payment_id = p_payment_id;
@@ -23,20 +34,8 @@ BEGIN
   -- Delete overpayment credit created by this payment
   DELETE FROM public.credit_entries
    WHERE org_id = p_org_id AND payment_id = p_payment_id;
-
-  -- Delete applied credit entries for unwound bills
-  IF array_length(p_unwound_bill_ids, 1) > 0 THEN
-    DELETE FROM public.credit_entries
-     WHERE org_id = p_org_id AND bill_id = ANY(p_unwound_bill_ids) AND kind = 'applied';
-  END IF;
-
-  -- Delete any specific credit entries
-  IF array_length(p_delete_credit_ids, 1) > 0 THEN
-    DELETE FROM public.credit_entries
-     WHERE org_id = p_org_id AND id = ANY(p_delete_credit_ids);
-  END IF;
 END;
 $$;
 
-REVOKE ALL ON FUNCTION app_void_payment(uuid, uuid, uuid[], uuid[]) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION app_void_payment(uuid, uuid, uuid[], uuid[]) TO bm_app;
+REVOKE ALL ON FUNCTION app_void_payment(uuid, uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION app_void_payment(uuid, uuid) TO bm_app;

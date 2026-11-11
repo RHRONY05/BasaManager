@@ -19,16 +19,11 @@ export interface ReceiptTemplateData {
 }
 
 export function formatTaka(poisha: number): string {
-  const taka = poisha / 100;
-  return new Intl.NumberFormat('en-BD', {
-    style: 'currency',
-    currency: 'BDT',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })
-    .format(taka)
-    .replace('BDT', '৳')
-    .trim();
+  const takaInt = Math.floor(Math.abs(poisha) / 100);
+  const poishaRemainder = Math.abs(poisha) % 100;
+  const sign = poisha < 0 ? '-' : '';
+  const formattedTaka = takaInt.toLocaleString('en-US');
+  return `${sign}৳${formattedTaka}.${String(poishaRemainder).padStart(2, '0')}`;
 }
 
 export function renderReceiptHtml(data: ReceiptTemplateData): string {

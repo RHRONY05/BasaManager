@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, AlertCircle, Loader2 } from 'lucide-react';
 import { useRejectPayment } from '../../lib/api/payments.js';
@@ -12,9 +12,19 @@ export interface RejectPaymentDialogProps {
 
 export function RejectPaymentDialog({ paymentId, isOpen, onClose, onSuccess }: RejectPaymentDialogProps) {
   const { t } = useTranslation();
+  const titleId = useId();
   const rejectPayment = useRejectPayment();
   const [reason, setReason] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen || !paymentId) return null;
 
@@ -41,12 +51,20 @@ export function RejectPaymentDialog({ paymentId, isOpen, onClose, onSuccess }: R
     <div
       role="dialog"
       aria-modal="true"
+      aria-labelledby={titleId}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
     >
       <div className="card w-full max-w-sm p-6 space-y-4 bg-bg border border-border shadow-2xl relative animate-in fade-in zoom-in-95">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-bold text-fg">{t('payments.rejectTitle', 'Reject Payment Claim')}</h2>
-          <button type="button" onClick={onClose} className="text-fg-muted hover:text-fg p-1 rounded-md">
+          <h2 id={titleId} className="text-base font-bold text-fg">
+            {t('payments.rejectTitle', 'Reject Payment Claim')}
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t('actions.close', 'Close')}
+            className="text-fg-muted hover:text-fg p-1 rounded-md"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -75,7 +93,10 @@ export function RejectPaymentDialog({ paymentId, isOpen, onClose, onSuccess }: R
               rows={3}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="e.g. No transaction received with this reference"
+              placeholder={t(
+                'payments.rejectionReasonPlaceholder',
+                'e.g. No transaction received with this reference',
+              )}
               className="input w-full"
             />
           </div>

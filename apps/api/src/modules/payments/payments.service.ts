@@ -2,6 +2,7 @@ import { type Db, type Tx, type MembershipRole, Prisma } from '../../config/db.j
 import { clock, getDhakaDateString } from '../../lib/clock.js';
 import { ApiError } from '../../lib/ApiError.js';
 import { ErrorCode } from '@bm/shared/errors';
+import type { BillStatus } from '@bm/shared/enums';
 import { allocatePayment } from '@bm/domain';
 import { storage } from '../../config/storage/index.js';
 import type {
@@ -24,7 +25,7 @@ type PaymentWithRelations = Prisma.PaymentGetPayload<object> & {
   receipt?: {
     id: string;
     number: string;
-    status: string;
+    status: 'valid' | 'void' | string;
     fileId?: string | null;
     createdAt?: Date | string;
   } | null;
@@ -82,11 +83,12 @@ export class PaymentsService {
       }
 
       if (input.reference && input.reference.trim()) {
+        const trimmedRef = input.reference.trim();
         const existing = await tx.payment.findFirst({
           where: {
             orgId: ctx.orgId,
             method: input.method,
-            reference: input.reference.trim(),
+            reference: trimmedRef,
             status: { not: 'rejected' },
           },
         });
@@ -100,6 +102,8 @@ export class PaymentsService {
           where: {
             id: input.proofFileId,
             orgId: ctx.orgId,
+            kind: 'payment_proof',
+            uploadedBy: ctx.userId,
             deletedAt: null,
           },
         });
@@ -108,19 +112,27 @@ export class PaymentsService {
         }
       }
 
-      const p = await tx.payment.create({
-        data: {
-          orgId: ctx.orgId,
-          leaseId: input.leaseId,
-          amountPoisha: BigInt(input.amountPoisha),
-          method: input.method,
-          status: 'pending_claim',
-          reference: input.reference ? input.reference.trim() : null,
-          proofFileId: input.proofFileId || null,
-          paidOn: new Date(input.paidOn),
-          submittedBy: ctx.userId,
-        },
-      });
+      let p;
+      try {
+        p = await tx.payment.create({
+          data: {
+            orgId: ctx.orgId,
+            leaseId: input.leaseId,
+            amountPoisha: BigInt(input.amountPoisha),
+            method: input.method,
+            status: 'pending_claim',
+            reference: input.reference ? input.reference.trim() : null,
+            proofFileId: input.proofFileId || null,
+            paidOn: new Date(input.paidOn),
+            submittedBy: ctx.userId,
+          },
+        });
+      } catch (err) {
+        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+          throw new ApiError(ErrorCode.DUPLICATE_REFERENCE, 'A payment with this reference already exists');
+        }
+        throw err;
+      }
 
       await tx.outboxMessage.createMany({
         data: [
@@ -180,11 +192,12 @@ export class PaymentsService {
       }
 
       if (input.reference && input.reference.trim()) {
+        const trimmedRef = input.reference.trim();
         const existing = await tx.payment.findFirst({
           where: {
             orgId: ctx.orgId,
             method: input.method,
-            reference: input.reference.trim(),
+            reference: trimmedRef,
             status: { not: 'rejected' },
           },
         });
@@ -193,126 +206,56 @@ export class PaymentsService {
         }
       }
 
+      if (input.proofFileId) {
+        const file = await tx.file.findFirst({
+          where: {
+            id: input.proofFileId,
+            orgId: ctx.orgId,
+            kind: 'payment_proof',
+            deletedAt: null,
+          },
+        });
+        if (!file) {
+          throw ApiError.notFound('Proof file not found');
+        }
+      }
+
       // Lock lease row
       await tx.$queryRaw`SELECT id FROM leases WHERE org_id = ${ctx.orgId}::uuid AND id = ${input.leaseId}::uuid FOR UPDATE`;
 
-      // Lock unpaid bills ordered by period_month ASC
-      const lockedBills = await tx.$queryRaw<
-        Array<{
-          id: string;
-          period_month: string;
-          total_poisha: bigint;
-          paid_poisha: bigint;
-          status: string;
-        }>
-      >`SELECT id, period_month::text, total_poisha, paid_poisha, status::text
-        FROM bills
-        WHERE org_id = ${ctx.orgId}::uuid AND lease_id = ${input.leaseId}::uuid AND status IN ('issued', 'partially_paid')
-        ORDER BY period_month ASC FOR UPDATE`;
-
       const now = new Date(clock.now());
 
-      const payment = await tx.payment.create({
-        data: {
-          orgId: ctx.orgId,
-          leaseId: input.leaseId,
-          amountPoisha: BigInt(input.amountPoisha),
-          method: input.method,
-          status: 'confirmed',
-          reference: input.reference ? input.reference.trim() : null,
-          proofFileId: input.proofFileId || null,
-          paidOn: new Date(input.paidOn),
-          submittedBy: ctx.userId,
-          confirmedBy: ctx.userId,
-          confirmedAt: now,
-        },
-      });
-
-      // Allocate payment to bills
-      const billsToAllocate = lockedBills.map(
-        (b: { id: string; period_month: string; total_poisha: bigint; paid_poisha: bigint }) => ({
-          id: b.id,
-          periodMonth: b.period_month,
-          totalPoisha: Number(b.total_poisha),
-          paidPoisha: Number(b.paid_poisha),
-        }),
-      );
-
-      const { allocations, creditPoisha } = allocatePayment({
-        amountPoisha: input.amountPoisha,
-        bills: billsToAllocate,
-      });
-
-      const allocationRecords = [];
-      for (const alloc of allocations) {
-        const pa = await tx.paymentAllocation.create({
-          data: {
-            orgId: ctx.orgId,
-            paymentId: payment.id,
-            billId: alloc.billId,
-            amountPoisha: BigInt(alloc.amountPoisha),
-          },
-        });
-        allocationRecords.push(pa);
-
-        await tx.bill.update({
-          where: { id: alloc.billId },
-          data: {
-            paidPoisha: { increment: BigInt(alloc.amountPoisha) },
-            status: alloc.status,
-            updatedAt: now,
-          },
-        });
-      }
-
-      if (creditPoisha > 0) {
-        await tx.creditEntry.create({
+      let payment;
+      try {
+        payment = await tx.payment.create({
           data: {
             orgId: ctx.orgId,
             leaseId: input.leaseId,
-            amountPoisha: BigInt(creditPoisha),
-            kind: 'overpayment',
-            paymentId: payment.id,
+            amountPoisha: BigInt(input.amountPoisha),
+            method: input.method,
+            status: 'confirmed',
+            reference: input.reference ? input.reference.trim() : null,
+            proofFileId: input.proofFileId || null,
+            paidOn: new Date(input.paidOn),
+            submittedBy: ctx.userId,
+            confirmedBy: ctx.userId,
+            confirmedAt: now,
           },
         });
+      } catch (err) {
+        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+          throw new ApiError(ErrorCode.DUPLICATE_REFERENCE, 'A payment with this reference already exists');
+        }
+        throw err;
       }
 
-      // Generate sequential receipt
-      const year = Number(getDhakaDateString().slice(0, 4));
-      const counterRes = await tx.$queryRaw<Array<{ last_seq: number }>>`
-        INSERT INTO receipt_counters (org_id, year, last_seq, created_at, updated_at)
-        VALUES (${ctx.orgId}::uuid, ${year}, 1, now(), now())
-        ON CONFLICT (org_id, year)
-        DO UPDATE SET last_seq = receipt_counters.last_seq + 1, updated_at = now()
-        RETURNING last_seq`;
-
-      const lastSeq = counterRes[0]!.last_seq;
-      const receiptNumber = `BM-${year}-${String(lastSeq).padStart(6, '0')}`;
-
-      const receipt = await tx.receipt.create({
-        data: {
-          orgId: ctx.orgId,
-          paymentId: payment.id,
-          number: receiptNumber,
-          status: 'valid',
-        },
-      });
-
-      // Outbox event
-      await tx.outboxMessage.createMany({
-        data: [
-          {
-            orgId: ctx.orgId,
-            type: 'payment.confirmed',
-            payload: {
-              paymentId: payment.id,
-              leaseId: payment.leaseId,
-              amountPoisha: input.amountPoisha,
-              method: payment.method,
-              receiptNumber,
-            },
-          },
-        ],
+      const { allocationRecords, receipt } = await this.processPaymentAllocationAndReceipt(tx, {
+        orgId: ctx.orgId,
+        paymentId: payment.id,
+        leaseId: input.leaseId,
+        amountPoisha: input.amountPoisha,
+        method: payment.method,
+        outboxType: 'payment.confirmed',
       });
 
       return this.formatPayment({
@@ -381,20 +324,6 @@ export class PaymentsService {
       // Lock lease row
       await tx.$queryRaw`SELECT id FROM leases WHERE org_id = ${ctx.orgId}::uuid AND id = ${p.lease_id}::uuid FOR UPDATE`;
 
-      // Lock unpaid bills
-      const lockedBills = await tx.$queryRaw<
-        Array<{
-          id: string;
-          period_month: string;
-          total_poisha: bigint;
-          paid_poisha: bigint;
-          status: string;
-        }>
-      >`SELECT id, period_month::text, total_poisha, paid_poisha, status::text
-        FROM bills
-        WHERE org_id = ${ctx.orgId}::uuid AND lease_id = ${p.lease_id}::uuid AND status IN ('issued', 'partially_paid')
-        ORDER BY period_month ASC FOR UPDATE`;
-
       const now = new Date(clock.now());
 
       const updatedPayment = await tx.payment.update({
@@ -407,88 +336,13 @@ export class PaymentsService {
         },
       });
 
-      const billsToAllocate = lockedBills.map(
-        (b: { id: string; period_month: string; total_poisha: bigint; paid_poisha: bigint }) => ({
-          id: b.id,
-          periodMonth: b.period_month,
-          totalPoisha: Number(b.total_poisha),
-          paidPoisha: Number(b.paid_poisha),
-        }),
-      );
-
-      const { allocations, creditPoisha } = allocatePayment({
+      const { allocationRecords, receipt } = await this.processPaymentAllocationAndReceipt(tx, {
+        orgId: ctx.orgId,
+        paymentId,
+        leaseId: p.lease_id,
         amountPoisha: Number(p.amount_poisha),
-        bills: billsToAllocate,
-      });
-
-      const allocationRecords = [];
-      for (const alloc of allocations) {
-        const pa = await tx.paymentAllocation.create({
-          data: {
-            orgId: ctx.orgId,
-            paymentId,
-            billId: alloc.billId,
-            amountPoisha: BigInt(alloc.amountPoisha),
-          },
-        });
-        allocationRecords.push(pa);
-
-        await tx.bill.update({
-          where: { id: alloc.billId },
-          data: {
-            paidPoisha: { increment: BigInt(alloc.amountPoisha) },
-            status: alloc.status,
-            updatedAt: now,
-          },
-        });
-      }
-
-      if (creditPoisha > 0) {
-        await tx.creditEntry.create({
-          data: {
-            orgId: ctx.orgId,
-            leaseId: p.lease_id,
-            amountPoisha: BigInt(creditPoisha),
-            kind: 'overpayment',
-            paymentId,
-          },
-        });
-      }
-
-      const year = Number(getDhakaDateString().slice(0, 4));
-      const counterRes = await tx.$queryRaw<Array<{ last_seq: number }>>`
-        INSERT INTO receipt_counters (org_id, year, last_seq, created_at, updated_at)
-        VALUES (${ctx.orgId}::uuid, ${year}, 1, now(), now())
-        ON CONFLICT (org_id, year)
-        DO UPDATE SET last_seq = receipt_counters.last_seq + 1, updated_at = now()
-        RETURNING last_seq`;
-
-      const lastSeq = counterRes[0]!.last_seq;
-      const receiptNumber = `BM-${year}-${String(lastSeq).padStart(6, '0')}`;
-
-      const receipt = await tx.receipt.create({
-        data: {
-          orgId: ctx.orgId,
-          paymentId,
-          number: receiptNumber,
-          status: 'valid',
-        },
-      });
-
-      await tx.outboxMessage.createMany({
-        data: [
-          {
-            orgId: ctx.orgId,
-            type: 'payment.confirmed',
-            payload: {
-              paymentId,
-              leaseId: p.lease_id,
-              amountPoisha: Number(p.amount_poisha),
-              method: p.method,
-              receiptNumber,
-            },
-          },
-        ],
+        method: p.method,
+        outboxType: 'payment.confirmed',
       });
 
       return this.formatPayment({
@@ -499,6 +353,119 @@ export class PaymentsService {
     });
   }
 
+  private async processPaymentAllocationAndReceipt(
+    tx: Tx,
+    params: {
+      orgId: string;
+      paymentId: string;
+      leaseId: string;
+      amountPoisha: number;
+      method: string;
+      outboxType: 'payment.confirmed';
+    },
+  ) {
+    const lockedBills = await tx.$queryRaw<
+      Array<{
+        id: string;
+        period_month: string;
+        total_poisha: bigint;
+        paid_poisha: bigint;
+        status: string;
+      }>
+    >`SELECT id, period_month::text, total_poisha, paid_poisha, status::text
+      FROM bills
+      WHERE org_id = ${params.orgId}::uuid AND lease_id = ${params.leaseId}::uuid AND status IN ('issued', 'partially_paid')
+      ORDER BY period_month ASC FOR UPDATE`;
+
+    const now = new Date(clock.now());
+
+    const billsToAllocate = lockedBills.map(
+      (b: { id: string; period_month: string; total_poisha: bigint; paid_poisha: bigint }) => ({
+        id: b.id,
+        periodMonth: b.period_month,
+        totalPoisha: Number(b.total_poisha),
+        paidPoisha: Number(b.paid_poisha),
+      }),
+    );
+
+    const { allocations, creditPoisha } = allocatePayment({
+      amountPoisha: params.amountPoisha,
+      bills: billsToAllocate,
+    });
+
+    const allocationRecords = [];
+    for (const alloc of allocations) {
+      const pa = await tx.paymentAllocation.create({
+        data: {
+          orgId: params.orgId,
+          paymentId: params.paymentId,
+          billId: alloc.billId,
+          amountPoisha: BigInt(alloc.amountPoisha),
+        },
+      });
+      allocationRecords.push(pa);
+
+      await tx.bill.update({
+        where: { id: alloc.billId },
+        data: {
+          paidPoisha: { increment: BigInt(alloc.amountPoisha) },
+          status: alloc.status,
+          updatedAt: now,
+        },
+      });
+    }
+
+    if (creditPoisha > 0) {
+      await tx.creditEntry.create({
+        data: {
+          orgId: params.orgId,
+          leaseId: params.leaseId,
+          amountPoisha: BigInt(creditPoisha),
+          kind: 'overpayment',
+          paymentId: params.paymentId,
+        },
+      });
+    }
+
+    const year = Number(getDhakaDateString().slice(0, 4));
+    const counterRes = await tx.$queryRaw<Array<{ last_seq: number }>>`
+      INSERT INTO receipt_counters (org_id, year, last_seq, created_at, updated_at)
+      VALUES (${params.orgId}::uuid, ${year}, 1, now(), now())
+      ON CONFLICT (org_id, year)
+      DO UPDATE SET last_seq = receipt_counters.last_seq + 1, updated_at = now()
+      RETURNING last_seq`;
+
+    const lastSeq = counterRes[0]!.last_seq;
+    const receiptNumber = `BM-${year}-${String(lastSeq).padStart(6, '0')}`;
+
+    const receipt = await tx.receipt.create({
+      data: {
+        orgId: params.orgId,
+        paymentId: params.paymentId,
+        number: receiptNumber,
+        status: 'valid',
+      },
+    });
+
+    await tx.outboxMessage.createMany({
+      data: [
+        {
+          orgId: params.orgId,
+          type: params.outboxType,
+          payload: {
+            paymentId: params.paymentId,
+            leaseId: params.leaseId,
+            amountPoisha: params.amountPoisha,
+            method: params.method,
+            receiptNumber,
+          },
+        },
+      ],
+    });
+
+    return { allocationRecords, receipt, receiptNumber };
+  }
+
   async rejectPayment(ctx: PaymentContext, paymentId: string, reason?: string): Promise<PaymentResponse> {
     if (ctx.role !== 'landlord' && ctx.role !== 'caretaker') {
       throw ApiError.forbidden('Only landlords and caretakers can reject payments');
@@ -507,18 +474,16 @@ export class PaymentsService {
     if (!reason || !reason.trim()) {
       throw new ApiError(ErrorCode.VALIDATION_FAILED, 'Reason is required to reject a payment');
     }
-
     const trimmedReason = reason.trim();
 
     return await this.prisma.$tx(this.getTenantCtx(ctx), async (tx: Tx) => {
       const payments = await tx.$queryRaw<
         Array<{
           id: string;
-          org_id: string;
           lease_id: string;
           status: string;
         }>
-      >`SELECT id, org_id::text, lease_id::text, status::text
+      >`SELECT id, lease_id::text, status::text
         FROM payments
         WHERE org_id = ${ctx.orgId}::uuid AND id = ${paymentId}::uuid
         FOR UPDATE`;
@@ -529,7 +494,7 @@ export class PaymentsService {
 
       const p = payments[0]!;
       if (p.status !== 'pending_claim') {
-        throw new ApiError(ErrorCode.CONFLICT, `Payment is already ${p.status}`);
+        throw new ApiError(ErrorCode.CONFLICT, `Payment cannot be rejected because it is ${p.status}`);
       }
 
       if (ctx.role === 'caretaker') {
@@ -552,12 +517,14 @@ export class PaymentsService {
         }
       }
 
+      const now = new Date(clock.now());
+
       const updated = await tx.payment.update({
         where: { id: paymentId },
         data: {
           status: 'rejected',
           rejectedReason: trimmedReason,
-          updatedAt: new Date(clock.now()),
+          updatedAt: now,
         },
       });
 
@@ -587,19 +554,17 @@ export class PaymentsService {
     if (!reason || !reason.trim()) {
       throw new ApiError(ErrorCode.VALIDATION_FAILED, 'Reason is required to void a payment');
     }
-
     const trimmedReason = reason.trim();
 
     return await this.prisma.$tx(this.getTenantCtx(ctx), async (tx: Tx) => {
       const payments = await tx.$queryRaw<
         Array<{
           id: string;
-          org_id: string;
           lease_id: string;
-          amount_poisha: bigint;
           status: string;
+          amount_poisha: bigint;
         }>
-      >`SELECT id, org_id::text, lease_id::text, amount_poisha, status::text
+      >`SELECT id, lease_id::text, status::text, amount_poisha
         FROM payments
         WHERE org_id = ${ctx.orgId}::uuid AND id = ${paymentId}::uuid
         FOR UPDATE`;
@@ -610,19 +575,19 @@ export class PaymentsService {
 
       const p = payments[0]!;
       if (p.status !== 'confirmed') {
-        throw new ApiError(ErrorCode.CONFLICT, `Payment is ${p.status}, cannot void`);
+        throw new ApiError(ErrorCode.CONFLICT, `Payment cannot be voided because it is ${p.status}`);
       }
 
       // Lock lease row
       await tx.$queryRaw`SELECT id FROM leases WHERE org_id = ${ctx.orgId}::uuid AND id = ${p.lease_id}::uuid FOR UPDATE`;
 
-      // Find all allocations for this payment
-      const allocations = await tx.paymentAllocation.findMany({
+      // Find allocations to know which bills were paid by this payment
+      const existingAllocations = await tx.paymentAllocation.findMany({
         where: { paymentId },
       });
 
       const affectedBillIds = new Set<string>();
-      for (const a of allocations) {
+      for (const a of existingAllocations) {
         affectedBillIds.add(a.billId);
       }
 
@@ -649,7 +614,6 @@ export class PaymentsService {
         if (totalOverpayment > currentCreditBalance) {
           let neededToReverse = totalOverpayment - currentCreditBalance;
 
-          // Find credit applications on this lease
           const appliedEntries = await tx.creditEntry.findMany({
             where: {
               leaseId: p.lease_id,
@@ -660,22 +624,29 @@ export class PaymentsService {
 
           for (const applied of appliedEntries) {
             if (neededToReverse <= 0) break;
-            const appliedAmount = Math.abs(Number(applied.amountPoisha));
-            const rev = Math.min(neededToReverse, appliedAmount);
+            if (!applied.billId) continue;
 
-            if (applied.billId) {
-              affectedBillIds.add(applied.billId);
-              // Insert reversed credit entry
-              await tx.creditEntry.create({
-                data: {
-                  orgId: ctx.orgId,
-                  leaseId: p.lease_id,
-                  amountPoisha: BigInt(rev),
-                  kind: 'reversed',
-                  billId: applied.billId,
-                },
-              });
-            }
+            // Calculate existing reversed credit for this specific bill
+            const existingReversedRow = await tx.$queryRaw<Array<{ sum: bigint }>>`
+              SELECT COALESCE(SUM(amount_poisha), 0) as sum FROM credit_entries WHERE bill_id = ${applied.billId}::uuid AND kind = 'reversed'`;
+            const existingReversed = Number(existingReversedRow[0]?.sum || 0n);
+
+            const originalApplied = Math.abs(Number(applied.amountPoisha));
+            const netApplied = Math.max(0, originalApplied - existingReversed);
+            if (netApplied <= 0) continue;
+
+            const rev = Math.min(neededToReverse, netApplied);
+            affectedBillIds.add(applied.billId);
+
+            await tx.creditEntry.create({
+              data: {
+                orgId: ctx.orgId,
+                leaseId: p.lease_id,
+                amountPoisha: BigInt(rev),
+                kind: 'reversed',
+                billId: applied.billId,
+              },
+            });
 
             neededToReverse -= rev;
           }
@@ -711,27 +682,28 @@ export class PaymentsService {
         const reversedCredit = Number(reversedCreditRow[0]?.sum || 0n);
 
         const netCredit = Math.max(0, appliedCredit - reversedCredit);
-        const newPaid = allocSum + netCredit;
+        const newPaidPoisha = allocSum + netCredit;
 
-        let newStatus: 'issued' | 'partially_paid' | 'paid';
-        if (newPaid === 0) {
+        let newStatus: BillStatus;
+        if (newPaidPoisha <= 0) {
           newStatus = 'issued';
-        } else if (newPaid >= Number(bill.totalPoisha)) {
-          newStatus = 'paid';
-        } else {
+        } else if (newPaidPoisha < Number(bill.totalPoisha)) {
           newStatus = 'partially_paid';
+        } else {
+          newStatus = 'paid';
         }
 
         await tx.bill.update({
           where: { id: billId },
           data: {
-            paidPoisha: BigInt(newPaid),
+            paidPoisha: BigInt(newPaidPoisha),
             status: newStatus,
             updatedAt: now,
           },
         });
       }
 
+      // Mark payment void
       const updatedPayment = await tx.payment.update({
         where: { id: paymentId },
         data: {
@@ -742,6 +714,7 @@ export class PaymentsService {
         },
       });
 
+      // Mark receipt void
       await tx.receipt.updateMany({
         where: { paymentId },
         data: {
@@ -750,6 +723,7 @@ export class PaymentsService {
         },
       });
 
+      // Fetch the updated receipt
       const receipt = await tx.receipt.findFirst({
         where: { paymentId },
       });
@@ -762,6 +736,7 @@ export class PaymentsService {
             payload: {
               paymentId,
               leaseId: p.lease_id,
+              voidedBy: ctx.userId,
               reason: trimmedReason,
             },
           },
@@ -785,18 +760,17 @@ export class PaymentsService {
     return await this.prisma.$tx(this.getTenantCtx(ctx), async (tx: Tx) => {
       let tenantLeaseIds: string[] = [];
       if (ctx.role === 'tenant') {
-        const leases = await tx.leaseTenant.findMany({
+        const tenantLeases = await tx.leaseTenant.findMany({
           where: {
             orgId: ctx.orgId,
             membership: {
-              id: ctx.membershipId,
               userId: ctx.userId,
               orgId: ctx.orgId,
             },
           },
           select: { leaseId: true },
         });
-        tenantLeaseIds = leases.map((l: { leaseId: string }) => l.leaseId);
+        tenantLeaseIds = tenantLeases.map((l: { leaseId: string }) => l.leaseId);
 
         if (query.leaseId) {
           if (!tenantLeaseIds.includes(query.leaseId)) {
@@ -840,14 +814,23 @@ export class PaymentsService {
       } else if (ctx.role === 'tenant') {
         where.leaseId = { in: tenantLeaseIds };
       } else if (ctx.role === 'caretaker') {
-        where.lease = {
-          unit: {
-            buildingId: { in: caretakerBuildingIds },
-          },
-        };
-      }
-
-      if (query.buildingId) {
+        if (query.buildingId) {
+          if (!caretakerBuildingIds.includes(query.buildingId)) {
+            throw ApiError.notFound('Building not found');
+          }
+          where.lease = {
+            unit: {
+              buildingId: query.buildingId,
+            },
+          };
+        } else {
+          where.lease = {
+            unit: {
+              buildingId: { in: caretakerBuildingIds },
+            },
+          };
+        }
+      } else if (query.buildingId) {
         where.lease = {
           unit: {
             buildingId: query.buildingId,
@@ -855,11 +838,7 @@ export class PaymentsService {
         };
       }
 
-      if (query.cursor) {
-        where.id = { lt: query.cursor };
-      }
-
-      const payments = await tx.payment.findMany({
+      const findArgs: Prisma.PaymentFindManyArgs = {
         where,
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         take: limit + 1,
@@ -888,7 +867,14 @@ export class PaymentsService {
             },
           },
         },
-      });
+      };
+
+      if (query.cursor) {
+        findArgs.cursor = { id: query.cursor };
+        findArgs.skip = 1;
+      }
+
+      const payments = await tx.payment.findMany(findArgs);
 
       let nextCursor: string | undefined;
       if (payments.length > limit) {
@@ -903,13 +889,13 @@ export class PaymentsService {
     });
   }
 
-  async getReceiptDownload(ctx: PaymentContext, receiptId: string) {
+  async getReceiptDownloadUrl(
+    ctx: PaymentContext,
+    receiptId: string,
+  ): Promise<{ downloadUrl?: string; status?: 'rendering' }> {
     return await this.prisma.$tx(this.getTenantCtx(ctx), async (tx: Tx) => {
       const receipt = await tx.receipt.findFirst({
-        where: {
-          id: receiptId,
-          orgId: ctx.orgId,
-        },
+        where: { id: receiptId, orgId: ctx.orgId },
         include: {
           payment: {
             include: {
@@ -928,17 +914,6 @@ export class PaymentsService {
         throw ApiError.notFound('Receipt not found');
       }
 
-      // Tenant check
-      if (ctx.role === 'tenant') {
-        const isTenantOnLease = receipt.payment.lease.tenants.some(
-          (t: { membershipId: string }) => t.membershipId === ctx.membershipId,
-        );
-        if (!isTenantOnLease) {
-          throw ApiError.notFound('Receipt not found');
-        }
-      }
-
-      // Caretaker check
       if (ctx.role === 'caretaker') {
         const assignment = await tx.caretakerBuilding.findFirst({
           where: {
@@ -948,6 +923,15 @@ export class PaymentsService {
           },
         });
         if (!assignment) {
+          throw ApiError.notFound('Receipt not found');
+        }
+      }
+
+      if (ctx.role === 'tenant') {
+        const isTenant = receipt.payment.lease.tenants.some(
+          (t: { membershipId: string }) => t.membershipId === ctx.membershipId,
+        );
+        if (!isTenant) {
           throw ApiError.notFound('Receipt not found');
         }
       }
@@ -975,6 +959,8 @@ export class PaymentsService {
       return { downloadUrl: signedUrl.url };
     });
   }
+
+  getReceiptDownload = this.getReceiptDownloadUrl.bind(this);
 
   private formatPayment(p: PaymentWithRelations): PaymentResponse {
     const paidOnStr =

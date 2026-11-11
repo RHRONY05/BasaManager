@@ -22,8 +22,10 @@ export function createFilesRoutes(deps: FilesRouteDeps): Router {
   const requireUser = createRequireUser(deps.prisma, deps.env);
   const requireMembership = createRequireMembership(deps.prisma);
 
-  // Local file serving (public with HMAC signature & expiration verification)
-  router.get('/local/:id', controller.serveLocal);
+  // Local file serving (public with HMAC signature & expiration verification) - dev/test only
+  if (deps.env.APP_ENV === 'dev' || deps.env.APP_ENV === 'test') {
+    router.get('/local/:id', controller.serveLocal);
+  }
 
   // Authenticated file routes
   router.post(

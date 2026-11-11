@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import sharp from 'sharp';
 import type { Db, Tx, MembershipRole } from '../../config/db.js';
 import { env } from '../../config/env.js';
 import { clock } from '../../lib/clock.js';
@@ -6,6 +7,12 @@ import { ApiError } from '../../lib/ApiError.js';
 import { ErrorCode } from '@bm/shared/errors';
 import type { FileKind } from '@bm/shared/enums';
 import { storage, verifyLocalSignature } from '../../config/storage/index.js';
+
+export const ALLOWED_USER_UPLOAD_KINDS: readonly FileKind[] = [
+  'payment_proof',
+  'document',
+  'maintenance_photo',
+];
 
 export function detectMime(buffer: Buffer): { mime: string; format: string; resourceType: 'image' | 'raw' } {
   if (buffer.length >= 2 && buffer[0] === 0x4d && buffer[1] === 0x5a) {
@@ -49,6 +56,55 @@ export function detectMime(buffer: Buffer): { mime: string; format: string; reso
   throw new ApiError(ErrorCode.UNSUPPORTED_MEDIA_TYPE, 'Unsupported file type');
 }
 
+export async function processImage(buffer: Buffer): Promise<{
+  processedBuffer: Buffer;
+  thumbBuffer: Buffer;
+  mime: string;
+  format: string;
+}> {
+  // auto-rotate based on EXIF orientation, resize max 2000px, strips EXIF metadata
+  const pipeline = sharp(buffer)
+    .rotate()
+    .resize({ width: 2000, height: 2000, fit: 'inside', withoutEnlargement: true });
+
+  const metadata = await sharp(buffer).metadata();
+  const format = metadata.format === 'png' ? 'png' : metadata.format === 'webp' ? 'webp' : 'jpeg';
+
+  let processedBuffer: Buffer;
+  if (format === 'png') {
+    processedBuffer = await pipeline.png().toBuffer();
+  } else if (format === 'webp') {
+    processedBuffer = await pipeline.webp().toBuffer();
+  } else {
+    processedBuffer = await pipeline.jpeg({ quality: 85 }).toBuffer();
+  }
+
+  // 400px thumbnail
+  const thumbPipeline = sharp(processedBuffer).resize({
+    width: 400,
+    height: 400,
+    fit: 'inside',
+    withoutEnlargement: true,
+  });
+
+  let thumbBuffer: Buffer;
+  if (format === 'png') {
+    thumbBuffer = await thumbPipeline.png().toBuffer();
+  } else if (format === 'webp') {
+    thumbBuffer = await thumbPipeline.webp().toBuffer();
+  } else {
+    thumbBuffer = await thumbPipeline.jpeg({ quality: 80 }).toBuffer();
+  }
+
+  const mime = format === 'png' ? 'image/png' : format === 'webp' ? 'image/webp' : 'image/jpeg';
+  return {
+    processedBuffer,
+    thumbBuffer,
+    mime,
+    format: format === 'jpeg' ? 'jpg' : format,
+  };
+}
+
 export class FilesService {
   constructor(private readonly prisma: Db) {}
 
@@ -59,19 +115,39 @@ export class FilesService {
     buffer: Buffer;
     originalFilename?: string;
   }) {
+    if (!ALLOWED_USER_UPLOAD_KINDS.includes(params.kind)) {
+      throw new ApiError(ErrorCode.VALIDATION_FAILED, 'Invalid or forbidden file kind for user upload');
+    }
+
     const MAX_SIZE = 5 * 1024 * 1024;
     if (params.buffer.length > MAX_SIZE) {
       throw new ApiError(ErrorCode.PAYLOAD_TOO_LARGE, 'File exceeds 5 MB limit');
     }
 
-    const { mime, format, resourceType } = detectMime(params.buffer);
-    const sha256 = crypto.createHash('sha256').update(params.buffer).digest('hex');
+    const { mime: initialMime, format: initialFormat, resourceType } = detectMime(params.buffer);
+
+    let finalBuffer = params.buffer;
+    let thumbBuffer: Buffer | undefined;
+    let finalMime = initialMime;
+    let finalFormat = initialFormat;
+
+    if (resourceType === 'image') {
+      const processed = await processImage(params.buffer);
+      finalBuffer = processed.processedBuffer;
+      thumbBuffer = processed.thumbBuffer;
+      finalMime = processed.mime;
+      finalFormat = processed.format;
+    }
+
+    const sha256 = crypto.createHash('sha256').update(finalBuffer).digest('hex');
     const fileId = crypto.randomUUID();
-    const publicId = `basamanager/${env.APP_ENV}/org/${params.orgId}/${params.kind}/${fileId}`;
+    const appEnv = process.env.APP_ENV || 'test';
+    const publicId = `basamanager/${appEnv}/org/${params.orgId}/${params.kind}/${fileId}`;
 
     await storage.save({
-      buffer: params.buffer,
-      mime,
+      buffer: finalBuffer,
+      thumbBuffer,
+      mime: finalMime,
       publicId,
       fileId,
       resourceType,
@@ -84,12 +160,12 @@ export class FilesService {
           data: {
             id: fileId,
             orgId: params.orgId,
-            provider: env.STORAGE_DRIVER === 'cloudinary' ? 'cloudinary' : 'local',
+            provider: process.env.STORAGE_DRIVER === 'cloudinary' ? 'cloudinary' : 'local',
             publicId,
             resourceType,
-            format,
-            mime,
-            sizeBytes: params.buffer.length,
+            format: finalFormat,
+            mime: finalMime,
+            sizeBytes: finalBuffer.length,
             sha256,
             kind: params.kind,
             uploadedBy: params.userId,
@@ -129,17 +205,83 @@ export class FilesService {
           throw ApiError.notFound('File not found');
         }
 
-        // Permission checks
-        if (params.role === 'caretaker' && file.kind === 'document') {
-          throw ApiError.notFound('File not found');
+        // Caretaker permission check: cannot see documents, and scoped to managed buildings
+        if (params.role === 'caretaker') {
+          if (file.kind === 'document') {
+            throw ApiError.notFound('File not found');
+          }
+
+          const caretakerBuildings = await tx.caretakerBuilding.findMany({
+            where: {
+              orgId: params.orgId,
+              membership: {
+                userId: params.userId,
+                orgId: params.orgId,
+              },
+            },
+            select: { buildingId: true },
+          });
+          const buildingIds = caretakerBuildings.map((b: { buildingId: string }) => b.buildingId);
+
+          if (file.kind === 'payment_proof') {
+            const payment = await tx.payment.findFirst({
+              where: {
+                orgId: params.orgId,
+                proofFileId: file.id,
+                lease: {
+                  unit: {
+                    buildingId: { in: buildingIds },
+                  },
+                },
+              },
+            });
+            if (!payment && file.uploadedBy !== params.userId) {
+              const uploaderInBuilding = file.uploadedBy
+                ? await tx.leaseTenant.findFirst({
+                    where: {
+                      orgId: params.orgId,
+                      membership: {
+                        userId: file.uploadedBy,
+                        orgId: params.orgId,
+                      },
+                      lease: {
+                        unit: {
+                          buildingId: { in: buildingIds },
+                        },
+                      },
+                    },
+                  })
+                : null;
+              if (!uploaderInBuilding) {
+                throw ApiError.notFound('File not found');
+              }
+            }
+          } else if (file.kind === 'receipt_pdf') {
+            const receipt = await tx.receipt.findFirst({
+              where: {
+                orgId: params.orgId,
+                fileId: file.id,
+                payment: {
+                  lease: {
+                    unit: {
+                      buildingId: { in: buildingIds },
+                    },
+                  },
+                },
+              },
+            });
+            if (!receipt) {
+              throw ApiError.notFound('File not found');
+            }
+          }
         }
 
+        // Tenant permission check: own files or linked payment/receipt on their leases
         if (params.role === 'tenant') {
           let allowed = false;
           if (file.uploadedBy === params.userId) {
             allowed = true;
           } else {
-            // Check if file is payment proof or receipt on tenant's lease
             const tenantLeases = await tx.leaseTenant.findMany({
               where: {
                 orgId: params.orgId,
@@ -184,18 +326,21 @@ export class FilesService {
           }
         }
 
+        const variant = params.variant === 'thumb' && file.resourceType === 'image' ? 'thumb' : undefined;
+
         return await storage.getSignedUrl({
           fileId: file.id,
           publicId: file.publicId,
           resourceType: file.resourceType as 'image' | 'raw',
           format: file.format,
           expiresInSeconds: 300,
+          variant,
         });
       },
     );
   }
 
-  async serveLocalFile(params: { fileId: string; exp: string; sig: string }) {
+  async serveLocalFile(params: { fileId: string; exp: string; sig: string; variant?: string }) {
     const expNum = Number(params.exp);
     if (!expNum || !params.sig) {
       throw ApiError.forbidden('Missing expiration or signature');
@@ -206,12 +351,14 @@ export class FilesService {
       throw ApiError.forbidden('Signed URL expired');
     }
 
-    const secret = env.STORAGE_URL_SECRET || env.JWT_SECRET || 'local-storage-secret';
-    if (!verifyLocalSignature(params.fileId, expNum, params.sig, secret)) {
+    const secret = env.STORAGE_URL_SECRET || env.JWT_SECRET || 'local-storage-secret-dev-only';
+    const variant = params.variant === 'thumb' ? 'thumb' : undefined;
+
+    if (!verifyLocalSignature(params.fileId, expNum, params.sig, secret, variant)) {
       throw ApiError.forbidden('Invalid signature');
     }
 
-    const result = await storage.readById(params.fileId);
+    const result = await storage.readById(params.fileId, variant);
     if (!result) {
       throw ApiError.notFound('File not found');
     }
