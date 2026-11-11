@@ -113,6 +113,8 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - name: Workaround Azure mirror DNS failure on GitHub runners
+        run: sudo sed -i 's/azure\.archive\.ubuntu\.com/archive.ubuntu.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/* /etc/apt/apt-mirrors.txt 2>/dev/null || true
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e
       - name: Upload Playwright report
