@@ -31,6 +31,7 @@ export const pageLoaders = {
   '/t/notices': () => import('../../pages/tenant/NoticesPage'),
   '/t/lease': () => import('../../pages/tenant/TenantLeasePage'),
   '/t/account': () => import('../../pages/tenant/TenantAccountPage'),
+  '/pay/result': () => import('../../pages/tenant/PaymentResultPage'),
   '/a': () => import('../../pages/admin/AdminPage'),
   '/account': () => import('../../pages/shared/AccountPage'),
 } as const;

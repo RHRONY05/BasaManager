@@ -53,8 +53,9 @@ export function createApp(deps: AppDeps): Express {
   // 3. Security headers (helmet)
   app.use(helmet());
 
-  // 4. JSON body parsing (100kb limit)
+  // 4. Body parsing (JSON and URL-encoded forms for webhooks)
   app.use(express.json({ limit: '100kb' }));
+  app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 
   // 5. Cookie parsing
   app.use(cookieParser());

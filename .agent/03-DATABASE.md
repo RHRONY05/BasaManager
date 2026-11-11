@@ -98,6 +98,7 @@ The architect owns this file and the schema; implementers never change the schem
 | `20261108000300_constraints_grants_views` | Check constraints, the history-table DELETE revokes, outbox revokes, `_prisma_migrations` revokes, the two admin views |
 | `20261108000400_user_scoped_access` | `own_memberships` (no-org context only); `organizations` policies split per command (`org_self_select`, `member_orgs` (no-org context only), `org_self_insert`, `org_self_update`, no delete); function `app_find_invitation` |
 | `20261108000500_payment_void` | Function `app_void_payment(p_org_id uuid, p_payment_id uuid)` `SECURITY DEFINER` running as `bm_owner` to safely delete `payment_allocations` and `credit_entries` for a voided payment while verifying `current_setting('app.org_id')` |
+| `20261108000600_payment_intents_lookup` | Functions `app_find_payment_intent_by_tran_id` and `app_find_stale_payment_intents` `SECURITY DEFINER` running as `bm_owner` to safely lookup intents across orgs by global `tran_id` for IPN validation and scan stale initiated intents for worker cron rechecks |
 
 All expand-only. Staging/prod run `prisma migrate deploy`. Tests build a fresh database per run (09).
 

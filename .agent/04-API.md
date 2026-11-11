@@ -117,10 +117,12 @@ in CI, so docs and code can't drift.
 | `POST /payments/:id/void` | L | `{reason}` Rule 6 |
 | `GET /payments?leaseId=&status=` | L, C, T(own) | |
 | `GET /receipts/:id/download` | L, C, T(own) | expiring signed URL (PDF rendered if missing → `202 {status:'rendering'}`) |
-| `POST /payments/sslcommerz/init` | T(own) | `{leaseId, amountPoisha}` (min ৳100, max = dues + one month's rent) → `{gatewayUrl}` |
+| `POST /payments/sslcommerz/init` | T(own) | `{leaseId, amountPoisha}` (min ৳100, max = dues + one month's rent) → `{gatewayUrl, tranId}` |
 | `POST /payments/sslcommerz/ipn` | public (SSLCommerz) | form-encoded; validation API call; Rule 8. Always 200 to the gateway once handled; logs + Sentry on failures |
 | `POST /payments/sslcommerz/return/:result` | public | `success|fail|cancel` browser return (form POST from gateway) → 303 redirect to `/pay/result?tran=…`; **changes nothing** |
 | `GET /payments/sslcommerz/intents/:tranId` | T(own) | status for the result page (polls until not `initiated`, max 60 s; then shows "we'll notify you") |
+| `GET /payments/sslcommerz/mock-gateway` | dev/test only | simulated SSLCommerz gateway interface for automated and manual tests |
+| `POST /payments/sslcommerz/mock-complete` | dev/test only | simulates immediate IPN dispatch and browser callback redirect |
 
 ## Maintenance
 | Method & path | Auth | Notes |

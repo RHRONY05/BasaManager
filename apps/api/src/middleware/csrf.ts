@@ -18,8 +18,12 @@ export function createCsrfMiddleware(env: Env): RequestHandler {
       return next();
     }
 
-    // Exemption for external webhooks/IPN (e.g. SSLCommerz IPN)
-    if (req.path === '/api/payments/sslcommerz/ipn') {
+    // Exemption for external webhooks/IPN and gateway browser callbacks (e.g. SSLCommerz IPN & return)
+    if (
+      req.path === '/api/payments/sslcommerz/ipn' ||
+      req.path.startsWith('/api/payments/sslcommerz/return/') ||
+      req.path === '/api/payments/sslcommerz/mock-complete'
+    ) {
       return next();
     }
 
@@ -32,7 +36,6 @@ export function createCsrfMiddleware(env: Env): RequestHandler {
     // 2. Double-submit token check
     const csrfCookie = req.cookies?.[COOKIE_CSRF_NAME];
     const hasAuthCookie = Boolean(req.cookies?.[COOKIE_ACCESS_NAME] || req.cookies?.[COOKIE_REFRESH_NAME]);
-
     if (csrfCookie || hasAuthCookie) {
       const csrfHeader = req.headers['x-csrf-token'];
       if (!csrfHeader || !csrfCookie || csrfHeader !== csrfCookie) {

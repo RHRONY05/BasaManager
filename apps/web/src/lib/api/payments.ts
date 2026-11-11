@@ -7,6 +7,9 @@ import type {
   RecordPaymentInput,
   ListPaymentsQuery,
   ReceiptDownloadResponse,
+  InitOnlinePaymentInput,
+  InitOnlinePaymentResponse,
+  PaymentIntentResponse,
 } from '@bm/shared/api/payments';
 import type { UploadFileResponse, SignedUrlResponse } from '@bm/shared/api/files';
 
@@ -124,4 +127,29 @@ export async function getFileSignedUrl(fileId: string, variant?: 'thumb'): Promi
 
 export async function getReceiptDownloadUrl(receiptId: string): Promise<ReceiptDownloadResponse> {
   return apiFetch<ReceiptDownloadResponse>(`/api/receipts/${receiptId}/download`);
+}
+
+export function useInitOnlinePayment() {
+  return useMutation({
+    mutationFn: (data: InitOnlinePaymentInput) =>
+      apiFetch<InitOnlinePaymentResponse>('/api/payments/sslcommerz/init', {
+        method: 'POST',
+        body: data,
+      }),
+  });
+}
+
+export function usePaymentIntent(tranId: string | null | undefined, enabled = true) {
+  return useQuery({
+    queryKey: ['paymentIntent', tranId],
+    queryFn: () => apiFetch<PaymentIntentResponse>(`/api/payments/sslcommerz/intents/${tranId}`),
+    enabled: Boolean(tranId) && enabled,
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      if (!data || data.status === 'initiated') {
+        return 2000;
+      }
+      return false;
+    },
+  });
 }

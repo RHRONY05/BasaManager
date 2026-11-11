@@ -742,6 +742,13 @@
     "colReceipt": "Receipt",
     "colActions": "Actions",
     "actionVoid": "Void",
-    "actionPdf": "PDF"
+    "actionPdf": "PDF",
+    "recordsCount": "record(s)",
+    "sslcommerzSandbox": "SSLCommerz Sandbox",
+    "statusProcessing": "Processing",
+    "stillProcessingTitle": "Still Processing",
+    "stillProcessingDesc": "SSLCommerz hasn't confirmed yet. We'll notify you as soon as it does; don't pay twice.",
+    "paymentExpired": "Payment Session Expired",
+    "expiredDesc": "This payment session timed out without confirmation. No money was taken. You can try again from your bills page."
   }
 }

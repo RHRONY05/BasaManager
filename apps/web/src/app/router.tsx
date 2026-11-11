@@ -238,6 +238,21 @@ export const router = createBrowserRouter([
     ],
   },
   {
+    path: '/pay/result',
+    element: (
+      <RequireRole roles={['tenant']}>
+        <TenantLayout />
+      </RequireRole>
+    ),
+    errorElement: <RouteError />,
+    children: [
+      {
+        index: true,
+        Component: page('/pay/result'),
+      },
+    ],
+  },
+  {
     path: '*',
     element: <NotFound />,
     errorElement: <RouteError />,
