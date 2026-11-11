@@ -1,6 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
-import { BillingService, type BillingContext } from './billing.service.js';
-import type { Db } from '../../config/db.js';
+import {
+  BillingService,
+  type BillingContext,
+  generateFirstBillIfAfterBillDay,
+  createDraftBillForLease,
+  resolvePreviousReading,
+} from './billing.service.js';
+import type { Db, Tx } from '../../config/db.js';
 import { ApiError } from '../../lib/ApiError.js';
 
 describe('BillingService', () => {
@@ -254,6 +260,291 @@ describe('BillingService', () => {
       const res = await service.runGeneration(landlordCtx, { buildingId: 'b-1', month: '2026-11' });
       expect(res.created).toBe(0);
       expect(res.skipped).toBe(1);
+    });
+  });
+
+  describe('generateFirstBillIfAfterBillDay & createDraftBillForLease (#30, #31)', () => {
+    it('returns false if lease is not found', async () => {
+      const mockTx = {
+        lease: { findUnique: vi.fn().mockResolvedValue(null) },
+      } as unknown as Tx;
+      const res = await generateFirstBillIfAfterBillDay(mockTx, 'org-1', 'lease-missing');
+      expect(res).toBe(false);
+    });
+
+    it('returns false if lease has no building', async () => {
+      const mockTx = {
+        lease: { findUnique: vi.fn().mockResolvedValue({ id: 'l-1', unit: null }) },
+      } as unknown as Tx;
+      const res = await generateFirstBillIfAfterBillDay(mockTx, 'org-1', 'l-1');
+      expect(res).toBe(false);
+    });
+
+    it('returns false if lease start date is on or before bill day and current date is before bill day', async () => {
+      const mockTx = {
+        lease: {
+          findUnique: vi.fn().mockResolvedValue({
+            id: 'l-1',
+            startDate: new Date('2026-11-05T00:00:00Z'),
+            unit: {
+              building: {
+                billDay: 10,
+                dueDay: 15,
+                electricityRatePoisha: 900,
+              },
+            },
+          }),
+        },
+      } as unknown as Tx;
+      // Now is 5 Nov (before bill day 10)
+      const res = await generateFirstBillIfAfterBillDay(
+        mockTx,
+        'org-1',
+        'l-1',
+        new Date('2026-11-05T04:00:00Z'),
+      );
+      expect(res).toBe(false);
+    });
+
+    it('creates draft bill when lease starts after bill day (e.g. 18 Nov, bill day 1)', async () => {
+      const billCreate = vi.fn().mockResolvedValue({ id: 'b-new' });
+      const lineCreateMany = vi.fn().mockResolvedValue({ count: 2 });
+      const mockTx = {
+        lease: {
+          findUnique: vi.fn().mockResolvedValue({
+            id: 'l-1',
+            startDate: new Date('2026-11-18T00:00:00Z'),
+            monthlyRentPoisha: 1200000n,
+            charges: [{ id: 'ch-1', name: 'Service', amountPoisha: 100000n }],
+            unit: {
+              id: 'u-1',
+              electricityMode: 'none',
+              building: {
+                id: 'b-1',
+                billDay: 1,
+                dueDay: 10,
+                electricityRatePoisha: 900,
+              },
+            },
+          }),
+        },
+        bill: {
+          findUnique: vi.fn().mockResolvedValue(null),
+          create: billCreate,
+        },
+        billLine: {
+          createMany: lineCreateMany,
+        },
+      } as unknown as Tx;
+
+      const res = await generateFirstBillIfAfterBillDay(
+        mockTx,
+        'org-1',
+        'l-1',
+        new Date('2026-11-18T04:00:00Z'),
+      );
+      expect(res).toBe(true);
+      expect(billCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            orgId: 'org-1',
+            leaseId: 'l-1',
+            status: 'draft',
+            needsReading: false,
+            // 13 days of 30: rent 520,000 + service 43,300
+            totalPoisha: 563300n,
+          }),
+        }),
+      );
+      expect(lineCreateMany).toHaveBeenCalledWith({
+        data: expect.arrayContaining([
+          expect.objectContaining({ kind: 'rent', amountPoisha: 520000n }),
+          expect.objectContaining({ kind: 'fixed_charge', amountPoisha: 43300n }),
+        ]),
+      });
+    });
+
+    it('handles submeter unit with needsReading=true when no reading exists', async () => {
+      const billCreate = vi.fn().mockResolvedValue({ id: 'b-new' });
+      const lineCreateMany = vi.fn().mockResolvedValue({ count: 1 });
+      const mockTx = {
+        bill: {
+          findUnique: vi.fn().mockResolvedValue(null),
+          create: billCreate,
+        },
+        billLine: {
+          createMany: lineCreateMany,
+        },
+        meterReading: {
+          findUnique: vi.fn().mockResolvedValue(null),
+        },
+      } as unknown as Tx;
+
+      const res = await createDraftBillForLease(
+        mockTx,
+        'org-1',
+        { id: 'b-1', dueDay: 10, electricityRatePoisha: 900 },
+        { id: 'u-1', electricityMode: 'submeter' },
+        {
+          id: 'l-1',
+          startDate: '2026-11-01',
+          monthlyRentPoisha: 1000000n,
+          charges: [],
+        },
+        new Date('2026-11-01T00:00:00Z'),
+        '2026-11',
+      );
+
+      expect(res).toBe(true);
+      expect(billCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            needsReading: true,
+          }),
+        }),
+      );
+    });
+
+    it('handles submeter unit with reading calculation when reading exists', async () => {
+      const billCreate = vi.fn().mockResolvedValue({ id: 'b-new' });
+      const lineCreateMany = vi.fn().mockResolvedValue({ count: 2 });
+      const mockTx = {
+        bill: {
+          findUnique: vi.fn().mockResolvedValue(null),
+          create: billCreate,
+        },
+        billLine: {
+          createMany: lineCreateMany,
+        },
+        meterReading: {
+          findUnique: vi.fn().mockResolvedValue({
+            reading: 1150,
+            meterReplaced: false,
+            newMeterStart: null,
+          }),
+          findFirst: vi.fn().mockResolvedValue(null), // fallback to moveInReading
+        },
+      } as unknown as Tx;
+
+      const res = await createDraftBillForLease(
+        mockTx,
+        'org-1',
+        { id: 'b-1', dueDay: 10, electricityRatePoisha: 900 },
+        { id: 'u-1', electricityMode: 'submeter' },
+        {
+          id: 'l-1',
+          startDate: '2026-11-01',
+          monthlyRentPoisha: 1000000n,
+          moveInReading: 1000,
+          charges: [],
+        },
+        new Date('2026-11-01T00:00:00Z'),
+        '2026-11',
+      );
+
+      expect(res).toBe(true);
+      // electricity: (1150 - 1000) * 900 = 135,000
+      expect(billCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            needsReading: false,
+            totalPoisha: 1135000n,
+          }),
+        }),
+      );
+    });
+
+    it('prorates with moveOutDate when lease.endDate is present', async () => {
+      const billCreate = vi.fn().mockResolvedValue({ id: 'b-new' });
+      const lineCreateMany = vi.fn().mockResolvedValue({ count: 1 });
+      const mockTx = {
+        bill: {
+          findUnique: vi.fn().mockResolvedValue(null),
+          create: billCreate,
+        },
+        billLine: {
+          createMany: lineCreateMany,
+        },
+      } as unknown as Tx;
+
+      const res = await createDraftBillForLease(
+        mockTx,
+        'org-1',
+        { id: 'b-1', dueDay: 10, electricityRatePoisha: 900 },
+        { id: 'u-1', electricityMode: 'none' },
+        {
+          id: 'l-1',
+          startDate: '2026-02-01',
+          endDate: '2026-02-10', // move out on day 10 of 28
+          monthlyRentPoisha: 1500000n,
+          charges: [],
+        },
+        new Date('2026-02-01T00:00:00Z'),
+        '2026-02',
+      );
+
+      expect(res).toBe(true);
+      // factor: 10/28, rent: roundTaka(1,500,000 * 10 / 28) = 535,700
+      expect(billCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            totalPoisha: 535700n,
+          }),
+        }),
+      );
+    });
+  });
+
+  describe('resolvePreviousReading (#28)', () => {
+    it('returns prior reading within lease lifetime', async () => {
+      const mockTx = {
+        meterReading: {
+          findFirst: vi.fn().mockResolvedValue({ reading: 1500 }),
+        },
+      } as unknown as Tx;
+      const val = await resolvePreviousReading(
+        mockTx,
+        'org-1',
+        'u-1',
+        new Date('2026-03-01T00:00:00Z'),
+        1000,
+        '2026-01-01',
+      );
+      expect(val).toBe(1500);
+    });
+
+    it('falls back to moveInReading when no prior reading in lease lifetime', async () => {
+      const mockTx = {
+        meterReading: {
+          findFirst: vi.fn().mockResolvedValue(null),
+        },
+      } as unknown as Tx;
+      const val = await resolvePreviousReading(
+        mockTx,
+        'org-1',
+        'u-1',
+        new Date('2026-03-01T00:00:00Z'),
+        1200,
+        '2026-03-01',
+      );
+      expect(val).toBe(1200);
+    });
+
+    it('returns 0 when no prior reading and no moveInReading', async () => {
+      const mockTx = {
+        meterReading: {
+          findFirst: vi.fn().mockResolvedValue(null),
+        },
+      } as unknown as Tx;
+      const val = await resolvePreviousReading(
+        mockTx,
+        'org-1',
+        'u-1',
+        new Date('2026-03-01T00:00:00Z'),
+        null,
+        '2026-03-01',
+      );
+      expect(val).toBe(0);
     });
   });
 

@@ -178,7 +178,7 @@ Leases follow a deterministic state machine:
 ```
 
 1. **Pending**: Created by landlord. Tenant invitation is dispatched. Unit is reserved; another lease cannot be created on this unit.
-2. **Active**: Tenant accepts invitation, creates credentials, and is linked to the lease. Monthly billing (V8) runs against active leases only.
+2. **Active**: Tenant accepts invitation, creates credentials, and is linked to the lease (or midnight cron `activateDueLeases` activates an accepted lease whose start date has arrived). Per Billing Rule 2 (#30), if the lease starts after the building's billing day, its initial prorated draft bill is generated immediately upon activation (`generateFirstBillIfAfterBillDay`), ensuring prompt billing.
 3. **Notice**: Tenant or landlord has submitted a move-out notice. Lease remains billable until agreed exit date.
 4. **Ended**: Tenant has vacated. Unit returns to `vacant` status. Deposit settlement is executed (V15).
 
@@ -186,16 +186,17 @@ All lifecycle transitions execute within PostgreSQL transactions with `SET LOCAL
 
 ## 10. Edge cases & failure modes
 
-| Scenario                                                    | System Behavior                                               | Error Code / Result                                            |
-| ----------------------------------------------------------- | ------------------------------------------------------------- | -------------------------------------------------------------- |
-| Concurrent lease creation on same unit                      | DB unique partial index or transaction check catches conflict | `409 CONFLICT` ("Unit already has an active or pending lease") |
-| Tenant clicks expired invitation link (> 7 days)            | Preview service checks `expires_at < now`                     | `410 GONE` / `400 BAD_REQUEST` ("Invitation has expired")      |
-| Tenant clicks invite link after it was resent               | Previous token was revoked (`revoked_at IS NOT NULL`)         | `400 BAD_REQUEST` ("Invitation has been revoked")              |
-| Landlord attempts to record negative deposit                | Zod schema validation requires positive integer               | `400 BAD_REQUEST` validation error                             |
-| Caretaker attempts to view leases outside assigned property | Leases service filters queries by `caretaker_buildings`       | Returns empty array or `404 NOT_FOUND`                         |
-| Tenant tries to view other tenant's lease                   | RLS policy and membership check verify lease assignment       | `404 NOT_FOUND` (no leak of lease existence)                   |
-| Cancelling pending lease with held deposit or linked tenant | Checked inside transaction before status update               | `409 CONFLICT` ("Cannot cancel lease with...")                 |
-| Non-landlord attempts to create lease or record deposit     | Role guard checks `ctx.role === 'landlord'`                   | `403 FORBIDDEN`                                                |
+| Scenario                                                    | System Behavior                                                       | Error Code / Result                                            |
+| ----------------------------------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Concurrent lease creation on same unit                      | DB unique partial index or transaction check catches conflict         | `409 CONFLICT` ("Unit already has an active or pending lease") |
+| Lease starts after building bill day (#30)                  | Prorated initial draft bill created immediately upon lease activation | Bill created in `draft` status with prorated lines             |
+| Tenant clicks expired invitation link (> 7 days)            | Preview service checks `expires_at < now`                             | `410 GONE` / `400 BAD_REQUEST` ("Invitation has expired")      |
+| Tenant clicks invite link after it was resent               | Previous token was revoked (`revoked_at IS NOT NULL`)                 | `400 BAD_REQUEST` ("Invitation has been revoked")              |
+| Landlord attempts to record negative deposit                | Zod schema validation requires positive integer                       | `400 BAD_REQUEST` validation error                             |
+| Caretaker attempts to view leases outside assigned property | Leases service filters queries by `caretaker_buildings`               | Returns empty array or `404 NOT_FOUND`                         |
+| Tenant tries to view other tenant's lease                   | RLS policy and membership check verify lease assignment               | `404 NOT_FOUND` (no leak of lease existence)                   |
+| Cancelling pending lease with held deposit or linked tenant | Checked inside transaction before status update                       | `409 CONFLICT` ("Cannot cancel lease with...")                 |
+| Non-landlord attempts to create lease or record deposit     | Role guard checks `ctx.role === 'landlord'`                           | `403 FORBIDDEN`                                                |
 
 ## 11. Security
 

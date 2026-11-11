@@ -14,6 +14,7 @@ import {
 import { buildTestApp, resetAll, newAgent, sha256, uniqEmail, PASSWORD, type TestCtx } from '../helpers/auth';
 import { actorIn, landlordOf, type Actor } from '../helpers/roles';
 import { activateDueLeases } from '../../src/modules/leases/lease-activation';
+import { clock } from '../../src/lib/clock';
 
 const PAST = '2020-01-01';
 const FUTURE = '2099-01-01';
@@ -535,6 +536,34 @@ describe('V7: leases, deposit ledger, tenant invites, tenant history', () => {
       expect(lt).toEqual([{ membership_id: m[0]!.id, is_primary: true }]);
       const lease = await q<{ status: string }>(`select status from leases where id=$1`, [id]);
       expect(lease[0]!.status).toBe('active');
+    });
+
+    it('#30: accepting invite on lease starting after bill day creates initial prorated draft bill', async () => {
+      // Building bill_day is 1; lease starts on 18 Nov 2026
+      clock.set('2026-11-18T10:00:00.000Z');
+      try {
+        const { id, token } = await createLease({
+          startDate: '2026-11-18',
+          monthlyRentPoisha: 1200000,
+          charges: [{ name: 'Service', amountPoisha: 100000 }],
+        });
+        const res = await acceptInvite(token);
+        expect(res.status).toBe(200);
+
+        const lease = await q<{ status: string }>('select status from leases where id = $1', [id]);
+        expect(lease[0]!.status).toBe('active');
+
+        const bills = await q<{ status: string; total_poisha: string }>(
+          `select status, total_poisha::text from bills where lease_id = $1 and period_month = '2026-11-01'`,
+          [id],
+        );
+        expect(bills).toHaveLength(1);
+        expect(bills[0]!.status).toBe('draft');
+        // Rent 12,000 * 13/30 = 5,200 (520,000 poisha) + Service 1,000 * 13/30 = 433 (43,300 poisha) = 563,300 poisha
+        expect(bills[0]!.total_poisha).toBe('563300');
+      } finally {
+        clock.reset();
+      }
     });
 
     it('a lease starting in the future stays pending after acceptance', async () => {

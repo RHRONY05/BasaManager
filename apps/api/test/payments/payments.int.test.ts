@@ -386,16 +386,28 @@ describe('V9: payments, receipts and files', () => {
       const bId = await issuedBill(lease, '2026-03-01', 5000000);
       const cl = (await claim({ amountPoisha: 1000000 })).body.data;
 
-      const [confirmRes, adjustRes] = await Promise.all([
-        confirm(cl.id, landlord),
-        landlord.agent.post(`/api/bills/${bId}/adjustments`).send({
-          amountPoisha: 50000,
-          reason: 'Maintenance charge adjustment',
-        }),
-      ]);
+      // Inject a short delay on lease lock acquisition to force transactions to genuinely overlap in flight
+      await q(`create or replace function test_delay_lease() returns trigger language plpgsql as
+               $$ begin perform pg_sleep(0.15); return new; end $$`);
+      await q(
+        `create trigger test_delay_lease before update on leases for each row execute function test_delay_lease()`,
+      );
 
-      expect(confirmRes.status).toBe(200);
-      expect(adjustRes.status).toBe(201);
+      try {
+        const [confirmRes, adjustRes] = await Promise.all([
+          confirm(cl.id, landlord),
+          landlord.agent.post(`/api/bills/${bId}/adjustments`).send({
+            amountPoisha: 50000,
+            reason: 'Maintenance charge adjustment',
+          }),
+        ]);
+
+        expect(confirmRes.status).toBe(200);
+        expect(adjustRes.status).toBe(201);
+      } finally {
+        await q(`drop trigger if exists test_delay_lease on leases`);
+        await q(`drop function if exists test_delay_lease()`);
+      }
     });
   });
 
@@ -506,13 +518,12 @@ describe('V9: payments, receipts and files', () => {
         `/api/payments?leaseId=${lease}&cursor=${page1.body.page.nextCursor}&limit=2`,
       );
       expect(page2.status).toBe(200);
-      expect(page2.body.data.length).toBeGreaterThanOrEqual(1);
+      expect(page2.body.data).toHaveLength(1);
 
+      expect(page1.body.data.map((p: { id: string }) => p.id)).toEqual([p3, p2]);
+      expect(page2.body.data.map((p: { id: string }) => p.id)).toEqual([p1]);
       const allIds = [...page1.body.data, ...page2.body.data].map((p: { id: string }) => p.id);
-      expect(allIds).toContain(p1);
-      expect(allIds).toContain(p2);
-      expect(allIds).toContain(p3);
-      expect(new Set(allIds).size).toBe(allIds.length);
+      expect(allIds).toEqual([p3, p2, p1]);
     });
   });
 

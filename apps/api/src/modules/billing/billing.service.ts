@@ -58,71 +58,82 @@ function computeDueDate(monthStr: string, dueDay: number): Date {
 }
 
 /**
- * Rule 2 (#30): A lease starting after that month's bill day gets its first bill created
- * immediately at lease start / activation.
- * Also handles cases where lease was activated on/after the bill day in the start month.
+ * Helper to find prior meter reading before periodMonth, or fallback to lease moveInReading.
+ * Per Rule 3 (#28): The first bill of a lease uses the move-in reading as prev. Prior readings
+ * from previous tenants (before this lease's start month) must not be charged to the new tenant.
  */
-export async function generateFirstBillIfAfterBillDay(
+export async function resolvePreviousReading(
   tx: Tx,
   orgId: string,
-  leaseId: string,
-  now: Date = clock.now(),
-): Promise<boolean> {
-  const lease = await tx.lease.findUnique({
-    where: { id: leaseId },
-    select: {
-      id: true,
-      orgId: true,
-      startDate: true,
-      monthlyRentPoisha: true,
-      moveInReading: true,
-      charges: {
-        select: {
-          id: true,
-          name: true,
-          amountPoisha: true,
-        },
-      },
-      unit: {
-        select: {
-          id: true,
-          electricityMode: true,
-          building: {
-            select: {
-              id: true,
-              billDay: true,
-              dueDay: true,
-              electricityRatePoisha: true,
-            },
-          },
-        },
+  unitId: string,
+  periodDate: Date,
+  leaseMoveInReading?: number | null,
+  leaseStartDate?: Date | string | null,
+): Promise<number> {
+  let leaseStartMonth: Date | undefined;
+  if (leaseStartDate) {
+    const d = typeof leaseStartDate === 'string' ? new Date(leaseStartDate) : leaseStartDate;
+    leaseStartMonth = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
+  }
+
+  const priorReading = await tx.meterReading.findFirst({
+    where: {
+      orgId,
+      unitId,
+      periodMonth: {
+        lt: periodDate,
+        ...(leaseStartMonth ? { gte: leaseStartMonth } : {}),
       },
     },
+    orderBy: { periodMonth: 'desc' },
+    select: { reading: true },
   });
 
-  if (!lease || !lease.unit?.building) {
-    return false;
+  if (priorReading) {
+    return priorReading.reading;
   }
 
-  const building = lease.unit.building;
-  const startDateStr = getDhakaDateString(lease.startDate);
-  const startDay = parseInt(startDateStr.slice(8, 10), 10);
-  const periodMonthStr = startDateStr.slice(0, 7);
-  const periodDate = new Date(`${periodMonthStr}-01T00:00:00.000Z`);
+  return leaseMoveInReading ?? 0;
+}
 
-  const todayDhaka = getDhakaDateString(now);
-  const todayDay = parseInt(todayDhaka.slice(8, 10), 10);
+export interface LeaseForBilling {
+  id: string;
+  startDate: Date | string;
+  endDate?: Date | string | null;
+  monthlyRentPoisha: bigint | number;
+  moveInReading?: number | null;
+  charges: Array<{
+    id: string;
+    name: string;
+    amountPoisha: bigint | number;
+  }>;
+}
 
-  // Check if lease start day is after building's bill day, or if today is on/past bill day for this month
-  const isAfterBillDay =
-    startDay > building.billDay ||
-    (todayDhaka.slice(0, 7) === periodMonthStr && todayDay >= building.billDay) ||
-    todayDhaka > `${periodMonthStr}-31`;
+export interface BuildingForBilling {
+  id: string;
+  dueDay: number;
+  electricityRatePoisha: number;
+}
 
-  if (!isAfterBillDay) {
-    return false;
-  }
+export interface UnitForBilling {
+  id: string;
+  electricityMode: string;
+}
 
+/**
+ * Shared helper to build and persist a draft bill for a lease.
+ * Used by both monthly generation (runGeneration) and immediate mid-month activation (generateFirstBillIfAfterBillDay).
+ * Returns true if a bill was created, false if skipped (already exists or prorationFactor == 0).
+ */
+export async function createDraftBillForLease(
+  tx: Tx,
+  orgId: string,
+  building: BuildingForBilling,
+  unit: UnitForBilling,
+  lease: LeaseForBilling,
+  periodDate: Date,
+  periodMonthStr: string,
+): Promise<boolean> {
   // Check if bill already exists for this lease and month
   const existing = await tx.bill.findUnique({
     where: {
@@ -138,12 +149,17 @@ export async function generateFirstBillIfAfterBillDay(
     return false;
   }
 
+  // Compute proration based on lease start date and end date
+  const startDateStr = toDateString(lease.startDate);
+  const endDateStr = lease.endDate ? toDateString(lease.endDate) : undefined;
   const prorationInput = {
     periodMonth: periodMonthStr,
     moveInDate: startDateStr,
+    moveOutDate: endDateStr,
   };
   const factor = prorationFactor(prorationInput);
 
+  // #31: Skip leases that have not started yet in this period month (do not create empty ৳0 bill)
   if (factor === 0) {
     return false;
   }
@@ -181,8 +197,56 @@ export async function generateFirstBillIfAfterBillDay(
   }
 
   let needsReading = false;
-  if (lease.unit.electricityMode === 'submeter') {
-    needsReading = true;
+  if (unit.electricityMode === 'submeter') {
+    // Check if reading was already entered for this period
+    const reading = await tx.meterReading.findUnique({
+      where: {
+        orgId_unitId_periodMonth: {
+          orgId,
+          unitId: unit.id,
+          periodMonth: periodDate,
+        },
+      },
+    });
+
+    if (reading) {
+      const prevReading = await resolvePreviousReading(
+        tx,
+        orgId,
+        unit.id,
+        periodDate,
+        lease.moveInReading,
+        lease.startDate,
+      );
+      try {
+        const elec = electricityCharge({
+          prev: prevReading,
+          curr: reading.reading,
+          ratePoisha: building.electricityRatePoisha,
+          meterReplaced: reading.meterReplaced,
+          newMeterStart: reading.newMeterStart ?? undefined,
+        });
+        linesToCreate.push({
+          orgId,
+          kind: 'electricity',
+          label: 'Electricity',
+          amountPoisha: elec.amountPoisha,
+          meta: {
+            prev: reading.meterReplaced ? (reading.newMeterStart ?? 0) : prevReading,
+            curr: reading.reading,
+            units: elec.units,
+            ratePoisha: building.electricityRatePoisha,
+            meterReplaced: reading.meterReplaced,
+          },
+        });
+        totalPoisha += elec.amountPoisha;
+        needsReading = false;
+      } catch {
+        needsReading = true;
+      }
+    } else {
+      needsReading = true;
+    }
   }
 
   const dueDate = computeDueDate(periodMonthStr, building.dueDay);
@@ -212,6 +276,76 @@ export async function generateFirstBillIfAfterBillDay(
   });
 
   return true;
+}
+
+/**
+ * Rule 2 (#30): A lease starting after that month's bill day gets its first bill created
+ * immediately at lease start / activation.
+ * Also handles cases where lease was activated on/after the bill day in the start month.
+ */
+export async function generateFirstBillIfAfterBillDay(
+  tx: Tx,
+  orgId: string,
+  leaseId: string,
+  now: Date = clock.now(),
+): Promise<boolean> {
+  const lease = await tx.lease.findUnique({
+    where: { id: leaseId },
+    select: {
+      id: true,
+      orgId: true,
+      startDate: true,
+      endDate: true,
+      monthlyRentPoisha: true,
+      moveInReading: true,
+      charges: {
+        select: {
+          id: true,
+          name: true,
+          amountPoisha: true,
+        },
+      },
+      unit: {
+        select: {
+          id: true,
+          electricityMode: true,
+          building: {
+            select: {
+              id: true,
+              billDay: true,
+              dueDay: true,
+              electricityRatePoisha: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!lease || !lease.unit?.building) {
+    return false;
+  }
+
+  const building = lease.unit.building;
+  const startDateStr = getDhakaDateString(lease.startDate);
+  const [startYear, startMonth, startDay] = startDateStr.split('-').map(Number);
+  const periodMonthStr = `${startYear}-${String(startMonth).padStart(2, '0')}`;
+  const periodDate = new Date(`${periodMonthStr}-01T00:00:00.000Z`);
+
+  const todayDhaka = getDhakaDateString(now);
+  const [nowYear, nowMonth, nowDay] = todayDhaka.split('-').map(Number);
+
+  // Check if lease start day is after building's bill day, or if today is past the bill day in that month or subsequent month
+  const isPastBillDayInSameMonth =
+    nowYear! === startYear! && nowMonth! === startMonth! && nowDay! >= building.billDay;
+  const isFutureMonth = nowYear! > startYear! || (nowYear! === startYear! && nowMonth! > startMonth!);
+  const isAfterBillDay = startDay! > building.billDay || isPastBillDayInSameMonth || isFutureMonth;
+
+  if (!isAfterBillDay) {
+    return false;
+  }
+
+  return createDraftBillForLease(tx, orgId, building, lease.unit, lease, periodDate, periodMonthStr);
 }
 
 export function toBillDto(
@@ -323,6 +457,7 @@ export class BillingService {
                 select: {
                   id: true,
                   startDate: true,
+                  endDate: true,
                   monthlyRentPoisha: true,
                   moveInReading: true,
                   charges: {
@@ -343,152 +478,25 @@ export class BillingService {
         throw ApiError.notFound('Building not found');
       }
 
-      const dueDate = computeDueDate(input.month, building.dueDay);
       let created = 0;
       let skipped = 0;
 
       for (const unit of building.units) {
         for (const lease of unit.leases) {
-          // Check if bill already exists for this lease and month
-          const existing = await tx.bill.findUnique({
-            where: {
-              orgId_leaseId_periodMonth: {
-                orgId: ctx.orgId,
-                leaseId: lease.id,
-                periodMonth: periodDate,
-              },
-            },
-          });
-
-          if (existing) {
+          const wasCreated = await createDraftBillForLease(
+            tx,
+            ctx.orgId,
+            building,
+            unit,
+            lease,
+            periodDate,
+            periodMonthStr,
+          );
+          if (wasCreated) {
+            created++;
+          } else {
             skipped++;
-            continue;
           }
-
-          // Compute proration based on lease start date
-          const startDateStr = toDateString(lease.startDate);
-          const prorationInput = {
-            periodMonth: periodMonthStr,
-            moveInDate: startDateStr,
-          };
-          const factor = prorationFactor(prorationInput);
-
-          // #31: Skip leases that have not started yet in this period month (do not create empty ৳0 bill)
-          if (factor === 0) {
-            skipped++;
-            continue;
-          }
-
-          const rentAmount = prorate(Number(lease.monthlyRentPoisha), prorationInput);
-
-          const linesToCreate: Array<{
-            orgId: string;
-            kind: 'rent' | 'fixed_charge' | 'electricity';
-            label: string;
-            amountPoisha: number;
-            meta: Record<string, unknown>;
-          }> = [
-            {
-              orgId: ctx.orgId,
-              kind: 'rent',
-              label: 'Rent',
-              amountPoisha: rentAmount,
-              meta: factor < 1 ? { factor } : {},
-            },
-          ];
-
-          let totalPoisha = rentAmount;
-
-          for (const charge of lease.charges) {
-            const chargeAmount = prorate(Number(charge.amountPoisha), prorationInput);
-            linesToCreate.push({
-              orgId: ctx.orgId,
-              kind: 'fixed_charge',
-              label: charge.name,
-              amountPoisha: chargeAmount,
-              meta: factor < 1 ? { factor } : {},
-            });
-            totalPoisha += chargeAmount;
-          }
-
-          let needsReading = false;
-          if (unit.electricityMode === 'submeter') {
-            // Check if reading was already entered for this period
-            const reading = await tx.meterReading.findUnique({
-              where: {
-                orgId_unitId_periodMonth: {
-                  orgId: ctx.orgId,
-                  unitId: unit.id,
-                  periodMonth: periodDate,
-                },
-              },
-            });
-
-            if (reading) {
-              const prevReading = await this.resolvePreviousReading(
-                tx,
-                ctx.orgId,
-                unit.id,
-                periodDate,
-                lease.moveInReading,
-                lease.startDate,
-              );
-              try {
-                const elec = electricityCharge({
-                  prev: prevReading,
-                  curr: reading.reading,
-                  ratePoisha: building.electricityRatePoisha,
-                  meterReplaced: reading.meterReplaced,
-                  newMeterStart: reading.newMeterStart ?? undefined,
-                });
-                linesToCreate.push({
-                  orgId: ctx.orgId,
-                  kind: 'electricity',
-                  label: 'Electricity',
-                  amountPoisha: elec.amountPoisha,
-                  meta: {
-                    prev: reading.meterReplaced ? (reading.newMeterStart ?? 0) : prevReading,
-                    curr: reading.reading,
-                    units: elec.units,
-                    ratePoisha: building.electricityRatePoisha,
-                    meterReplaced: reading.meterReplaced,
-                  },
-                });
-                totalPoisha += elec.amountPoisha;
-                needsReading = false;
-              } catch {
-                needsReading = true;
-              }
-            } else {
-              needsReading = true;
-            }
-          }
-
-          const createdBill = await tx.bill.create({
-            data: {
-              orgId: ctx.orgId,
-              leaseId: lease.id,
-              periodMonth: periodDate,
-              dueDate,
-              status: 'draft',
-              needsReading,
-              totalPoisha: BigInt(totalPoisha),
-              paidPoisha: BigInt(0),
-            },
-          });
-
-          await tx.billLine.createMany({
-            data: linesToCreate.map((l) => ({
-              orgId: l.orgId,
-              billId: createdBill.id,
-              kind: l.kind,
-              label: l.label,
-              amountPoisha: BigInt(l.amountPoisha),
-              meta: (l.meta ?? {}) as Prisma.InputJsonValue,
-            })),
-          });
-
-          created++;
         }
       }
 
@@ -509,30 +517,7 @@ export class BillingService {
     leaseMoveInReading?: number | null,
     leaseStartDate?: Date | string | null,
   ): Promise<number> {
-    let leaseStartMonth: Date | undefined;
-    if (leaseStartDate) {
-      const d = typeof leaseStartDate === 'string' ? new Date(leaseStartDate) : leaseStartDate;
-      leaseStartMonth = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
-    }
-
-    const priorReading = await tx.meterReading.findFirst({
-      where: {
-        orgId,
-        unitId,
-        periodMonth: {
-          lt: periodDate,
-          ...(leaseStartMonth ? { gte: leaseStartMonth } : {}),
-        },
-      },
-      orderBy: { periodMonth: 'desc' },
-      select: { reading: true },
-    });
-
-    if (priorReading) {
-      return priorReading.reading;
-    }
-
-    return leaseMoveInReading ?? 0;
+    return resolvePreviousReading(tx, orgId, unitId, periodDate, leaseMoveInReading, leaseStartDate);
   }
 
   /**

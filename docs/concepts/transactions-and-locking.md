@@ -109,15 +109,37 @@ Under PostgreSQL's default `READ COMMITTED` isolation level, two concurrent tran
 
 To prevent race conditions, BasaManager enforces strict **pessimistic row locking (`FOR UPDATE`)** with a non-negotiable ordering protocol:
 
-#### 1. The Lease Lock Invariant
+#### 1. The Lease Lock Invariant & Global Hierarchy (#29)
 
-Whenever payment confirmation, manual payment entry, bill issuing, or payment voiding begins:
+Postgres detects deadlocks (error code `40P01`) whenever concurrent transactions acquire locks in opposing orders:
+
+- Transaction 1 (Payment confirmation): locks `leases` row, then attempts to lock `bills` row.
+- Transaction 2 (Bill adjustment or late fee): locks `bills` row, then attempts to lock `leases` row.
+
+To guarantee that cyclic wait graphs are mathematically impossible across the entire system, BasaManager enforces a strict **global lock hierarchy**:
+
+> **Rule:** Every transaction touching both a lease and its bills must ALWAYS lock the `leases` row `FOR UPDATE` first, then lock the `bills` row(s) `FOR UPDATE` second.
 
 ```sql
+-- 1. Parent lease lock FIRST
 SELECT id FROM leases WHERE id = $1 FOR UPDATE;
+
+-- 2. Child bill(s) lock SECOND
+SELECT id, lease_id FROM bills WHERE id = $2 FOR UPDATE;
 ```
 
-Locking the parent `leases` row first acts as an execution gateway. Any other transaction attempting to mutate bills, allocate payments, or modify credit for that lease must wait until the first transaction completes (`COMMIT` or `ROLLBACK`).
+This strict hierarchy is maintained across all payment and billing modules:
+
+- `PaymentsService.confirmManualPayment` & `recordStaffPayment`: locks lease `FOR UPDATE`, then locks bills.
+- `PaymentsService.handleIpnWebhook`: locks intent, then locks lease `FOR UPDATE`, then locks bills.
+- `BillingService.issueBillInTx`: reads `leaseId`, locks lease `FOR UPDATE`, then locks bill `FOR UPDATE`.
+- `BillingService.addAdjustment`: reads `leaseId`, locks lease `FOR UPDATE`, then locks bill `FOR UPDATE`.
+- `BillingService.waiveLateFee`: reads `leaseId`, locks lease `FOR UPDATE`, then locks bill `FOR UPDATE`.
+- `BillingService.voidBill`: reads `leaseId`, locks lease `FOR UPDATE`, then locks bill `FOR UPDATE`.
+- `BillingService.enterReading`: locks active lease `FOR UPDATE`, then locks bill `FOR UPDATE`.
+- `applyLateFees` worker job: locks lease `FOR UPDATE`, then locks bill `FOR UPDATE`.
+
+Because all transactions queue on the parent lease lock before touching child bills, operations on the same lease serialize cleanly and deadlocks cannot occur.
 
 #### 2. Deterministic Lock Ordering on Bills
 
