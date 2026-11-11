@@ -3,7 +3,7 @@ import request from 'supertest';
 import { ErrorCode } from '@bm/shared/errors';
 import { q } from '../helpers/pg';
 import { makeOrg, makeBuilding, makeUnit, makeLease, makeBill, type Org } from '../helpers/factories';
-import { buildTestApp, resetAll, type TestCtx } from '../helpers/auth';
+import { buildTestApp, resetAll, newAgent, type TestCtx } from '../helpers/auth';
 import { actorIn, landlordOf, type Actor } from '../helpers/roles';
 import { jobs, type JobContext } from '../../../worker/src/jobs/index';
 
@@ -211,7 +211,7 @@ describe('V10: SSLCommerz online payments', () => {
     });
 
     it('401 anonymous, 403 landlord, 404 for another tenant’s lease', async () => {
-      const anon = await request(ctx.app)
+      const anon = await newAgent(ctx)
         .post('/api/payments/sslcommerz/init')
         .send({ leaseId: lease, amountPoisha: 500000 });
       expect(anon.status).toBe(401);
