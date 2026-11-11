@@ -345,6 +345,21 @@ test.describe('UI States Specs', () => {
 
   test('check 7: pay result page renders without layout shift', async ({ page }) => {
     await signInAs(page, 'tenant');
+    await page.route('**/api/payments/sslcommerz/intents/*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: '11111111-1111-1111-1111-111111111111',
+          tranId: 'BM-TEST-123456',
+          status: 'confirmed',
+          amountPoisha: 1500000,
+          paymentId: '22222222-2222-2222-2222-222222222222',
+          receiptId: '33333333-3333-3333-3333-333333333333',
+          receiptNumber: 'REC-2026-0001',
+        }),
+      });
+    });
     await startClsObserver(page);
     await page.goto('/pay/result?tran=BM-TEST-123456');
     await expect(page.getByText('Transaction ID')).toBeVisible();
