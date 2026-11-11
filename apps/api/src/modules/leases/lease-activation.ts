@@ -2,6 +2,7 @@ import { clock, getDhakaDateString } from '../../lib/clock';
 import type { Tx, Db } from '../../config/db';
 import { ApiError } from '../../lib/ApiError';
 import { ErrorCode } from '@bm/shared/errors';
+import { generateFirstBillIfAfterBillDay } from '../billing/billing.service.js';
 
 export interface LinkTenantInviteInfo {
   id: string;
@@ -69,6 +70,7 @@ export async function linkTenantToLease(
         where: { id: lease.id },
         data: { status: 'active' },
       });
+      await generateFirstBillIfAfterBillDay(tx, inv.orgId, lease.id, now);
     }
   }
 }
@@ -112,6 +114,7 @@ export async function activateDueLeases(
             SET status = 'active'
             WHERE id = ${l.id}::uuid
           `;
+          await generateFirstBillIfAfterBillDay(tx, orgId, l.id, now);
           activated++;
         }
         return activated;

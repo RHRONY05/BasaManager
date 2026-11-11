@@ -81,6 +81,18 @@ describe('Rule 2 — proration', () => {
     expect(prorate(taka(12000), { periodMonth: '2026-11-01' })).toBe(taka(12000));
   });
 
+  it('move-in in a future month returns 0 factor and 0 prorated rent (#31)', () => {
+    const input = { periodMonth: '2026-11-01', moveInDate: '2026-12-01' };
+    expect(prorationFactor(input)).toBe(0);
+    expect(prorate(taka(15000), input)).toBe(0);
+  });
+
+  it('move-out in a past month returns 0 factor and 0 prorated rent (#31)', () => {
+    const input = { periodMonth: '2026-11-01', moveOutDate: '2026-10-31' };
+    expect(prorationFactor(input)).toBe(0);
+    expect(prorate(taka(15000), input)).toBe(0);
+  });
+
   it('move-out on the last day is a full month', () => {
     expect(prorationFactor({ periodMonth: '2026-11-01', moveOutDate: '2026-11-30' })).toBe(1);
   });

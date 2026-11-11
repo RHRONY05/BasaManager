@@ -381,6 +381,22 @@ describe('V9: payments, receipts and files', () => {
       expect(await bill(b)).toEqual({ status: 'issued', paid: '0' });
       expect(await outbox('payment.confirmed')).toHaveLength(0);
     });
+
+    it('#29: concurrent payment confirmation and bill adjustment on the same lease do not deadlock', async () => {
+      const bId = await issuedBill(lease, '2026-03-01', 5000000);
+      const cl = (await claim({ amountPoisha: 1000000 })).body.data;
+
+      const [confirmRes, adjustRes] = await Promise.all([
+        confirm(cl.id, landlord),
+        landlord.agent.post(`/api/bills/${bId}/adjustments`).send({
+          amountPoisha: 50000,
+          reason: 'Maintenance charge adjustment',
+        }),
+      ]);
+
+      expect(confirmRes.status).toBe(200);
+      expect(adjustRes.status).toBe(201);
+    });
   });
 
   // ── void ───────────────────────────────────────────────────────────────────────────────────────
@@ -473,6 +489,30 @@ describe('V9: payments, receipts and files', () => {
       expect(mine.status).toBe(200);
       expect(mine.body.data.map((p: { leaseId: string }) => p.leaseId)).toEqual([lease, lease]);
       expect((await tenant.agent.get(`/api/payments?leaseId=${lease2}`)).status).toBe(404);
+    });
+
+    it('#27: cursor pagination does not skip payments at page boundary', async () => {
+      await issuedBill(lease, '2026-03-01', 50000000);
+      const p1 = (await record({ leaseId: lease, amountPoisha: 100000 })).body.data.id;
+      const p2 = (await record({ leaseId: lease, amountPoisha: 200000 })).body.data.id;
+      const p3 = (await record({ leaseId: lease, amountPoisha: 300000 })).body.data.id;
+
+      const page1 = await landlord.agent.get(`/api/payments?leaseId=${lease}&limit=2`);
+      expect(page1.status).toBe(200);
+      expect(page1.body.data).toHaveLength(2);
+      expect(page1.body.page.nextCursor).toBeDefined();
+
+      const page2 = await landlord.agent.get(
+        `/api/payments?leaseId=${lease}&cursor=${page1.body.page.nextCursor}&limit=2`,
+      );
+      expect(page2.status).toBe(200);
+      expect(page2.body.data.length).toBeGreaterThanOrEqual(1);
+
+      const allIds = [...page1.body.data, ...page2.body.data].map((p: { id: string }) => p.id);
+      expect(allIds).toContain(p1);
+      expect(allIds).toContain(p2);
+      expect(allIds).toContain(p3);
+      expect(new Set(allIds).size).toBe(allIds.length);
     });
   });
 

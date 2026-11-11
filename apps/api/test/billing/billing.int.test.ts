@@ -174,6 +174,15 @@ describe('V8: billing endpoints', () => {
       expect((await billOf(leaseFlat))!.total_poisha).toBe(String(677400 + 45200));
     });
 
+    it('#31: skips leases whose start date is in a future month (does not create ৳0 bill)', async () => {
+      await q(`update leases set start_date='2026-04-01' where id=$1`, [leaseFlat]);
+      const res = await run('2026-03');
+      expect(res.status).toBe(200);
+      expect(res.body.data.created).toBe(1);
+      expect(res.body.data.skipped).toBe(1);
+      expect(await billOf(leaseFlat)).toBeUndefined();
+    });
+
     it('403 for caretaker and tenant, 404 for a building of another org', async () => {
       expect((await run('2026-03', caretaker.agent)).status).toBe(403);
       expect((await run('2026-03', tenantFlat.agent)).status).toBe(403);
@@ -242,6 +251,28 @@ describe('V8: billing endpoints', () => {
       const res = await put({ reading: 45, meterReplaced: true, newMeterStart: 0 });
       expect(res.status).toBe(200);
       expect((await billOf(leaseMeter))!.total_poisha).toBe(String(1600000 + 45 * 900));
+    });
+
+    it('#28: new tenant on submeter unit uses moveInReading, not previous tenant reading from prior month', async () => {
+      // Set lease to start in March 2026 with moveInReading = 1000
+      await q(`update leases set start_date = '2026-03-01' where id = $1`, [leaseMeter]);
+      // Prior reading exists for unitMeter from previous tenant in February 2026: reading = 800
+      await q(
+        `insert into meter_readings (id, org_id, unit_id, period_month, reading, meter_replaced, entered_by, created_at)
+         values (gen_random_uuid(), $1, $2, '2026-02-01', 800, false, $3, now())`,
+        [org.id, unitMeter, org.landlordUserId],
+      );
+      // Current lease started on 2026-03-01 with moveInReading = 1000
+      // Entering reading 1155 should compute: 1155 - 1000 = 155 units (NOT 1155 - 800 = 355 units)
+      const res = await put({ reading: 1155 });
+      expect(res.status).toBe(200);
+      const b = await billOf(leaseMeter);
+      const lines = await q<{ amount_poisha: string; meta: { prev: number; curr: number } }>(
+        `select amount_poisha::text, meta from bill_lines where bill_id=$1 and kind='electricity'`,
+        [b!.id],
+      );
+      expect(lines[0]!.meta.prev).toBe(1000);
+      expect(lines[0]!.amount_poisha).toBe('139500'); // 155 * 900
     });
 
     it('409 once the bill is issued (readings are editable only until issue)', async () => {

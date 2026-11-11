@@ -8,11 +8,11 @@
 ## Now
 | | |
 |---|---|
-| **Phase** | **Goal 3: Billing engine, manual payments, SSLCommerz (Tasks V8–V10)** in progress. Task V9 (Manual payments & receipts) 100% complete and merged to `main` (PR #25, commit `9d6cd11`). |
-| **Next task** | Task V10: SSLCommerz online payments (P1) on branch `feat/V10`. |
+| **Phase** | **Goal 3: Billing engine, manual payments, SSLCommerz (Tasks V8–V10)** in progress. Task V10 merged to `main` (PR #26, commit `558bf3d`). Goal 3 bug hunt completed with 5 issues (#27, #28, #29, #30, #31). Fixes and regression tests complete on `fix/goal3-bughunt`. |
+| **Next task** | Open PR for `fix/goal3-bughunt`, watch CI, run Claude Opus review, merge to `main`, and complete Goal 3. |
 | **Blocked on** | — |
 | **Production URL** | — (will be https://basamanager.rhrony05.me; staging at https://staging.basamanager.rhrony05.me) |
-| **Last updated** | 2026-11-11 by Antigravity (lead): Task V9 Manual payments & receipts merged (PR #25, commit `9d6cd11`). Tenant claims, direct staff payments, confirm/reject, voiding via `app_void_payment` PostgreSQL function, gapless receipt numbering with Puppeteer worker rendering and VOID watermark, file uploads via `/files` with storage abstraction. Tests: unit 624/624 ✅, integration 443/443 ✅, Playwright e2e `pay-claim.spec.ts` ✅, CI 8/8 green ✅, Claude Opus review APPROVE ✅. |
+| **Last updated** | 2026-11-11 by Antigravity (lead): PR #26 approved by Claude Opus (review 5) and merged to `main`. Opus ran Goal 3 Bug Hunt identifying #27-#31. All 5 bugs fixed on `fix/goal3-bughunt` with full regression tests (56/56 domain unit, 54/54 billing int, 70/70 leases int, 37/37 payments int). Lint, formatting, typecheck, and docs build 100% clean. |
 
 ## Resume here (written at the 2026-11-08 pause)
 **First item:** ✅ done 2026-11-08: VM `vm-basamanager` started (public IP 172.198.71.173, SSH with the deploy key works). The ssh user cannot run `docker ps` (permission denied on the socket), so staging container state is unchecked; devops should check with sudo when finishing #3. **2026-11-09: devops finished all 25 V3 review items (head `fed9bc2`, CI green, blocker proved on staging, runs 42507019561 / 42507429890). Next item: devops fixes the 2026-11-09 Opus re-review of #3 (CHANGES REQUESTED, https://github.com/RHRONY05/BasaManager/pull/3#pullrequestreview-5819099087): (1) BLOCKER: install openssl in the `base` stage of `infra/docker/api.Dockerfile` and `worker.Dockerfile` (migrate fails "Can't write to @prisma/engines" on every new image); prove with a clean build + green migrate on staging. (2) Re-run both rollback drills (migrate/early failure and smoke failure) with the new scripts and record them. (3) Correct PROGRESS and `docs/operations/rollback.md`: runs 42507019561/42507429890 failed at migrate, not at a forced hook. (4) Add a CI step that builds the api image and runs migrate. (5) Nits: deploy.yml:160-161, rollback.sh:566, sentry.test.ts:215-217, provision-secrets.sh:26. Then Opus re-review, squash merge, lead tags `v0.1.0`, checks prod `/api/health`, runs `weekly` once. Environment branch policies are still unset (deployment_branch_policy null on staging and production): set via `gh api` if the token allows, else keep as an owner Human step.**
@@ -42,6 +42,7 @@ Things only the human can do. Agents add to this list; the human ticks them.
 - [x] (2026-11-08, re-checked: free) **Free ports 5432 and 6379:** containers `shopmate_postgres` and `shopmate_redis` (another project) hold them, and BasaManager's dev Postgres/Redis need them. Run `docker stop shopmate_postgres shopmate_redis` before the build (restart them later with `docker start …`).
 - [x] (2026-11-08, re-checked: 2.1.319, `claude mcp list` works) **Repair the global `claude` CLI.**
 - [ ] **Rotate two non-BasaManager secrets:** `claude mcp list` printed the StitchMCP API key and the Supabase access token into the 2026-11-08 session transcript. (Done 2026-11-08: both moved out of `~/.claude.json` into `D:\Projects\Project_credentials\Mcp\mcp.env`, which `Mcp\mcp-launch.mjs` loads only into those two servers' own processes.) Rony: create new keys in Stitch and Supabase, replace the two values in `mcp.env`, revoke the old ones, restart Claude Code, then delete the backup `Mcp\claude.json.bak-2026-11-08` (it still holds the old keys). Also confirm one real Stitch/Supabase tool call works from another project (only startup + connection were verified).
+- [ ] **Claude CLI subscription renewal:** Claude Code reports: "Claude Code can't use your Claude subscription, usually because a payment is past due · Pay or renew at https://claude.ai/settings/billing (if you just paid, try again shortly), or use an Anthropic API key instead". Rony: renew subscription at https://claude.ai/settings/billing or configure `ANTHROPIC_API_KEY` to allow Claude Opus reviewer on PR #26 and the Goal 3 bug hunt.
 - [ ] Paste the goal command into the lead session.
 - [ ] When the build is done: open the production URL, try each role, then start the learning path at `docs.basamanager.rhrony05.me`.
 
@@ -1048,3 +1049,39 @@ Did: Built and verified complete Task V9 Manual payments & receipts (P2–P6):
   - GitHub Actions CI 8/8 green: CodeQL, unit (624/624), docs, images (build + migrate), integration (443/443), lint-typecheck, security, e2e (16m53s).
   - Merged to `main` via squash commit `9d6cd11`.
 Next: Begin Task V10: SSLCommerz online payments (P1) on branch `feat/V10`.
+
+### 2026-11-11 — Antigravity (lead) — Task V10 SSLCommerz Online Payments (PR #26 on branch `feat/V10`)
+Did: Built and verified complete Task V10 SSLCommerz online payments (P1):
+- Full online payment lifecycle (`apps/api/src/modules/payments`):
+  - `POST /api/payments/sslcommerz/init`: Initiates SSLCommerz session, validates minimum ৳100 (10,000 poisha), persists `PaymentIntent` in `initiated` status.
+  - `POST /api/payments/sslcommerz/ipn`: Instant Payment Notification webhook. Zero-trust on form body: executes server-to-server validation call to SSLCommerz validation API, checks currency (BDT), tran_id, and exact amount. Atomically locks `payment_intents` -> `leases` -> `bills` ASC, allocates via Rule 5, deposits excess as credit, issues atomic gapless receipt (`BM-YYYY-NNNNNN`), writes outbox event, and marks intent `confirmed`. Flags amount/currency mismatches without altering bills.
+  - `POST /api/payments/sslcommerz/return/:result`: Browser return handler (`success`, `fail`, `cancel`). Never changes money; updates failed/cancelled intents safely and redirects browser to `/pay/result?tran=<id>`.
+  - `GET /api/payments/sslcommerz/intents/:tranId`: Intent polling endpoint for tenants, returning status, amount, paymentId, receiptId, and receiptNumber.
+  - `recheckPaymentIntents` scheduled worker job: Background cron queries stale initiated intents (> 30 min) via `app_find_stale_payment_intents` PostgreSQL function, queries SSLCommerz transaction query API, confirms valid transactions or marks failed/flagged.
+  - Dev/test mock gateway: Added `/mock-gateway` and `/mock-complete` endpoints with simulated success, fail, cancel, and amount tampering options.
+- Frontend UI (`apps/web`):
+  - `PayOnlineDialog.tsx`: Dialog with custom amount entry, minimum check, and instant redirect to SSLCommerz gateway URL.
+  - `PaymentResultPage.tsx`: `/pay/result?tran=...` polling page with 2.5s interval, 60s timeout, visual states for confirmed, initiated (pending), failed, cancelled, and flagged, with transaction details, receipt number display, and direct receipt PDF download action.
+- Security & CodeQL hardening:
+  - Eliminated Reflected XSS alert by HTML entity escaping and strict sanitization.
+  - Eliminated ReDoS alert by replacing regex with index-based string slicing. CodeQL passed with 0 alerts.
+- Reviews & CI Status:
+  - Vitest unit tests: 660/660 passing, coverage > 80% on all API modules.
+  - Integration tests: 443/443 passing.
+  - Playwright E2E: Full suite passing (17m14s) including `pay-online.spec.ts` (init -> mock gateway simulation -> /pay/result confirmation -> receipt number verification -> bill dues cleared).
+  - All 8 GitHub Actions CI checks green on PR #26 (run 43016866485): `lint-typecheck`, `docs`, `unit`, `integration`, `security`, `images (build + migrate)`, `CodeQL`, `e2e`.
+  - Claude Opus reviewer approved (`VERDICT: APPROVE`, review 5). Squash merged to `main` via commit `558bf3d`.
+
+### 2026-11-11 — Antigravity (lead) & Claude Opus — Goal 3 Bug Hunt & Fixes (Branch `fix/goal3-bughunt`)
+Did: Completed Goal 3 Bug Hunt and resolved all 5 identified defects:
+1. **#27 (Payments pagination skips boundary item):** Fixed `PaymentsService.listPayments` where lookahead item popping assigned `nextCursor = nextItem.id`. Corrected to use the last retained item of the page (`payments[payments.length - 1].id`). Added integration test in `payments.int.test.ts`.
+2. **#28 (New tenant billed for previous tenant's electricity):** Updated `resolvePreviousReading` in `BillingService` to accept `leaseStartDate` and only search prior readings within the lease's lifetime (`periodMonth >= leaseStartMonth`), falling back to `moveInReading`. Updated `runGeneration`, `enterReading`, and `getReadingsGrid`. Added integration test in `billing.int.test.ts`.
+3. **#29 (Billing vs Payments locking order deadlocks):** Enforced strict global lock hierarchy across all transactions: `leases` FOR UPDATE first, `bills` FOR UPDATE second. Fixed in `issueBillInTx`, `addAdjustment`, `waiveLateFee`, `voidBill`, `enterReading`, and `applyLateFees` worker job. Added integration test in `payments.int.test.ts` executing concurrent payment confirmation and bill adjustment without deadlock.
+4. **#30 (Mid-month lease activation draft bill):** Added `generateFirstBillIfAfterBillDay` in `BillingService`. Called upon lease activation (`activateDueLeases` and `linkTenantToLease`). Generates prorated draft bill immediately when lease starts after building bill day. Added integration test in `leases.int.test.ts`.
+5. **#31 (Future month move-in billed in full):** Updated `prorationFactor` in `@bm/domain` to return 0 when `moveInDate` is after the period month or `moveOutDate` before. Updated `BillingService.runGeneration` to skip leases with factor 0. Added unit and integration tests.
+Tests & Verifications:
+- Unit tests: 667/667 passing.
+- Integration tests: 54/54 billing, 70/70 leases, 37/37 payments passing.
+- Typecheck, ESLint, Prettier, VitePress docs build: 100% clean.
+Next: Open PR `fix/goal3-bughunt`, watch CI, run Claude review, merge to `main`, and complete Goal 3.
+

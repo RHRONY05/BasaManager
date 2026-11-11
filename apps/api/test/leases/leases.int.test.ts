@@ -770,6 +770,27 @@ describe('V7: leases, deposit ledger, tenant invites, tenant history', () => {
       const rows = await q<{ status: string }>('select status from leases where id = $1', [leaseId]);
       expect(rows[0]?.status).toBe('pending');
     });
+
+    it('#30: activating a lease starting after bill day creates its first prorated draft bill', async () => {
+      // Lease starts 2026-11-18, building bill_day is 1
+      const leaseId = await makeLease(org.id, unit, org.landlordUserId, {
+        status: 'pending',
+        startDate: '2026-11-18',
+      });
+      await tenantOn(leaseId);
+
+      const count = await activateDueLeases(ctx.prisma, new Date('2026-11-18T04:00:00.000Z'));
+      expect(count).toBe(1);
+
+      const bills = await q<{ id: string; status: string; total_poisha: string }>(
+        `select id, status, total_poisha::text from bills where lease_id = $1 and period_month = '2026-11-01'`,
+        [leaseId],
+      );
+      expect(bills).toHaveLength(1);
+      expect(bills[0]!.status).toBe('draft');
+      // Rent 1,500,000 * 13 / 30 = 650,000 poisha
+      expect(bills[0]!.total_poisha).toBe('650000');
+    });
   });
 
   describe('POST /api/leases/:id/cancel', () => {
