@@ -1,6 +1,6 @@
 import { ApiError } from '../../lib/ApiError.js';
 import { ErrorCode } from '@bm/shared/errors';
-import type { Db } from '../../config/db.js';
+import type { Db, Tx } from '../../config/db.js';
 import type { Prisma } from '../../generated/prisma/client';
 import {
   prorate,
@@ -23,7 +23,7 @@ import type {
   ListBillsQuery,
   DuesResponse,
 } from '@bm/shared/api/billing';
-import { clock } from '../../lib/clock.js';
+import { clock, getDhakaDateString } from '../../lib/clock.js';
 import type { MembershipRole } from '@bm/shared/enums';
 
 export interface BillingContext {
@@ -55,6 +55,297 @@ function computeDueDate(monthStr: string, dueDay: number): Date {
   const day = Math.min(Math.max(1, dueDay), maxDay);
   const dayStr = String(day).padStart(2, '0');
   return new Date(`${y}-${String(m).padStart(2, '0')}-${dayStr}T00:00:00.000Z`);
+}
+
+/**
+ * Helper to find prior meter reading before periodMonth, or fallback to lease moveInReading.
+ * Per Rule 3 (#28): The first bill of a lease uses the move-in reading as prev. Prior readings
+ * from previous tenants (before this lease's start month) must not be charged to the new tenant.
+ */
+export async function resolvePreviousReading(
+  tx: Tx,
+  orgId: string,
+  unitId: string,
+  periodDate: Date,
+  leaseMoveInReading?: number | null,
+  leaseStartDate?: Date | string | null,
+): Promise<number> {
+  let leaseStartMonth: Date | undefined;
+  if (leaseStartDate) {
+    const d = typeof leaseStartDate === 'string' ? new Date(leaseStartDate) : leaseStartDate;
+    leaseStartMonth = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
+  }
+
+  const priorReading = await tx.meterReading.findFirst({
+    where: {
+      orgId,
+      unitId,
+      periodMonth: {
+        lt: periodDate,
+        ...(leaseStartMonth ? { gte: leaseStartMonth } : {}),
+      },
+    },
+    orderBy: { periodMonth: 'desc' },
+    select: { reading: true },
+  });
+
+  if (priorReading) {
+    return priorReading.reading;
+  }
+
+  return leaseMoveInReading ?? 0;
+}
+
+export interface LeaseForBilling {
+  id: string;
+  startDate: Date | string;
+  endDate?: Date | string | null;
+  monthlyRentPoisha: bigint | number;
+  moveInReading?: number | null;
+  charges: Array<{
+    id: string;
+    name: string;
+    amountPoisha: bigint | number;
+  }>;
+}
+
+export interface BuildingForBilling {
+  id: string;
+  dueDay: number;
+  electricityRatePoisha: number;
+}
+
+export interface UnitForBilling {
+  id: string;
+  electricityMode: string;
+}
+
+/**
+ * Shared helper to build and persist a draft bill for a lease.
+ * Used by both monthly generation (runGeneration) and immediate mid-month activation (generateFirstBillIfAfterBillDay).
+ * Returns true if a bill was created, false if skipped (already exists or prorationFactor == 0).
+ */
+export async function createDraftBillForLease(
+  tx: Tx,
+  orgId: string,
+  building: BuildingForBilling,
+  unit: UnitForBilling,
+  lease: LeaseForBilling,
+  periodDate: Date,
+  periodMonthStr: string,
+): Promise<boolean> {
+  // Check if bill already exists for this lease and month
+  const existing = await tx.bill.findUnique({
+    where: {
+      orgId_leaseId_periodMonth: {
+        orgId,
+        leaseId: lease.id,
+        periodMonth: periodDate,
+      },
+    },
+  });
+
+  if (existing) {
+    return false;
+  }
+
+  // Compute proration based on lease start date and end date
+  const startDateStr = toDateString(lease.startDate);
+  const endDateStr = lease.endDate ? toDateString(lease.endDate) : undefined;
+  const prorationInput = {
+    periodMonth: periodMonthStr,
+    moveInDate: startDateStr,
+    moveOutDate: endDateStr,
+  };
+  const factor = prorationFactor(prorationInput);
+
+  // #31: Skip leases that have not started yet in this period month (do not create empty ৳0 bill)
+  if (factor === 0) {
+    return false;
+  }
+
+  const rentAmount = prorate(Number(lease.monthlyRentPoisha), prorationInput);
+
+  const linesToCreate: Array<{
+    orgId: string;
+    kind: 'rent' | 'fixed_charge' | 'electricity';
+    label: string;
+    amountPoisha: number;
+    meta: Record<string, unknown>;
+  }> = [
+    {
+      orgId,
+      kind: 'rent',
+      label: 'Rent',
+      amountPoisha: rentAmount,
+      meta: factor < 1 ? { factor } : {},
+    },
+  ];
+
+  let totalPoisha = rentAmount;
+
+  for (const charge of lease.charges) {
+    const chargeAmount = prorate(Number(charge.amountPoisha), prorationInput);
+    linesToCreate.push({
+      orgId,
+      kind: 'fixed_charge',
+      label: charge.name,
+      amountPoisha: chargeAmount,
+      meta: factor < 1 ? { factor } : {},
+    });
+    totalPoisha += chargeAmount;
+  }
+
+  let needsReading = false;
+  if (unit.electricityMode === 'submeter') {
+    // Check if reading was already entered for this period
+    const reading = await tx.meterReading.findUnique({
+      where: {
+        orgId_unitId_periodMonth: {
+          orgId,
+          unitId: unit.id,
+          periodMonth: periodDate,
+        },
+      },
+    });
+
+    if (reading) {
+      const prevReading = await resolvePreviousReading(
+        tx,
+        orgId,
+        unit.id,
+        periodDate,
+        lease.moveInReading,
+        lease.startDate,
+      );
+      try {
+        const elec = electricityCharge({
+          prev: prevReading,
+          curr: reading.reading,
+          ratePoisha: building.electricityRatePoisha,
+          meterReplaced: reading.meterReplaced,
+          newMeterStart: reading.newMeterStart ?? undefined,
+        });
+        linesToCreate.push({
+          orgId,
+          kind: 'electricity',
+          label: 'Electricity',
+          amountPoisha: elec.amountPoisha,
+          meta: {
+            prev: reading.meterReplaced ? (reading.newMeterStart ?? 0) : prevReading,
+            curr: reading.reading,
+            units: elec.units,
+            ratePoisha: building.electricityRatePoisha,
+            meterReplaced: reading.meterReplaced,
+          },
+        });
+        totalPoisha += elec.amountPoisha;
+        needsReading = false;
+      } catch {
+        needsReading = true;
+      }
+    } else {
+      needsReading = true;
+    }
+  }
+
+  const dueDate = computeDueDate(periodMonthStr, building.dueDay);
+
+  const createdBill = await tx.bill.create({
+    data: {
+      orgId,
+      leaseId: lease.id,
+      periodMonth: periodDate,
+      dueDate,
+      status: 'draft',
+      needsReading,
+      totalPoisha: BigInt(totalPoisha),
+      paidPoisha: BigInt(0),
+    },
+  });
+
+  await tx.billLine.createMany({
+    data: linesToCreate.map((l) => ({
+      orgId: l.orgId,
+      billId: createdBill.id,
+      kind: l.kind,
+      label: l.label,
+      amountPoisha: BigInt(l.amountPoisha),
+      meta: (l.meta ?? {}) as Prisma.InputJsonValue,
+    })),
+  });
+
+  return true;
+}
+
+/**
+ * Rule 2 (#30): A lease starting after that month's bill day gets its first bill created
+ * immediately at lease start / activation.
+ * Also handles cases where lease was activated on/after the bill day in the start month.
+ */
+export async function generateFirstBillIfAfterBillDay(
+  tx: Tx,
+  orgId: string,
+  leaseId: string,
+  now: Date = clock.now(),
+): Promise<boolean> {
+  const lease = await tx.lease.findUnique({
+    where: { id: leaseId },
+    select: {
+      id: true,
+      orgId: true,
+      startDate: true,
+      endDate: true,
+      monthlyRentPoisha: true,
+      moveInReading: true,
+      charges: {
+        select: {
+          id: true,
+          name: true,
+          amountPoisha: true,
+        },
+      },
+      unit: {
+        select: {
+          id: true,
+          electricityMode: true,
+          building: {
+            select: {
+              id: true,
+              billDay: true,
+              dueDay: true,
+              electricityRatePoisha: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!lease || !lease.unit?.building) {
+    return false;
+  }
+
+  const building = lease.unit.building;
+  const startDateStr = getDhakaDateString(lease.startDate);
+  const [startYear, startMonth, startDay] = startDateStr.split('-').map(Number);
+  const periodMonthStr = `${startYear}-${String(startMonth).padStart(2, '0')}`;
+  const periodDate = new Date(`${periodMonthStr}-01T00:00:00.000Z`);
+
+  const todayDhaka = getDhakaDateString(now);
+  const [nowYear, nowMonth, nowDay] = todayDhaka.split('-').map(Number);
+
+  // Check if lease start day is after building's bill day, or if today is past the bill day in that month or subsequent month
+  const isPastBillDayInSameMonth =
+    nowYear! === startYear! && nowMonth! === startMonth! && nowDay! >= building.billDay;
+  const isFutureMonth = nowYear! > startYear! || (nowYear! === startYear! && nowMonth! > startMonth!);
+  const isAfterBillDay = startDay! > building.billDay || isPastBillDayInSameMonth || isFutureMonth;
+
+  if (!isAfterBillDay) {
+    return false;
+  }
+
+  return createDraftBillForLease(tx, orgId, building, lease.unit, lease, periodDate, periodMonthStr);
 }
 
 export function toBillDto(
@@ -166,6 +457,7 @@ export class BillingService {
                 select: {
                   id: true,
                   startDate: true,
+                  endDate: true,
                   monthlyRentPoisha: true,
                   moveInReading: true,
                   charges: {
@@ -186,145 +478,25 @@ export class BillingService {
         throw ApiError.notFound('Building not found');
       }
 
-      const dueDate = computeDueDate(input.month, building.dueDay);
       let created = 0;
       let skipped = 0;
 
       for (const unit of building.units) {
         for (const lease of unit.leases) {
-          // Check if bill already exists for this lease and month
-          const existing = await tx.bill.findUnique({
-            where: {
-              orgId_leaseId_periodMonth: {
-                orgId: ctx.orgId,
-                leaseId: lease.id,
-                periodMonth: periodDate,
-              },
-            },
-          });
-
-          if (existing) {
+          const wasCreated = await createDraftBillForLease(
+            tx,
+            ctx.orgId,
+            building,
+            unit,
+            lease,
+            periodDate,
+            periodMonthStr,
+          );
+          if (wasCreated) {
+            created++;
+          } else {
             skipped++;
-            continue;
           }
-
-          // Compute proration based on lease start date
-          const startDateStr = toDateString(lease.startDate);
-          const prorationInput = {
-            periodMonth: periodMonthStr,
-            moveInDate: startDateStr,
-          };
-          const factor = prorationFactor(prorationInput);
-
-          const rentAmount = prorate(Number(lease.monthlyRentPoisha), prorationInput);
-
-          const linesToCreate: Array<{
-            orgId: string;
-            kind: 'rent' | 'fixed_charge' | 'electricity';
-            label: string;
-            amountPoisha: number;
-            meta: Record<string, unknown>;
-          }> = [
-            {
-              orgId: ctx.orgId,
-              kind: 'rent',
-              label: 'Rent',
-              amountPoisha: rentAmount,
-              meta: factor < 1 ? { factor } : {},
-            },
-          ];
-
-          let totalPoisha = rentAmount;
-
-          for (const charge of lease.charges) {
-            const chargeAmount = prorate(Number(charge.amountPoisha), prorationInput);
-            linesToCreate.push({
-              orgId: ctx.orgId,
-              kind: 'fixed_charge',
-              label: charge.name,
-              amountPoisha: chargeAmount,
-              meta: factor < 1 ? { factor } : {},
-            });
-            totalPoisha += chargeAmount;
-          }
-
-          let needsReading = false;
-          if (unit.electricityMode === 'submeter') {
-            // Check if reading was already entered for this period
-            const reading = await tx.meterReading.findUnique({
-              where: {
-                orgId_unitId_periodMonth: {
-                  orgId: ctx.orgId,
-                  unitId: unit.id,
-                  periodMonth: periodDate,
-                },
-              },
-            });
-
-            if (reading) {
-              const prevReading = await this.resolvePreviousReading(
-                tx,
-                ctx.orgId,
-                unit.id,
-                periodDate,
-                lease.moveInReading,
-              );
-              try {
-                const elec = electricityCharge({
-                  prev: prevReading,
-                  curr: reading.reading,
-                  ratePoisha: building.electricityRatePoisha,
-                  meterReplaced: reading.meterReplaced,
-                  newMeterStart: reading.newMeterStart ?? undefined,
-                });
-                linesToCreate.push({
-                  orgId: ctx.orgId,
-                  kind: 'electricity',
-                  label: 'Electricity',
-                  amountPoisha: elec.amountPoisha,
-                  meta: {
-                    prev: reading.meterReplaced ? (reading.newMeterStart ?? 0) : prevReading,
-                    curr: reading.reading,
-                    units: elec.units,
-                    ratePoisha: building.electricityRatePoisha,
-                    meterReplaced: reading.meterReplaced,
-                  },
-                });
-                totalPoisha += elec.amountPoisha;
-                needsReading = false;
-              } catch {
-                needsReading = true;
-              }
-            } else {
-              needsReading = true;
-            }
-          }
-
-          const createdBill = await tx.bill.create({
-            data: {
-              orgId: ctx.orgId,
-              leaseId: lease.id,
-              periodMonth: periodDate,
-              dueDate,
-              status: 'draft',
-              needsReading,
-              totalPoisha: BigInt(totalPoisha),
-              paidPoisha: BigInt(0),
-            },
-          });
-
-          await tx.billLine.createMany({
-            data: linesToCreate.map((l) => ({
-              orgId: l.orgId,
-              billId: createdBill.id,
-              kind: l.kind,
-              label: l.label,
-              amountPoisha: BigInt(l.amountPoisha),
-              meta: (l.meta ?? {}) as Prisma.InputJsonValue,
-            })),
-          });
-
-          created++;
         }
       }
 
@@ -334,6 +506,8 @@ export class BillingService {
 
   /**
    * Helper to find prior meter reading before periodMonth, or fallback to lease moveInReading.
+   * Per Rule 3 (#28): The first bill of a lease uses the move-in reading as prev. Prior readings
+   * from previous tenants (before this lease's start month) must not be charged to the new tenant.
    */
   private async resolvePreviousReading(
     tx: Parameters<Parameters<Db['$tx']>[1]>[0],
@@ -341,22 +515,9 @@ export class BillingService {
     unitId: string,
     periodDate: Date,
     leaseMoveInReading?: number | null,
+    leaseStartDate?: Date | string | null,
   ): Promise<number> {
-    const priorReading = await tx.meterReading.findFirst({
-      where: {
-        orgId,
-        unitId,
-        periodMonth: { lt: periodDate },
-      },
-      orderBy: { periodMonth: 'desc' },
-      select: { reading: true },
-    });
-
-    if (priorReading) {
-      return priorReading.reading;
-    }
-
-    return leaseMoveInReading ?? 0;
+    return resolvePreviousReading(tx, orgId, unitId, periodDate, leaseMoveInReading, leaseStartDate);
   }
 
   /**
@@ -381,6 +542,7 @@ export class BillingService {
             select: {
               id: true,
               moveInReading: true,
+              startDate: true,
             },
           },
         },
@@ -417,6 +579,7 @@ export class BillingService {
         unit.id,
         periodDate,
         activeLease?.moveInReading,
+        activeLease?.startDate,
       );
 
       // Validate reading using pure domain logic
@@ -464,7 +627,10 @@ export class BillingService {
 
       // Update draft bill if exists
       if (activeLease) {
-        // 1. Lock the bill row first to serialize concurrent operations
+        // 1. Lock the lease row first (global lock order: lease -> bill to avoid deadlocks)
+        await tx.$queryRawUnsafe('SELECT id FROM leases WHERE id = $1 FOR UPDATE', activeLease.id);
+
+        // 2. Lock the bill row second
         const lockedBills = await tx.$queryRawUnsafe<Array<{ id: string; lease_id: string }>>(
           'SELECT id, lease_id FROM bills WHERE org_id = $1 AND lease_id = $2 AND period_month = $3 FOR UPDATE',
           ctx.orgId,
@@ -473,12 +639,6 @@ export class BillingService {
         );
 
         if (lockedBills.length > 0) {
-          // 2. Also lock lease row per financial rules (bill -> lease lock order)
-          await tx.$queryRawUnsafe(
-            'SELECT id FROM leases WHERE id = $1 FOR UPDATE',
-            lockedBills[0]!.lease_id,
-          );
-
           // 3. Read fresh bill under lock with its lines
           const bill = await tx.bill.findUnique({
             where: { id: lockedBills[0]!.id },
@@ -600,6 +760,7 @@ export class BillingService {
                 select: {
                   id: true,
                   moveInReading: true,
+                  startDate: true,
                   bills: {
                     where: { periodMonth: periodDate },
                     select: {
@@ -629,6 +790,7 @@ export class BillingService {
           unit.id,
           periodDate,
           activeLease?.moveInReading,
+          activeLease?.startDate,
         );
 
         const currentReading = await tx.meterReading.findUnique({
@@ -665,7 +827,24 @@ export class BillingService {
     billId: string,
     todayStr: string,
   ): Promise<BillResponse> {
-    // 1. Lock the bill row first to serialize concurrent issue attempts
+    const billRef = await tx.bill.findUnique({
+      where: {
+        orgId_id: {
+          orgId: ctx.orgId,
+          id: billId,
+        },
+      },
+      select: { leaseId: true },
+    });
+
+    if (!billRef) {
+      throw ApiError.notFound('Bill not found');
+    }
+
+    // 1. Lock the lease row first (global lock order: lease -> bill to avoid deadlocks)
+    await tx.$queryRawUnsafe('SELECT id FROM leases WHERE id = $1 FOR UPDATE', billRef.leaseId);
+
+    // 2. Lock the bill row second
     const lockedRows = await tx.$queryRawUnsafe<Array<{ id: string; lease_id: string }>>(
       'SELECT id, lease_id FROM bills WHERE org_id = $1 AND id = $2 FOR UPDATE',
       ctx.orgId,
@@ -675,9 +854,6 @@ export class BillingService {
     if (!lockedRows || lockedRows.length === 0) {
       throw ApiError.notFound('Bill not found');
     }
-
-    // 2. Also lock the lease row per financial rules
-    await tx.$queryRawUnsafe('SELECT id FROM leases WHERE id = $1 FOR UPDATE', lockedRows[0]!.lease_id);
 
     // 3. Read fresh bill under lock
     const bill = await tx.bill.findUnique({
@@ -854,7 +1030,24 @@ export class BillingService {
     const todayStr = toDateString(clock.now());
 
     return this.prisma.$tx(this.getTenantCtx(ctx), async (tx) => {
-      // 1. Lock the bill row first to serialize concurrent modifications
+      const billRef = await tx.bill.findUnique({
+        where: {
+          orgId_id: {
+            orgId: ctx.orgId,
+            id: billId,
+          },
+        },
+        select: { leaseId: true },
+      });
+
+      if (!billRef) {
+        throw ApiError.notFound('Bill not found');
+      }
+
+      // 1. Lock the lease row first (global lock order: lease -> bill to avoid deadlocks)
+      await tx.$queryRawUnsafe('SELECT id FROM leases WHERE id = $1 FOR UPDATE', billRef.leaseId);
+
+      // 2. Lock the bill row second
       const lockedRows = await tx.$queryRawUnsafe<Array<{ id: string; lease_id: string }>>(
         'SELECT id, lease_id FROM bills WHERE org_id = $1 AND id = $2 FOR UPDATE',
         ctx.orgId,
@@ -864,9 +1057,6 @@ export class BillingService {
       if (!lockedRows || lockedRows.length === 0) {
         throw ApiError.notFound('Bill not found');
       }
-
-      // 2. Also lock lease row per financial rules
-      await tx.$queryRawUnsafe('SELECT id FROM leases WHERE id = $1 FOR UPDATE', lockedRows[0]!.lease_id);
 
       // 3. Read fresh bill under lock
       const bill = await tx.bill.findUnique({
@@ -950,7 +1140,24 @@ export class BillingService {
     const todayStr = toDateString(clock.now());
 
     return this.prisma.$tx(this.getTenantCtx(ctx), async (tx) => {
-      // 1. Lock the bill row first to serialize concurrent modifications
+      const billRef = await tx.bill.findUnique({
+        where: {
+          orgId_id: {
+            orgId: ctx.orgId,
+            id: billId,
+          },
+        },
+        select: { leaseId: true },
+      });
+
+      if (!billRef) {
+        throw ApiError.notFound('Bill not found');
+      }
+
+      // 1. Lock the lease row first (global lock order: lease -> bill to avoid deadlocks)
+      await tx.$queryRawUnsafe('SELECT id FROM leases WHERE id = $1 FOR UPDATE', billRef.leaseId);
+
+      // 2. Lock the bill row second
       const lockedRows = await tx.$queryRawUnsafe<Array<{ id: string; lease_id: string }>>(
         'SELECT id, lease_id FROM bills WHERE org_id = $1 AND id = $2 FOR UPDATE',
         ctx.orgId,
@@ -960,9 +1167,6 @@ export class BillingService {
       if (!lockedRows || lockedRows.length === 0) {
         throw ApiError.notFound('Bill not found');
       }
-
-      // 2. Also lock lease row per financial rules
-      await tx.$queryRawUnsafe('SELECT id FROM leases WHERE id = $1 FOR UPDATE', lockedRows[0]!.lease_id);
 
       // 3. Read fresh bill under lock
       const bill = await tx.bill.findUnique({
@@ -1053,7 +1257,24 @@ export class BillingService {
     const todayStr = toDateString(clock.now());
 
     return this.prisma.$tx(this.getTenantCtx(ctx), async (tx) => {
-      // 1. Lock the bill row first to serialize concurrent modifications
+      const billRef = await tx.bill.findUnique({
+        where: {
+          orgId_id: {
+            orgId: ctx.orgId,
+            id: billId,
+          },
+        },
+        select: { leaseId: true },
+      });
+
+      if (!billRef) {
+        throw ApiError.notFound('Bill not found');
+      }
+
+      // 1. Lock the lease row first (global lock order: lease -> bill to avoid deadlocks)
+      await tx.$queryRawUnsafe('SELECT id FROM leases WHERE id = $1 FOR UPDATE', billRef.leaseId);
+
+      // 2. Lock the bill row second
       const lockedRows = await tx.$queryRawUnsafe<Array<{ id: string; lease_id: string }>>(
         'SELECT id, lease_id FROM bills WHERE org_id = $1 AND id = $2 FOR UPDATE',
         ctx.orgId,
@@ -1063,9 +1284,6 @@ export class BillingService {
       if (!lockedRows || lockedRows.length === 0) {
         throw ApiError.notFound('Bill not found');
       }
-
-      // 2. Also lock lease row per financial rules
-      await tx.$queryRawUnsafe('SELECT id FROM leases WHERE id = $1 FOR UPDATE', lockedRows[0]!.lease_id);
 
       // 3. Read fresh bill under lock
       const bill = await tx.bill.findUnique({

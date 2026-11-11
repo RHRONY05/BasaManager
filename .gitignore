@@ -1,5 +1,6 @@
 # BasaManager — never commit secrets
 .claude/settings.local.json
+.claude/launch.json
 .env
 .env.*
 !.env.example

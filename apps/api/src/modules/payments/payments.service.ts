@@ -807,11 +807,11 @@ export class PaymentsService {
 
       const payments = await tx.payment.findMany(findArgs);
 
-      let nextCursor: string | undefined;
-      if (payments.length > limit) {
-        const nextItem = payments.pop()!;
-        nextCursor = nextItem.id;
+      const hasMore = payments.length > limit;
+      if (hasMore) {
+        payments.pop();
       }
+      const nextCursor = hasMore && payments.length > 0 ? payments[payments.length - 1]!.id : undefined;
 
       return {
         items: payments.map((p) => this.formatPayment(p)),

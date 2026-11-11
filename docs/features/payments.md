@@ -253,7 +253,8 @@ sequenceDiagram
 ## 10. Edge cases & failure modes
 
 - **20 Concurrent Payments**: Tested in `apps/api/test/payments/payments.int.test.ts`. 20 concurrent transactions run against `receipt_counters`; Postgres serializes the updates, resulting in gapless sequential numbers `000001` through `000020` without duplicate keys or deadlocks.
-- **Concurrent Claims on One Lease**: Two staff members confirming different claims simultaneously on the same lease acquire a row lock on the `leases` table, preventing race conditions or lost updates.
+- **Concurrent Claims on One Lease & Deadlock Prevention (#29)**: Two staff members confirming different claims simultaneously on the same lease acquire a row lock on the `leases` table. Furthermore, all payment and billing operations follow a strict global lock hierarchy (`leases` row FOR UPDATE first, `bills` row FOR UPDATE second), preventing Postgres 40P01 deadlocks between concurrent payment confirmations and bill modifications.
+- **Cursor Pagination Boundary Precision (#27)**: Payments listing queries fetch `limit + 1` rows to test for additional pages. When a subsequent page exists, the lookahead item is discarded and `nextCursor` is set to the last retained element (`payments[payments.length - 1].id`), ensuring no items are dropped at page boundaries.
 - **Receipt Creation Failure**: If the receipt record insert fails (e.g. disk or trigger error), the entire database transaction rolls back: no payment status is updated, no allocations are saved, no credit is added, and no outbox notification is dispatched.
 - **MIME Type Spoofing**: An executable renamed to `.jpg` is detected via file magic byte inspection and rejected with `415 Unsupported Media Type`.
 - **Oversized Proof Photo**: Files larger than 5 MB are rejected with `413 Payload Too Large` without storing bytes to disk.

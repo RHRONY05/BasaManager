@@ -51,6 +51,22 @@ export function prorationFactor(input: {
   const { year, month } = parseYearMonth(input.periodMonth);
   const totalDays = daysInMonth(year, month);
 
+  // If move-in is in a future month, 0 active days in this period
+  if (input.moveInDate) {
+    const inYM = parseYearMonth(input.moveInDate);
+    if (inYM.year > year || (inYM.year === year && inYM.month > month)) {
+      return 0;
+    }
+  }
+
+  // If move-out is in a past month, 0 active days in this period
+  if (input.moveOutDate) {
+    const outYM = parseYearMonth(input.moveOutDate);
+    if (outYM.year < year || (outYM.year === year && outYM.month < month)) {
+      return 0;
+    }
+  }
+
   let startDay = 1;
   let endDay = totalDays;
 
