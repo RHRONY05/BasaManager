@@ -102,13 +102,16 @@ describe('V9: payments, receipts and files', () => {
   const record = (o: Record<string, unknown> = {}, a: Actor = landlord) =>
     a.agent.post('/api/payments').send(body(o));
   const confirm = (id: string, a: Actor = caretaker) => a.agent.post(`/api/payments/${id}/confirm`).send({});
-  const reject = (id: string, reason: string | undefined = 'No such transfer', a: Actor = caretaker) =>
-    a.agent.post(`/api/payments/${id}/reject`).send(reason === undefined ? {} : { reason });
+  const reject = (id: string, ...rest: [reason?: string | undefined, a?: Actor]) => {
+    const reason = rest.length > 0 ? rest[0] : 'No such transfer';
+    const a = rest[1] ?? caretaker;
+    return a.agent.post(`/api/payments/${id}/reject`).send(reason === undefined ? {} : { reason });
+  };
   const voidIt = (id: string, a: Actor = landlord) =>
     a.agent.post(`/api/payments/${id}/void`).send({ reason: 'Entered twice' });
   const allocs = (paymentId: string) =>
     q<{ bill_id: string; amount_poisha: string }>(
-      `select bill_id, amount_poisha::text from payment_allocations where payment_id=$1 order by amount_poisha`,
+      `select bill_id, amount_poisha::text from payment_allocations where payment_id=$1 order by payment_allocations.amount_poisha`,
       [paymentId],
     );
   const creditSum = async (leaseId = lease) =>
@@ -523,6 +526,7 @@ describe('V9: payments, receipts and files', () => {
       const exe = Buffer.concat([Buffer.from('MZ'), Buffer.alloc(200, 1)]);
       const res = await upload(tenant, exe, 'invoice.jpg', 'image/jpeg');
       expect(res.status).toBe(415);
+      expect(res.body.error.code).toBe(ErrorCode.UNSUPPORTED_MEDIA_TYPE);
       expect(await count('files')).toBe(0);
     });
 

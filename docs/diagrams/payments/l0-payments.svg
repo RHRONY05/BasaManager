@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1700 800" width="1700" height="800" font-family="'Segoe UI', Inter, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1f1f1f"/>
+    </marker>
+  </defs>
+  <rect width="1700" height="800" fill="#ffffff"/>
+  <text x="40" y="52" font-size="28" font-weight="700" fill="#1f1f1f">Payments &amp; Claims Lifecycle, level 0</text>
+  <text x="40" y="82" font-size="16" fill="#3a3a3a">Manual payment claims with proof photos, staff direct recording, Rule 5 allocation, atomic receipt numbering, and Rule 6 voiding.</text>
+  <g font-size="15" fill="#3a3a3a">
+    <line x1="1130" y1="36" x2="1190" y2="36" stroke="#1f1f1f" stroke-width="2.4" marker-end="url(#arrow)"/>
+    <text x="1202" y="41">call / read</text>
+    <line x1="1130" y1="62" x2="1190" y2="62" stroke="#1f1f1f" stroke-width="2.4" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <text x="1202" y="67">write / return</text>
+    <rect x="1370" y="24" width="26" height="18" rx="3" fill="#FEC8C3"/><text x="1406" y="39">people / external</text>
+    <rect x="1530" y="24" width="26" height="18" rx="7" fill="#BFE3FD"/><text x="1566" y="39">our code</text>
+    <circle cx="1383" cy="62" r="9" fill="#E3CCFD"/><text x="1406" y="67">data store</text>
+    <rect x="1530" y="53" width="26" height="18" rx="3" fill="#C9F2D6"/><text x="1566" y="67">output</text>
+  </g>
+  <g fill="none" stroke="#1f1f1f" stroke-width="2.4">
+    <path d="M250,300 H520" marker-end="url(#arrow)"/>
+    <path d="M520,340 H250" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <path d="M250,450 H520" marker-end="url(#arrow)"/>
+    <path d="M520,490 H250" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <path d="M250,600 H520" marker-end="url(#arrow)"/>
+    <path d="M520,640 H250" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <path d="M1090,460 H1380" marker-end="url(#arrow)"/>
+    <path d="M780,630 V680" marker-end="url(#arrow)"/>
+    <path d="M860,680 V630" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+  </g>
+  <rect x="40" y="240" width="210" height="130" rx="6" fill="#FEC8C3"/>
+  <text x="145" y="285" font-size="20" font-weight="700" fill="#1f1f1f" text-anchor="middle">Tenant</text>
+  <text x="145" y="315" font-size="15" fill="#3a3a3a" text-anchor="middle">bKash/Nagad/Bank/Cash</text>
+  <text x="145" y="337" font-size="15" fill="#3a3a3a" text-anchor="middle">submits payment claim</text>
+  <text x="385" y="290" font-size="15" fill="#1f1f1f" text-anchor="middle">claim + proof photo</text>
+  <text x="385" y="365" font-size="15" fill="#1f1f1f" text-anchor="middle">pending claim status</text>
+
+  <rect x="40" y="390" width="210" height="130" rx="6" fill="#FEC8C3"/>
+  <text x="145" y="435" font-size="20" font-weight="700" fill="#1f1f1f" text-anchor="middle">Caretaker</text>
+  <text x="145" y="465" font-size="15" fill="#3a3a3a" text-anchor="middle">reviews pending queue</text>
+  <text x="145" y="487" font-size="15" fill="#3a3a3a" text-anchor="middle">confirms or rejects</text>
+  <text x="385" y="440" font-size="15" fill="#1f1f1f" text-anchor="middle">confirm / reject claim</text>
+  <text x="385" y="515" font-size="15" fill="#1f1f1f" text-anchor="middle">direct cash recording</text>
+
+  <rect x="40" y="540" width="210" height="130" rx="6" fill="#FEC8C3"/>
+  <text x="145" y="585" font-size="20" font-weight="700" fill="#1f1f1f" text-anchor="middle">Landlord</text>
+  <text x="145" y="615" font-size="15" fill="#3a3a3a" text-anchor="middle">records &amp; views all</text>
+  <text x="145" y="637" font-size="15" fill="#3a3a3a" text-anchor="middle">voids wrongly entered</text>
+  <text x="385" y="590" font-size="15" fill="#1f1f1f" text-anchor="middle">void payment + reason</text>
+  <text x="385" y="665" font-size="15" fill="#1f1f1f" text-anchor="middle">updated bill balances</text>
+
+  <rect x="520" y="240" width="570" height="390" rx="14" fill="#BFE3FD"/>
+  <text x="805" y="280" font-size="24" font-weight="700" fill="#1f1f1f" text-anchor="middle">Payments Service &amp; Storage</text>
+  <text x="805" y="310" font-size="15" fill="#3a3a3a" text-anchor="middle">apps/api/src/modules/payments/ · files/ · config/storage/</text>
+
+  <rect x="550" y="340" width="240" height="85" rx="8" fill="#ffffff"/>
+  <text x="670" y="375" font-size="16" font-weight="700" fill="#1f1f1f" text-anchor="middle">Claims &amp; Files</text>
+  <text x="670" y="400" font-size="13" fill="#3a3a3a" text-anchor="middle">5MB sniffed · private HMAC</text>
+
+  <rect x="820" y="340" width="240" height="85" rx="8" fill="#ffffff"/>
+  <text x="940" y="375" font-size="16" font-weight="700" fill="#1f1f1f" text-anchor="middle">Rule 5 Allocation</text>
+  <text x="940" y="400" font-size="13" fill="#3a3a3a" text-anchor="middle">Oldest bill first · overpay credit</text>
+
+  <rect x="550" y="450" width="240" height="85" rx="8" fill="#ffffff"/>
+  <text x="670" y="485" font-size="16" font-weight="700" fill="#1f1f1f" text-anchor="middle">Receipt Counter</text>
+  <text x="670" y="510" font-size="13" fill="#3a3a3a" text-anchor="middle">BM-&lt;year&gt;-seq · atomic gapless</text>
+
+  <rect x="820" y="450" width="240" height="85" rx="8" fill="#ffffff"/>
+  <text x="940" y="485" font-size="16" font-weight="700" fill="#1f1f1f" text-anchor="middle">Rule 6 Void Reversal</text>
+  <text x="940" y="510" font-size="13" fill="#3a3a3a" text-anchor="middle">Reverse allocs · reopen bills</text>
+
+  <rect x="550" y="555" width="510" height="55" rx="8" fill="#ffffff"/>
+  <text x="805" y="590" font-size="14" font-weight="600" fill="#1f1f1f" text-anchor="middle">Row Locking: leases FOR UPDATE ──▶ bills FOR UPDATE (period_month ASC)</text>
+
+  <rect x="1380" y="380" width="280" height="160" rx="8" fill="#C9F2D6"/>
+  <text x="1520" y="420" font-size="20" font-weight="700" fill="#1f1f1f" text-anchor="middle">Receipts &amp; Outbox</text>
+  <text x="1520" y="450" font-size="14" fill="#3a3a3a" text-anchor="middle">PDF download · outbox events</text>
+  <text x="1520" y="475" font-size="14" fill="#3a3a3a" text-anchor="middle">payment.confirmed · voided</text>
+  <text x="1520" y="500" font-size="14" fill="#3a3a3a" text-anchor="middle">payment.claim_submitted</text>
+
+  <rect x="620" y="680" width="380" height="90" rx="8" fill="#E3CCFD"/>
+  <text x="810" y="715" font-size="18" font-weight="700" fill="#1f1f1f" text-anchor="middle">PostgreSQL Database (RLS)</text>
+  <text x="810" y="745" font-size="13" fill="#3a3a3a" text-anchor="middle">payments · payment_allocations · receipts · credit_entries</text>
+</svg>

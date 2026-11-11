@@ -105,13 +105,81 @@ unwritable (`apps/api/test/constraints.int.test.ts`).
 
 ### Row locks around money (written in V9)
 
-> **Stub.** Task V9 (manual payments and receipts) writes this section. It will cover:
->
-> - `select ... from leases where id = $1 for update`: why confirming, voiding and issuing for the same lease
->   run one after another (see "Concurrency" in `.agent/03-DATABASE.md`);
-> - the gapless receipt number (`receipt_counters` upsert inside the payment transaction);
-> - `for update skip locked` for the outbox claim in the worker;
-> - the concurrency tests (two confirmations at once) and what the loser sees.
+Under PostgreSQL's default `READ COMMITTED` isolation level, two concurrent transactions can read the exact same rows, see the same unpaid bill balances, and both decide to allocate money to the same bill. This would lead to double allocation, over-deductions, or negative unpaid balances that violate check constraints.
+
+To prevent race conditions, BasaManager enforces strict **pessimistic row locking (`FOR UPDATE`)** with a non-negotiable ordering protocol:
+
+#### 1. The Lease Lock Invariant
+
+Whenever payment confirmation, manual payment entry, bill issuing, or payment voiding begins:
+
+```sql
+SELECT id FROM leases WHERE id = $1 FOR UPDATE;
+```
+
+Locking the parent `leases` row first acts as an execution gateway. Any other transaction attempting to mutate bills, allocate payments, or modify credit for that lease must wait until the first transaction completes (`COMMIT` or `ROLLBACK`).
+
+#### 2. Deterministic Lock Ordering on Bills
+
+When locking multiple bills for oldest-first payment allocation:
+
+```sql
+SELECT id, period_month, total_poisha, paid_poisha, status
+FROM bills
+WHERE lease_id = $1 AND status IN ('issued', 'partially_paid')
+ORDER BY period_month ASC
+FOR UPDATE;
+```
+
+All transactions lock bills in the exact same chronological order (`ORDER BY period_month ASC`). Ordering lock acquisition identically across all codepaths guarantees that deadlocks cannot occur.
+
+#### 3. Gapless Sequential Receipt Numbers
+
+Receipt numbers must be strictly sequential per organisation and year (e.g., `BM-2026-000001`, `BM-2026-000002`) with no gaps. Generating the number inside `$tx` uses an atomic row-locking upsert on `receipt_counters`:
+
+```sql
+INSERT INTO receipt_counters (id, org_id, year, next_seq, updated_at)
+VALUES (gen_random_uuid(), $1, $2, 2, NOW())
+ON CONFLICT (org_id, year)
+DO UPDATE SET next_seq = receipt_counters.next_seq + 1, updated_at = NOW()
+RETURNING next_seq - 1 AS assigned_seq;
+```
+
+Postgres locks the `(org_id, year)` counter row for the duration of the transaction. Concurrent payment confirmations for the same organisation line up behind this row lock, each receiving a guaranteed gapless sequence number.
+
+#### 4. `FOR UPDATE SKIP LOCKED` for Outbox Processing
+
+When worker instances poll the outbox for notifications and PDF generation tasks:
+
+```sql
+SELECT * FROM outbox_messages
+WHERE status = 'pending' AND scheduled_at <= NOW()
+ORDER BY scheduled_at ASC
+LIMIT 10
+FOR UPDATE SKIP LOCKED;
+```
+
+`SKIP LOCKED` instructs Postgres to skip rows currently locked by another worker transaction. This allows multiple background worker instances to process distinct jobs concurrently without blocking each other or causing duplicate deliveries.
+
+#### 5. Rule 6 Voiding & Security Definer Grants
+
+Database roles enforce that `bm_app` has `REVOKE DELETE` on history tables (`payments`, `bill_lines`, `payment_allocations`, `receipts`, `credit_entries`). However, Rule 6 of the billing engine requires reversing a voided payment's allocations and overpayment credits.
+To accomplish this safely without granting `bm_app` arbitrary `DELETE` permissions, migration `20261108000500_payment_void` introduces a `SECURITY DEFINER` function owned by `bm_owner`:
+
+```sql
+CREATE OR REPLACE FUNCTION app_void_payment(
+  p_payment_id UUID,
+  p_org_id UUID,
+  p_bill_ids UUID[],
+  p_credit_entry_ids UUID[]
+) RETURNS VOID ...
+```
+
+When a landlord voids a payment, `payments.service.ts` calls `app_void_payment` inside `$tx`, recalculating bill statuses back to `issued` or `partially_paid` and removing allocations atomically.
+
+#### Concurrency Test Proof
+
+The integration suite in `apps/api/test/payments/payments.int.test.ts` tests two simultaneous payment confirmations on the same lease (`Promise.all([confirm1, confirm2])`). Thanks to the lease row lock, the transactions run sequentially: the first confirms and allocates against the unpaid bills; the second waits, reads the updated balances, and allocates the remaining amount to subsequent bills or saves it as credit without data corruption or deadlock.
 
 ## Diagram
 

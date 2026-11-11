@@ -119,8 +119,10 @@ function runSingleFlightRefresh(requestPath: string): Promise<void> {
 export async function apiFetch<T = unknown>(path: string, options: ApiFetchOptions<T> = {}): Promise<T> {
   const { schema, method = 'GET', body, signal, headers = {}, _isRetry = false } = options;
 
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+
   const mergedHeaders: Record<string, string> = {
-    ...(body ? { 'Content-Type': 'application/json' } : {}),
+    ...(body && !isFormData ? { 'Content-Type': 'application/json' } : {}),
     ...headers,
   };
 
@@ -146,7 +148,7 @@ export async function apiFetch<T = unknown>(path: string, options: ApiFetchOptio
     signal,
     credentials: 'same-origin',
     headers: mergedHeaders,
-    body: body ? JSON.stringify(body) : undefined,
+    body: isFormData ? (body as BodyInit) : body ? JSON.stringify(body) : undefined,
   };
 
   const response = await fetch(path, init);

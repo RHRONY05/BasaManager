@@ -1,6 +1,15 @@
 import { z } from 'zod';
-import { paymentMethodSchema, paymentStatusSchema, receiptStatusSchema } from '../enums';
+import {
+  paymentMethodSchema,
+  paymentStatusSchema,
+  receiptStatusSchema,
+  type PaymentMethod,
+  type PaymentStatus,
+  type ReceiptStatus,
+} from '../enums';
 import { cursorQuerySchema } from './common';
+
+export type { PaymentMethod, PaymentStatus, ReceiptStatus };
 
 export const createPaymentClaimSchema = z.object({
   leaseId: z.string().uuid(),
@@ -58,6 +67,16 @@ export const receiptResponseSchema = z.object({
   createdAt: z.string(),
 });
 export type ReceiptResponse = z.infer<typeof receiptResponseSchema>;
+
+export const receiptDownloadResponseSchema = z.union([
+  z.object({
+    downloadUrl: z.string().url(),
+  }),
+  z.object({
+    status: z.literal('rendering'),
+  }),
+]);
+export type ReceiptDownloadResponse = z.infer<typeof receiptDownloadResponseSchema>;
 
 export const paymentResponseSchema = z.object({
   id: z.string().uuid(),

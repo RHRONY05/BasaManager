@@ -2,6 +2,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { Prisma, PrismaClient, type InvitationRole, type MembershipRole } from '../generated/prisma/client';
 
 export { Prisma };
+export type { MembershipRole, InvitationRole };
 
 /**
  * Database client factory. Owner: architect (03-DATABASE.md).

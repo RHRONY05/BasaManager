@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1700 850" width="1700" height="850" font-family="'Segoe UI', Inter, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1f1f1f"/>
+    </marker>
+  </defs>
+  <rect width="1700" height="850" fill="#ffffff"/>
+  <text x="40" y="52" font-size="28" font-weight="700" fill="#1f1f1f">Receipts Engine, level 1: Numbering, Rendering &amp; Storage</text>
+  <text x="40" y="82" font-size="16" fill="#3a3a3a">Data flow across the atomic counter upsert, receipt record creation, background PDF rendering, and secure signed delivery.</text>
+
+  <rect x="50" y="160" width="370" height="340" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+  <rect x="70" y="180" width="220" height="30" rx="6" fill="#BFE3FD"/>
+  <text x="180" y="200" font-size="14" font-weight="700" fill="#1f1f1f" text-anchor="middle">1. Atomic Sequence Allocation</text>
+  <text x="70" y="240" font-size="13" font-weight="600" fill="#0f172a">Inside payment transaction:</text>
+  <text x="70" y="265" font-size="12" fill="#475569">• INSERT INTO receipt_counters (org_id, year, last_seq)</text>
+  <text x="70" y="285" font-size="12" fill="#475569">  VALUES ($1, $2, 1)</text>
+  <text x="70" y="305" font-size="12" fill="#475569">  ON CONFLICT (org_id, year) DO UPDATE</text>
+  <text x="70" y="325" font-size="12" fill="#475569">  SET last_seq = receipt_counters.last_seq + 1</text>
+  <text x="70" y="345" font-size="12" fill="#475569">  RETURNING last_seq;</text>
+  <text x="70" y="375" font-size="13" font-weight="600" fill="#166534">BM-&lt;year&gt;-&lt;seq 6 digits&gt;</text>
+  <text x="70" y="400" font-size="12" fill="#475569">• Example: BM-2026-000001, BM-2026-000002</text>
+  <text x="70" y="420" font-size="12" fill="#475569">• No gaps, no duplicates, serialized per org</text>
+
+  <rect x="460" y="160" width="370" height="340" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+  <rect x="480" y="180" width="180" height="30" rx="6" fill="#BFE3FD"/>
+  <text x="570" y="200" font-size="14" font-weight="700" fill="#1f1f1f" text-anchor="middle">2. Receipt DB Record</text>
+  <text x="480" y="240" font-size="13" font-weight="600" fill="#0f172a">Same payment transaction:</text>
+  <text x="480" y="265" font-size="12" fill="#475569">• INSERT INTO receipts</text>
+  <text x="480" y="285" font-size="12" fill="#475569">  (org_id, payment_id, number, status)</text>
+  <text x="480" y="305" font-size="12" fill="#475569">  VALUES (orgId, p.id, receiptNum, 'valid');</text>
+  <text x="480" y="335" font-size="13" font-weight="600" fill="#0f172a">File Linking:</text>
+  <text x="480" y="360" font-size="12" fill="#475569">• Initially file_id IS NULL</text>
+  <text x="480" y="380" font-size="12" fill="#475569">• GET /receipts/:id/download returns 202</text>
+  <text x="480" y="400" font-size="12" fill="#475569">  { status: 'rendering' } while pending</text>
+  <text x="480" y="430" font-size="12" font-style="italic" fill="#0284c7">Outbox queues payment.confirmed</text>
+
+  <rect x="870" y="160" width="370" height="340" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+  <rect x="890" y="180" width="200" height="30" rx="6" fill="#BFE3FD"/>
+  <text x="990" y="200" font-size="14" font-weight="700" fill="#1f1f1f" text-anchor="middle">3. Worker Puppeteer Render</text>
+  <text x="890" y="240" font-size="13" font-weight="600" fill="#0f172a">Worker PDF Service:</text>
+  <text x="890" y="265" font-size="12" fill="#475569">• renderReceiptHtml(templateData)</text>
+  <text x="890" y="285" font-size="12" fill="#475569">• Launch headless Chromium</text>
+  <text x="890" y="305" font-size="12" fill="#475569">• page.pdf({ format: 'A4', printBackground: true })</text>
+  <text x="890" y="325" font-size="12" fill="#475569">• Generates raw PDF Buffer</text>
+  <text x="890" y="355" font-size="13" font-weight="600" fill="#0f172a">Storage Persistence:</text>
+  <text x="890" y="380" font-size="12" fill="#475569">• storage.save(buffer, 'raw', publicId)</text>
+  <text x="890" y="400" font-size="12" fill="#475569">• INSERT INTO files (kind: 'receipt_pdf')</text>
+  <text x="890" y="420" font-size="12" fill="#475569">• UPDATE receipts SET file_id = file.id</text>
+
+  <rect x="1280" y="160" width="370" height="340" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+  <rect x="1300" y="180" width="180" height="30" rx="6" fill="#C9F2D6"/>
+  <text x="1390" y="200" font-size="14" font-weight="700" fill="#1f1f1f" text-anchor="middle">4. Secure Download URL</text>
+  <text x="1300" y="240" font-size="13" font-weight="600" fill="#0f172a">GET /api/receipts/:id/download</text>
+  <text x="1300" y="265" font-size="12" fill="#475569">• Permission check: Tenant own / Landlord / Caretaker</text>
+  <text x="1300" y="285" font-size="12" fill="#475569">• storage.getSignedUrl({ expiresIn: 300 })</text>
+  <text x="1300" y="305" font-size="12" fill="#475569">• Local: /api/files/local/:id?exp=&amp;sig=</text>
+  <text x="1300" y="325" font-size="12" fill="#475569">• Cloudinary: private_download_url()</text>
+  <text x="1300" y="355" font-size="13" font-weight="600" fill="#166534">HTTP 200 { downloadUrl }</text>
+  <text x="1300" y="380" font-size="12" fill="#475569">• Accessible without auth cookies until expiry</text>
+  <text x="1300" y="400" font-size="12" fill="#475569">• Signature tampered ➔ 403 Forbidden</text>
+  <text x="1300" y="420" font-size="12" fill="#475569">• Expired timestamp ➔ 403 Forbidden</text>
+
+  <!-- Flow Arrows -->
+  <path d="M420,330 H460" stroke="#1f1f1f" stroke-width="2.4" marker-end="url(#arrow)"/>
+  <path d="M830,330 H870" stroke="#1f1f1f" stroke-width="2.4" marker-end="url(#arrow)"/>
+  <path d="M1240,330 H1280" stroke="#1f1f1f" stroke-width="2.4" marker-end="url(#arrow)"/>
+</svg>

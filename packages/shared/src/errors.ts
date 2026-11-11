@@ -25,6 +25,7 @@ export const ErrorCode = {
   READING_LOWER_THAN_PREVIOUS: 'READING_LOWER_THAN_PREVIOUS',
   DUPLICATE_REFERENCE: 'DUPLICATE_REFERENCE',
   INVALID_TRANSITION: 'INVALID_TRANSITION',
+  UNSUPPORTED_MEDIA_TYPE: 'UNSUPPORTED_MEDIA_TYPE',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -50,6 +51,7 @@ export const errorStatus = {
   READING_LOWER_THAN_PREVIOUS: 400,
   DUPLICATE_REFERENCE: 409,
   INVALID_TRANSITION: 409,
+  UNSUPPORTED_MEDIA_TYPE: 415,
 } as const satisfies Record<ErrorCode, number>;
 
 // Object.values loses the tuple shape z.enum needs; the object is non-empty, so the cast is safe.

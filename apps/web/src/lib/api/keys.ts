@@ -17,4 +17,7 @@ export const keys = {
   bill: (id: string) => ['bills', id] as const,
   readings: (buildingId: string, month: string) => ['readings', buildingId, month] as const,
   dues: () => ['dues'] as const,
+  payments: (filters?: Record<string, unknown>) => ['payments', filters] as const,
+  payment: (id: string) => ['payments', id] as const,
+  receiptDownload: (id: string) => ['receipts', id, 'download'] as const,
 };

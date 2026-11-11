@@ -1,18 +1,26 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Calendar, FileText, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Calendar, FileText, CheckCircle2, Download, CreditCard, Clock } from 'lucide-react';
 import { useBill } from '../../lib/api/billing.js';
+import { usePayments, getReceiptDownloadUrl } from '../../lib/api/payments.js';
 import { formatMoney, formatNumber } from '../../lib/format.js';
 import { Skeleton } from '../../components/ui/Skeleton.js';
 import { ErrorState } from '../../components/ui/ErrorState.js';
+import { ClaimPaymentDialog } from './ClaimPaymentDialog.js';
 
 export default function TenantBillDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [claimOpen, setClaimOpen] = useState(false);
 
   const { data: bill, isPending, isError, error, refetch } = useBill(id);
+  const { data: paymentsData, refetch: refetchPayments } = usePayments(
+    bill ? { leaseId: bill.leaseId } : undefined,
+  );
+
+  const payments = Array.isArray(paymentsData) ? paymentsData : [];
 
   if (isPending) {
     return (
@@ -154,11 +162,115 @@ export default function TenantBillDetailPage() {
         )}
       </div>
 
-      {bill.status === 'paid' && (
+      {bill.status === 'paid' ? (
         <div className="card p-4 flex items-center gap-3 bg-success/10 border-success/30">
           <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
           <p className="text-xs text-fg">{t('billing.allPaidDesc')}</p>
         </div>
+      ) : (
+        <div className="card p-4 flex flex-col sm:flex-row items-center justify-between gap-3 bg-accent/5 border-accent/20">
+          <div>
+            <p className="text-xs font-semibold text-fg">
+              {t('payments.unpaidBanner', 'Remaining balance due: ')}
+              <span className="text-accent">{formatMoney(bill.balancePoisha)}</span>
+            </p>
+            <p className="text-xs text-fg-muted mt-0.5">
+              {t(
+                'payments.unpaidHint',
+                'Paid via bKash, Nagad, bank or cash? Submit a claim for staff to confirm.',
+              )}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setClaimOpen(true)}
+            className="btn btn--primary text-xs w-full sm:w-auto shrink-0 flex items-center gap-1.5"
+          >
+            <CreditCard className="h-3.5 w-3.5" />
+            <span>{t('payments.claimAction', 'Submit Payment Claim')}</span>
+          </button>
+        </div>
+      )}
+
+      {/* Payment History & Receipts */}
+      <div className="card divide-y divide-border/60">
+        <div className="p-4 bg-muted/40 font-semibold text-xs text-fg-muted uppercase tracking-wider flex justify-between items-center">
+          <span>{t('payments.history', 'Payments & Claims')}</span>
+          <span className="text-xs font-normal lowercase">{payments.length} record(s)</span>
+        </div>
+
+        {payments.length > 0 ? (
+          payments.map((p) => (
+            <div key={p.id} className="p-4 flex items-center justify-between gap-3 text-xs">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-fg text-sm">{formatMoney(p.amountPoisha)}</span>
+                  <span className="capitalize text-fg-muted font-medium">({p.method})</span>
+                  <span
+                    className={`badge text-xs capitalize ${
+                      p.status === 'confirmed'
+                        ? 'badge--success'
+                        : p.status === 'pending_claim'
+                          ? 'badge--warning'
+                          : 'badge--danger'
+                    }`}
+                  >
+                    {p.status === 'pending_claim'
+                      ? t('payments.pendingStatus', 'Pending Verification')
+                      : p.status}
+                  </span>
+                </div>
+                <p className="text-fg-muted flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  <span>{p.paidOn}</span>
+                  {p.reference && <span>· Ref: {p.reference}</span>}
+                </p>
+                {p.rejectedReason && (
+                  <p className="text-danger italic">
+                    {t('payments.reason', 'Reason')}: {p.rejectedReason}
+                  </p>
+                )}
+              </div>
+
+              {p.receipt && p.status === 'confirmed' && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const res = await getReceiptDownloadUrl(p.receipt!.id);
+                      if ('downloadUrl' in res) {
+                        window.open(res.downloadUrl, '_blank');
+                      }
+                    } catch (err: unknown) {
+                      alert((err as Error).message || 'Failed to download receipt');
+                    }
+                  }}
+                  className="btn btn--secondary text-xs flex items-center gap-1.5 shrink-0"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  <span>{t('payments.receipt', 'Receipt')}</span>
+                </button>
+              )}
+            </div>
+          ))
+        ) : (
+          <div className="p-4 text-center text-xs text-fg-muted">
+            {t('payments.noPayments', 'No payment claims submitted yet')}
+          </div>
+        )}
+      </div>
+
+      {bill && (
+        <ClaimPaymentDialog
+          leaseId={bill.leaseId}
+          defaultAmountTaka={bill.balancePoisha > 0 ? bill.balancePoisha / 100 : undefined}
+          isOpen={claimOpen}
+          onClose={() => setClaimOpen(false)}
+          onSuccess={() => {
+            void refetch();
+            void refetchPayments();
+          }}
+        />
       )}
     </div>
   );
