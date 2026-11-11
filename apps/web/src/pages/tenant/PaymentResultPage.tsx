@@ -186,6 +186,12 @@ export default function PaymentResultPage() {
             <span>{t('payments.transactionId', 'Transaction ID')}:</span>
             <span className="font-mono text-fg font-medium break-all">{tranId}</span>
           </div>
+          {intent?.receiptNumber && (
+            <div className="flex justify-between items-center text-fg-muted">
+              <span>{t('payments.receiptNumber', 'Receipt Number')}:</span>
+              <span className="font-mono font-bold text-fg">{intent.receiptNumber}</span>
+            </div>
+          )}
           {intent?.amountPoisha && (
             <div className="flex justify-between items-center text-fg-muted">
               <span>{t('payments.amount', 'Amount')}:</span>
@@ -237,7 +243,7 @@ export default function PaymentResultPage() {
               className="btn btn--secondary text-xs w-full flex items-center justify-center gap-2"
             >
               {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-              <span>{t('payments.downloadReceipt', 'Download Receipt (PDF)')}</span>
+              <span>{t('payments.viewReceipt', 'View Receipt')}</span>
             </button>
           )}
 

@@ -109,6 +109,7 @@ describe('SslcommerzController', () => {
       status: 'confirmed',
       paymentId: 'pay-1',
       receiptId: 'rec-1',
+      receiptNumber: 'BM-2026-000001',
     });
 
     await controller.getIntent(req, res, next);

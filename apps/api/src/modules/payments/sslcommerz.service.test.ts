@@ -145,12 +145,13 @@ describe('SslcommerzService', () => {
         createdAt: new Date(),
       });
       mockTx.leaseTenant.findFirst.mockResolvedValue({ id: 'lt-1' });
-      mockTx.receipt.findFirst.mockResolvedValue({ id: 'rec-1' });
+      mockTx.receipt.findFirst.mockResolvedValue({ id: 'rec-1', number: 'BM-2026-000001' });
 
       const res = await service.getIntent(tenantCtx, 'TRAN-1');
       expect(res.tranId).toBe('TRAN-1');
       expect(res.status).toBe('confirmed');
       expect(res.receiptId).toBe('rec-1');
+      expect(res.receiptNumber).toBe('BM-2026-000001');
     });
   });
 

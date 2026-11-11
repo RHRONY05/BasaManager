@@ -162,6 +162,7 @@ export const paymentIntentResponseSchema = z.object({
   amountPoisha: z.number().int(),
   paymentId: z.string().uuid().nullable().optional(),
   receiptId: z.string().uuid().nullable().optional(),
+  receiptNumber: z.string().nullable().optional(),
 });
 export type PaymentIntentResponse = z.infer<typeof paymentIntentResponseSchema>;
 

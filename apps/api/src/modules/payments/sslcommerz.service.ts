@@ -328,12 +328,14 @@ export class SslcommerzService {
       }
 
       let receiptId: string | null = null;
+      let receiptNumber: string | null = null;
       if (intent.paymentId) {
         const receipt = await tx.receipt.findFirst({
           where: { paymentId: intent.paymentId },
-          select: { id: true },
+          select: { id: true, number: true },
         });
         receiptId = receipt?.id || null;
+        receiptNumber = receipt?.number || null;
       }
 
       return {
@@ -343,6 +345,7 @@ export class SslcommerzService {
         amountPoisha: Number(intent.amountPoisha),
         paymentId: intent.paymentId,
         receiptId,
+        receiptNumber,
       };
     });
   }
