@@ -109,7 +109,6 @@ describe('SslcommerzController', () => {
       status: 'confirmed',
       paymentId: 'pay-1',
       receiptId: 'rec-1',
-      createdAt: new Date().toISOString(),
     });
 
     await controller.getIntent(req, res, next);
