@@ -1,8 +1,11 @@
 import { Router } from 'express';
+import { idParam } from '@bm/shared/api/common';
+import { signedUrlQuerySchema, serveLocalQuerySchema, uploadFileBodySchema } from '@bm/shared/api/files';
 import type { Db } from '../../config/db.js';
 import type { Env } from '../../config/env.js';
 import type { Redis } from '../../config/redis.js';
 import { createRateLimiters } from '../../middleware/rateLimit.js';
+import { validate } from '../../middleware/validate.js';
 import { createRequireUser } from '../../middleware/auth.js';
 import { createRequireMembership } from '../../middleware/org.js';
 import { FilesService } from './files.service.js';
@@ -24,7 +27,11 @@ export function createFilesRoutes(deps: FilesRouteDeps): Router {
 
   // Local file serving (public with HMAC signature & expiration verification) - dev/test only
   if (deps.env.APP_ENV === 'dev' || deps.env.APP_ENV === 'test') {
-    router.get('/local/:id', controller.serveLocal);
+    router.get(
+      '/local/:id',
+      validate({ params: idParam, query: serveLocalQuerySchema }),
+      controller.serveLocal,
+    );
   }
 
   // Authenticated file routes
@@ -34,9 +41,17 @@ export function createFilesRoutes(deps: FilesRouteDeps): Router {
     requireUser,
     requireMembership,
     handleFileUploadMiddleware,
+    validate({ body: uploadFileBodySchema }),
     controller.upload,
   );
-  router.get('/:id/url', rateLimiters.generalLimiter, requireUser, requireMembership, controller.getUrl);
+  router.get(
+    '/:id/url',
+    rateLimiters.generalLimiter,
+    requireUser,
+    requireMembership,
+    validate({ params: idParam, query: signedUrlQuerySchema }),
+    controller.getUrl,
+  );
 
   return router;
 }

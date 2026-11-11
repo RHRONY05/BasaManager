@@ -622,21 +622,29 @@ export class PaymentsService {
             orderBy: { createdAt: 'desc' },
           });
 
+          // Group applied entries by billId to avoid double-counting on bills with multiple applied entries
+          const appliedByBill = new Map<string, number>();
           for (const applied of appliedEntries) {
-            if (neededToReverse <= 0) break;
             if (!applied.billId) continue;
+            appliedByBill.set(
+              applied.billId,
+              (appliedByBill.get(applied.billId) || 0) + Math.abs(Number(applied.amountPoisha)),
+            );
+          }
+
+          for (const [billId, totalBillApplied] of appliedByBill) {
+            if (neededToReverse <= 0) break;
 
             // Calculate existing reversed credit for this specific bill
             const existingReversedRow = await tx.$queryRaw<Array<{ sum: bigint }>>`
-              SELECT COALESCE(SUM(amount_poisha), 0) as sum FROM credit_entries WHERE bill_id = ${applied.billId}::uuid AND kind = 'reversed'`;
+              SELECT COALESCE(SUM(amount_poisha), 0) as sum FROM credit_entries WHERE bill_id = ${billId}::uuid AND kind = 'reversed'`;
             const existingReversed = Number(existingReversedRow[0]?.sum || 0n);
 
-            const originalApplied = Math.abs(Number(applied.amountPoisha));
-            const netApplied = Math.max(0, originalApplied - existingReversed);
+            const netApplied = Math.max(0, totalBillApplied - existingReversed);
             if (netApplied <= 0) continue;
 
             const rev = Math.min(neededToReverse, netApplied);
-            affectedBillIds.add(applied.billId);
+            affectedBillIds.add(billId);
 
             await tx.creditEntry.create({
               data: {
@@ -644,7 +652,8 @@ export class PaymentsService {
                 leaseId: p.lease_id,
                 amountPoisha: BigInt(rev),
                 kind: 'reversed',
-                billId: applied.billId,
+                billId,
+                paymentId,
               },
             });
 
@@ -714,11 +723,24 @@ export class PaymentsService {
         },
       });
 
-      // Mark receipt void
+      // Mark receipt void and clear fileId so worker re-renders with VOID watermark
+      const existingReceipt = await tx.receipt.findFirst({
+        where: { paymentId },
+        select: { id: true, fileId: true },
+      });
+
+      if (existingReceipt?.fileId) {
+        await tx.file.update({
+          where: { id: existingReceipt.fileId },
+          data: { deletedAt: now },
+        });
+      }
+
       await tx.receipt.updateMany({
         where: { paymentId },
         data: {
           status: 'void',
+          fileId: null,
           updatedAt: now,
         },
       });

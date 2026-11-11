@@ -23,6 +23,7 @@ import { useBuildings } from '../../lib/api/buildings.js';
 import { formatMoney } from '../../lib/format.js';
 import { Skeleton } from '../../components/ui/Skeleton.js';
 import { ErrorState } from '../../components/ui/ErrorState.js';
+import { useToast } from '../../components/ui/Toast.js';
 import { RecordPaymentDialog } from './RecordPaymentDialog.js';
 import { RejectPaymentDialog } from './RejectPaymentDialog.js';
 import { VoidPaymentDialog } from './VoidPaymentDialog.js';
@@ -31,6 +32,7 @@ import type { PaymentStatus } from '@bm/shared/api/payments';
 export default function PaymentsPage() {
   const { t } = useTranslation();
   const { role } = useAuth();
+  const { showToast } = useToast();
   const isLandlord = role === 'landlord';
 
   const [activeTab, setActiveTab] = useState<'pending' | 'history'>('pending');
@@ -77,7 +79,7 @@ export default function PaymentsPage() {
       void refetchPending();
       void refetchHistory();
     } catch (err: unknown) {
-      alert((err as Error).message || 'Failed to confirm payment');
+      showToast((err as Error).message || 'Failed to confirm payment', 'error');
     }
   };
 
@@ -87,10 +89,13 @@ export default function PaymentsPage() {
       if ('downloadUrl' in res) {
         window.open(res.downloadUrl, '_blank');
       } else if ('status' in res && res.status === 'rendering') {
-        alert(t('payments.renderingPdf', 'Receipt PDF is rendering, please check again in a few moments.'));
+        showToast(
+          t('payments.renderingPdf', 'Receipt PDF is rendering, please check again in a few moments.'),
+          'info',
+        );
       }
     } catch (err: unknown) {
-      alert((err as Error).message || 'Failed to get receipt download URL');
+      showToast((err as Error).message || 'Failed to get receipt download URL', 'error');
     }
   };
 
@@ -99,7 +104,7 @@ export default function PaymentsPage() {
       const res = await getFileSignedUrl(proofFileId);
       window.open(res.url, '_blank');
     } catch (err: unknown) {
-      alert((err as Error).message || 'Failed to open proof photo');
+      showToast((err as Error).message || 'Failed to open proof photo', 'error');
     }
   };
 
@@ -130,36 +135,29 @@ export default function PaymentsPage() {
       </div>
 
       {/* Building Filter & Tabs Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-b border-border pb-3">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-b border-border pb-1">
+        {/* Horizontally scrollable tab strip on narrow viewports */}
+        <div role="tablist" aria-label="Payment tabs" className="tabs border-b-0 min-w-0" data-scroll-x>
           <button
+            role="tab"
+            aria-selected={activeTab === 'pending'}
             type="button"
             onClick={() => setActiveTab('pending')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors ${
-              activeTab === 'pending'
-                ? 'bg-accent text-accent-fg'
-                : 'text-fg-muted hover:text-fg hover:bg-muted'
-            }`}
+            className="tab"
           >
-            <Clock className="h-3.5 w-3.5" />
+            <Clock className="h-4 w-4" />
             <span>{t('payments.pendingClaims', 'Pending Claims')}</span>
-            {pendingClaims.length > 0 && (
-              <span className="badge badge--warning text-xs px-1.5 py-0.5 rounded-full">
-                {pendingClaims.length}
-              </span>
-            )}
+            {pendingClaims.length > 0 && <span className="tab__count">{pendingClaims.length}</span>}
           </button>
 
           <button
+            role="tab"
+            aria-selected={activeTab === 'history'}
             type="button"
             onClick={() => setActiveTab('history')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors ${
-              activeTab === 'history'
-                ? 'bg-accent text-accent-fg'
-                : 'text-fg-muted hover:text-fg hover:bg-muted'
-            }`}
+            className="tab"
           >
-            <CreditCard className="h-3.5 w-3.5" />
+            <CreditCard className="h-4 w-4" />
             <span>{t('payments.allHistory', 'Payment History')}</span>
           </button>
         </div>
@@ -230,10 +228,10 @@ export default function PaymentsPage() {
               {pendingClaims.map((claim) => (
                 <div
                   key={claim.id}
-                  className="card p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-l-4 border-l-warning"
+                  className="card p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 border-l-4 border-l-warning min-w-0"
                 >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
+                  <div className="space-y-1 min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="font-bold text-base text-fg">{formatMoney(claim.amountPoisha)}</span>
                       <span className="badge badge--warning text-xs capitalize font-semibold">
                         {claim.method}
@@ -242,13 +240,15 @@ export default function PaymentsPage() {
                         <span className="badge badge--neutral text-xs">Unit {claim.unitLabel}</span>
                       )}
                       {claim.buildingName && (
-                        <span className="text-xs text-fg-muted">({claim.buildingName})</span>
+                        <span className="text-xs text-fg-muted truncate max-w-xs" title={claim.buildingName}>
+                          ({claim.buildingName})
+                        </span>
                       )}
                     </div>
 
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-fg-muted">
                       <span>Paid: {claim.paidOn}</span>
-                      {claim.reference && <span className="font-mono">Ref: {claim.reference}</span>}
+                      {claim.reference && <span className="font-mono break-all">Ref: {claim.reference}</span>}
                     </div>
 
                     {claim.proofFileId && (
@@ -266,7 +266,7 @@ export default function PaymentsPage() {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                  <div className="flex flex-wrap items-center gap-2 shrink-0 self-start md:self-auto">
                     <button
                       type="button"
                       disabled={confirmPayment.isPending}
@@ -317,7 +317,7 @@ export default function PaymentsPage() {
               <p className="font-semibold text-fg">{t('payments.emptyHistory', 'No payments found')}</p>
             </div>
           ) : (
-            <div className="card overflow-x-auto">
+            <div className="card overflow-x-auto" data-scroll-x>
               <table className="w-full text-left text-xs">
                 <thead className="bg-muted/50 border-b border-border text-fg-muted uppercase tracking-wider font-semibold">
                   <tr>

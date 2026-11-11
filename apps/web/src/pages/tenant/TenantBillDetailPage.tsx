@@ -7,11 +7,13 @@ import { usePayments, getReceiptDownloadUrl } from '../../lib/api/payments.js';
 import { formatMoney, formatNumber } from '../../lib/format.js';
 import { Skeleton } from '../../components/ui/Skeleton.js';
 import { ErrorState } from '../../components/ui/ErrorState.js';
+import { useToast } from '../../components/ui/Toast.js';
 import { ClaimPaymentDialog } from './ClaimPaymentDialog.js';
 
 export default function TenantBillDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const navigate = useNavigate();
   const [claimOpen, setClaimOpen] = useState(false);
 
@@ -41,7 +43,7 @@ export default function TenantBillDetailPage() {
       <div>
         <button
           type="button"
-          className="text-xs text-fg-muted hover:text-fg flex items-center gap-1.5 transition-colors font-medium"
+          className="text-xs text-fg-muted hover:text-fg flex items-center gap-1.5 transition-colors font-medium min-h-tap"
           onClick={() => navigate(-1)}
         >
           <ArrowLeft className="h-4 w-4" />
@@ -201,9 +203,12 @@ export default function TenantBillDetailPage() {
 
         {payments.length > 0 ? (
           payments.map((p) => (
-            <div key={p.id} className="p-4 flex items-center justify-between gap-3 text-xs">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
+            <div
+              key={p.id}
+              className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+            >
+              <div className="space-y-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="font-bold text-fg text-sm">{formatMoney(p.amountPoisha)}</span>
                   <span className="capitalize text-fg-muted font-medium">({p.method})</span>
                   <span
@@ -220,13 +225,13 @@ export default function TenantBillDetailPage() {
                       : p.status}
                   </span>
                 </div>
-                <p className="text-fg-muted flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
+                <p className="text-fg-muted flex flex-wrap items-center gap-1 break-words">
+                  <Clock className="h-3 w-3 shrink-0" />
                   <span>{p.paidOn}</span>
-                  {p.reference && <span>· Ref: {p.reference}</span>}
+                  {p.reference && <span className="break-all">· Ref: {p.reference}</span>}
                 </p>
                 {p.rejectedReason && (
-                  <p className="text-danger italic">
+                  <p className="text-danger italic break-words">
                     {t('payments.reason', 'Reason')}: {p.rejectedReason}
                   </p>
                 )}
@@ -242,10 +247,10 @@ export default function TenantBillDetailPage() {
                         window.open(res.downloadUrl, '_blank');
                       }
                     } catch (err: unknown) {
-                      alert((err as Error).message || 'Failed to download receipt');
+                      showToast((err as Error).message || 'Failed to download receipt', 'error');
                     }
                   }}
-                  className="btn btn--secondary text-xs flex items-center gap-1.5 shrink-0"
+                  className="btn btn--secondary text-xs flex items-center gap-1.5 shrink-0 self-start sm:self-auto min-h-tap"
                 >
                   <Download className="h-3.5 w-3.5" />
                   <span>{t('payments.receipt', 'Receipt')}</span>

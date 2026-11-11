@@ -98,7 +98,11 @@ describe('FilesService & detectMime & processImage', () => {
         findFirst: vi.fn(),
       },
       leaseTenant: {
+        findFirst: vi.fn(),
         findMany: vi.fn(),
+      },
+      maintenanceEvent: {
+        findFirst: vi.fn(),
       },
     };
 
@@ -196,6 +200,51 @@ describe('FilesService & detectMime & processImage', () => {
       await expect(
         service.getFileSignedUrl({
           fileId: 'f-1',
+          orgId: 'org-1',
+          userId: 'c-1',
+          role: 'caretaker',
+        }),
+      ).rejects.toThrow('File not found');
+    });
+
+    it('getFileSignedUrl allows caretaker accessing maintenance photo in assigned building', async () => {
+      mockTx.file.findFirst.mockResolvedValue({
+        id: 'f-maint',
+        orgId: 'org-1',
+        kind: 'maintenance_photo',
+        resourceType: 'image',
+        format: 'jpg',
+        publicId: 'basamanager/test/org/org-1/maintenance_photo/f-maint',
+        uploadedBy: 'other-user',
+      });
+      mockTx.caretakerBuilding.findMany.mockResolvedValue([{ buildingId: 'b-1' }]);
+      mockTx.maintenanceEvent.findFirst.mockResolvedValue({
+        id: 'evt-1',
+        fileId: 'f-maint',
+      });
+
+      const res = await service.getFileSignedUrl({
+        fileId: 'f-maint',
+        orgId: 'org-1',
+        userId: 'c-1',
+        role: 'caretaker',
+      });
+      expect(res.url).toBeDefined();
+    });
+
+    it('getFileSignedUrl rejects caretaker for statement_pdf or unassigned maintenance photo', async () => {
+      mockTx.file.findFirst.mockResolvedValue({
+        id: 'f-stmt',
+        orgId: 'org-1',
+        kind: 'statement_pdf',
+        resourceType: 'raw',
+        format: 'pdf',
+      });
+      mockTx.caretakerBuilding.findMany.mockResolvedValue([{ buildingId: 'b-1' }]);
+
+      await expect(
+        service.getFileSignedUrl({
+          fileId: 'f-stmt',
           orgId: 'org-1',
           userId: 'c-1',
           role: 'caretaker',

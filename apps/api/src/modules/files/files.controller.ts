@@ -3,7 +3,7 @@ import multer from 'multer';
 import { FilesService } from './files.service.js';
 import { ApiError } from '../../lib/ApiError.js';
 import { ErrorCode } from '@bm/shared/errors';
-import type { FileKind } from '@bm/shared/enums';
+import type { UploadFileBody, SignedUrlQuery, ServeLocalQuery } from '@bm/shared/api/files';
 
 const uploadMulter = multer({
   storage: multer.memoryStorage(),
@@ -32,15 +32,15 @@ export class FilesController {
       if (!req.file) {
         throw new ApiError(ErrorCode.VALIDATION_FAILED, 'No file uploaded');
       }
-      const kind = req.body.kind as FileKind;
-      if (!kind) {
+      const body = (res.locals?.validated?.body || req.body) as UploadFileBody;
+      if (!body?.kind) {
         throw new ApiError(ErrorCode.VALIDATION_FAILED, 'kind is required');
       }
 
       const result = await this.service.uploadFile({
         orgId: req.org!.id,
         userId: req.user!.id,
-        kind,
+        kind: body.kind,
         buffer: req.file.buffer,
         originalFilename: req.file.originalname,
       });
@@ -53,15 +53,15 @@ export class FilesController {
 
   getUrl = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const fileId = req.params.id as string;
-      const variant = req.query.variant as string | undefined;
+      const params = (res.locals?.validated?.params || req.params) as { id: string };
+      const query = (res.locals?.validated?.query || req.query) as SignedUrlQuery;
 
       const result = await this.service.getFileSignedUrl({
-        fileId,
+        fileId: params.id,
         orgId: req.org!.id,
         userId: req.user!.id,
         role: req.org!.role,
-        variant,
+        variant: query?.variant,
       });
 
       res.json({ data: result });
@@ -72,16 +72,14 @@ export class FilesController {
 
   serveLocal = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const fileId = req.params.id as string;
-      const exp = req.query.exp as string;
-      const sig = req.query.sig as string;
-      const variant = req.query.variant as string | undefined;
+      const params = (res.locals?.validated?.params || req.params) as { id: string };
+      const query = (res.locals?.validated?.query || req.query) as ServeLocalQuery;
 
       const result = await this.service.serveLocalFile({
-        fileId,
-        exp,
-        sig,
-        variant,
+        fileId: params.id,
+        exp: query.exp,
+        sig: query.sig,
+        variant: query.variant,
       });
 
       res.setHeader('Content-Type', result.mime);

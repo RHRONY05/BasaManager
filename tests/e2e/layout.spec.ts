@@ -392,3 +392,191 @@ test.describe('V7 Lease & tenant pages layout (stress states)', () => {
     }
   }
 });
+
+test.describe('V9 Payment pages layout (stress states)', () => {
+  let llUser: { email: string; password: string };
+  let ctUser: { email: string; password: string };
+  let tUser: { email: string; password: string };
+  let billId = '';
+
+  test.beforeAll(async () => {
+    llUser = await createVerifiedLandlord({
+      fullName: STRESS_NAMES[0],
+      email: uniqueEmail('stress-ll-pay'),
+      orgName: STRESS_BUILDING,
+    });
+
+    const HASHED_PW =
+      '$argon2id$v=19$m=65536,t=3,p=4$5NMHEWU/m9aFURYAdOKkag$dBbNwB8LsAt7SUHN8js2R92kmJlYU9/Zr+ffCXnXypY';
+
+    const ctEmail = uniqueEmail('stress-ct-pay');
+    const tEmail = uniqueEmail('stress-t-pay');
+
+    let orgId = '';
+    let bldId = '';
+    let leaseId = '';
+
+    await withOwnerDb(async (db) => {
+      const {
+        rows: [orgRow],
+      } = await db.query(
+        `select m.org_id, m.user_id from users u join memberships m on m.user_id = u.id where u.email = $1`,
+        [llUser.email],
+      );
+      orgId = String(orgRow['org_id']);
+      const landlordUserId = String(orgRow['user_id']);
+
+      const {
+        rows: [bld],
+      } = await db.query(
+        `insert into buildings (org_id, name, address, area, city)
+         values ($1, $2, 'Road 11, Block D, Banani, Dhaka', 'Banani', 'Dhaka') returning id`,
+        [orgId, STRESS_BUILDING],
+      );
+      bldId = bld.id;
+
+      const {
+        rows: [u],
+      } = await db.query(
+        `insert into units (org_id, building_id, label, floor, type, default_rent_poisha, electricity_mode)
+         values ($1, $2, '4A', 4, 'family_flat', 2500000, 'submeter') returning id`,
+        [orgId, bldId],
+      );
+      const unitId = u.id;
+
+      const {
+        rows: [ct],
+      } = await db.query(
+        `insert into users (email, password_hash, full_name, email_verified_at)
+         values ($1, $2, 'Kashem Caretaker', now()) returning id`,
+        [ctEmail, HASHED_PW],
+      );
+      const {
+        rows: [ctMem],
+      } = await db.query(
+        `insert into memberships (org_id, user_id, role, status)
+         values ($1, $2, 'caretaker', 'active') returning id`,
+        [orgId, ct.id],
+      );
+      await db.query(
+        `insert into caretaker_buildings (org_id, membership_id, building_id)
+         values ($1, $2, $3)`,
+        [orgId, ctMem.id, bldId],
+      );
+
+      const {
+        rows: [tenant],
+      } = await db.query(
+        `insert into users (email, password_hash, full_name, email_verified_at)
+         values ($1, $2, $3, now()) returning id`,
+        [tEmail, HASHED_PW, STRESS_NAMES[1]],
+      );
+      const {
+        rows: [tMem],
+      } = await db.query(
+        `insert into memberships (org_id, user_id, role, status)
+         values ($1, $2, 'tenant', 'active') returning id`,
+        [orgId, tenant.id],
+      );
+
+      const {
+        rows: [l],
+      } = await db.query(
+        `insert into leases (org_id, unit_id, start_date, monthly_rent_poisha, deposit_poisha, status, created_by)
+         values ($1, $2, '2026-01-01', 2500000, 5000000, 'active', $3) returning id`,
+        [orgId, unitId, landlordUserId],
+      );
+      leaseId = l.id;
+
+      await db.query(`insert into lease_tenants (org_id, lease_id, membership_id) values ($1, $2, $3)`, [
+        orgId,
+        leaseId,
+        tMem.id,
+      ]);
+
+      const {
+        rows: [b],
+      } = await db.query(
+        `insert into bills (org_id, lease_id, period_month, due_date, status, total_poisha, paid_poisha)
+         values ($1, $2, '2026-03-01', '2026-03-10', 'issued', 2500000, 0) returning id`,
+        [orgId, leaseId],
+      );
+      billId = b.id;
+
+      // Sample claim and confirmed payment
+      const claimRef = `BKASH-CLAIM-${Date.now()}`;
+      await db.query(
+        `insert into payments (org_id, lease_id, amount_poisha, method, status, paid_on, reference, submitted_by)
+         values ($1, $2, 1000000, 'bkash', 'pending_claim', '2026-03-05', $3, $4)`,
+        [orgId, leaseId, claimRef, tenant.id],
+      );
+      const cashRef = `Cash ref ${Date.now()}`;
+      const {
+        rows: [pay],
+      } = await db.query(
+        `insert into payments (org_id, lease_id, amount_poisha, method, status, paid_on, reference, submitted_by, confirmed_by, confirmed_at)
+         values ($1, $2, 1500000, 'cash', 'confirmed', '2026-03-02', $3, $4, $4, now()) returning id`,
+        [orgId, leaseId, cashRef, landlordUserId],
+      );
+      await db.query(
+        `insert into receipts (org_id, payment_id, number, status)
+         values ($1, $2, 'BM-2026-000001', 'valid')`,
+        [orgId, pay.id],
+      );
+    });
+
+    ctUser = { email: ctEmail, password: GOOD_PASSWORD };
+    tUser = { email: tEmail, password: GOOD_PASSWORD };
+  });
+
+  const PAYMENT_SCENARIOS = [
+    {
+      name: 'landlord payments page with stress content',
+      setup: async (page: Page, q: string) => {
+        await uiLogin(page, llUser.email, llUser.password);
+        await page.goto(`/l/payments${q}`);
+        await page.locator('h1').waitFor();
+      },
+    },
+    {
+      name: 'caretaker payments page with stress content',
+      setup: async (page: Page, q: string) => {
+        await uiLogin(page, ctUser.email, ctUser.password, /\/c$/);
+        await page.goto(`/c/payments${q}`);
+        await page.locator('h1').waitFor();
+      },
+    },
+    {
+      name: 'tenant bill detail page with payments section',
+      setup: async (page: Page, q: string) => {
+        await uiLogin(page, tUser.email, tUser.password, /\/t$/);
+        await page.goto(`/t/bills/${billId}${q}`);
+        await page.locator('h1').waitFor();
+      },
+    },
+  ];
+
+  for (const scenario of PAYMENT_SCENARIOS) {
+    for (const colorScheme of COLOR_SCHEMES) {
+      for (const lng of LOCALES) {
+        test(`${scenario.name} ${colorScheme} lng=${lng}`, async ({ page }) => {
+          await page.emulateMedia({ colorScheme });
+          await page.setViewportSize({ width: AUTH_WIDTHS[0]!, height: 844 });
+          await scenario.setup(page, lng === 'en-XA' ? '?lng=en-XA' : '');
+
+          for (const width of AUTH_WIDTHS) {
+            await page.setViewportSize({ width, height: 844 });
+            const violations = await auditLayout(page);
+            if (violations.length > 0) {
+              console.error(
+                `Layout violations in "${scenario.name}" (${width}px, ${colorScheme}, ${lng}):`,
+                JSON.stringify(violations, null, 2),
+              );
+            }
+            expect(violations, `${scenario.name} at ${width}px`).toEqual([]);
+          }
+        });
+      }
+    }
+  }
+});

@@ -52,6 +52,7 @@ export function verifyLocalSignature(
   secret: string,
   variant?: string,
 ): boolean {
+  if (typeof sig !== 'string' || typeof secret !== 'string') return false;
   const expected = createLocalSignature(fileId, expMs, secret, variant);
   if (sig.length !== expected.length) return false;
   return crypto.timingSafeEqual(Buffer.from(sig, 'utf8'), Buffer.from(expected, 'utf8'));
@@ -77,7 +78,7 @@ class LocalStorageDriver implements StorageDriver {
   private filePath(subpath: string): string {
     const base = path.resolve(this.getBaseDir());
     const resolved = path.resolve(base, subpath);
-    if (!resolved.startsWith(base)) {
+    if (!resolved.startsWith(base + path.sep) && resolved !== base) {
       throw new Error('Path traversal detected');
     }
     return resolved;
@@ -147,12 +148,24 @@ class LocalStorageDriver implements StorageDriver {
     fileId: string,
     variant?: 'thumb' | 'original',
   ): Promise<{ buffer: Buffer; mime: string } | null> {
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!UUID_REGEX.test(fileId)) {
+      return null;
+    }
     try {
       const byIdDir = this.filePath('byId');
-      const metaRaw = await fs.readFile(path.join(byIdDir, `${fileId}.meta.json`), 'utf-8');
+      const metaPath = path.resolve(byIdDir, `${fileId}.meta.json`);
+      if (!metaPath.startsWith(path.resolve(byIdDir) + path.sep)) {
+        return null;
+      }
+      const metaRaw = await fs.readFile(metaPath, 'utf-8');
       const meta = JSON.parse(metaRaw);
-      const targetFile = variant === 'thumb' ? `${fileId}_thumb` : fileId;
-      const buffer = await fs.readFile(path.join(byIdDir, targetFile));
+      const targetFileName = variant === 'thumb' ? `${fileId}_thumb` : fileId;
+      const targetFilePath = path.resolve(byIdDir, targetFileName);
+      if (!targetFilePath.startsWith(path.resolve(byIdDir) + path.sep)) {
+        return null;
+      }
+      const buffer = await fs.readFile(targetFilePath);
       return { buffer, mime: meta.mime };
     } catch {
       return null;

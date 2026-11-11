@@ -1,4 +1,4 @@
-import puppeteer from 'puppeteer';
+import puppeteer, { type Browser } from 'puppeteer';
 import crypto from 'node:crypto';
 import type { Db } from '@bm/api/config/db';
 import { env } from '@bm/api/config/env';
@@ -9,30 +9,38 @@ export class PdfService {
   /**
    * Renders HTML content into an A4 PDF Buffer using headless Chrome.
    */
-  async renderHtmlToPdf(html: string): Promise<Buffer> {
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-    });
+  async renderHtmlToPdf(html: string, externalBrowser?: Browser): Promise<Buffer> {
+    const browser =
+      externalBrowser ??
+      (await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+      }));
 
     try {
       const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: 'load' });
-      const pdfUint8Array = await page.pdf({
-        format: 'A4',
-        printBackground: true,
-        margin: { top: '15mm', bottom: '15mm', left: '15mm', right: '15mm' },
-      });
-      return Buffer.from(pdfUint8Array);
+      try {
+        await page.setContent(html, { waitUntil: 'load' });
+        const pdfUint8Array = await page.pdf({
+          format: 'A4',
+          printBackground: true,
+          margin: { top: '15mm', bottom: '15mm', left: '15mm', right: '15mm' },
+        });
+        return Buffer.from(pdfUint8Array);
+      } finally {
+        await page.close();
+      }
     } finally {
-      await browser.close();
+      if (!externalBrowser) {
+        await browser.close();
+      }
     }
   }
 
   /**
    * Generates a receipt PDF for a given receipt ID and attaches the resulting File record.
    */
-  async generateAndStoreReceiptPdf(prisma: Db, receiptId: string): Promise<string> {
+  async generateAndStoreReceiptPdf(prisma: Db, receiptId: string, browser?: Browser): Promise<string> {
     const receipt = await prisma.receipt.findUniqueOrThrow({
       where: { id: receiptId },
       include: {
@@ -97,7 +105,7 @@ export class PdfService {
     };
 
     const html = renderReceiptHtml(templateData);
-    const pdfBuffer = await this.renderHtmlToPdf(html);
+    const pdfBuffer = await this.renderHtmlToPdf(html, browser);
 
     const fileId = crypto.randomUUID();
     const publicId = `basamanager/${env.APP_ENV}/org/${receipt.orgId}/receipts/${fileId}`;
@@ -111,32 +119,33 @@ export class PdfService {
       resourceType: 'raw',
     });
 
-    // Save File record
-    const file = await prisma.file.create({
-      data: {
-        id: fileId,
-        orgId: receipt.orgId,
-        provider: env.STORAGE_DRIVER === 'cloudinary' ? 'cloudinary' : 'local',
-        publicId,
-        resourceType: 'raw',
-        format: 'pdf',
-        mime: 'application/pdf',
-        sizeBytes: pdfBuffer.length,
-        sha256,
-        kind: 'receipt_pdf',
-        uploadedBy: payment.confirmedBy || payment.submittedBy,
-      },
+    // Save File record and link receipt to file atomically
+    await prisma.$transaction(async (tx) => {
+      await tx.file.create({
+        data: {
+          id: fileId,
+          orgId: receipt.orgId,
+          provider: env.STORAGE_DRIVER === 'cloudinary' ? 'cloudinary' : 'local',
+          publicId,
+          resourceType: 'raw',
+          format: 'pdf',
+          mime: 'application/pdf',
+          sizeBytes: pdfBuffer.length,
+          sha256,
+          kind: 'receipt_pdf',
+          uploadedBy: payment.confirmedBy || payment.submittedBy,
+        },
+      });
+
+      await tx.receipt.update({
+        where: { id: receipt.id },
+        data: {
+          fileId,
+        },
+      });
     });
 
-    // Link receipt to file
-    await prisma.receipt.update({
-      where: { id: receipt.id },
-      data: {
-        fileId: file.id,
-      },
-    });
-
-    return file.id;
+    return fileId;
   }
 }
 

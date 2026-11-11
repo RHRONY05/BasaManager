@@ -7,7 +7,7 @@ describe('PaymentsService', () => {
   const mockTx = {
     leaseTenant: { findFirst: vi.fn(), findMany: vi.fn() },
     lease: { findFirst: vi.fn() },
-    file: { findFirst: vi.fn() },
+    file: { findFirst: vi.fn(), update: vi.fn() },
     payment: { create: vi.fn(), findFirst: vi.fn(), update: vi.fn(), findMany: vi.fn() },
     outboxMessage: { createMany: vi.fn() },
     caretakerBuilding: { findFirst: vi.fn(), findMany: vi.fn() },
@@ -272,18 +272,30 @@ describe('PaymentsService', () => {
         voidReason: 'Mistake',
         paidOn: new Date(),
       });
-      mockTx.receipt.findFirst.mockResolvedValue({
-        id: 'r-1',
-        number: 'BM-2026-000001',
-        status: 'void',
-      });
+      mockTx.receipt.findFirst
+        .mockResolvedValueOnce({
+          id: 'r-1',
+          number: 'BM-2026-000001',
+          fileId: 'file-old',
+          status: 'valid',
+        })
+        .mockResolvedValueOnce({
+          id: 'r-1',
+          number: 'BM-2026-000001',
+          fileId: null,
+          status: 'void',
+        });
 
       const res = await service.voidPayment(landlordCtx, 'pay-1', 'Mistake');
       expect(res.status).toBe('void');
       expect(mockTx.$executeRaw).toHaveBeenCalled();
+      expect(mockTx.file.update).toHaveBeenCalledWith({
+        where: { id: 'file-old' },
+        data: expect.objectContaining({ deletedAt: expect.any(Date) }),
+      });
       expect(mockTx.receipt.updateMany).toHaveBeenCalledWith({
         where: { paymentId: 'pay-1' },
-        data: expect.objectContaining({ status: 'void' }),
+        data: expect.objectContaining({ status: 'void', fileId: null }),
       });
     });
   });

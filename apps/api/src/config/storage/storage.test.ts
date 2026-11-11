@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import crypto from 'node:crypto';
 import { createLocalSignature, verifyLocalSignature, getStorage } from './index.js';
 
 describe('Storage configuration & LocalStorageDriver', () => {
@@ -43,7 +44,7 @@ describe('Storage configuration & LocalStorageDriver', () => {
 
   it('saves, reads, signs and deletes local files', async () => {
     const driver = getStorage();
-    const fileId = `test-${Date.now()}`;
+    const fileId = crypto.randomUUID();
     const publicId = `basamanager/test/org/org-1/document/${fileId}`;
     const buffer = Buffer.from('file-contents-test');
     const thumbBuffer = Buffer.from('thumb-contents-test');

@@ -273,6 +273,40 @@ export class FilesService {
             if (!receipt) {
               throw ApiError.notFound('File not found');
             }
+          } else if (file.kind === 'maintenance_photo') {
+            const event = await tx.maintenanceEvent.findFirst({
+              where: {
+                orgId: params.orgId,
+                fileId: file.id,
+                request: {
+                  buildingId: { in: buildingIds },
+                },
+              },
+            });
+            if (!event && file.uploadedBy !== params.userId) {
+              const uploaderInBuilding = file.uploadedBy
+                ? await tx.leaseTenant.findFirst({
+                    where: {
+                      orgId: params.orgId,
+                      membership: {
+                        userId: file.uploadedBy,
+                        orgId: params.orgId,
+                      },
+                      lease: {
+                        unit: {
+                          buildingId: { in: buildingIds },
+                        },
+                      },
+                    },
+                  })
+                : null;
+              if (!uploaderInBuilding) {
+                throw ApiError.notFound('File not found');
+              }
+            }
+          } else {
+            // Any other file kind (statement_pdf, settlement_pdf, etc.)
+            throw ApiError.notFound('File not found');
           }
         }
 

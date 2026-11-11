@@ -22,9 +22,12 @@ BEGIN
     RAISE EXCEPTION 'Unauthorized: org_id mismatch' USING ERRCODE = '42501';
   END IF;
 
-  -- Verify payment belongs to this org
-  IF NOT EXISTS (SELECT 1 FROM public.payments WHERE id = p_payment_id AND org_id = p_org_id) THEN
-    RAISE EXCEPTION 'Payment not found in organisation' USING ERRCODE = 'P0002';
+  -- Verify payment belongs to this org and is confirmed
+  IF NOT EXISTS (
+    SELECT 1 FROM public.payments
+     WHERE id = p_payment_id AND org_id = p_org_id AND status = 'confirmed'
+  ) THEN
+    RAISE EXCEPTION 'Payment not found or not eligible for voiding' USING ERRCODE = 'P0002';
   END IF;
 
   -- Delete allocations for this payment
@@ -33,7 +36,7 @@ BEGIN
 
   -- Delete overpayment credit created by this payment
   DELETE FROM public.credit_entries
-   WHERE org_id = p_org_id AND payment_id = p_payment_id;
+   WHERE org_id = p_org_id AND payment_id = p_payment_id AND kind = 'overpayment';
 END;
 $$;
 

@@ -178,7 +178,7 @@ test.describe('Manual Payments, Claims and Receipts (V9)', () => {
       .click();
 
     // Verify claim moved to history with receipt
-    await caretakerPage.getByRole('button', { name: /Payment History/i }).click();
+    await caretakerPage.getByRole('tab', { name: /Payment History/i }).click();
     await expect(caretakerPage.getByText(trxRef).first()).toBeVisible();
     await expect(caretakerPage.getByText(/BM-\d{4}-\d{6}/i).first()).toBeVisible();
 
@@ -208,7 +208,7 @@ test.describe('Manual Payments, Claims and Receipts (V9)', () => {
     await landlordPage.getByRole('button', { name: /Save & Allocate/i }).click();
 
     // Verify in history
-    await landlordPage.getByRole('button', { name: /Payment History/i }).click();
+    await landlordPage.getByRole('tab', { name: /Payment History/i }).click();
     await expect(landlordPage.getByText(advanceRef).first()).toBeVisible();
     await expect(landlordPage.getByText(/BM-\d{4}-\d{6}/i).first()).toBeVisible();
 
