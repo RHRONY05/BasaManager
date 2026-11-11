@@ -8,11 +8,11 @@
 ## Now
 | | |
 |---|---|
-| **Phase** | **Goal 3: Billing engine, manual payments, SSLCommerz (Tasks V8–V10)** in progress. Task V8 (Billing engine) 100% complete and verified green. |
-| **Next task** | V8 PR review with Claude Opus (`claude -p "Follow .claude/agents/reviewer.md..."`), squash merge to `main`, verify staging deploy, then proceed to Task V9 (Manual payments & receipts). |
+| **Phase** | **Goal 3: Billing engine, manual payments, SSLCommerz (Tasks V8–V10)** in progress. Task V9 (Manual payments & receipts) 100% complete and merged to `main` (PR #25, commit `9d6cd11`). |
+| **Next task** | Task V10: SSLCommerz online payments (P1) on branch `feat/V10`. |
 | **Blocked on** | — |
-| **Production URL** | — (will be https://basamanager.rhrony05.me; staging at https://staging.basamanager.rhrony05.me running `166656d`) |
-| **Last updated** | 2026-11-11 by Antigravity (lead): Task V8 Billing engine 100% complete. Domain billing logic, generation & late fees jobs, meter readings grid, adjustments, waivers, voiding, landlord & tenant billing pages, all learning docs (all 15 sections + L0/L1/L2 SVGs + 4 concept pages). Tests: unit 526/526 ✅, integration 393/393 ✅, Playwright e2e (billing, late-fee, layout, states) ✅, typecheck & lint & docs:check ✅. |
+| **Production URL** | — (will be https://basamanager.rhrony05.me; staging at https://staging.basamanager.rhrony05.me) |
+| **Last updated** | 2026-11-11 by Antigravity (lead): Task V9 Manual payments & receipts merged (PR #25, commit `9d6cd11`). Tenant claims, direct staff payments, confirm/reject, voiding via `app_void_payment` PostgreSQL function, gapless receipt numbering with Puppeteer worker rendering and VOID watermark, file uploads via `/files` with storage abstraction. Tests: unit 624/624 ✅, integration 443/443 ✅, Playwright e2e `pay-claim.spec.ts` ✅, CI 8/8 green ✅, Claude Opus review APPROVE ✅. |
 
 ## Resume here (written at the 2026-11-08 pause)
 **First item:** ✅ done 2026-11-08: VM `vm-basamanager` started (public IP 172.198.71.173, SSH with the deploy key works). The ssh user cannot run `docker ps` (permission denied on the socket), so staging container state is unchecked; devops should check with sudo when finishing #3. **2026-11-09: devops finished all 25 V3 review items (head `fed9bc2`, CI green, blocker proved on staging, runs 42507019561 / 42507429890). Next item: devops fixes the 2026-11-09 Opus re-review of #3 (CHANGES REQUESTED, https://github.com/RHRONY05/BasaManager/pull/3#pullrequestreview-5819099087): (1) BLOCKER: install openssl in the `base` stage of `infra/docker/api.Dockerfile` and `worker.Dockerfile` (migrate fails "Can't write to @prisma/engines" on every new image); prove with a clean build + green migrate on staging. (2) Re-run both rollback drills (migrate/early failure and smoke failure) with the new scripts and record them. (3) Correct PROGRESS and `docs/operations/rollback.md`: runs 42507019561/42507429890 failed at migrate, not at a forced hook. (4) Add a CI step that builds the api image and runs migrate. (5) Nits: deploy.yml:160-161, rollback.sh:566, sentry.test.ts:215-217, provision-secrets.sh:26. Then Opus re-review, squash merge, lead tags `v0.1.0`, checks prod `/api/health`, runs `weekly` once. Environment branch policies are still unset (deployment_branch_policy null on staging and production): set via `gh api` if the token allows, else keep as an owner Human step.**
@@ -1025,3 +1025,26 @@ Did: Built and verified complete Task V8 Billing engine (B1–B4, B6 job, B7, B8
   - Layout & states audit: 1824/1824 passing across all screen widths and color themes.
   - Quality checks: `pnpm typecheck` clean, `pnpm lint` clean (ESLint 0, Prettier OK, token-lint 0, size 105.38 kB brotlied, chunks under 100 KB gzip budget, openapi up to date), `pnpm docs:check` (97 pages clean).
 Next: Open PR for `feat/V8`, request review from Claude Opus, merge to `main`, and begin Task V9 (Manual payments & receipts).
+
+### 2026-11-11 — Antigravity (lead) — Task V9 Manual Payments & Receipts (PR #25 merged to `main` as `9d6cd11`)
+Did: Built and verified complete Task V9 Manual payments & receipts (P2–P6):
+- Money & payment allocation engine (`apps/api/src/modules/payments`):
+  - `POST /api/payments/claims`: Tenant submits payment claim with optional proof photo upload (`kind: payment_proof`). Creates `pending_claim` payment without allocating until staff confirmation.
+  - `POST /api/payments`: Landlord or assigned caretaker records payment directly (`confirmed`), allocating to oldest unpaid/partially paid bills in ascending period order; excess automatically credited to tenant credit ledger (`kind: overpayment`).
+  - `POST /api/payments/:id/confirm`: Staff confirms pending claim; executes atomic bill allocation and counter reservation in a single transaction.
+  - `POST /api/payments/:id/reject`: Staff rejects pending claim with required audit reason and notifies tenant.
+  - `POST /api/payments/:id/void`: Landlord voids confirmed payment using Postgres `app_void_payment` SECURITY DEFINER function; atomic rollback restores bill dues (reopening bills), cleans overpayment credit, reverses applied credit entries, detaches receipt file, and updates payment to `void`.
+- Sequential receipt generation & worker PDF rendering:
+  - Atomic counter sequence (`BM-<year>-<padded 6 digits>`) using PostgreSQL `ON CONFLICT (org_id, year) DO UPDATE` for gapless, concurrency-safe numbering.
+  - Background worker job (`apps/worker/src/jobs/renderReceipts.ts`): Queries pending receipts within tenant RLS context (`$tx`), renders A4 PDF via headless Puppeteer, attaches to file store, and renders prominent red diagonal `VOID` watermark for voided payments.
+- Secure file upload & storage subsystem (`apps/api/src/modules/files`):
+  - Pluggable storage drivers (Cloudinary for staging/prod, Local disk for dev/test) behind unified `StorageDriver` interface.
+  - Strict magic byte & MIME type sniffing via `file-type`, image sanitization & EXIF stripping via `sharp`, 5 MB limits, and HMAC-signed 5-minute expiring download URLs.
+- Frontend UI (`apps/web`):
+  - Landlord / Caretaker Payments page with tabbed views (Confirmed, Pending Claims, Voided), search, filters, and action dialogs (Record, Confirm, Reject, Void, PDF Download).
+  - Tenant Claims flow with proof upload and live status indicators on Tenant Bill Detail.
+- Reviews & CI:
+  - Fully addressed 4 rounds of reviews from Claude Opus reviewer agent (`VERDICT: APPROVE`).
+  - GitHub Actions CI 8/8 green: CodeQL, unit (624/624), docs, images (build + migrate), integration (443/443), lint-typecheck, security, e2e (16m53s).
+  - Merged to `main` via squash commit `9d6cd11`.
+Next: Begin Task V10: SSLCommerz online payments (P1) on branch `feat/V10`.

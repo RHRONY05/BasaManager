@@ -82,7 +82,7 @@ V0 Preflight ─▶ V1 Monorepo + CI ─▶ V2 Design ─▶ V3 Infra walking sk
   - **Tests:** all billing unit tests; billing integration list; `billing.spec.ts`, `late-fee.spec.ts`.
   - **AC:** with the clock on bill day, drafts appear once; readings drive the electricity line; tenant sees "1,240 → 1,395 = 155 units × ৳9.00".
 
-- [ ] **V9 Manual payments & receipts** — P2–P6
+- [x] **V9 Manual payments & receipts** — P2–P6
   - Claims, direct record, confirm/reject, allocation + credit (Rule 5), void (Rule 6), receipt counter + PDF (Puppeteer in worker), file uploads (proof photos) via `/files`.
   - Docs: `features/payments.md` (manual part, allocation L2 diagram, concurrency story), `features/receipts-and-statements.md`, `concepts/transactions-and-locking.md` (complete), `concepts/file-uploads-and-signed-urls.md`, `concepts/pdf-generation.md`.
   - **Tests:** payments integration list; `pay-claim.spec.ts`.
