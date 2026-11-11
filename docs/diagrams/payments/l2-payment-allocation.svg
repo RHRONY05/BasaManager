@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1700 850" width="1700" height="850" font-family="'Segoe UI', Inter, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1f1f1f"/>
+    </marker>
+  </defs>
+  <rect width="1700" height="850" fill="#ffffff"/>
+  <text x="40" y="52" font-size="28" font-weight="700" fill="#1f1f1f">Payments Engine, level 2: Rule 5 Allocation &amp; Rule 6 Reversal</text>
+  <text x="40" y="82" font-size="16" fill="#3a3a3a">Worked mathematical scenario demonstrating oldest-first waterfall fill, surplus credit ledger, and unwound bills upon voiding.</text>
+
+  <!-- Left: Rule 5 Allocation Flow -->
+  <rect x="50" y="140" width="760" height="660" rx="12" fill="#f8fafc" stroke="#3b82f6" stroke-width="2"/>
+  <rect x="70" y="160" width="320" height="34" rx="6" fill="#BFE3FD"/>
+  <text x="230" y="183" font-size="16" font-weight="700" fill="#1f1f1f" text-anchor="middle">Rule 5: ৳20,000 Payment Allocation</text>
+
+  <!-- Incoming Payment Box -->
+  <rect x="80" y="215" width="700" height="95" rx="8" fill="#ffffff" stroke="#93c5fd" stroke-width="1.5"/>
+  <text x="100" y="245" font-size="14" font-weight="700" fill="#0f172a">Payment Received: ৳20,000.00 (2,000,000 poisha)</text>
+  <text x="100" y="270" font-size="12" fill="#475569">Current Unpaid Bills: October (৳3,000 due, period 2026-10-01), November (৳14,000 due, period 2026-11-01)</text>
+  <text x="100" y="292" font-size="12" font-weight="600" fill="#0284c7">Ordered lock: SELECT id FROM bills WHERE ... ORDER BY period_month ASC FOR UPDATE</text>
+
+  <!-- Step 1: Oct Bill -->
+  <rect x="80" y="330" width="700" height="100" rx="8" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="100" y="358" font-size="14" font-weight="700" fill="#0f172a">1. October Bill (Oldest Unpaid)</text>
+  <text x="100" y="380" font-size="12" fill="#475569">Total Due: ৳3,000.00 | Allocated from payment: ৳3,000.00 | Remaining payment: ৳17,000.00</text>
+  <text x="100" y="405" font-size="12" font-weight="600" fill="#166534">Result: bill.paid_poisha = 300,000 ➔ status: 'paid' (balance: ৳0)</text>
+
+  <!-- Step 2: Nov Bill -->
+  <rect x="80" y="450" width="700" height="100" rx="8" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="100" y="478" font-size="14" font-weight="700" fill="#0f172a">2. November Bill (Next Unpaid)</text>
+  <text x="100" y="500" font-size="12" fill="#475569">Total Due: ৳14,000.00 | Allocated from payment: ৳14,000.00 | Remaining payment: ৳3,000.00</text>
+  <text x="100" y="525" font-size="12" font-weight="600" fill="#166534">Result: bill.paid_poisha = 1,400,000 ➔ status: 'paid' (balance: ৳0)</text>
+
+  <!-- Step 3: Overpayment Credit -->
+  <rect x="80" y="570" width="700" height="100" rx="8" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="100" y="598" font-size="14" font-weight="700" fill="#0f172a">3. Surplus / Overpayment Credit Ledger</text>
+  <text x="100" y="620" font-size="12" fill="#475569">Remaining Payment: ৳3,000.00 (300,000 poisha) with no further unpaid bills</text>
+  <text x="100" y="645" font-size="12" font-weight="600" fill="#0284c7">Result: INSERT INTO credit_entries (kind: 'overpayment', amount_poisha: 300,000, payment_id)</text>
+
+  <rect x="80" y="690" width="700" height="90" rx="8" fill="#f0fdf4" stroke="#86efac"/>
+  <text x="100" y="720" font-size="13" font-weight="700" fill="#166534">Subsequent December Bill (৳14,000 issued):</text>
+  <text x="100" y="742" font-size="12" fill="#166534">Auto-applies ৳3,000 credit: credit_entries (-300,000, kind: 'applied', bill_id: DecBill)</text>
+  <text x="100" y="764" font-size="12" fill="#166534">Dec Bill: paid_poisha = 300,000, balance = ৳11,000.00, status: 'partially_paid'</text>
+
+
+  <!-- Right: Rule 6 Voiding Reversal Flow -->
+  <rect x="880" y="140" width="770" height="660" rx="12" fill="#fef2f2" stroke="#ef4444" stroke-width="2"/>
+  <rect x="900" y="160" width="340" height="34" rx="6" fill="#FEC8C3"/>
+  <text x="1070" y="183" font-size="16" font-weight="700" fill="#1f1f1f" text-anchor="middle">Rule 6: Voiding the ৳20,000 Payment</text>
+
+  <!-- Void Trigger Box -->
+  <rect x="910" y="215" width="710" height="95" rx="8" fill="#ffffff" stroke="#fca5a5" stroke-width="1.5"/>
+  <text x="930" y="245" font-size="14" font-weight="700" fill="#991b1b">Landlord Action: POST /api/payments/:id/void { reason: 'Wrong account' }</text>
+  <text x="930" y="270" font-size="12" fill="#475569">Single atomic transaction executed via app_void_payment() SECURITY DEFINER function</text>
+  <text x="930" y="292" font-size="12" font-weight="600" fill="#991b1b">Immutable history rule: payments row updated to 'void', receipt updated to 'void'</text>
+
+  <!-- Reversal Step 1 -->
+  <rect x="910" y="330" width="710" height="100" rx="8" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="930" y="358" font-size="14" font-weight="700" fill="#0f172a">1. Remove Payment Allocations</text>
+  <text x="930" y="380" font-size="12" fill="#475569">app_void_payment deletes payment_allocations matching payment_id</text>
+  <text x="930" y="405" font-size="12" font-weight="600" fill="#991b1b">October alloc (৳3,000) &amp; November alloc (৳14,000) deleted</text>
+
+  <!-- Reversal Step 2 -->
+  <rect x="910" y="450" width="710" height="100" rx="8" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="930" y="478" font-size="14" font-weight="700" fill="#0f172a">2. Reopen Affected Direct Bills</text>
+  <text x="930" y="500" font-size="12" fill="#475569">Recalculates remaining allocations on October and November bills</text>
+  <text x="930" y="525" font-size="12" font-weight="600" fill="#991b1b">October ➔ paid: 0, status: 'issued' | November ➔ paid: 0, status: 'issued'</text>
+
+  <!-- Reversal Step 3 -->
+  <rect x="910" y="570" width="710" height="100" rx="8" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="930" y="598" font-size="14" font-weight="700" fill="#0f172a">3. Unwind Credit Applied to Later Bills</text>
+  <text x="930" y="620" font-size="12" fill="#475569">Overpayment credit (৳3,000) was already applied to December bill</text>
+  <text x="930" y="645" font-size="12" font-weight="600" fill="#991b1b">Inserts reversed credit (+300,000, kind: 'reversed') or deletes applied entry</text>
+
+  <rect x="910" y="690" width="710" height="90" rx="8" fill="#fff1f2" stroke="#fecdd3"/>
+  <text x="930" y="720" font-size="13" font-weight="700" fill="#991b1b">December Bill Reversion:</text>
+  <text x="930" y="742" font-size="12" fill="#991b1b">December Bill has credit removed: paid_poisha reverts from 300,000 ➔ 0</text>
+  <text x="930" y="764" font-size="12" fill="#991b1b">December status reverts from 'partially_paid' ➔ 'issued', balance: ৳14,000.00</text>
+</svg>

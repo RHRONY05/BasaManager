@@ -62,7 +62,8 @@
                   "READING_REQUIRED",
                   "READING_LOWER_THAN_PREVIOUS",
                   "DUPLICATE_REFERENCE",
-                  "INVALID_TRANSITION"
+                  "INVALID_TRANSITION",
+                  "UNSUPPORTED_MEDIA_TYPE"
                 ]
               },
               "message": { "type": "string" },

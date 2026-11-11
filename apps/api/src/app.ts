@@ -24,6 +24,8 @@ import {
   createReadingsRoutes,
   createDuesRoutes,
 } from './modules/billing/billing.routes';
+import { createPaymentsRoutes } from './modules/payments/payments.routes';
+import { createFilesRoutes } from './modules/files/files.routes';
 
 export interface AppDeps {
   env: Env;
@@ -160,6 +162,23 @@ export function createApp(deps: AppDeps): Express {
   app.use(
     '/api/dues',
     createDuesRoutes({
+      env: deps.env,
+      prisma: deps.prisma,
+      redis: deps.redis,
+    }),
+  );
+
+  const { paymentsRouter, receiptsRouter } = createPaymentsRoutes({
+    env: deps.env,
+    prisma: deps.prisma,
+    redis: deps.redis,
+  });
+  app.use('/api/payments', paymentsRouter);
+  app.use('/api/receipts', receiptsRouter);
+
+  app.use(
+    '/api/files',
+    createFilesRoutes({
       env: deps.env,
       prisma: deps.prisma,
       redis: deps.redis,

@@ -6,7 +6,7 @@ import cron, { type ScheduledTask } from 'node-cron';
 import type { Job } from './jobs';
 
 export interface WorkerDeps {
-  env: Pick<Env, 'APP_ENV'>;
+  env: Pick<Env, 'APP_ENV'> & Partial<Pick<Env, 'STORAGE_DRIVER'>>;
   logger: Logger;
   redis: RedisClient;
   prisma?: Db;
@@ -40,7 +40,7 @@ export async function startWorker(deps: WorkerDeps): Promise<{ shutdown: () => P
       const task = cron.schedule(
         job.schedule,
         () => {
-          void job.run({ prisma, redis, logger }).catch((err) => {
+          void job.run({ prisma, redis, logger, env }).catch((err) => {
             logger.error({ err, job: job.name }, 'Job execution failed');
           });
         },

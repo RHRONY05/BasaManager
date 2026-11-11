@@ -97,6 +97,7 @@ The architect owns this file and the schema; implementers never change the schem
 | `20261108000200_rls` | RLS enable + force + policies (below), incl. `no_caretaker` on documents and `no_caretaker_documents` on files |
 | `20261108000300_constraints_grants_views` | Check constraints, the history-table DELETE revokes, outbox revokes, `_prisma_migrations` revokes, the two admin views |
 | `20261108000400_user_scoped_access` | `own_memberships` (no-org context only); `organizations` policies split per command (`org_self_select`, `member_orgs` (no-org context only), `org_self_insert`, `org_self_update`, no delete); function `app_find_invitation` |
+| `20261108000500_payment_void` | Function `app_void_payment(p_org_id uuid, p_payment_id uuid)` `SECURITY DEFINER` running as `bm_owner` to safely delete `payment_allocations` and `credit_entries` for a voided payment while verifying `current_setting('app.org_id')` |
 
 All expand-only. Staging/prod run `prisma migrate deploy`. Tests build a fresh database per run (09).
 
@@ -104,7 +105,7 @@ All expand-only. Staging/prod run `prisma migrate deploy`. Tests build a fresh d
 | Role | Used by | Rights |
 |---|---|---|
 | `bm_owner` | migrations only | owns all tables, incl. Prisma's `_prisma_migrations` (bm_app/bm_worker: no rights on it; bm_readonly: `select`) |
-| `bm_app` | API | `select/insert/update/delete` on tables, `NOBYPASSRLS`. No `delete` grant on `payments`, `bill_lines`, `payment_allocations`, `receipts`, `maintenance_events`, `credit_entries` (history is never deleted). On `outbox` only `insert` (no select/update/delete). On the admin views only `select` |
+| `bm_app` | API | `select/insert/update/delete` on tables, `NOBYPASSRLS`. No `delete` grant on `payments`, `bill_lines`, `payment_allocations`, `receipts`, `maintenance_events`, `credit_entries` (history is never deleted directly by bm_app; Rule 6 voiding removes allocations and overpayment credit via `app_void_payment` SECURITY DEFINER). On `outbox` only `insert` (no select/update/delete). On the admin views only `select` |
 | `bm_worker` | worker | same grants as `bm_app` (incl. no `delete` on history) + full access to `outbox` + `BYPASSRLS` |
 | `bm_readonly` | `db-docs`, backups verification | `select` only (RLS still applies: it sees no org rows) |
 
@@ -149,7 +150,7 @@ the staging smoke).
 | `bills` | `org_id`, `lease_id`, `period_month date`, `due_date date`, `status ('draft','issued','partially_paid','paid','void')`, `needs_reading bool`, `total_poisha bigint`, `paid_poisha bigint default 0`, `issued_at`, `issued_by`, `late_fee_applied_at null`, `void_reason null` | `unique(org_id, lease_id, period_month)` (idempotent generation). `check (paid_poisha <= total_poisha)`; `period_month` is the 1st of a month (check). Index `(org_id, status, due_date)` |
 | `bill_lines` | `org_id`, `bill_id`, `kind ('rent','fixed_charge','electricity','adjustment','late_fee')`, `label`, `amount_poisha bigint` (signed: discounts negative), `meta jsonb` (factor, prev, curr, rate…), `reason null`, `created_by null` | Partial unique `(org_id, bill_id) where kind='late_fee'` = never two late fees. Lines are frozen once the bill is issued, except: adjustment add (B7) and late-fee waive (B6) |
 | `payments` | `org_id`, `lease_id`, `amount_poisha > 0`, `method ('cash','bkash','nagad','bank','sslcommerz')`, `status ('pending_claim','confirmed','rejected','void')`, `reference null`, `proof_file_id null`, `paid_on date`, `submitted_by`, `confirmed_by null`, `confirmed_at null`, `rejected_reason null`, `void_reason null`, `voided_by null` | Partial unique `(method, reference) where method in ('bkash','nagad') and status <> 'rejected'` = the same TrxID can't be claimed twice |
-| `payment_allocations` | `org_id`, `payment_id`, `bill_id`, `amount_poisha > 0` | Sum per bill + Σ (−credit_entries where kind='applied' and bill_id = bill.id) = `bills.paid_poisha` (asserted in tests) |
+| `payment_allocations` | `org_id`, `payment_id`, `bill_id`, `amount_poisha > 0` | Sum per bill + Σ (−credit_entries where kind='applied' and bill_id = bill.id) − Σ (credit_entries where kind='reversed' and bill_id = bill.id) = `bills.paid_poisha` (asserted in tests) |
 | `credit_entries` | `org_id`, `lease_id`, `amount_poisha` (signed), `payment_id null`, `bill_id null`, `kind ('overpayment','applied','reversed')` | Lease credit = Σ amount, never negative (checked in service + test) |
 | `payment_intents` | `org_id`, `lease_id`, `tran_id text unique`, `amount_poisha > 0`, `status ('initiated','confirmed','failed','cancelled','expired','flagged')`, `session_key`, `val_id null`, `gateway_response jsonb null`, `payment_id null`, `created_by` | Index `(status, created_at)` for the re-check job |
 | `receipt_counters` | `org_id`, `year smallint`, `last_seq int` | PK `(org_id, year)`. Allocation: `insert … on conflict (org_id, year) do update set last_seq = receipt_counters.last_seq + 1 returning last_seq` **inside** the payment transaction = gapless, no duplicates |

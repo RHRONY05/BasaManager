@@ -20,7 +20,7 @@ async function bootstrap() {
   const logger = createLogger({ level: env.LOG_LEVEL });
 
   const redis = createRedis(env.REDIS_URL);
-  const prisma = createPrisma(env.DATABASE_URL);
+  const prisma = createPrisma(env.DATABASE_WORKER_URL || env.DATABASE_URL);
 
   const worker = await startWorker({ env, logger, redis, prisma, jobs, exit: (code) => process.exit(code) });
   if (!worker) return;

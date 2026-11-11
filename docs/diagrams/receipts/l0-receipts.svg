@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1700 800" width="1700" height="800" font-family="'Segoe UI', Inter, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1f1f1f"/>
+    </marker>
+  </defs>
+  <rect width="1700" height="800" fill="#ffffff"/>
+  <text x="40" y="52" font-size="28" font-weight="700" fill="#1f1f1f">Receipts &amp; PDF Generation, level 0</text>
+  <text x="40" y="82" font-size="16" fill="#3a3a3a">Atomic gapless receipt numbering per organisation, asynchronous Puppeteer PDF rendering in the worker, and expiring signed download URLs.</text>
+
+  <g font-size="15" fill="#3a3a3a">
+    <line x1="1130" y1="36" x2="1190" y2="36" stroke="#1f1f1f" stroke-width="2.4" marker-end="url(#arrow)"/>
+    <text x="1202" y="41">call / read</text>
+    <line x1="1130" y1="62" x2="1190" y2="62" stroke="#1f1f1f" stroke-width="2.4" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <text x="1202" y="67">write / return</text>
+    <rect x="1370" y="24" width="26" height="18" rx="3" fill="#FEC8C3"/><text x="1406" y="39">people / external</text>
+    <rect x="1530" y="24" width="26" height="18" rx="7" fill="#BFE3FD"/><text x="1566" y="39">our code</text>
+    <circle cx="1383" cy="62" r="9" fill="#E3CCFD"/><text x="1406" y="67">data store</text>
+    <rect x="1530" y="53" width="26" height="18" rx="3" fill="#C9F2D6"/><text x="1566" y="67">output</text>
+  </g>
+
+  <g fill="none" stroke="#1f1f1f" stroke-width="2.4">
+    <path d="M250,320 H520" marker-end="url(#arrow)"/>
+    <path d="M520,360 H250" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <path d="M250,520 H520" marker-end="url(#arrow)"/>
+    <path d="M520,560 H250" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
+    <path d="M1090,440 H1380" marker-end="url(#arrow)"/>
+  </g>
+
+  <rect x="40" y="260" width="210" height="130" rx="6" fill="#FEC8C3"/>
+  <text x="145" y="305" font-size="20" font-weight="700" fill="#1f1f1f" text-anchor="middle">Tenant</text>
+  <text x="145" y="335" font-size="15" fill="#3a3a3a" text-anchor="middle">confirms bill payment</text>
+  <text x="145" y="357" font-size="15" fill="#3a3a3a" text-anchor="middle">downloads PDF receipt</text>
+
+  <rect x="40" y="460" width="210" height="130" rx="6" fill="#FEC8C3"/>
+  <text x="145" y="505" font-size="20" font-weight="700" fill="#1f1f1f" text-anchor="middle">Landlord / Staff</text>
+  <text x="145" y="535" font-size="15" fill="#3a3a3a" text-anchor="middle">records or confirms</text>
+  <text x="145" y="557" font-size="15" fill="#3a3a3a" text-anchor="middle">views sequential audit</text>
+
+  <rect x="520" y="240" width="570" height="400" rx="14" fill="#BFE3FD"/>
+  <text x="805" y="280" font-size="24" font-weight="700" fill="#1f1f1f" text-anchor="middle">Receipt Generation Pipeline</text>
+  <text x="805" y="310" font-size="15" fill="#3a3a3a" text-anchor="middle">API Payments tx ➔ Worker Puppeteer ➔ Storage Driver</text>
+
+  <rect x="550" y="340" width="510" height="80" rx="8" fill="#ffffff"/>
+  <text x="805" y="375" font-size="16" font-weight="700" fill="#1f1f1f" text-anchor="middle">Atomic Gapless Sequence</text>
+  <text x="805" y="400" font-size="13" fill="#3a3a3a" text-anchor="middle">receipt_counters UPSERT ➔ BM-YYYY-###### in payment transaction</text>
+
+  <rect x="550" y="440" width="510" height="80" rx="8" fill="#ffffff"/>
+  <text x="805" y="475" font-size="16" font-weight="700" fill="#1f1f1f" text-anchor="middle">Puppeteer PDF Service</text>
+  <text x="805" y="500" font-size="13" fill="#3a3a3a" text-anchor="middle">Headless Chromium ➔ A4 print styling with optional VOID watermark</text>
+
+  <rect x="550" y="540" width="510" height="80" rx="8" fill="#ffffff"/>
+  <text x="805" y="575" font-size="16" font-weight="700" fill="#1f1f1f" text-anchor="middle">Expiring Signed URLs</text>
+  <text x="805" y="600" font-size="13" fill="#3a3a3a" text-anchor="middle">Local HMAC (300s) / Cloudinary private authenticated downloads</text>
+
+  <rect x="1380" y="360" width="280" height="160" rx="8" fill="#C9F2D6"/>
+  <text x="1520" y="400" font-size="20" font-weight="700" fill="#1f1f1f" text-anchor="middle">Authenticated PDF</text>
+  <text x="1520" y="430" font-size="14" fill="#3a3a3a" text-anchor="middle">BM-2026-000001.pdf</text>
+  <text x="1520" y="455" font-size="14" fill="#3a3a3a" text-anchor="middle">A4 print formatted</text>
+  <text x="1520" y="480" font-size="14" fill="#3a3a3a" text-anchor="middle">Signed expiring link</text>
+</svg>

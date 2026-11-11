@@ -29,6 +29,7 @@ describe('ErrorCode', () => {
       CONFLICT: 409,
       RATE_LIMITED: 429,
       PAYLOAD_TOO_LARGE: 413,
+      UNSUPPORTED_MEDIA_TYPE: 415,
       ORG_SUSPENDED: 423,
       INTERNAL: 500,
       TOKEN_INVALID: 400,
