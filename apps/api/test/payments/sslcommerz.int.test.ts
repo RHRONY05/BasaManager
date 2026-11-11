@@ -83,7 +83,7 @@ describe('V10: SSLCommerz online payments', () => {
           element: [await gatewayView(tranId, `val-${tranId}`)],
         });
       }
-      return realFetch(input as RequestInfo, init as RequestInit);
+      return realFetch(input as Parameters<typeof fetch>[0], init as Parameters<typeof fetch>[1]);
     });
 
     org = await makeOrg();
@@ -352,7 +352,13 @@ describe('V10: SSLCommerz online payments', () => {
         .post(`/api/payments/sslcommerz/return/${result}`)
         .set('Origin', 'https://sandbox.sslcommerz.com')
         .type('form')
-        .send({ tran_id: tranId, val_id: `val-${tranId}`, status: 'VALID', amount: '5000.00', currency: 'BDT' });
+        .send({
+          tran_id: tranId,
+          val_id: `val-${tranId}`,
+          status: 'VALID',
+          amount: '5000.00',
+          currency: 'BDT',
+        });
 
     it('success return WITHOUT an IPN: 303 to the result page, nothing is paid', async () => {
       const b = await issuedBill(lease, '2026-03-01', 500000);

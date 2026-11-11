@@ -3,13 +3,15 @@ import {
   paymentMethodSchema,
   paymentStatusSchema,
   receiptStatusSchema,
+  paymentIntentStatusSchema,
   type PaymentMethod,
   type PaymentStatus,
   type ReceiptStatus,
+  type PaymentIntentStatus,
 } from '../enums';
 import { cursorQuerySchema } from './common';
 
-export type { PaymentMethod, PaymentStatus, ReceiptStatus };
+export type { PaymentMethod, PaymentStatus, ReceiptStatus, PaymentIntentStatus };
 
 export const isValidCalendarDate = (val: string): boolean => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(val)) return false;
@@ -134,3 +136,34 @@ export const paymentResponseSchema = z.object({
   buildingName: z.string().optional(),
 });
 export type PaymentResponse = z.infer<typeof paymentResponseSchema>;
+
+// ── SSLCommerz Online Payments ──────────────────────────────────────────────
+
+export const initOnlinePaymentSchema = z.object({
+  leaseId: z.string().uuid(),
+  amountPoisha: z
+    .number()
+    .int('Amount must be an integer')
+    .min(100_00, 'Minimum payment is ৳100 (10,000 poisha)')
+    .positive('Payment amount must be positive'),
+});
+export type InitOnlinePaymentInput = z.infer<typeof initOnlinePaymentSchema>;
+
+export const initOnlinePaymentResponseSchema = z.object({
+  gatewayUrl: z.string().url(),
+  tranId: z.string(),
+});
+export type InitOnlinePaymentResponse = z.infer<typeof initOnlinePaymentResponseSchema>;
+
+export const paymentIntentResponseSchema = z.object({
+  id: z.string().uuid(),
+  tranId: z.string(),
+  status: paymentIntentStatusSchema,
+  amountPoisha: z.number().int(),
+  paymentId: z.string().uuid().nullable().optional(),
+  receiptId: z.string().uuid().nullable().optional(),
+});
+export type PaymentIntentResponse = z.infer<typeof paymentIntentResponseSchema>;
+
+export const sslcommerzReturnResultSchema = z.enum(['success', 'fail', 'cancel']);
+export type SslcommerzReturnResult = z.infer<typeof sslcommerzReturnResultSchema>;

@@ -9,6 +9,7 @@ import { Skeleton } from '../../components/ui/Skeleton.js';
 import { ErrorState } from '../../components/ui/ErrorState.js';
 import { useToast } from '../../components/ui/Toast.js';
 import { ClaimPaymentDialog } from './ClaimPaymentDialog.js';
+import { PayOnlineDialog } from './PayOnlineDialog.js';
 
 export default function TenantBillDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -16,6 +17,7 @@ export default function TenantBillDetailPage() {
   const { showToast } = useToast();
   const navigate = useNavigate();
   const [claimOpen, setClaimOpen] = useState(false);
+  const [payOnlineOpen, setPayOnlineOpen] = useState(false);
 
   const { data: bill, isPending, isError, error, refetch } = useBill(id);
   const { data: paymentsData, refetch: refetchPayments } = usePayments(
@@ -183,14 +185,23 @@ export default function TenantBillDetailPage() {
               )}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setClaimOpen(true)}
-            className="btn btn--primary text-xs w-full sm:w-auto shrink-0 flex items-center gap-1.5"
-          >
-            <CreditCard className="h-3.5 w-3.5" />
-            <span>{t('payments.claimAction', 'Submit Payment Claim')}</span>
-          </button>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto shrink-0">
+            <button
+              type="button"
+              onClick={() => setPayOnlineOpen(true)}
+              className="btn btn--primary text-xs flex items-center justify-center gap-1.5"
+            >
+              <CreditCard className="h-3.5 w-3.5" />
+              <span>{t('payments.payOnlineAction', 'Pay Online (bKash/Cards)')}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setClaimOpen(true)}
+              className="btn btn--secondary text-xs flex items-center justify-center gap-1.5"
+            >
+              <span>{t('payments.claimAction', 'Submit Claim')}</span>
+            </button>
+          </div>
         </div>
       )}
 
@@ -266,16 +277,24 @@ export default function TenantBillDetailPage() {
       </div>
 
       {bill && (
-        <ClaimPaymentDialog
-          leaseId={bill.leaseId}
-          defaultAmountTaka={bill.balancePoisha > 0 ? bill.balancePoisha / 100 : undefined}
-          isOpen={claimOpen}
-          onClose={() => setClaimOpen(false)}
-          onSuccess={() => {
-            void refetch();
-            void refetchPayments();
-          }}
-        />
+        <>
+          <ClaimPaymentDialog
+            leaseId={bill.leaseId}
+            defaultAmountTaka={bill.balancePoisha > 0 ? bill.balancePoisha / 100 : undefined}
+            isOpen={claimOpen}
+            onClose={() => setClaimOpen(false)}
+            onSuccess={() => {
+              void refetch();
+              void refetchPayments();
+            }}
+          />
+          <PayOnlineDialog
+            leaseId={bill.leaseId}
+            dueAmountPoisha={bill.balancePoisha}
+            isOpen={payOnlineOpen}
+            onClose={() => setPayOnlineOpen(false)}
+          />
+        </>
       )}
     </div>
   );

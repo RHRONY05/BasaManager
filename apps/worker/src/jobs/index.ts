@@ -2,6 +2,7 @@ import { activateDueLeasesJob } from './activateDueLeases.js';
 import { generateBillsJob } from './generateBills.js';
 import { applyLateFeesJob } from './applyLateFees.js';
 import { renderReceiptsJob } from './renderReceipts.js';
+import { recheckPaymentIntentsJob } from './recheckPaymentIntents.js';
 import type { Db } from '@bm/api/config/db';
 import type { RedisClient } from '@bm/api/config/redis';
 import type { Env } from '@bm/api/config/env';
@@ -26,8 +27,15 @@ export { activateDueLeasesJob } from './activateDueLeases.js';
 export { generateBillsJob } from './generateBills.js';
 export { applyLateFeesJob } from './applyLateFees.js';
 export { renderReceiptsJob } from './renderReceipts.js';
+export { recheckPaymentIntentsJob } from './recheckPaymentIntents.js';
 
 /**
  * Registry of background worker jobs.
  */
-export const jobs: Job[] = [activateDueLeasesJob, generateBillsJob, applyLateFeesJob, renderReceiptsJob];
+export const jobs: Job[] = [
+  activateDueLeasesJob,
+  generateBillsJob,
+  applyLateFeesJob,
+  renderReceiptsJob,
+  recheckPaymentIntentsJob,
+];
