@@ -1,8 +1,30 @@
-import React, { useState, useEffect, useId } from 'react';
+import React, { useState, useEffect, useCallback, useId } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Upload, X, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { useSubmitPaymentClaim, uploadFile } from '../../lib/api/payments.js';
-type ManualMethod = 'cash' | 'bkash' | 'nagad' | 'bank';
+import { parseTakaToPoisha } from '../../lib/format.js';
+
+const getTodayDhaka = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Dhaka' }).format(new Date());
+
+const claimPaymentFormSchema = z.object({
+  amountTaka: z
+    .string()
+    .min(1, 'Please enter a valid amount')
+    .refine((val) => parseTakaToPoisha(val) > 0, { message: 'Payment amount must be positive' }),
+  method: z.enum(['cash', 'bkash', 'nagad', 'bank']),
+  reference: z.string().max(100).optional(),
+  paidOn: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format')
+    .refine((s) => new Date(`${s}T00:00:00Z`).toISOString().slice(0, 10) === s, {
+      message: 'Invalid calendar date',
+    }),
+});
+
+type ClaimPaymentFormValues = z.infer<typeof claimPaymentFormSchema>;
 
 export interface ClaimPaymentDialogProps {
   leaseId: string;
@@ -23,23 +45,47 @@ export function ClaimPaymentDialog({
   const titleId = useId();
   const submitClaim = useSubmitPaymentClaim();
 
-  const [amountTaka, setAmountTaka] = useState<string>(defaultAmountTaka ? String(defaultAmountTaka) : '');
-  const [method, setMethod] = useState<ManualMethod>('bkash');
-  const [reference, setReference] = useState('');
-  const [paidOn, setPaidOn] = useState(() => new Date().toISOString().slice(0, 10));
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [proofFileId, setProofFileId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm<ClaimPaymentFormValues>({
+    resolver: zodResolver(claimPaymentFormSchema),
+    defaultValues: {
+      amountTaka: defaultAmountTaka ? String(defaultAmountTaka) : '',
+      method: 'bkash',
+      reference: '',
+      paidOn: getTodayDhaka(),
+    },
+  });
+
+  const handleClose = useCallback(() => {
+    reset({
+      amountTaka: defaultAmountTaka ? String(defaultAmountTaka) : '',
+      method: 'bkash',
+      reference: '',
+      paidOn: getTodayDhaka(),
+    });
+    setProofFile(null);
+    setProofFileId(null);
+    setErrorMessage(null);
+    onClose();
+  }, [reset, defaultAmountTaka, onClose]);
+
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') handleClose();
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, handleClose]);
 
   if (!isOpen) return null;
 
@@ -67,25 +113,17 @@ export function ClaimPaymentDialog({
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: ClaimPaymentFormValues) => {
     setErrorMessage(null);
-
-    const takaNum = parseFloat(amountTaka);
-    if (isNaN(takaNum) || takaNum <= 0) {
-      setErrorMessage(t('errors.invalidAmount', 'Please enter a valid amount'));
-      return;
-    }
-
-    const amountPoisha = Math.round(takaNum * 100);
+    const amountPoisha = parseTakaToPoisha(data.amountTaka);
 
     try {
       await submitClaim.mutateAsync({
         leaseId,
         amountPoisha,
-        method,
-        reference: reference.trim() || undefined,
-        paidOn,
+        method: data.method,
+        reference: data.reference?.trim() || undefined,
+        paidOn: data.paidOn,
         proofFileId: proofFileId || undefined,
       });
 
@@ -110,7 +148,7 @@ export function ClaimPaymentDialog({
           </h2>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             aria-label={t('actions.close', 'Close')}
             className="text-fg-muted hover:text-fg p-1 rounded-md transition-colors"
           >
@@ -132,7 +170,7 @@ export function ClaimPaymentDialog({
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4 text-sm">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 text-sm">
           <div>
             <label className="block text-xs font-semibold text-fg-muted uppercase tracking-wider mb-1.5">
               {t('payments.amount', 'Amount Paid (৳)')} *
@@ -141,12 +179,11 @@ export function ClaimPaymentDialog({
               type="number"
               step="any"
               min="1"
-              required
-              value={amountTaka}
-              onChange={(e) => setAmountTaka(e.target.value)}
+              {...register('amountTaka')}
               placeholder={t('payments.amountPlaceholder', 'e.g. 20000')}
               className="input w-full"
             />
+            {errors.amountTaka && <p className="text-xs text-danger mt-1">{errors.amountTaka.message}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -154,11 +191,7 @@ export function ClaimPaymentDialog({
               <label className="block text-xs font-semibold text-fg-muted uppercase tracking-wider mb-1.5">
                 {t('payments.paymentMethod', 'Method')} *
               </label>
-              <select
-                value={method}
-                onChange={(e) => setMethod(e.target.value as ManualMethod)}
-                className="input w-full"
-              >
+              <select {...register('method')} className="input w-full">
                 <option value="bkash">{t('payments.methodBkash', 'bKash')}</option>
                 <option value="nagad">{t('payments.methodNagad', 'Nagad')}</option>
                 <option value="bank">{t('payments.methodBank', 'Bank Transfer')}</option>
@@ -170,13 +203,8 @@ export function ClaimPaymentDialog({
               <label className="block text-xs font-semibold text-fg-muted uppercase tracking-wider mb-1.5">
                 {t('payments.paidOn', 'Payment Date')} *
               </label>
-              <input
-                type="date"
-                required
-                value={paidOn}
-                onChange={(e) => setPaidOn(e.target.value)}
-                className="input w-full"
-              />
+              <input type="date" {...register('paidOn')} className="input w-full" />
+              {errors.paidOn && <p className="text-xs text-danger mt-1">{errors.paidOn.message}</p>}
             </div>
           </div>
 
@@ -186,11 +214,11 @@ export function ClaimPaymentDialog({
             </label>
             <input
               type="text"
-              value={reference}
-              onChange={(e) => setReference(e.target.value)}
+              {...register('reference')}
               placeholder={t('payments.referencePlaceholder', 'e.g. BKASH-TX-998811 or BL92A8ZK1 / Slip #')}
               className="input w-full"
             />
+            {errors.reference && <p className="text-xs text-danger mt-1">{errors.reference.message}</p>}
           </div>
 
           <div>
@@ -223,7 +251,7 @@ export function ClaimPaymentDialog({
           </div>
 
           <div className="pt-2 flex items-center justify-end gap-3 border-t border-border">
-            <button type="button" onClick={onClose} className="btn btn--secondary text-xs">
+            <button type="button" onClick={handleClose} className="btn btn--secondary text-xs">
               {t('actions.cancel', 'Cancel')}
             </button>
             <button

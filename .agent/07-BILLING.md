@@ -72,7 +72,7 @@ each bill's balance before moving on. Anything left over becomes **lease credit*
 available credit is allocated to it automatically. Available credit is recorded as a negative `credit_entries`
 row with `kind: 'applied'` and `bill_id`, directly incrementing `bill.paid_poisha` without generating a
 synthetic `payment_allocations` row. The global financial invariant is:
-`bill.paid_poisha = Σ payment_allocations.amount_poisha + Σ (-credit_entries.amount_poisha where kind='applied')`.
+`bill.paid_poisha = Σ payment_allocations.amount_poisha + Σ (-credit_entries.amount_poisha where kind='applied' and bill_id = bill.id) - Σ (credit_entries.amount_poisha where kind='reversed' and bill_id = bill.id)`.
 Allocation and the bill status update happen in **one transaction**; if any step fails, nothing is saved.
 
 **Example 5.** Unpaid: Oct balance ৳3,000, Nov balance ৳14,000. Tenant pays ৳20,000 →

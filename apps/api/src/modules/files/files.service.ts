@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import sharp from 'sharp';
+import { fileTypeFromBuffer } from 'file-type';
 import type { Db, Tx, MembershipRole } from '../../config/db.js';
 import { env } from '../../config/env.js';
 import { clock } from '../../lib/clock.js';
@@ -14,42 +15,32 @@ export const ALLOWED_USER_UPLOAD_KINDS: readonly FileKind[] = [
   'maintenance_photo',
 ];
 
-export function detectMime(buffer: Buffer): { mime: string; format: string; resourceType: 'image' | 'raw' } {
+export async function detectMime(
+  buffer: Buffer,
+): Promise<{ mime: string; format: string; resourceType: 'image' | 'raw' }> {
   if (buffer.length >= 2 && buffer[0] === 0x4d && buffer[1] === 0x5a) {
     throw new ApiError(ErrorCode.UNSUPPORTED_MEDIA_TYPE, 'Executable files are not permitted');
   }
 
-  // PNG: 89 50 4E 47 0D 0A 1A 0A
-  if (
-    buffer.length >= 8 &&
-    buffer[0] === 0x89 &&
-    buffer[1] === 0x50 &&
-    buffer[2] === 0x4e &&
-    buffer[3] === 0x47 &&
-    buffer[4] === 0x0d &&
-    buffer[5] === 0x0a &&
-    buffer[6] === 0x1a &&
-    buffer[7] === 0x0a
-  ) {
-    return { mime: 'image/png', format: 'png', resourceType: 'image' };
+  const detected = await fileTypeFromBuffer(buffer);
+  if (!detected) {
+    // Standard PDF header fallback (%PDF)
+    if (buffer.length >= 4 && buffer.toString('ascii', 0, 4) === '%PDF') {
+      return { mime: 'application/pdf', format: 'pdf', resourceType: 'raw' };
+    }
+    throw new ApiError(ErrorCode.UNSUPPORTED_MEDIA_TYPE, 'Unsupported file type');
   }
 
-  // JPEG: FF D8 FF
-  if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+  if (detected.mime === 'image/jpeg') {
     return { mime: 'image/jpeg', format: 'jpg', resourceType: 'image' };
   }
-
-  // WebP: RIFF .... WEBP
-  if (
-    buffer.length >= 12 &&
-    buffer.toString('ascii', 0, 4) === 'RIFF' &&
-    buffer.toString('ascii', 8, 12) === 'WEBP'
-  ) {
+  if (detected.mime === 'image/png') {
+    return { mime: 'image/png', format: 'png', resourceType: 'image' };
+  }
+  if (detected.mime === 'image/webp') {
     return { mime: 'image/webp', format: 'webp', resourceType: 'image' };
   }
-
-  // PDF: %PDF
-  if (buffer.length >= 4 && buffer.toString('ascii', 0, 4) === '%PDF') {
+  if (detected.mime === 'application/pdf') {
     return { mime: 'application/pdf', format: 'pdf', resourceType: 'raw' };
   }
 
@@ -62,47 +53,52 @@ export async function processImage(buffer: Buffer): Promise<{
   mime: string;
   format: string;
 }> {
-  // auto-rotate based on EXIF orientation, resize max 2000px, strips EXIF metadata
-  const pipeline = sharp(buffer)
-    .rotate()
-    .resize({ width: 2000, height: 2000, fit: 'inside', withoutEnlargement: true });
+  try {
+    // auto-rotate based on EXIF orientation, resize max 2000px, strips EXIF metadata
+    const pipeline = sharp(buffer)
+      .rotate()
+      .resize({ width: 2000, height: 2000, fit: 'inside', withoutEnlargement: true });
 
-  const metadata = await sharp(buffer).metadata();
-  const format = metadata.format === 'png' ? 'png' : metadata.format === 'webp' ? 'webp' : 'jpeg';
+    const metadata = await sharp(buffer).metadata();
+    const format = metadata.format === 'png' ? 'png' : metadata.format === 'webp' ? 'webp' : 'jpeg';
 
-  let processedBuffer: Buffer;
-  if (format === 'png') {
-    processedBuffer = await pipeline.png().toBuffer();
-  } else if (format === 'webp') {
-    processedBuffer = await pipeline.webp().toBuffer();
-  } else {
-    processedBuffer = await pipeline.jpeg({ quality: 85 }).toBuffer();
+    let processedBuffer: Buffer;
+    if (format === 'png') {
+      processedBuffer = await pipeline.png().toBuffer();
+    } else if (format === 'webp') {
+      processedBuffer = await pipeline.webp().toBuffer();
+    } else {
+      processedBuffer = await pipeline.jpeg({ quality: 85 }).toBuffer();
+    }
+
+    // 400px thumbnail
+    const thumbPipeline = sharp(processedBuffer).resize({
+      width: 400,
+      height: 400,
+      fit: 'inside',
+      withoutEnlargement: true,
+    });
+
+    let thumbBuffer: Buffer;
+    if (format === 'png') {
+      thumbBuffer = await thumbPipeline.png().toBuffer();
+    } else if (format === 'webp') {
+      thumbBuffer = await thumbPipeline.webp().toBuffer();
+    } else {
+      thumbBuffer = await thumbPipeline.jpeg({ quality: 80 }).toBuffer();
+    }
+
+    const mime = format === 'png' ? 'image/png' : format === 'webp' ? 'image/webp' : 'image/jpeg';
+    return {
+      processedBuffer,
+      thumbBuffer,
+      mime,
+      format: format === 'jpeg' ? 'jpg' : format,
+    };
+  } catch (err: unknown) {
+    if (err instanceof ApiError) throw err;
+    throw new ApiError(ErrorCode.UNSUPPORTED_MEDIA_TYPE, 'Corrupt or unreadable image file');
   }
-
-  // 400px thumbnail
-  const thumbPipeline = sharp(processedBuffer).resize({
-    width: 400,
-    height: 400,
-    fit: 'inside',
-    withoutEnlargement: true,
-  });
-
-  let thumbBuffer: Buffer;
-  if (format === 'png') {
-    thumbBuffer = await thumbPipeline.png().toBuffer();
-  } else if (format === 'webp') {
-    thumbBuffer = await thumbPipeline.webp().toBuffer();
-  } else {
-    thumbBuffer = await thumbPipeline.jpeg({ quality: 80 }).toBuffer();
-  }
-
-  const mime = format === 'png' ? 'image/png' : format === 'webp' ? 'image/webp' : 'image/jpeg';
-  return {
-    processedBuffer,
-    thumbBuffer,
-    mime,
-    format: format === 'jpeg' ? 'jpg' : format,
-  };
 }
 
 export class FilesService {
@@ -124,7 +120,7 @@ export class FilesService {
       throw new ApiError(ErrorCode.PAYLOAD_TOO_LARGE, 'File exceeds 5 MB limit');
     }
 
-    const { mime: initialMime, format: initialFormat, resourceType } = detectMime(params.buffer);
+    const { mime: initialMime, format: initialFormat, resourceType } = await detectMime(params.buffer);
 
     let finalBuffer = params.buffer;
     let thumbBuffer: Buffer | undefined;
@@ -153,34 +149,43 @@ export class FilesService {
       resourceType,
     });
 
-    return await this.prisma.$tx(
-      { orgId: params.orgId, userId: params.userId, role: null },
-      async (tx: Tx) => {
-        const file = await tx.file.create({
-          data: {
-            id: fileId,
-            orgId: params.orgId,
-            provider: process.env.STORAGE_DRIVER === 'cloudinary' ? 'cloudinary' : 'local',
-            publicId,
-            resourceType,
-            format: finalFormat,
-            mime: finalMime,
-            sizeBytes: finalBuffer.length,
-            sha256,
-            kind: params.kind,
-            uploadedBy: params.userId,
-          },
-        });
+    try {
+      return await this.prisma.$tx(
+        { orgId: params.orgId, userId: params.userId, role: null },
+        async (tx: Tx) => {
+          const file = await tx.file.create({
+            data: {
+              id: fileId,
+              orgId: params.orgId,
+              provider: process.env.STORAGE_DRIVER === 'cloudinary' ? 'cloudinary' : 'local',
+              publicId,
+              resourceType,
+              format: finalFormat,
+              mime: finalMime,
+              sizeBytes: finalBuffer.length,
+              sha256,
+              kind: params.kind,
+              uploadedBy: params.userId,
+            },
+          });
 
-        return {
-          fileId: file.id,
-          publicId: file.publicId,
-          kind: file.kind,
-          sizeBytes: file.sizeBytes,
-          mime: file.mime,
-        };
-      },
-    );
+          return {
+            fileId: file.id,
+            publicId: file.publicId,
+            kind: file.kind,
+            sizeBytes: file.sizeBytes,
+            mime: file.mime,
+          };
+        },
+      );
+    } catch (dbErr) {
+      try {
+        await storage.delete(publicId, resourceType);
+      } catch {
+        // Ignore deletion error
+      }
+      throw dbErr;
+    }
   }
 
   async getFileSignedUrl(params: {

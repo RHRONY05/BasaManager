@@ -193,8 +193,14 @@ describe('V9: payments, receipts and files', () => {
       expect((await claim({ method: 'bkash', reference: 'TRX200' })).status).toBe(201);
     });
 
-    it('400 VALIDATION_FAILED for amount 0 and a malformed paidOn', async () => {
-      for (const bad of [{ amountPoisha: 0 }, { paidOn: '05/03/2026' }]) {
+    it('400 VALIDATION_FAILED for amount 0, invalid calendar dates, and excessive amounts', async () => {
+      for (const bad of [
+        { amountPoisha: 0 },
+        { paidOn: '05/03/2026' },
+        { paidOn: '2026-13-45' },
+        { paidOn: '2026-02-31' },
+        { amountPoisha: 200_000_000_00 },
+      ]) {
         const res = await claim(bad);
         expect(res.status).toBe(400);
         expect(res.body.error.code).toBe(ErrorCode.VALIDATION_FAILED);

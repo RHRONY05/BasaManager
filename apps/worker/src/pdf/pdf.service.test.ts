@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { renderReceiptHtml, formatTaka } from './receipt.template.js';
 import { PdfService } from './pdf.service.js';
 
@@ -71,4 +71,69 @@ describe('Receipt Template & PDF Service', () => {
     // PDF magic bytes %PDF
     expect(pdfBuf.toString('ascii', 0, 4)).toBe('%PDF');
   }, 20000);
+
+  it('aborts attaching and soft deletes generated file if receipt status changes during render', async () => {
+    const service = new PdfService();
+    let softDeletedFileId: string | null = null;
+
+    const receipt = {
+      id: 'receipt-1',
+      orgId: 'org-1',
+      status: 'valid',
+      number: 'BM-2026-000001',
+      fileId: null,
+      createdAt: new Date(),
+      payment: {
+        id: 'pay-1',
+        orgId: 'org-1',
+        leaseId: 'lease-1',
+        amountPoisha: 100000n,
+        method: 'cash',
+        status: 'confirmed',
+        reference: null,
+        paidOn: new Date(),
+        confirmedBy: 'user-1',
+        submittedBy: 'user-1',
+        allocations: [],
+        lease: {
+          tenants: [{ membership: { user: { fullName: 'Tenant A', email: 'tenant@example.com' } } }],
+          unit: { label: '1A', building: { name: 'Building 1' } },
+        },
+      },
+      org: { name: 'Org 1' },
+    };
+
+    const mockTx = {
+      file: {
+        create: async (args: { data: { id: string } }) => ({ id: args.data.id }),
+        update: async (args: { where: { id: string } }) => {
+          softDeletedFileId = args.where.id;
+          return { id: args.where.id };
+        },
+      },
+      receipt: {
+        updateMany: async () => ({ count: 0 }), // 0 updated because status changed/already has file
+      },
+    };
+
+    const mockPrisma = {
+      receipt: {
+        findUniqueOrThrow: async () => receipt,
+      },
+      creditEntry: {
+        findFirst: async () => null,
+      },
+      $transaction: async (cb: (tx: typeof mockTx) => Promise<unknown>) => cb(mockTx),
+    };
+
+    // Spy renderHtmlToPdf to avoid invoking Puppeteer in this test
+    vi.spyOn(service, 'renderHtmlToPdf').mockResolvedValue(Buffer.from('%PDF-1.4 test'));
+
+    const result = await service.generateAndStoreReceiptPdf(
+      mockPrisma as unknown as Parameters<typeof service.generateAndStoreReceiptPdf>[0],
+      'receipt-1',
+    );
+    expect(result).toBeNull();
+    expect(softDeletedFileId).toBeTruthy();
+  });
 });

@@ -113,7 +113,7 @@ flowchart TD
 - **Resource Leakage (Zombie Chromium Processes):** If an unhandled exception occurs before `browser.close()`, zombie Chrome processes remain in memory, consuming RAM and eventually causing server OOM. The browser launch and closure must **always** be wrapped in a `try ... finally` block.
 - **Linux Docker Dependencies:** Headless Chromium requires underlying OS libraries (e.g. `libnss3`, `libatk-bridge2.0-0`, `libxss1`, `libasound2`). The application Dockerfile includes these standard dependencies for production deployment.
 - **Font Availability:** If custom fonts fail to load or are blocked by network policies, Chromium falls back to system fonts, shifting text bounding boxes. Templates must specify standard web-safe fallback stacks (`system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif`).
-- **Voided Receipt Reproducibility:** Rather than deleting or overwriting the original receipt file, voiding an existing payment marks the payment status as `voided`. Any subsequent render or download of that receipt dynamically renders the "VOID" watermark, preserving financial auditability.
+- **Voided Receipt Reproducibility:** When a payment is voided, the original PDF file record is soft-deleted and `receipts.file_id` is set to null with status `void`. The worker's `renderReceiptsJob` re-renders the receipt with a prominent diagonal VOID watermark. Because voiding deletes the original allocations and overpayment entries, the void receipt preserves payment header details with a VOID watermark, maintaining full financial auditability without serving an un-voided receipt.
 
 ---
 

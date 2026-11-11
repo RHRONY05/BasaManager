@@ -137,7 +137,7 @@ in CI, so docs and code can't drift.
 |---|---|---|
 | `GET /notices?buildingId=` | L, C, T(own building) | active (not expired/deleted), pinned first |
 | `POST /notices` · `PATCH /notices/:id` · `DELETE /notices/:id` | L, C(assigned) | outbox `notice.posted` |
-| `POST /files` | user + org | multipart `file`, `kind` (`'payment_proof'`\|`'document'`\|`'maintenance_attachment'`); returns `{fileId}`; 5 MB, sniffed, EXIF stripped, max 2000 px, 400 px thumbnail; `415` `UNSUPPORTED_MEDIA_TYPE` for executables or unknown types |
+| `POST /files` | user + org | multipart `file`, `kind` (`'payment_proof'`\|`'document'`\|`'maintenance_photo'`); returns `{fileId}`; 5 MB, sniffed, EXIF stripped, max 2000 px, 400 px thumbnail; `415` `UNSUPPORTED_MEDIA_TYPE` for executables or unknown types |
 | `GET /files/:id/url?variant=thumb` | per file kind rules | expiring signed URL (5 min); `variant=thumb` for image thumbnails |
 | `GET /files/local/:id` | signed query (`exp`, `sig`) | local driver only (dev/test): serves the file if the HMAC and expiry are valid |
 | `GET /leases/:id/documents` · `POST /leases/:id/documents` | L, T(own) | `{kind, fileId}` |

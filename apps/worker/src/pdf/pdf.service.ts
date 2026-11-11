@@ -1,7 +1,6 @@
 import puppeteer, { type Browser } from 'puppeteer';
 import crypto from 'node:crypto';
 import type { Db } from '@bm/api/config/db';
-import { env } from '@bm/api/config/env';
 import { storage } from '@bm/api/config/storage/index';
 import { renderReceiptHtml, type ReceiptTemplateData } from './receipt.template.js';
 
@@ -40,7 +39,7 @@ export class PdfService {
   /**
    * Generates a receipt PDF for a given receipt ID and attaches the resulting File record.
    */
-  async generateAndStoreReceiptPdf(prisma: Db, receiptId: string, browser?: Browser): Promise<string> {
+  async generateAndStoreReceiptPdf(prisma: Db, receiptId: string, browser?: Browser): Promise<string | null> {
     const receipt = await prisma.receipt.findUniqueOrThrow({
       where: { id: receiptId },
       include: {
@@ -108,7 +107,8 @@ export class PdfService {
     const pdfBuffer = await this.renderHtmlToPdf(html, browser);
 
     const fileId = crypto.randomUUID();
-    const publicId = `basamanager/${env.APP_ENV}/org/${receipt.orgId}/receipts/${fileId}`;
+    const appEnv = process.env.APP_ENV || 'test';
+    const publicId = `basamanager/${appEnv}/org/${receipt.orgId}/receipts/${fileId}`;
     const sha256 = crypto.createHash('sha256').update(pdfBuffer).digest('hex');
 
     await storage.save({
@@ -119,13 +119,14 @@ export class PdfService {
       resourceType: 'raw',
     });
 
-    // Save File record and link receipt to file atomically
+    // Save File record and link receipt to file atomically, ensuring status hasn't changed
+    let attached = false;
     await prisma.$transaction(async (tx) => {
-      await tx.file.create({
+      const file = await tx.file.create({
         data: {
           id: fileId,
           orgId: receipt.orgId,
-          provider: env.STORAGE_DRIVER === 'cloudinary' ? 'cloudinary' : 'local',
+          provider: process.env.STORAGE_DRIVER === 'cloudinary' ? 'cloudinary' : 'local',
           publicId,
           resourceType: 'raw',
           format: 'pdf',
@@ -137,15 +138,31 @@ export class PdfService {
         },
       });
 
-      await tx.receipt.update({
-        where: { id: receipt.id },
+      const updated = await tx.receipt.updateMany({
+        where: {
+          id: receipt.id,
+          fileId: null,
+          status: receipt.status,
+        },
         data: {
           fileId,
         },
       });
+
+      if (updated.count === 0) {
+        // Receipt was voided or already attached during render. Soft delete the file record.
+        await tx.file.update({
+          where: { id: file.id },
+          data: {
+            deletedAt: new Date(),
+          },
+        });
+      } else {
+        attached = true;
+      }
     });
 
-    return fileId;
+    return attached ? fileId : null;
   }
 }
 

@@ -728,6 +728,20 @@
     "pendingStatus": "Pending Verification",
     "reason": "Reason",
     "receipt": "Receipt",
-    "noPayments": "No payment claims submitted yet"
+    "noPayments": "No payment claims submitted yet",
+    "tabsAriaLabel": "Payment tabs",
+    "confirmFailed": "Failed to confirm payment",
+    "viewProofFailed": "Failed to open proof photo",
+    "receiptDownloadFailed": "Failed to get receipt download URL",
+    "colDate": "Date",
+    "colUnitBuilding": "Unit & Building",
+    "colAmount": "Amount",
+    "colMethod": "Method",
+    "colRef": "Ref",
+    "colStatus": "Status",
+    "colReceipt": "Receipt",
+    "colActions": "Actions",
+    "actionVoid": "Void",
+    "actionPdf": "PDF"
   }
 }

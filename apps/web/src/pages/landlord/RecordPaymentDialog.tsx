@@ -1,10 +1,33 @@
-import React, { useState, useEffect, useId } from 'react';
+import React, { useState, useEffect, useCallback, useId } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Upload, X, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { useRecordPayment, uploadFile } from '../../lib/api/payments.js';
 import { useLeases } from '../../lib/api/leases.js';
+import { parseTakaToPoisha } from '../../lib/format.js';
 import type { LeaseDto } from '@bm/shared/api/leases';
-type ManualMethod = 'cash' | 'bkash' | 'nagad' | 'bank';
+
+const getTodayDhaka = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Dhaka' }).format(new Date());
+
+const recordPaymentFormSchema = z.object({
+  leaseId: z.string().min(1, 'Please select a unit/lease'),
+  amountTaka: z
+    .string()
+    .min(1, 'Please enter a valid amount')
+    .refine((val) => parseTakaToPoisha(val) > 0, { message: 'Payment amount must be positive' }),
+  method: z.enum(['cash', 'bkash', 'nagad', 'bank']),
+  reference: z.string().max(100).optional(),
+  paidOn: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format')
+    .refine((s) => new Date(`${s}T00:00:00Z`).toISOString().slice(0, 10) === s, {
+      message: 'Invalid calendar date',
+    }),
+});
+
+type RecordPaymentFormValues = z.infer<typeof recordPaymentFormSchema>;
 
 export interface RecordPaymentDialogProps {
   isOpen: boolean;
@@ -18,24 +41,49 @@ export function RecordPaymentDialog({ isOpen, onClose, onSuccess }: RecordPaymen
   const recordPayment = useRecordPayment();
   const { data: leases = [] } = useLeases({ status: 'active' });
 
-  const [leaseId, setLeaseId] = useState('');
-  const [amountTaka, setAmountTaka] = useState('');
-  const [method, setMethod] = useState<ManualMethod>('cash');
-  const [reference, setReference] = useState('');
-  const [paidOn, setPaidOn] = useState(() => new Date().toISOString().slice(0, 10));
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [proofFileId, setProofFileId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm<RecordPaymentFormValues>({
+    resolver: zodResolver(recordPaymentFormSchema),
+    defaultValues: {
+      leaseId: '',
+      amountTaka: '',
+      method: 'cash',
+      reference: '',
+      paidOn: getTodayDhaka(),
+    },
+  });
+
+  const handleClose = useCallback(() => {
+    reset({
+      leaseId: '',
+      amountTaka: '',
+      method: 'cash',
+      reference: '',
+      paidOn: getTodayDhaka(),
+    });
+    setProofFile(null);
+    setProofFileId(null);
+    setErrorMessage(null);
+    onClose();
+  }, [reset, onClose]);
+
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') handleClose();
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, handleClose]);
 
   if (!isOpen) return null;
 
@@ -63,30 +111,17 @@ export function RecordPaymentDialog({ isOpen, onClose, onSuccess }: RecordPaymen
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: RecordPaymentFormValues) => {
     setErrorMessage(null);
-
-    if (!leaseId) {
-      setErrorMessage(t('errors.selectLease', 'Please select a unit/lease'));
-      return;
-    }
-
-    const takaNum = parseFloat(amountTaka);
-    if (isNaN(takaNum) || takaNum <= 0) {
-      setErrorMessage(t('errors.invalidAmount', 'Please enter a valid amount'));
-      return;
-    }
-
-    const amountPoisha = Math.round(takaNum * 100);
+    const amountPoisha = parseTakaToPoisha(data.amountTaka);
 
     try {
       await recordPayment.mutateAsync({
-        leaseId,
+        leaseId: data.leaseId,
         amountPoisha,
-        method,
-        reference: reference.trim() || undefined,
-        paidOn,
+        method: data.method,
+        reference: data.reference?.trim() || undefined,
+        paidOn: data.paidOn,
         proofFileId: proofFileId || undefined,
       });
 
@@ -111,7 +146,7 @@ export function RecordPaymentDialog({ isOpen, onClose, onSuccess }: RecordPaymen
           </h2>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             aria-label={t('actions.close', 'Close')}
             className="text-fg-muted hover:text-fg p-1 rounded-md transition-colors"
           >
@@ -126,17 +161,12 @@ export function RecordPaymentDialog({ isOpen, onClose, onSuccess }: RecordPaymen
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4 text-sm">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 text-sm">
           <div>
             <label className="block text-xs font-semibold text-fg-muted uppercase tracking-wider mb-1.5">
               {t('payments.selectUnit', 'Select Unit / Tenant')} *
             </label>
-            <select
-              required
-              value={leaseId}
-              onChange={(e) => setLeaseId(e.target.value)}
-              className="input w-full"
-            >
+            <select {...register('leaseId')} className="input w-full">
               <option value="">{t('actions.select', '-- Select Active Lease --')}</option>
               {leases.map((l: LeaseDto) => (
                 <option key={l.id} value={l.id}>
@@ -145,6 +175,7 @@ export function RecordPaymentDialog({ isOpen, onClose, onSuccess }: RecordPaymen
                 </option>
               ))}
             </select>
+            {errors.leaseId && <p className="text-xs text-danger mt-1">{errors.leaseId.message}</p>}
           </div>
 
           <div>
@@ -155,12 +186,11 @@ export function RecordPaymentDialog({ isOpen, onClose, onSuccess }: RecordPaymen
               type="number"
               step="any"
               min="1"
-              required
-              value={amountTaka}
-              onChange={(e) => setAmountTaka(e.target.value)}
+              {...register('amountTaka')}
               placeholder={t('payments.amountPlaceholder', 'e.g. 20000')}
               className="input w-full"
             />
+            {errors.amountTaka && <p className="text-xs text-danger mt-1">{errors.amountTaka.message}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -168,11 +198,7 @@ export function RecordPaymentDialog({ isOpen, onClose, onSuccess }: RecordPaymen
               <label className="block text-xs font-semibold text-fg-muted uppercase tracking-wider mb-1.5">
                 {t('payments.paymentMethod', 'Method')} *
               </label>
-              <select
-                value={method}
-                onChange={(e) => setMethod(e.target.value as ManualMethod)}
-                className="input w-full"
-              >
+              <select {...register('method')} className="input w-full">
                 <option value="cash">{t('payments.methodCash', 'Cash')}</option>
                 <option value="bkash">{t('payments.methodBkash', 'bKash')}</option>
                 <option value="nagad">{t('payments.methodNagad', 'Nagad')}</option>
@@ -184,13 +210,8 @@ export function RecordPaymentDialog({ isOpen, onClose, onSuccess }: RecordPaymen
               <label className="block text-xs font-semibold text-fg-muted uppercase tracking-wider mb-1.5">
                 {t('payments.paidOn', 'Payment Date')} *
               </label>
-              <input
-                type="date"
-                required
-                value={paidOn}
-                onChange={(e) => setPaidOn(e.target.value)}
-                className="input w-full"
-              />
+              <input type="date" {...register('paidOn')} className="input w-full" />
+              {errors.paidOn && <p className="text-xs text-danger mt-1">{errors.paidOn.message}</p>}
             </div>
           </div>
 
@@ -200,11 +221,11 @@ export function RecordPaymentDialog({ isOpen, onClose, onSuccess }: RecordPaymen
             </label>
             <input
               type="text"
-              value={reference}
-              onChange={(e) => setReference(e.target.value)}
+              {...register('reference')}
               placeholder={t('payments.referencePlaceholder', 'e.g. Cash collected / Bank Ref BL92A8ZK1')}
               className="input w-full"
             />
+            {errors.reference && <p className="text-xs text-danger mt-1">{errors.reference.message}</p>}
           </div>
 
           <div>
@@ -237,7 +258,7 @@ export function RecordPaymentDialog({ isOpen, onClose, onSuccess }: RecordPaymen
           </div>
 
           <div className="pt-2 flex items-center justify-end gap-3 border-t border-border">
-            <button type="button" onClick={onClose} className="btn btn--secondary text-xs">
+            <button type="button" onClick={handleClose} className="btn btn--secondary text-xs">
               {t('actions.cancel', 'Cancel')}
             </button>
             <button

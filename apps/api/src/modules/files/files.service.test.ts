@@ -12,45 +12,52 @@ describe('FilesService & detectMime & processImage', () => {
     })
       .png()
       .toBuffer();
-    expect(detectMime(png)).toEqual({ mime: 'image/png', format: 'png', resourceType: 'image' });
+    expect(await detectMime(png)).toEqual({ mime: 'image/png', format: 'png', resourceType: 'image' });
 
     const jpg = await sharp({
       create: { width: 10, height: 10, channels: 3, background: { r: 0, g: 255, b: 0 } },
     })
       .jpeg()
       .toBuffer();
-    expect(detectMime(jpg)).toEqual({ mime: 'image/jpeg', format: 'jpg', resourceType: 'image' });
+    expect(await detectMime(jpg)).toEqual({ mime: 'image/jpeg', format: 'jpg', resourceType: 'image' });
 
     const webp = await sharp({
       create: { width: 10, height: 10, channels: 4, background: { r: 0, g: 0, b: 255, alpha: 1 } },
     })
       .webp()
       .toBuffer();
-    expect(detectMime(webp)).toEqual({ mime: 'image/webp', format: 'webp', resourceType: 'image' });
+    expect(await detectMime(webp)).toEqual({ mime: 'image/webp', format: 'webp', resourceType: 'image' });
 
     const pdf = Buffer.from('%PDF-1.4 header');
-    expect(detectMime(pdf)).toEqual({ mime: 'application/pdf', format: 'pdf', resourceType: 'raw' });
+    expect(await detectMime(pdf)).toEqual({ mime: 'application/pdf', format: 'pdf', resourceType: 'raw' });
   });
 
-  it('rejects executable files with 415 UNSUPPORTED_MEDIA_TYPE', () => {
+  it('rejects executable files with 415 UNSUPPORTED_MEDIA_TYPE', async () => {
     const exe = Buffer.from([0x4d, 0x5a, 0x90, 0x00]);
-    expect(() => detectMime(exe)).toThrow(ApiError);
+    await expect(detectMime(exe)).rejects.toThrow(ApiError);
     try {
-      detectMime(exe);
+      await detectMime(exe);
     } catch (err) {
       expect((err as ApiError).status).toBe(415);
       expect((err as ApiError).message).toContain('Executable files');
     }
   });
 
-  it('rejects unknown binary types with 415', () => {
+  it('rejects unknown binary types with 415', async () => {
     const random = Buffer.from([0x12, 0x34, 0x56, 0x78]);
-    expect(() => detectMime(random)).toThrow(ApiError);
+    await expect(detectMime(random)).rejects.toThrow(ApiError);
     try {
-      detectMime(random);
+      await detectMime(random);
     } catch (err) {
       expect((err as ApiError).status).toBe(415);
     }
+  });
+
+  it('rejects corrupt image files with 415 in processImage', async () => {
+    const corruptJpeg = Buffer.from([
+      0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x00, 0x00,
+    ]);
+    await expect(processImage(corruptJpeg)).rejects.toThrow('Corrupt or unreadable image file');
   });
 
   it('strips EXIF metadata and produces 400px thumbnail in processImage', async () => {

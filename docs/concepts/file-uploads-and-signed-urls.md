@@ -134,8 +134,8 @@ sequenceDiagram
 - Storage interface & drivers: `apps/api/src/config/storage/index.ts`
   - Defines `StorageDriver` contract, `LocalStorageDriver`, and `CloudinaryStorageDriver`
 - File endpoints: `apps/api/src/modules/files/`
-  - `files.routes.ts` — Multer upload middleware and route definitions
-  - `files.controller.ts` — Upload and signed URL controllers
+  - `files.routes.ts` — Route definitions with authentication and role guards
+  - `files.controller.ts` — Multer upload middleware, controller actions and signed URL responses
   - `files.service.ts` — Sharp processing, storage persistence, and DB records
 - Frontend file client: `apps/web/src/lib/api/payments.ts` (`uploadFile`, `getFileSignedUrl`)
 - Database schema: `apps/api/prisma/schema.prisma` (`model File`)

@@ -82,7 +82,11 @@ export class PaymentsService {
         throw ApiError.notFound('Lease not found');
       }
 
-      if (input.reference && input.reference.trim()) {
+      if (
+        (input.method === 'bkash' || input.method === 'nagad') &&
+        input.reference &&
+        input.reference.trim()
+      ) {
         const trimmedRef = input.reference.trim();
         const existing = await tx.payment.findFirst({
           where: {
@@ -191,7 +195,11 @@ export class PaymentsService {
         }
       }
 
-      if (input.reference && input.reference.trim()) {
+      if (
+        (input.method === 'bkash' || input.method === 'nagad') &&
+        input.reference &&
+        input.reference.trim()
+      ) {
         const trimmedRef = input.reference.trim();
         const existing = await tx.payment.findFirst({
           where: {
@@ -1004,14 +1012,18 @@ export class PaymentsService {
       rejectedReason: p.rejectedReason || null,
       voidReason: p.voidReason || null,
       voidedBy: p.voidedBy || null,
-      createdAt: p.createdAt ? new Date(p.createdAt).toISOString() : new Date().toISOString(),
-      updatedAt: p.updatedAt ? new Date(p.updatedAt).toISOString() : new Date().toISOString(),
+      createdAt: p.createdAt ? new Date(p.createdAt).toISOString() : new Date(0).toISOString(),
+      updatedAt: p.updatedAt ? new Date(p.updatedAt).toISOString() : new Date(0).toISOString(),
       allocations: p.allocations?.map((a) => ({
         id: a.id,
         billId: a.billId,
         periodMonth: a.bill?.periodMonth ? a.bill.periodMonth.toISOString().slice(0, 7) : undefined,
         amountPoisha: Number(a.amountPoisha),
-        createdAt: a.createdAt ? new Date(a.createdAt).toISOString() : new Date().toISOString(),
+        createdAt: a.createdAt
+          ? new Date(a.createdAt).toISOString()
+          : p.createdAt
+            ? new Date(p.createdAt).toISOString()
+            : new Date(0).toISOString(),
       })),
       receipt: p.receipt
         ? {
@@ -1021,7 +1033,9 @@ export class PaymentsService {
             fileId: p.receipt.fileId || null,
             createdAt: p.receipt.createdAt
               ? new Date(p.receipt.createdAt).toISOString()
-              : new Date().toISOString(),
+              : p.createdAt
+                ? new Date(p.createdAt).toISOString()
+                : new Date(0).toISOString(),
           }
         : null,
       unitLabel: p.lease?.unit?.label,

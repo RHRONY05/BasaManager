@@ -79,7 +79,7 @@ export default function PaymentsPage() {
       void refetchPending();
       void refetchHistory();
     } catch (err: unknown) {
-      showToast((err as Error).message || 'Failed to confirm payment', 'error');
+      showToast((err as Error).message || t('payments.confirmFailed', 'Failed to confirm payment'), 'error');
     }
   };
 
@@ -95,7 +95,10 @@ export default function PaymentsPage() {
         );
       }
     } catch (err: unknown) {
-      showToast((err as Error).message || 'Failed to get receipt download URL', 'error');
+      showToast(
+        (err as Error).message || t('payments.receiptDownloadFailed', 'Failed to get receipt download URL'),
+        'error',
+      );
     }
   };
 
@@ -104,7 +107,10 @@ export default function PaymentsPage() {
       const res = await getFileSignedUrl(proofFileId);
       window.open(res.url, '_blank');
     } catch (err: unknown) {
-      showToast((err as Error).message || 'Failed to open proof photo', 'error');
+      showToast(
+        (err as Error).message || t('payments.viewProofFailed', 'Failed to open proof photo'),
+        'error',
+      );
     }
   };
 
@@ -137,7 +143,12 @@ export default function PaymentsPage() {
       {/* Building Filter & Tabs Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-b border-border pb-1">
         {/* Horizontally scrollable tab strip on narrow viewports */}
-        <div role="tablist" aria-label="Payment tabs" className="tabs border-b-0 min-w-0" data-scroll-x>
+        <div
+          role="tablist"
+          aria-label={t('payments.tabsAriaLabel', 'Payment tabs')}
+          className="tabs border-b-0 min-w-0"
+          data-scroll-x
+        >
           <button
             role="tab"
             aria-selected={activeTab === 'pending'}
@@ -321,14 +332,14 @@ export default function PaymentsPage() {
               <table className="w-full text-left text-xs">
                 <thead className="bg-muted/50 border-b border-border text-fg-muted uppercase tracking-wider font-semibold">
                   <tr>
-                    <th className="p-3">Date</th>
-                    <th className="p-3">Unit & Building</th>
-                    <th className="p-3">Amount</th>
-                    <th className="p-3">Method</th>
-                    <th className="p-3">Ref</th>
-                    <th className="p-3">Status</th>
-                    <th className="p-3">Receipt</th>
-                    <th className="p-3 text-right">Actions</th>
+                    <th className="p-3">{t('payments.colDate', 'Date')}</th>
+                    <th className="p-3">{t('payments.colUnitBuilding', 'Unit & Building')}</th>
+                    <th className="p-3">{t('payments.colAmount', 'Amount')}</th>
+                    <th className="p-3">{t('payments.colMethod', 'Method')}</th>
+                    <th className="p-3">{t('payments.colRef', 'Ref')}</th>
+                    <th className="p-3">{t('payments.colStatus', 'Status')}</th>
+                    <th className="p-3">{t('payments.colReceipt', 'Receipt')}</th>
+                    <th className="p-3 text-right">{t('payments.colActions', 'Actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60">
@@ -372,7 +383,7 @@ export default function PaymentsPage() {
                             className="btn btn--secondary text-xs py-1 px-2 inline-flex items-center gap-1"
                           >
                             <Download className="h-3 w-3" />
-                            <span>PDF</span>
+                            <span>{t('payments.actionPdf', 'PDF')}</span>
                           </button>
                         )}
 
@@ -383,7 +394,7 @@ export default function PaymentsPage() {
                             className="btn btn--secondary text-xs py-1 px-2 text-danger hover:bg-danger/10 border-danger/30 inline-flex items-center gap-1"
                           >
                             <Ban className="h-3 w-3" />
-                            <span>Void</span>
+                            <span>{t('payments.actionVoid', 'Void')}</span>
                           </button>
                         )}
                       </td>

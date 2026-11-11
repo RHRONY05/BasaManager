@@ -11,22 +11,40 @@ import { cursorQuerySchema } from './common';
 
 export type { PaymentMethod, PaymentStatus, ReceiptStatus };
 
+export const isValidCalendarDate = (val: string): boolean => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(val)) return false;
+  const d = new Date(`${val}T00:00:00Z`);
+  if (isNaN(d.getTime())) return false;
+  return d.toISOString().slice(0, 10) === val;
+};
+
+export const paidOnSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'paidOn must be in YYYY-MM-DD format')
+  .refine(isValidCalendarDate, { message: 'paidOn must be a valid calendar date' });
+
+export const paymentAmountPoishaSchema = z
+  .number()
+  .int('Payment amount must be an integer')
+  .positive('Payment amount must be positive')
+  .max(100_000_000_00, 'Payment amount exceeds maximum limit');
+
 export const createPaymentClaimSchema = z.object({
   leaseId: z.string().uuid(),
-  amountPoisha: z.number().int().positive('Payment amount must be positive'),
+  amountPoisha: paymentAmountPoishaSchema,
   method: z.enum(['cash', 'bkash', 'nagad', 'bank']),
   reference: z.string().trim().max(100).optional().nullable(),
-  paidOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'paidOn must be in YYYY-MM-DD format'),
+  paidOn: paidOnSchema,
   proofFileId: z.string().uuid().optional().nullable(),
 });
 export type CreatePaymentClaimInput = z.infer<typeof createPaymentClaimSchema>;
 
 export const recordPaymentSchema = z.object({
   leaseId: z.string().uuid(),
-  amountPoisha: z.number().int().positive('Payment amount must be positive'),
+  amountPoisha: paymentAmountPoishaSchema,
   method: z.enum(['cash', 'bkash', 'nagad', 'bank']),
   reference: z.string().trim().max(100).optional().nullable(),
-  paidOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'paidOn must be in YYYY-MM-DD format'),
+  paidOn: paidOnSchema,
   proofFileId: z.string().uuid().optional().nullable(),
 });
 export type RecordPaymentInput = z.infer<typeof recordPaymentSchema>;

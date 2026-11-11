@@ -167,6 +167,8 @@ describe('PaymentsService', () => {
         submittedBy: 'user-landlord',
         confirmedBy: 'user-landlord',
         confirmedAt: new Date(),
+        createdAt: new Date('2026-11-11T10:00:00Z'),
+        updatedAt: new Date('2026-11-11T10:00:00Z'),
       });
 
       // Mock locked bills
@@ -227,6 +229,8 @@ describe('PaymentsService', () => {
         status: 'rejected',
         rejectedReason: 'Invalid ref',
         paidOn: new Date(),
+        createdAt: new Date('2026-11-11T10:00:00Z'),
+        updatedAt: new Date('2026-11-11T10:00:00Z'),
       });
 
       const res = await service.rejectPayment(landlordCtx, 'pay-1', 'Invalid ref');
@@ -271,6 +275,8 @@ describe('PaymentsService', () => {
         status: 'void',
         voidReason: 'Mistake',
         paidOn: new Date(),
+        createdAt: new Date('2026-11-11T10:00:00Z'),
+        updatedAt: new Date('2026-11-11T10:00:00Z'),
       });
       mockTx.receipt.findFirst
         .mockResolvedValueOnce({

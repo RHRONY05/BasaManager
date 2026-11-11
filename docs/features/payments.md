@@ -260,7 +260,7 @@ Rule 5 stores the ৳3,000 as a positive <code>credit_entries</code> row (kind: 
 
 <details>
 <summary>4. What happens if a landlord voids a payment whose overpayment credit was already applied to pay a subsequent month's bill?</summary>
-Rule 6 un-applies that credit, reopens the subsequent month's bill back to unpaid/partially paid status, deletes the reversed credit entries and payment allocations via <code>app_void_payment</code>, and sets the payment and receipt status to <code>voided</code>.
+Rule 6 un-applies that credit, reopens the subsequent month's bill back to unpaid/partially paid status, deletes the overpayment credit entries and payment allocations via <code>app_void_payment</code>, records <code>reversed</code> credit entries for the ledger audit trail, and sets the payment and receipt status to <code>void</code>.
 </details>
 
 <details>
