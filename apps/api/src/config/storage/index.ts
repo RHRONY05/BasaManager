@@ -76,7 +76,7 @@ class LocalStorageDriver implements StorageDriver {
   }
 
   private filePath(subpath: string): string {
-    if (subpath.includes('..') || path.isAbsolute(subpath) || !/^[a-zA-Z0-9_\-\/]+$/.test(subpath)) {
+    if (subpath.includes('..') || path.isAbsolute(subpath) || !/^[a-zA-Z0-9_\-/]+$/.test(subpath)) {
       throw new Error('Path traversal detected');
     }
     const base = path.resolve(this.getBaseDir());
@@ -102,7 +102,7 @@ class LocalStorageDriver implements StorageDriver {
     if (
       params.publicId.includes('..') ||
       path.isAbsolute(params.publicId) ||
-      !/^[a-zA-Z0-9_\-\/]+$/.test(params.publicId)
+      !/^[a-zA-Z0-9_\-/]+$/.test(params.publicId)
     ) {
       throw new Error('Path traversal detected');
     }
@@ -186,7 +186,7 @@ class LocalStorageDriver implements StorageDriver {
   }
 
   async read(publicId: string): Promise<Buffer> {
-    if (publicId.includes('..') || path.isAbsolute(publicId) || !/^[a-zA-Z0-9_\-\/]+$/.test(publicId)) {
+    if (publicId.includes('..') || path.isAbsolute(publicId) || !/^[a-zA-Z0-9_\-/]+$/.test(publicId)) {
       throw new Error('Path traversal detected');
     }
     const rootDir = path.resolve(this.getBaseDir());
@@ -227,7 +227,7 @@ class LocalStorageDriver implements StorageDriver {
 
   async delete(publicId: string): Promise<void> {
     try {
-      if (publicId.includes('..') || path.isAbsolute(publicId) || !/^[a-zA-Z0-9_\-\/]+$/.test(publicId)) {
+      if (publicId.includes('..') || path.isAbsolute(publicId) || !/^[a-zA-Z0-9_\-/]+$/.test(publicId)) {
         return;
       }
       const rootDir = path.resolve(this.getBaseDir());
