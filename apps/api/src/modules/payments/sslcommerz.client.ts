@@ -119,16 +119,21 @@ export class SslcommerzClient {
   async validatePayment(valId: string): Promise<SslcommerzValidationResponse> {
     const isMock = this.config.isMock || process.env.PAYMENTS_MOCK === 'true';
     if (isMock) {
-      const match = valId.match(/^MOCK_VAL_(.+)_(.+)$/);
-      if (match) {
-        return {
-          status: 'VALID',
-          tran_id: match[1]!,
-          val_id: valId,
-          amount: match[2]!,
-          currency: 'BDT',
-          currency_type: 'BDT',
-        };
+      if (valId.startsWith('MOCK_VAL_')) {
+        const payload = valId.slice('MOCK_VAL_'.length);
+        const lastUnderscore = payload.lastIndexOf('_');
+        if (lastUnderscore !== -1) {
+          const tranId = payload.slice(0, lastUnderscore);
+          const amount = payload.slice(lastUnderscore + 1);
+          return {
+            status: 'VALID',
+            tran_id: tranId,
+            val_id: valId,
+            amount,
+            currency: 'BDT',
+            currency_type: 'BDT',
+          };
+        }
       }
       return {
         status: 'VALID',

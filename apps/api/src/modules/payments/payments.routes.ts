@@ -26,6 +26,15 @@ export interface PaymentsRouteDeps {
   redis: Redis;
 }
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 export function createPaymentsRoutes(deps: PaymentsRouteDeps): {
   paymentsRouter: Router;
   receiptsRouter: Router;
@@ -50,8 +59,10 @@ export function createPaymentsRoutes(deps: PaymentsRouteDeps): {
   // ── Mock SSLCommerz Gateway (dev / test mode only) ──────────────────────────
   if (deps.env.PAYMENTS_MOCK || process.env.PAYMENTS_MOCK === 'true') {
     paymentsRouter.get('/sslcommerz/mock-gateway', (req, res) => {
-      const tranId = String(req.query.tran_id || '');
-      const amount = String(req.query.amount || '');
+      const rawTranId = String(req.query.tran_id || '');
+      const rawAmount = String(req.query.amount || '');
+      const tranId = escapeHtml(rawTranId.replace(/[^A-Za-z0-9_-]/g, ''));
+      const amount = escapeHtml(rawAmount.replace(/[^0-9.]/g, ''));
       res.type('html').send(`<!DOCTYPE html>
 <html>
 <head>
@@ -94,20 +105,24 @@ export function createPaymentsRoutes(deps: PaymentsRouteDeps): {
 
     paymentsRouter.post('/sslcommerz/mock-complete', async (req, res, next) => {
       try {
-        const { tran_id, amount, action } = req.body;
+        const rawTranId = String(req.body.tran_id || '');
+        const rawAmount = String(req.body.amount || '');
+        const tranId = rawTranId.replace(/[^A-Za-z0-9_-]/g, '');
+        const amount = rawAmount.replace(/[^0-9.]/g, '');
+        const action = req.body.action;
         if (action === 'success') {
           await sslcommerzService.handleIpn({
-            tran_id: String(tran_id),
-            val_id: `MOCK_VAL_${tran_id}_${amount}`,
-            amount: String(amount),
+            tran_id: tranId,
+            val_id: `MOCK_VAL_${tranId}_${amount}`,
+            amount: amount,
             status: 'VALID',
             currency: 'BDT',
           });
-          res.redirect(303, `/api/payments/sslcommerz/return/success?tran_id=${encodeURIComponent(tran_id)}`);
+          res.redirect(303, `/api/payments/sslcommerz/return/success?tran_id=${encodeURIComponent(tranId)}`);
         } else if (action === 'fail') {
-          res.redirect(303, `/api/payments/sslcommerz/return/fail?tran_id=${encodeURIComponent(tran_id)}`);
+          res.redirect(303, `/api/payments/sslcommerz/return/fail?tran_id=${encodeURIComponent(tranId)}`);
         } else {
-          res.redirect(303, `/api/payments/sslcommerz/return/cancel?tran_id=${encodeURIComponent(tran_id)}`);
+          res.redirect(303, `/api/payments/sslcommerz/return/cancel?tran_id=${encodeURIComponent(tranId)}`);
         }
       } catch (err) {
         next(err);
