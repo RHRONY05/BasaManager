@@ -68,7 +68,7 @@ The BasaManager payment gateway implementation adheres to **Rule 8 (Online Payme
 - Queries SSLCommerz Merchant Transaction Validation API (`/validator/api/merchantTransIDvalidationAPI.php`).
 - If the gateway query connection fails (`APIConnect !== 'DONE'`), the worker logs an error and skips the intent without modifying state.
 - Scans all transaction attempts in `queryRes.element` for any `VALID` or `VALIDATED` entry matching `tran_id`. If found, it executes the Rule 5 confirmation flow.
-- If no paid entry exists, an explicit `FAILED` or `CANCELLED` status marks it `failed`; otherwise unconfirmed intents remain `initiated` until 24 hours have elapsed, after which they transition to `expired`.
+- If no paid entry exists, intents remain in `'initiated'` so the tenant can retry with another payment method on the same gateway checkout session without having their intent prematurely closed; after 24 hours have elapsed without a confirmed payment, unconfirmed intents safely transition to `'expired'`.
 
 ## Diagram
 

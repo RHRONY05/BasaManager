@@ -459,6 +459,7 @@ describe('V10: SSLCommerz online payments', () => {
       expect(res.status).toBe(303);
       expect(res.headers['location']).toContain('/pay/result');
       expect(res.headers['location']).toContain(`tran=${tranId}`);
+      expect(res.headers['location']).toContain('result=success');
       expect(await count('payments')).toBe(0);
       expect(await count('receipts')).toBe(0);
       expect(await bill(b)).toEqual({ status: 'issued', paid: '0' });
@@ -470,8 +471,12 @@ describe('V10: SSLCommerz online payments', () => {
       await issuedBill(lease, '2026-03-01', 500000);
       const t1 = await startIntent(500000);
       const t2 = await startIntent(500000);
-      expect((await back('fail', t1)).status).toBe(303);
-      expect((await back('cancel', t2)).status).toBe(303);
+      const res1 = await back('fail', t1);
+      const res2 = await back('cancel', t2);
+      expect(res1.status).toBe(303);
+      expect(res1.headers['location']).toContain('result=fail');
+      expect(res2.status).toBe(303);
+      expect(res2.headers['location']).toContain('result=cancel');
       expect(await count('payments')).toBe(0);
       expect((await intentRow(t1)).status).toBe('initiated');
       expect((await intentRow(t2)).status).toBe('initiated');

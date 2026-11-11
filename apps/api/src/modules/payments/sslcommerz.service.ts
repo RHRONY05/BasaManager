@@ -272,7 +272,7 @@ export class SslcommerzService {
 
     // 4. Validate transaction parameters match our intent
     const validatedPoisha = parseAmountToPoisha(valRes.amount);
-    const currency = valRes.currency || valRes.currency_type;
+    const currency = (valRes.currency || valRes.currency_type || '').toUpperCase();
 
     if (currency !== 'BDT' || validatedPoisha !== Number(intent.amountPoisha)) {
       this.logger.error(
@@ -320,7 +320,8 @@ export class SslcommerzService {
     // Blocker 1: Browser returns NEVER modify payment_intents or financial state.
     const tranId = body.tran_id;
     const appUrl = this.envConfig.APP_URL || process.env.APP_URL || 'http://localhost:4000';
-    const redirectUrl = `${appUrl}/pay/result?tran=${encodeURIComponent(tranId || '')}`;
+    const resultParam = result ? `&result=${encodeURIComponent(result)}` : '';
+    const redirectUrl = `${appUrl}/pay/result?tran=${encodeURIComponent(tranId || '')}${resultParam}`;
     return { redirectUrl };
   }
 
@@ -527,8 +528,11 @@ export class SslcommerzService {
         );
 
         if (paidEntry) {
-          const currency =
-            paidEntry.currency_type || (paidEntry as unknown as { currency?: string }).currency || 'BDT';
+          const currency = (
+            paidEntry.currency_type ||
+            (paidEntry as unknown as { currency?: string }).currency ||
+            ''
+          ).toUpperCase();
           const gatewayPoisha = parseAmountToPoisha(paidEntry.amount);
           if (currency !== 'BDT' || gatewayPoisha !== Number(intent.amountPoisha)) {
             await this.prisma.$tx(

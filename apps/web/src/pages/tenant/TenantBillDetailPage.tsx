@@ -209,7 +209,9 @@ export default function TenantBillDetailPage() {
       <div className="card divide-y divide-border/60">
         <div className="p-4 bg-muted/40 font-semibold text-xs text-fg-muted uppercase tracking-wider flex justify-between items-center">
           <span>{t('payments.history', 'Payments & Claims')}</span>
-          <span className="text-xs font-normal lowercase">{payments.length} record(s)</span>
+          <span className="text-xs font-normal lowercase">
+            {payments.length} {t('payments.recordsCount', 'record(s)')}
+          </span>
         </div>
 
         {payments.length > 0 ? (

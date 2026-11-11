@@ -177,7 +177,6 @@ test.describe('V10 Visual Evidence Capture @capture', () => {
     await snapModes(page, 'mobile-360-pay-result-confirmed');
 
     // 5. Pay Result Page - Cancelled State
-    await page.goto('/pay/result?tran=BM-CANCEL-TEST');
     await page.route('**/api/payments/sslcommerz/intents/BM-CANCEL-TEST', async (route) => {
       await route.fulfill({
         status: 200,
@@ -186,13 +185,13 @@ test.describe('V10 Visual Evidence Capture @capture', () => {
           data: {
             id: '22222222-2222-2222-2222-222222222222',
             tranId: 'BM-CANCEL-TEST',
-            status: 'cancelled',
+            status: 'initiated',
             amountPoisha: 1500000,
           },
         }),
       });
     });
-    await page.goto('/pay/result?tran=BM-CANCEL-TEST');
+    await page.goto('/pay/result?tran=BM-CANCEL-TEST&result=cancel');
     await expect(page.getByRole('heading', { name: /Payment Cancelled/i })).toBeVisible();
 
     await page.setViewportSize({ width: 1440, height: 900 });

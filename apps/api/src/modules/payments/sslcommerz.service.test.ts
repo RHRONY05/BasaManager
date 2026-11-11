@@ -111,19 +111,19 @@ describe('SslcommerzService', () => {
   describe('handleReturn', () => {
     it('redirects to /pay/result on success without modifying intent', async () => {
       const res = await service.handleReturn('success', { tran_id: 'TRAN-1' });
-      expect(res.redirectUrl).toBe('http://localhost:4000/pay/result?tran=TRAN-1');
+      expect(res.redirectUrl).toBe('http://localhost:4000/pay/result?tran=TRAN-1&result=success');
       expect(mockTx.paymentIntent.update).not.toHaveBeenCalled();
       expect(mockTx.paymentIntent.updateMany).not.toHaveBeenCalled();
     });
 
     it('redirects to /pay/result on fail and cancel without modifying intent', async () => {
       const res = await service.handleReturn('fail', { tran_id: 'TRAN-1' });
-      expect(res.redirectUrl).toBe('http://localhost:4000/pay/result?tran=TRAN-1');
+      expect(res.redirectUrl).toBe('http://localhost:4000/pay/result?tran=TRAN-1&result=fail');
       expect(mockTx.paymentIntent.update).not.toHaveBeenCalled();
       expect(mockTx.paymentIntent.updateMany).not.toHaveBeenCalled();
 
       const cancelRes = await service.handleReturn('cancel', { tran_id: 'TRAN-1' });
-      expect(cancelRes.redirectUrl).toBe('http://localhost:4000/pay/result?tran=TRAN-1');
+      expect(cancelRes.redirectUrl).toBe('http://localhost:4000/pay/result?tran=TRAN-1&result=cancel');
       expect(mockTx.paymentIntent.update).not.toHaveBeenCalled();
       expect(mockTx.paymentIntent.updateMany).not.toHaveBeenCalled();
     });

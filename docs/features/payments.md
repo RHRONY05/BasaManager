@@ -13,7 +13,7 @@ Tenants can pay directly within the application using the "Pay Online" option (`
 Crucially, **the browser return redirect (`POST /api/payments/sslcommerz/return/:result`) is never trusted to move money or mark a bill as paid**. Payment confirmation and financial allocation happen exclusively through:
 
 1. An asynchronous Server-to-Server Instant Payment Notification (**IPN**) webhook (`POST /api/payments/sslcommerz/ipn`). The API receives the payload, directly contacts the SSLCommerz validation API to verify amount and currency, and if validated, confirms the intent, creates a confirmed `payments` entry, executes Rule 5 waterfall allocation, and issues a gapless receipt.
-2. A background reconciliation cron job (`recheckPaymentIntents`) running every 5 minutes in `apps/worker`. It inspects any intent left unfinalized after 5 minutes, verifies its status against the SSLCommerz order query API, and settles it safely.
+2. A background reconciliation cron job (`recheckPaymentIntents`) running every 10 minutes in `apps/worker`. It inspects any intent left unfinalized after 30 minutes, verifies its status against the SSLCommerz order query API, and settles it safely.
 
 When the tenant returns to the app (`/pay/result?tran=...`), the frontend polls the intent status (`GET /api/payments/sslcommerz/intents/:tranId`) until the webhook confirms it, giving immediate user feedback without compromising security.
 
@@ -194,12 +194,16 @@ sequenceDiagram
     API-->>T: 200 { status: 'confirmed', paymentId, receiptNumber }
   else Unhappy path: Network drops IPN or customer closes tab early
     Note over W: Worker runs recheckPaymentIntents cron (every 10 min)
-    W->>DB: SELECT app_find_stale_payment_intents(30)
+    W->>DB: SELECT * FROM app_find_stale_payment_intents(30)
     W->>GW: Query transaction status by tran_id
     alt Valid or Validated on gateway
       W->>DB: Confirm intent, allocate bills, issue receipt
-    else Expired or failed
-      W->>DB: Mark payment_intent status = 'failed' (or 'expired' after 24h)
+    else Amount or currency mismatch
+      W->>DB: Mark payment_intent status = 'flagged'
+    else Unconfirmed retry window (< 24h)
+      Note over W,DB: Leaves intent 'initiated' so tenant retries on the gateway session are not lost
+    else Expired (> 24h with no valid transaction)
+      W->>DB: Mark payment_intent status = 'expired'
     end
   end
 ```
@@ -215,15 +219,15 @@ sequenceDiagram
   - `recordPayment` and `confirmPayment`: Enforces strict row-locking order (`leases` row first, then `bills` in ascending month order), runs Rule 5 allocation, generates gapless receipt numbers, and writes outbox notifications.
   - `rejectPayment`: Validates required rejection reason and transitions claim to `rejected`.
   - `voidPayment`: Landlord-only endpoint calling `app_void_payment` to remove allocations, unwind subsequent bill credits, recalculate bill balances, and flag receipts as VOID.
-- `apps/api/src/modules/payments/sslcommerz.client.ts`: SSLCommerz HTTP client with retry logic for session initialization (`initiateSession`), IPN server validation (`validateTransaction`), and order queries.
-- `apps/api/src/modules/payments/sslcommerz.service.ts`: Handles payment initiation (`initiateOnlinePayment`), IPN webhook (`handleIpn`), browser returns (`handleReturn`), intent polling (`getPaymentIntentByTranId`), and background recheck verification (`recheckStaleIntents`). Enforces zero-trust redirects and sequential lock ordering (`payment_intents` -> `leases` -> `bills`).
+- `apps/api/src/modules/payments/sslcommerz.client.ts`: SSLCommerz HTTP client with retry logic for session initialization (`initPayment`), IPN server validation (`validatePayment`), and order queries (`queryTransaction`).
+- `apps/api/src/modules/payments/sslcommerz.service.ts`: Handles payment initiation (`initPayment`), IPN webhook (`handleIpn`), browser returns (`handleReturn`), intent polling (`getIntent`), and background recheck verification (`recheckPaymentIntents`). Enforces zero-trust redirects and sequential lock ordering (`payment_intents` -> `leases` -> `bills`).
 - `apps/api/src/modules/payments/sslcommerz.controller.ts`: Express controllers mapping SSLCommerz routes to the service with proper DTO parsing.
 - `apps/worker/src/jobs/recheckPaymentIntents.ts`: Scheduled cron job running every 10 minutes with a Redis mutex lock to reconcile unfinalized payment intents older than 30 minutes against the SSLCommerz validation API (marking unverified intents older than 24 hours as `expired`).
 - `apps/worker/src/pdf/pdf.service.ts`: Headless Puppeteer engine rendering A4 receipts using `receipt.template.ts`, persisting PDFs to storage, and linking `fileId` to `receipts`.
 - `apps/web/src/pages/landlord/PaymentsPage.tsx`: Desktop-first queue for staff to confirm/reject claims, record manual cash, and trigger void operations.
 - `apps/web/src/pages/tenant/ClaimPaymentDialog.tsx`: Mobile-first modal for tenants to enter amount, method, TrxID, and upload payment screenshots.
 - `apps/web/src/pages/tenant/PayOnlineDialog.tsx`: Dialog for tenants to pay bills online via SSLCommerz sandbox, with BDT conversion and minimum ৳100 constraint.
-- `apps/web/src/pages/tenant/PaymentResultPage.tsx`: Tenant polling status screen at `/pay/result?tran=...` showing live transition from initiated to confirmed, failed, or cancelled, with receipt PDF download trigger.
+- `apps/web/src/pages/tenant/PaymentResultPage.tsx`: Tenant polling status screen at `/pay/result?tran=...` showing live transition from initiated to confirmed, failed, cancelled, expired, or still processing, with receipt PDF download trigger.
 
 ## 8. Where the data lives
 
@@ -280,7 +284,7 @@ sequenceDiagram
 
 - **Integration tests**:
   - `apps/api/test/payments/payments.int.test.ts`: 33 integration tests covering tenant claims, proof uploads, staff direct entry, confirmation, rejection, Rule 5 oldest-first allocation, Rule 6 voiding, credit creation & reversal, receipt counters, and concurrency.
-  - `apps/api/test/payments/sslcommerz.int.test.ts`: 26 integration tests covering session initiation, IPN validation, fake IPN rejection, currency/amount mismatch flagging, replay protection, cross-tenant RLS safety, browser return redirection, and recheck cron.
+  - `apps/api/test/payments/sslcommerz.int.test.ts`: 34 integration tests covering session initiation, IPN validation, fake IPN rejection, currency/amount mismatch flagging, replay protection, cross-tenant RLS safety, browser return redirection, and recheck cron.
   ```bash
   pnpm test:int apps/api/test/payments/payments.int.test.ts
   pnpm test:int apps/api/test/payments/sslcommerz.int.test.ts

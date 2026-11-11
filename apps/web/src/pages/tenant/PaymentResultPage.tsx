@@ -9,17 +9,22 @@ import { useToast } from '../../components/ui/Toast.js';
 export default function PaymentResultPage() {
   const [searchParams] = useSearchParams();
   const tranId = searchParams.get('tran') || '';
+  const gatewayResult = searchParams.get('result') || '';
   const { t } = useTranslation();
   const { showToast } = useToast();
 
   const [downloading, setDownloading] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
-  const { data: intent, isPending, isError, error } = usePaymentIntent(tranId, Boolean(tranId));
+  // Stop polling at 60 seconds (spec: 06-UI.md)
+  const isTimedOut = elapsedSeconds >= 60;
+  const isPollingActive = Boolean(tranId) && !isTimedOut;
+  const { data: intent, isPending, isError, error } = usePaymentIntent(tranId, isPollingActive);
 
+  const intentStatus = intent?.status;
   useEffect(() => {
     let timer: NodeJS.Timeout | undefined;
-    if (intent?.status === 'initiated' || isPending) {
+    if ((intentStatus === 'initiated' || isPending || !intent) && !isTimedOut) {
       timer = setInterval(() => {
         setElapsedSeconds((prev) => prev + 1);
       }, 1000);
@@ -27,7 +32,7 @@ export default function PaymentResultPage() {
     return () => {
       if (timer) clearInterval(timer);
     };
-  }, [intent?.status, isPending]);
+  }, [intent, intentStatus, isPending, isTimedOut]);
 
   const handleDownloadReceipt = async (receiptId: string) => {
     try {
@@ -92,14 +97,31 @@ export default function PaymentResultPage() {
     );
   }
 
-  const status = intent?.status || 'initiated';
+  let effectiveStatus:
+    'initiated' | 'confirmed' | 'failed' | 'cancelled' | 'flagged' | 'expired' | 'still_processing';
+
+  if (intent?.status === 'confirmed') {
+    effectiveStatus = 'confirmed';
+  } else if (intent?.status === 'flagged') {
+    effectiveStatus = 'flagged';
+  } else if (intent?.status === 'expired') {
+    effectiveStatus = 'expired';
+  } else if (intent?.status === 'cancelled' || gatewayResult === 'cancel') {
+    effectiveStatus = 'cancelled';
+  } else if (intent?.status === 'failed' || gatewayResult === 'fail') {
+    effectiveStatus = 'failed';
+  } else if (isTimedOut) {
+    effectiveStatus = 'still_processing';
+  } else {
+    effectiveStatus = 'initiated';
+  }
 
   return (
     <div className="py-12 flex items-center justify-center p-4">
       <div className="card p-6 sm:p-8 max-w-md w-full space-y-6">
         {/* Status Graphic & Title */}
         <div className="text-center space-y-3">
-          {status === 'initiated' && (
+          {effectiveStatus === 'initiated' && (
             <>
               <div className="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto animate-pulse">
                 <Loader2 className="h-8 w-8 animate-spin" />
@@ -116,7 +138,24 @@ export default function PaymentResultPage() {
             </>
           )}
 
-          {status === 'confirmed' && (
+          {effectiveStatus === 'still_processing' && (
+            <>
+              <div className="w-16 h-16 rounded-full bg-muted/60 text-fg-muted flex items-center justify-center mx-auto">
+                <Clock className="h-8 w-8 text-fg-muted" />
+              </div>
+              <h1 className="text-xl font-bold text-fg">
+                {t('payments.stillProcessingTitle', 'Still Processing')}
+              </h1>
+              <p className="text-xs text-fg-muted leading-relaxed">
+                {t(
+                  'payments.stillProcessingDesc',
+                  "SSLCommerz hasn't confirmed yet. We'll notify you as soon as it does; don't pay twice.",
+                )}
+              </p>
+            </>
+          )}
+
+          {effectiveStatus === 'confirmed' && (
             <>
               <div className="w-16 h-16 rounded-full bg-success/10 text-success flex items-center justify-center mx-auto">
                 <CheckCircle2 className="h-10 w-10" />
@@ -138,31 +177,45 @@ export default function PaymentResultPage() {
             </>
           )}
 
-          {(status === 'failed' || status === 'cancelled') && (
+          {(effectiveStatus === 'failed' || effectiveStatus === 'cancelled') && (
             <>
               <div className="w-16 h-16 rounded-full bg-danger/10 text-danger flex items-center justify-center mx-auto">
                 <XCircle className="h-10 w-10" />
               </div>
               <h1 className="text-xl font-bold text-fg">
-                {status === 'cancelled'
+                {effectiveStatus === 'cancelled'
                   ? t('payments.paymentCancelled', 'Payment Cancelled')
                   : t('payments.paymentFailed', 'Payment Failed')}
               </h1>
               <p className="text-xs text-fg-muted leading-relaxed">
-                {status === 'cancelled'
-                  ? t(
-                      'payments.cancelledDesc',
-                      'You cancelled the transaction at the payment gateway. No funds were deducted.',
-                    )
+                {effectiveStatus === 'cancelled'
+                  ? t('payments.cancelledDesc', 'You cancelled the payment. Nothing was charged.')
                   : t(
                       'payments.failedDesc',
-                      'The payment gateway reported a failure. If funds were deducted, your bank or mobile wallet will reverse the transaction.',
+                      'The bank declined it. No money was taken. You can try again or pay another way.',
                     )}
               </p>
             </>
           )}
 
-          {status === 'flagged' && (
+          {effectiveStatus === 'expired' && (
+            <>
+              <div className="w-16 h-16 rounded-full bg-danger/10 text-danger flex items-center justify-center mx-auto">
+                <XCircle className="h-10 w-10" />
+              </div>
+              <h1 className="text-xl font-bold text-fg">
+                {t('payments.paymentExpired', 'Payment Session Expired')}
+              </h1>
+              <p className="text-xs text-fg-muted leading-relaxed">
+                {t(
+                  'payments.expiredDesc',
+                  'This payment session timed out without confirmation. No money was taken. You can try again from your bills page.',
+                )}
+              </p>
+            </>
+          )}
+
+          {effectiveStatus === 'flagged' && (
             <>
               <div className="w-16 h-16 rounded-full bg-warning/10 text-warning flex items-center justify-center mx-auto">
                 <AlertTriangle className="h-10 w-10" />
@@ -204,28 +257,32 @@ export default function PaymentResultPage() {
           )}
           <div className="flex justify-between items-center gap-3 text-fg-muted">
             <span className="whitespace-nowrap shrink-0">{t('payments.method', 'Payment Method')}:</span>
-            <span className="font-medium text-fg text-right">SSLCommerz Sandbox</span>
+            <span className="font-medium text-fg text-right">
+              {t('payments.sslcommerzSandbox', 'SSLCommerz Sandbox')}
+            </span>
           </div>
           <div className="flex justify-between items-center gap-3 text-fg-muted">
             <span className="whitespace-nowrap shrink-0">{t('payments.status', 'Status')}:</span>
             <span
               className={`badge text-xs capitalize ${
-                status === 'confirmed'
+                effectiveStatus === 'confirmed'
                   ? 'badge--success'
-                  : status === 'initiated'
+                  : effectiveStatus === 'initiated' ||
+                      effectiveStatus === 'still_processing' ||
+                      effectiveStatus === 'flagged'
                     ? 'badge--warning'
-                    : status === 'flagged'
-                      ? 'badge--warning'
-                      : 'badge--danger'
+                    : 'badge--danger'
               }`}
             >
-              {status}
+              {effectiveStatus === 'still_processing'
+                ? t('payments.statusProcessing', 'Processing')
+                : effectiveStatus}
             </span>
           </div>
         </div>
 
         {/* Timed helper message for long-running initiated intents */}
-        {status === 'initiated' && elapsedSeconds > 30 && (
+        {effectiveStatus === 'initiated' && elapsedSeconds > 30 && (
           <div className="p-3 bg-muted/60 rounded-xl text-xs text-fg-muted flex items-start gap-2 border border-border/50">
             <Clock className="h-4 w-4 shrink-0 mt-0.5 text-fg-muted" />
             <p>
@@ -239,7 +296,7 @@ export default function PaymentResultPage() {
 
         {/* Actions */}
         <div className="space-y-2 pt-2">
-          {status === 'confirmed' && intent?.receiptId && (
+          {effectiveStatus === 'confirmed' && intent?.receiptId && (
             <button
               type="button"
               disabled={downloading}
@@ -251,7 +308,7 @@ export default function PaymentResultPage() {
             </button>
           )}
 
-          {status === 'confirmed' && (
+          {effectiveStatus === 'confirmed' && (
             <Link
               to="/t/bills"
               className="btn btn--primary text-xs w-full flex items-center justify-center gap-1.5"
@@ -261,7 +318,9 @@ export default function PaymentResultPage() {
             </Link>
           )}
 
-          {(status === 'failed' || status === 'cancelled') && (
+          {(effectiveStatus === 'failed' ||
+            effectiveStatus === 'cancelled' ||
+            effectiveStatus === 'expired') && (
             <>
               <Link
                 to="/t/bills"
@@ -275,7 +334,22 @@ export default function PaymentResultPage() {
             </>
           )}
 
-          {(status === 'initiated' || status === 'flagged') && (
+          {effectiveStatus === 'still_processing' && (
+            <>
+              <Link
+                to="/t/bills"
+                className="btn btn--primary text-xs w-full flex items-center justify-center gap-1.5"
+              >
+                <span>{t('actions.backToBills', 'Back to Bills')}</span>
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link to="/t" className="btn btn--secondary text-xs w-full flex items-center justify-center">
+                <span>{t('actions.goToDashboard', 'Dashboard')}</span>
+              </Link>
+            </>
+          )}
+
+          {effectiveStatus === 'initiated' || effectiveStatus === 'flagged' ? (
             <Link
               to="/t/bills"
               className="btn btn--secondary text-xs w-full flex items-center justify-center gap-1.5"
@@ -283,7 +357,7 @@ export default function PaymentResultPage() {
               <span>{t('actions.backToBills', 'Back to Bills')}</span>
               <ArrowRight className="h-4 w-4" />
             </Link>
-          )}
+          ) : null}
         </div>
       </div>
     </div>
