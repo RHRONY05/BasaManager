@@ -104,6 +104,13 @@ describe('Receipt Template & PDF Service', () => {
     };
 
     const mockTx = {
+      receipt: {
+        findUniqueOrThrow: async () => receipt,
+        updateMany: async () => ({ count: 0 }), // 0 updated because status changed/already has file
+      },
+      creditEntry: {
+        findFirst: async () => null,
+      },
       file: {
         create: async (args: { data: { id: string } }) => ({ id: args.data.id }),
         update: async (args: { where: { id: string } }) => {
@@ -111,19 +118,10 @@ describe('Receipt Template & PDF Service', () => {
           return { id: args.where.id };
         },
       },
-      receipt: {
-        updateMany: async () => ({ count: 0 }), // 0 updated because status changed/already has file
-      },
     };
 
     const mockPrisma = {
-      receipt: {
-        findUniqueOrThrow: async () => receipt,
-      },
-      creditEntry: {
-        findFirst: async () => null,
-      },
-      $transaction: async (cb: (tx: typeof mockTx) => Promise<unknown>) => cb(mockTx),
+      $tx: async (_ctx: unknown, cb: (tx: typeof mockTx) => Promise<unknown>) => cb(mockTx),
     };
 
     // Spy renderHtmlToPdf to avoid invoking Puppeteer in this test

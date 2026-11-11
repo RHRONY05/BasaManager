@@ -4,12 +4,14 @@ import { applyLateFeesJob } from './applyLateFees.js';
 import { renderReceiptsJob } from './renderReceipts.js';
 import type { Db } from '@bm/api/config/db';
 import type { RedisClient } from '@bm/api/config/redis';
+import type { Env } from '@bm/api/config/env';
 import type { Logger } from 'pino';
 
 export interface JobContext {
   prisma: Db;
   redis: RedisClient;
   logger: Logger;
+  env?: Pick<Env, 'APP_ENV'> & Partial<Pick<Env, 'STORAGE_DRIVER'>>;
   now?: () => Date;
 }
 

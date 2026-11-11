@@ -112,7 +112,7 @@ sequenceDiagram
 1. **Reservation**: Sequence number is allocated and receipt row inserted at payment confirmation time.
 2. **Pending PDF**: `receipt.file_id` is null; `/download` returns 202.
 3. **Rendered**: Worker generates PDF, writes file row, and sets `receipt.file_id`. `/download` returns 200 with signed link.
-4. **Voided**: If payment is voided, `receipt.status` is set to `'void'`. Future PDF downloads clearly state VOID.
+4. **Voided**: If payment is voided, `receipt.status` is set to `'void'`, any attached PDF is unlinked, and the worker re-renders a new PDF copy featuring a prominent red diagonal `VOID` watermark. Because `app_void_payment` deletes allocation and overpayment records to restore original dues and prevent phantom credit, the regenerated VOID receipt retains all payment headers, amounts, dates, and tenant details, but contains an empty allocations breakdown.
 5. **Retention**: Receipts are permanent financial records (`REVOKE DELETE FROM bm_app`).
 
 ## 10. Edge cases & failure modes

@@ -13,15 +13,28 @@ export type { PaymentMethod, PaymentStatus, ReceiptStatus };
 
 export const isValidCalendarDate = (val: string): boolean => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(val)) return false;
+  if (val < '2000-01-01') return false;
   const d = new Date(`${val}T00:00:00Z`);
   if (isNaN(d.getTime())) return false;
   return d.toISOString().slice(0, 10) === val;
 };
 
+export const isNotFarFuture = (val: string): boolean => {
+  const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const maxDhakaDate = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Dhaka',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(tomorrow);
+  return val <= maxDhakaDate;
+};
+
 export const paidOnSchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'paidOn must be in YYYY-MM-DD format')
-  .refine(isValidCalendarDate, { message: 'paidOn must be a valid calendar date' });
+  .refine(isValidCalendarDate, { message: 'paidOn must be a valid calendar date on or after year 2000' })
+  .refine(isNotFarFuture, { message: 'paidOn cannot be in the future' });
 
 export const paymentAmountPoishaSchema = z
   .number()

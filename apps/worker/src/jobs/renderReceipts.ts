@@ -12,17 +12,23 @@ export const renderReceiptsJob: Job = {
       const { prisma, logger } = ctx;
 
       // Find pending receipts that have no PDF file attached
-      const pendingReceipts = await prisma.receipt.findMany({
-        where: {
-          fileId: null,
+      // We run inside prisma.$tx with null org context (worker cross-org query)
+      const pendingReceipts = await prisma.$tx(
+        { orgId: null, userId: '00000000-0000-4000-8000-000000000000', role: null },
+        async (tx) => {
+          return tx.receipt.findMany({
+            where: {
+              fileId: null,
+            },
+            select: {
+              id: true,
+              number: true,
+              orgId: true,
+            },
+            take: 20,
+          });
         },
-        select: {
-          id: true,
-          number: true,
-          orgId: true,
-        },
-        take: 20,
-      });
+      );
 
       if (pendingReceipts.length === 0) return;
 
@@ -36,7 +42,13 @@ export const renderReceiptsJob: Job = {
       try {
         for (const receipt of pendingReceipts) {
           try {
-            const fileId = await pdfService.generateAndStoreReceiptPdf(prisma, receipt.id, browser);
+            const fileId = await pdfService.generateAndStoreReceiptPdf(prisma, receipt.id, {
+              browser,
+              orgId: receipt.orgId,
+              env: ctx.env?.APP_ENV,
+              storageDriver: ctx.env?.STORAGE_DRIVER,
+              now: ctx.now,
+            });
             logger.info(
               { receiptId: receipt.id, receiptNumber: receipt.number, fileId },
               'Rendered receipt PDF',

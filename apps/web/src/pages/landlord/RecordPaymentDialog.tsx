@@ -7,6 +7,7 @@ import { Upload, X, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { useRecordPayment, uploadFile } from '../../lib/api/payments.js';
 import { useLeases } from '../../lib/api/leases.js';
 import { parseTakaToPoisha } from '../../lib/format.js';
+import { paidOnSchema } from '@bm/shared/api/payments';
 import type { LeaseDto } from '@bm/shared/api/leases';
 
 const getTodayDhaka = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Dhaka' }).format(new Date());
@@ -19,12 +20,7 @@ const recordPaymentFormSchema = z.object({
     .refine((val) => parseTakaToPoisha(val) > 0, { message: 'Payment amount must be positive' }),
   method: z.enum(['cash', 'bkash', 'nagad', 'bank']),
   reference: z.string().max(100).optional(),
-  paidOn: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format')
-    .refine((s) => new Date(`${s}T00:00:00Z`).toISOString().slice(0, 10) === s, {
-      message: 'Invalid calendar date',
-    }),
+  paidOn: paidOnSchema,
 });
 
 type RecordPaymentFormValues = z.infer<typeof recordPaymentFormSchema>;

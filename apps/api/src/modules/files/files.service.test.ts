@@ -147,6 +147,24 @@ describe('FilesService & detectMime & processImage', () => {
       ).rejects.toThrow('File exceeds 5 MB limit');
     });
 
+    it('rejects uploads when declared mimetype mismatches content', async () => {
+      const png = await sharp({
+        create: { width: 20, height: 20, channels: 4, background: { r: 255, g: 0, b: 0, alpha: 1 } },
+      })
+        .png()
+        .toBuffer();
+
+      await expect(
+        service.uploadFile({
+          orgId: 'org-1',
+          userId: 'u-1',
+          kind: 'payment_proof',
+          buffer: png,
+          declaredMime: 'application/pdf',
+        }),
+      ).rejects.toThrow('Declared mimetype');
+    });
+
     it('successfully uploads valid image with processing', async () => {
       const png = await sharp({
         create: { width: 20, height: 20, channels: 4, background: { r: 255, g: 0, b: 0, alpha: 1 } },

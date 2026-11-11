@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import request from 'supertest';
 import { ErrorCode } from '@bm/shared/errors';
 import { q } from '../helpers/pg';
@@ -199,6 +199,8 @@ describe('V9: payments, receipts and files', () => {
         { paidOn: '05/03/2026' },
         { paidOn: '2026-13-45' },
         { paidOn: '2026-02-31' },
+        { paidOn: '0000-01-01' },
+        { paidOn: '2099-01-01' },
         { amountPoisha: 200_000_000_00 },
       ]) {
         const res = await claim(bad);
@@ -502,6 +504,81 @@ describe('V9: payments, receipts and files', () => {
       const outsider = await landlordOf(ctx, await makeOrg());
       expect((await outsider.agent.get(`/api/receipts/${rid}/download`)).status).toBe(404);
     });
+
+    it('worker renderReceiptsJob renders real receipt PDF and VOID copy after void', async () => {
+      const { createPrisma } = await import('../../src/config/db.js');
+      const { renderReceiptsJob } = await import('../../../../apps/worker/src/jobs/renderReceipts.js');
+      const { pdfService } = await import('../../../../apps/worker/src/pdf/pdf.service.js');
+      const pino = (await import('pino')).default;
+
+      // Stub renderHtmlToPdf so tests do not launch headless Puppeteer Chrome
+      const renderSpy = vi
+        .spyOn(pdfService, 'renderHtmlToPdf')
+        .mockResolvedValue(Buffer.from('%PDF-1.4 mock pdf'));
+
+      await issuedBill(lease, '2026-04-01', 5000000);
+      const p = (await record()).body.data;
+      const rid = await receiptId(p.id);
+
+      // Verify initially 202
+      const pendingRes = await tenant.agent.get(`/api/receipts/${rid}/download`);
+      expect(pendingRes.status).toBe(202);
+
+      // Run real worker job with DATABASE_WORKER_URL client
+      const workerPrisma = createPrisma(process.env.DATABASE_WORKER_URL || process.env.DATABASE_URL!);
+      const testLogger = pino({ level: 'silent' });
+      await renderReceiptsJob.run({
+        prisma: workerPrisma,
+        redis: ctx.redis,
+        logger: testLogger,
+        env: { APP_ENV: 'test', STORAGE_DRIVER: 'local' },
+      });
+
+      // Assert receipt.file_id is set
+      const updatedRow = (
+        await q<{ file_id: string }>(`select file_id from receipts where id=$1`, [rid])
+      )[0]!;
+      expect(updatedRow.file_id).toBeTruthy();
+
+      // Assert download returns 200 with URL
+      const doneRes = await tenant.agent.get(`/api/receipts/${rid}/download`);
+      expect(doneRes.status).toBe(200);
+      expect(typeof doneRes.body.data.downloadUrl).toBe('string');
+
+      // Now void payment
+      await landlord.agent.post(`/api/payments/${p.id}/void`).send({ reason: 'Accidental duplicate entry' });
+
+      // After void, file_id is cleared and receipt is void
+      const voidRow = (
+        await q<{ file_id: string | null; status: string }>(
+          `select file_id, status::text from receipts where id=$1`,
+          [rid],
+        )
+      )[0]!;
+      expect(voidRow.status).toBe('void');
+      expect(voidRow.file_id).toBeNull();
+
+      // Run worker job again for VOID copy
+      await renderReceiptsJob.run({
+        prisma: workerPrisma,
+        redis: ctx.redis,
+        logger: testLogger,
+        env: { APP_ENV: 'test', STORAGE_DRIVER: 'local' },
+      });
+
+      // Assert new VOID file_id is set
+      const voidUpdatedRow = (
+        await q<{ file_id: string }>(`select file_id from receipts where id=$1`, [rid])
+      )[0]!;
+      expect(voidUpdatedRow.file_id).toBeTruthy();
+      expect(voidUpdatedRow.file_id).not.toBe(updatedRow.file_id);
+
+      // Assert download returns 200 with URL
+      const voidDoneRes = await tenant.agent.get(`/api/receipts/${rid}/download`);
+      expect(voidDoneRes.status).toBe(200);
+
+      renderSpy.mockRestore();
+    });
   });
 
   // ── files ──────────────────────────────────────────────────────────────────────────────────────
@@ -531,6 +608,13 @@ describe('V9: payments, receipts and files', () => {
     it('415 for an executable renamed to .jpg (type is sniffed, not trusted)', async () => {
       const exe = Buffer.concat([Buffer.from('MZ'), Buffer.alloc(200, 1)]);
       const res = await upload(tenant, exe, 'invoice.jpg', 'image/jpeg');
+      expect(res.status).toBe(415);
+      expect(res.body.error.code).toBe(ErrorCode.UNSUPPORTED_MEDIA_TYPE);
+      expect(await count('files')).toBe(0);
+    });
+
+    it('415 when declared mimetype does not match detected content (e.g. PNG with application/pdf)', async () => {
+      const res = await upload(tenant, PNG, 'fake.pdf', 'application/pdf');
       expect(res.status).toBe(415);
       expect(res.body.error.code).toBe(ErrorCode.UNSUPPORTED_MEDIA_TYPE);
       expect(await count('files')).toBe(0);

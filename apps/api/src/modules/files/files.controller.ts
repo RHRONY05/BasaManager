@@ -43,6 +43,7 @@ export class FilesController {
         kind: body.kind,
         buffer: req.file.buffer,
         originalFilename: req.file.originalname,
+        declaredMime: req.file.mimetype,
       });
 
       res.status(201).json({ data: result });

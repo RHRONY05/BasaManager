@@ -24,10 +24,6 @@ export async function detectMime(
 
   const detected = await fileTypeFromBuffer(buffer);
   if (!detected) {
-    // Standard PDF header fallback (%PDF)
-    if (buffer.length >= 4 && buffer.toString('ascii', 0, 4) === '%PDF') {
-      return { mime: 'application/pdf', format: 'pdf', resourceType: 'raw' };
-    }
     throw new ApiError(ErrorCode.UNSUPPORTED_MEDIA_TYPE, 'Unsupported file type');
   }
 
@@ -102,7 +98,10 @@ export async function processImage(buffer: Buffer): Promise<{
 }
 
 export class FilesService {
-  constructor(private readonly prisma: Db) {}
+  constructor(
+    private readonly prisma: Db,
+    private readonly config?: { APP_ENV?: string; STORAGE_DRIVER?: string },
+  ) {}
 
   async uploadFile(params: {
     orgId: string;
@@ -110,6 +109,7 @@ export class FilesService {
     kind: FileKind;
     buffer: Buffer;
     originalFilename?: string;
+    declaredMime?: string;
   }) {
     if (!ALLOWED_USER_UPLOAD_KINDS.includes(params.kind)) {
       throw new ApiError(ErrorCode.VALIDATION_FAILED, 'Invalid or forbidden file kind for user upload');
@@ -121,6 +121,18 @@ export class FilesService {
     }
 
     const { mime: initialMime, format: initialFormat, resourceType } = await detectMime(params.buffer);
+
+    if (params.declaredMime) {
+      const normDeclared =
+        params.declaredMime.toLowerCase() === 'image/jpg' ? 'image/jpeg' : params.declaredMime.toLowerCase();
+      const normDetected = initialMime.toLowerCase();
+      if (normDeclared !== normDetected) {
+        throw new ApiError(
+          ErrorCode.UNSUPPORTED_MEDIA_TYPE,
+          `Declared mimetype (${params.declaredMime}) does not match detected content (${initialMime})`,
+        );
+      }
+    }
 
     let finalBuffer = params.buffer;
     let thumbBuffer: Buffer | undefined;
@@ -137,7 +149,8 @@ export class FilesService {
 
     const sha256 = crypto.createHash('sha256').update(finalBuffer).digest('hex');
     const fileId = crypto.randomUUID();
-    const appEnv = process.env.APP_ENV || 'test';
+    const appEnv =
+      this.config?.APP_ENV || process.env.APP_ENV || (process.env.NODE_ENV === 'test' ? 'test' : env.APP_ENV);
     const publicId = `basamanager/${appEnv}/org/${params.orgId}/${params.kind}/${fileId}`;
 
     await storage.save({
@@ -149,6 +162,11 @@ export class FilesService {
       resourceType,
     });
 
+    const storageDriver =
+      this.config?.STORAGE_DRIVER ||
+      process.env.STORAGE_DRIVER ||
+      (process.env.NODE_ENV === 'test' ? 'local' : env.STORAGE_DRIVER);
+
     try {
       return await this.prisma.$tx(
         { orgId: params.orgId, userId: params.userId, role: null },
@@ -157,7 +175,7 @@ export class FilesService {
             data: {
               id: fileId,
               orgId: params.orgId,
-              provider: process.env.STORAGE_DRIVER === 'cloudinary' ? 'cloudinary' : 'local',
+              provider: storageDriver === 'cloudinary' ? 'cloudinary' : 'local',
               publicId,
               resourceType,
               format: finalFormat,
