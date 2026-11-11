@@ -554,6 +554,32 @@ test.describe('V9 Payment pages layout (stress states)', () => {
         await page.locator('h1').waitFor();
       },
     },
+    {
+      name: 'tenant pay result page with confirmed payment',
+      setup: async (page: Page, q: string) => {
+        await uiLogin(page, tUser.email, tUser.password, /\/t$/);
+        await page.route('**/api/payments/sslcommerz/intents/*', async (route) => {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              data: {
+                id: '11111111-1111-1111-1111-111111111111',
+                tranId: 'BM-2026-999999',
+                status: 'confirmed',
+                amountPoisha: 1500000,
+                paymentId: '22222222-2222-2222-2222-222222222222',
+                receiptId: '33333333-3333-3333-3333-333333333333',
+                receiptNumber: 'REC-2026-0001',
+              },
+            }),
+          });
+        });
+        const url = q ? `/pay/result?tran=BM-2026-999999&${q.slice(1)}` : '/pay/result?tran=BM-2026-999999';
+        await page.goto(url);
+        await page.locator('h1').waitFor();
+      },
+    },
   ];
 
   for (const scenario of PAYMENT_SCENARIOS) {

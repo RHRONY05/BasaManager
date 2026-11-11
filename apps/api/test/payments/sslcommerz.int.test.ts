@@ -13,7 +13,15 @@ const VALIDATE_URL = 'https://sandbox.sslcommerz.com/validator/api/validationser
 const QUERY_URL = 'https://sandbox.sslcommerz.com/validator/api/merchantTransIDvalidationAPI.php';
 const GATEWAY_PAGE = 'https://sandbox.sslcommerz.com/EasyCheckOut/testcdeabc';
 
-type Scenario = 'valid' | 'invalid' | 'mismatch' | 'timeout';
+type Scenario =
+  | 'valid'
+  | 'invalid'
+  | 'mismatch'
+  | 'timeout'
+  | 'declined-then-valid'
+  | 'query-error'
+  | 'query-empty'
+  | 'foreign-val-id';
 
 describe('V10: SSLCommerz online payments', () => {
   let ctx: TestCtx;
@@ -39,6 +47,21 @@ describe('V10: SSLCommerz online payments', () => {
 
   /** What the gateway reports for a tran_id: the amount is read from our own intent row. */
   async function gatewayView(tranId: string, valId: string) {
+    if (scenario === 'invalid') {
+      return {
+        status: 'INVALID_TRANSACTION',
+      };
+    }
+    if (scenario === 'foreign-val-id') {
+      return {
+        status: 'VALID',
+        tran_id: 'BM-ATTACKER-FOREIGN-999999',
+        val_id: valId,
+        amount: '5000.00',
+        currency: 'BDT',
+        currency_type: 'BDT',
+      };
+    }
     const rows = await q<{ amount_poisha: string }>(
       `select amount_poisha::text from payment_intents where tran_id=$1`,
       [tranId],
@@ -46,7 +69,7 @@ describe('V10: SSLCommerz online payments', () => {
     const poisha = Number(rows[0]?.amount_poisha ?? 0);
     const amount = ((scenario === 'mismatch' ? poisha - 100000 : poisha) / 100).toFixed(2);
     return {
-      status: scenario === 'invalid' ? 'INVALID_TRANSACTION' : 'VALID',
+      status: 'VALID',
       tran_id: tranId,
       val_id: valId,
       amount,
@@ -76,7 +99,35 @@ describe('V10: SSLCommerz online payments', () => {
         return json(await gatewayView(tranId, valId));
       }
       if (url.startsWith(QUERY_URL)) {
+        if (scenario === 'query-error') {
+          return json({
+            APIConnect: 'FAILED',
+            no_of_trans_found: 0,
+          });
+        }
+        if (scenario === 'query-empty') {
+          return json({
+            APIConnect: 'DONE',
+            no_of_trans_found: 0,
+            element: [],
+          });
+        }
         const tranId = new URL(url).searchParams.get('tran_id')!;
+        if (scenario === 'declined-then-valid') {
+          return json({
+            APIConnect: 'DONE',
+            no_of_trans_found: 2,
+            element: [
+              {
+                status: 'FAILED',
+                tran_id: tranId,
+                val_id: `val-failed-${tranId}`,
+                amount: '5000.00',
+              },
+              await gatewayView(tranId, `val-${tranId}`),
+            ],
+          });
+        }
         return json({
           APIConnect: 'DONE',
           no_of_trans_found: 1,
@@ -296,13 +347,23 @@ describe('V10: SSLCommerz online payments', () => {
       expect((await bill(b)).paid).toBe('500000');
     });
 
-    it('a forged IPN the gateway rejects (INVALID_TRANSACTION) fails the intent and pays nothing', async () => {
+    it('a forged IPN the gateway rejects (INVALID_TRANSACTION without matching tran_id) leaves intent initiated and pays nothing', async () => {
       const b = await issuedBill(lease, '2026-03-01', 500000);
       const tranId = await startIntent(500000);
       scenario = 'invalid';
       expect((await ipn(tranId)).status).toBe(200);
       expect(await count('payments')).toBe(0);
-      expect((await intentRow(tranId)).status).toBe('failed');
+      expect((await intentRow(tranId)).status).toBe('initiated');
+      expect(await bill(b)).toEqual({ status: 'issued', paid: '0' });
+    });
+
+    it('an anonymous IPN with an attacker foreign val_id (mismatched tran_id) is ignored and leaves intent initiated', async () => {
+      const b = await issuedBill(lease, '2026-03-01', 500000);
+      const tranId = await startIntent(500000);
+      scenario = 'foreign-val-id';
+      expect((await ipn(tranId)).status).toBe(200);
+      expect(await count('payments')).toBe(0);
+      expect((await intentRow(tranId)).status).toBe('initiated');
       expect(await bill(b)).toEqual({ status: 'issued', paid: '0' });
     });
 
@@ -487,6 +548,48 @@ describe('V10: SSLCommerz online payments', () => {
       scenario = 'mismatch';
       await job()!.run(jobCtx());
       expect((await intentRow(tranId)).status).toBe('flagged');
+      expect(await count('payments')).toBe(0);
+    });
+
+    it('confirms an intent when a declined attempt precedes the valid payment', async () => {
+      const b = await issuedBill(lease, '2026-03-01', 500000);
+      const tranId = await startIntent(500000);
+      await age(tranId, 45);
+      scenario = 'declined-then-valid';
+      await job()!.run(jobCtx());
+      expect((await intentRow(tranId)).status).toBe('confirmed');
+      expect(await count('payments')).toBe(1);
+      expect(await bill(b)).toEqual({ status: 'paid', paid: '500000' });
+    });
+
+    it('skips intent and writes nothing when gateway query APIConnect is not DONE', async () => {
+      await issuedBill(lease, '2026-03-01', 500000);
+      const tranId = await startIntent(500000);
+      await age(tranId, 1500); // 25 hours old
+      scenario = 'query-error';
+      await job()!.run(jobCtx());
+      // Should NOT be marked expired or failed because query did not succeed!
+      expect((await intentRow(tranId)).status).toBe('initiated');
+      expect(await count('payments')).toBe(0);
+    });
+
+    it('leaves an intent initiated at 31 minutes when no transactions found yet at gateway', async () => {
+      await issuedBill(lease, '2026-03-01', 500000);
+      const tranId = await startIntent(500000);
+      await age(tranId, 31);
+      scenario = 'query-empty';
+      await job()!.run(jobCtx());
+      expect((await intentRow(tranId)).status).toBe('initiated');
+      expect(await count('payments')).toBe(0);
+    });
+
+    it('marks an intent expired after 24 hours when no valid transaction found', async () => {
+      await issuedBill(lease, '2026-03-01', 500000);
+      const tranId = await startIntent(500000);
+      await age(tranId, 1500); // 25 hours old
+      scenario = 'query-empty';
+      await job()!.run(jobCtx());
+      expect((await intentRow(tranId)).status).toBe('expired');
       expect(await count('payments')).toBe(0);
     });
   });

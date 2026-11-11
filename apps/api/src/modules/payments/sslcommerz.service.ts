@@ -13,6 +13,16 @@ import type {
 import { SslcommerzClient } from './sslcommerz.client.js';
 import { processPaymentAllocationAndReceipt } from './allocation.js';
 
+function parseAmountToPoisha(amount: string | number | undefined | null): number {
+  if (!amount) return 0;
+  const str = String(amount).trim();
+  const parts = str.split('.');
+  const taka = parseInt(parts[0] || '0', 10);
+  const poishaPart = (parts[1] || '').padEnd(2, '0').slice(0, 2);
+  const poisha = parseInt(poishaPart || '0', 10);
+  return isNaN(taka) || isNaN(poisha) ? 0 : taka * 100 + poisha;
+}
+
 export interface SslcommerzServiceContext {
   orgId: string;
   userId: string;
@@ -220,7 +230,15 @@ export class SslcommerzService {
     // 3. Call SSLCommerz server-to-server validation API
     const valRes = await this.client.validatePayment(valId);
 
-    // Blocker 3: Both VALID and VALIDATED are accepted as successful
+    // Blocker 1 & 2: A transaction ID mismatch or missing tran_id must be IGNORED, not failed or flagged.
+    // If the gateway validation response names someone else's transaction ID (or no transaction ID),
+    // an attacker may be probing with arbitrary or foreign val_ids. Do not touch our intent.
+    if (!valRes.tran_id || valRes.tran_id !== intent.tranId) {
+      return { status: 'ignored' };
+    }
+
+    // Now we know valRes.tran_id === intent.tranId.
+    // Both VALID and VALIDATED are accepted as successful. If gateway explicitly reports failure for our intent:
     if (valRes.status !== 'VALID' && valRes.status !== 'VALIDATED') {
       await this.prisma.$tx(
         { orgId: intent.orgId, userId: WORKER_SYSTEM_USER_ID, role: null },
@@ -235,14 +253,10 @@ export class SslcommerzService {
     }
 
     // 4. Validate transaction parameters match our intent
-    const validatedPoisha = Math.round(parseFloat(valRes.amount) * 100);
+    const validatedPoisha = parseAmountToPoisha(valRes.amount);
     const currency = valRes.currency || valRes.currency_type;
 
-    if (
-      valRes.tran_id !== intent.tranId ||
-      currency !== 'BDT' ||
-      validatedPoisha !== Number(intent.amountPoisha)
-    ) {
+    if (currency !== 'BDT' || validatedPoisha !== Number(intent.amountPoisha)) {
       await this.prisma.$tx(
         { orgId: intent.orgId, userId: WORKER_SYSTEM_USER_ID, role: null },
         async (tx) => {
@@ -460,67 +474,76 @@ export class SslcommerzService {
 
       try {
         const queryRes = await this.client.queryTransaction(intent.tranId);
+        // Blocker 4: When the gateway query doesn't succeed (e.g. network or credential failure), skip the intent and write nothing!
         if (queryRes.APIConnect !== 'DONE' && !isMock) {
           options?.logger?.error(
             { tranId: intent.tranId, apiConnect: queryRes.APIConnect },
             'SSLCommerz queryTransaction APIConnect was not DONE',
           );
-        }
-
-        const trans = queryRes.element?.[0];
-        const ageHours = (nowMs - new Date(intent.createdAt).getTime()) / (1000 * 60 * 60);
-
-        if (!trans || (trans.status !== 'VALID' && trans.status !== 'VALIDATED')) {
-          // If transaction was not found or failed
-          if (
-            queryRes.no_of_trans_found === 0 ||
-            trans?.status === 'FAILED' ||
-            trans?.status === 'CANCELLED'
-          ) {
-            await this.prisma.$tx(
-              { orgId: intent.orgId, userId: WORKER_SYSTEM_USER_ID, role: null },
-              async (tx) => {
-                await tx.paymentIntent.updateMany({
-                  where: { id: intent.id, status: 'initiated' },
-                  data: { status: 'failed' },
-                });
-              },
-            );
-            failedCount++;
-          } else if (ageHours >= 24) {
-            // Should 7: After 24 h with no VALID/VALIDATED, set expired
-            await this.prisma.$tx(
-              { orgId: intent.orgId, userId: WORKER_SYSTEM_USER_ID, role: null },
-              async (tx) => {
-                await tx.paymentIntent.updateMany({
-                  where: { id: intent.id, status: 'initiated' },
-                  data: { status: 'expired' },
-                });
-              },
-            );
-            expiredCount++;
-          }
           continue;
         }
 
-        const gatewayPoisha = Math.round(parseFloat(trans.amount) * 100);
-        if (gatewayPoisha !== Number(intent.amountPoisha)) {
+        const elements = Array.isArray(queryRes.element) ? queryRes.element : [];
+        const ageHours = (nowMs - new Date(intent.createdAt).getTime()) / (1000 * 60 * 60);
+
+        // Blocker 3: Look for ANY paid entry for our transaction ID in queryRes.element
+        const paidEntry = elements.find(
+          (e) => (e.status === 'VALID' || e.status === 'VALIDATED') && e.tran_id === intent.tranId,
+        );
+
+        if (paidEntry) {
+          const gatewayPoisha = parseAmountToPoisha(paidEntry.amount);
+          if (gatewayPoisha !== Number(intent.amountPoisha)) {
+            await this.prisma.$tx(
+              { orgId: intent.orgId, userId: WORKER_SYSTEM_USER_ID, role: null },
+              async (tx) => {
+                await tx.paymentIntent.updateMany({
+                  where: { id: intent.id, status: 'initiated' },
+                  data: { status: 'flagged', valId: paidEntry.val_id },
+                });
+              },
+            );
+            flaggedCount++;
+            continue;
+          }
+
+          // Amount and status match -> confirm payment!
+          await this.confirmIntentAndAllocate(intent, paidEntry.val_id);
+          confirmedCount++;
+          continue;
+        }
+
+        // Should fix 1: If there is no paid entry:
+        // Only mark failed if gateway explicitly reports FAILED or CANCELLED for this tran_id.
+        // If not found / still pending (e.g. at 30 min), leave as 'initiated' until 24h.
+        const hasFailedEntry = elements.some(
+          (e) => (e.status === 'FAILED' || e.status === 'CANCELLED') && e.tran_id === intent.tranId,
+        );
+
+        if (hasFailedEntry) {
           await this.prisma.$tx(
             { orgId: intent.orgId, userId: WORKER_SYSTEM_USER_ID, role: null },
             async (tx) => {
               await tx.paymentIntent.updateMany({
                 where: { id: intent.id, status: 'initiated' },
-                data: { status: 'flagged', valId: trans.val_id },
+                data: { status: 'failed' },
               });
             },
           );
-          flaggedCount++;
-          continue;
+          failedCount++;
+        } else if (ageHours >= 24) {
+          // After 24 h with no VALID/VALIDATED, set expired
+          await this.prisma.$tx(
+            { orgId: intent.orgId, userId: WORKER_SYSTEM_USER_ID, role: null },
+            async (tx) => {
+              await tx.paymentIntent.updateMany({
+                where: { id: intent.id, status: 'initiated' },
+                data: { status: 'expired' },
+              });
+            },
+          );
+          expiredCount++;
         }
-
-        // Amount and status match -> confirm payment!
-        await this.confirmIntentAndAllocate(intent, trans.val_id);
-        confirmedCount++;
       } catch (err) {
         options?.logger?.error({ tranId: intent.tranId, err }, 'Failed to recheck payment intent');
       }

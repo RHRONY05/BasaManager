@@ -255,6 +255,9 @@ sequenceDiagram
 - **Oversized Proof Photo**: Files larger than 5 MB are rejected with `413 Payload Too Large` without storing bytes to disk.
 - **Voiding After Credit Was Used**: Handled by Rule 6. If an overpayment credit of ৳2,000 was already applied to pay a subsequent month's bill, voiding the originating payment un-applies that credit, returning the subsequent month's bill to unpaid status.
 - **SSLCommerz Amount / Currency Mismatch**: If an attacker attempts to spoof an IPN with an amount or currency that diverges from the recorded intent, the validation check flags the intent as `flagged` and prevents any allocation or receipt issuance.
+- **Foreign or Invalid IPN `val_id`**: If an IPN carries a forged, garbage, or foreign `val_id` (where the gateway returns `INVALID_TRANSACTION` or a `tran_id` that does not match our payment intent), the IPN is ignored (`status: 'ignored'`) and the intent remains `initiated` so legitimate payments and the background reconciliation job are never prematurely aborted or compromised.
+- **Both VALID and VALIDATED Accepted**: Both `VALID` (first validation) and `VALIDATED` (gateway re-query) are accepted by IPN and recheck routines as confirmed transactions.
+- **Recheck Cron Resilience**: The background recheck job scans all transaction attempts returned in `queryRes.element` for a valid payment. If the gateway connection fails (`APIConnect !== 'DONE'`), the job safely skips without modifying intent status. Intents with no gateway record remain `initiated` until 24 hours have elapsed, after which they are marked `expired`.
 
 ## 11. Security
 
@@ -262,7 +265,7 @@ sequenceDiagram
 - **Role Isolation**: Tenants can only view and submit claims for their own active leases (`403` for landlord endpoints, `404` for cross-lease probing). Caretakers can only record and confirm payments for buildings to which they are explicitly assigned (`caretaker_buildings`). Only landlords can void payments (`403` for caretakers and tenants).
 - **Immutable Financial History**: PostgreSQL permissions explicitly execute `REVOKE DELETE ON payments, payment_allocations, receipts, credit_entries FROM bm_app`. Deleting allocations during voiding is strictly permitted through a `SECURITY DEFINER` function (`app_void_payment`) owned by `bm_owner`.
 - **Private Storage & Expiring HMAC URLs**: Uploaded photos and receipts are never public. URLs expire after 300 seconds and carry an HMAC-SHA256 signature (`STORAGE_URL_SECRET`). Tampered signatures or expired timestamps produce `403 Forbidden`.
-- **Zero Trust on Browser Redirects**: Browser return redirects (`POST /api/payments/sslcommerz/return/:result`) never allocate funds. Funds are only allocated upon server-to-server validation (IPN or cron recheck).
+- **Zero Trust on Browser Redirects**: Browser return redirects (`POST /api/payments/sslcommerz/return/:result`) never allocate funds or mutate intent status. Funds and state mutations are only performed upon server-to-server validation (IPN or cron recheck).
 
 ## 12. Concepts used
 

@@ -39,21 +39,20 @@ The BasaManager payment gateway implementation adheres to **Rule 8 (Online Payme
 ### 2. The Browser Return (`POST /api/payments/sslcommerz/return/:result`)
 
 - The gateway POSTs form data back to `/api/payments/sslcommerz/return/:result` (`success`, `fail`, `cancel`).
-- **Critical Security Invariant**: The return handler **NEVER marks a bill paid or moves money**.
-- If `fail` or `cancel`, it updates the intent status to `failed` or `cancelled` (only if still `initiated`).
-- Emits a HTTP 303 See Other redirecting the user to `/pay/result?tran=:tranId`.
+- **Critical Security Invariant**: The return handler **NEVER marks a bill paid, moves money, or mutates payment intent state**.
+- Browser returns simply issue an HTTP 303 See Other redirecting the user to `/pay/result?tran=:tranId`.
 - The frontend page polls `GET /api/payments/sslcommerz/intents/:tranId` until the backend confirms the status.
 
 ### 3. Server-to-Server IPN (`POST /api/payments/sslcommerz/ipn`)
 
 - SSLCommerz makes an out-of-band POST request containing `tran_id` and `val_id`.
-- BasaManager **does not trust the payload fields**. It takes `val_id` and immediately calls the SSLCommerz **Validation Server API** (`/validator/api/validationserverAPI.php`).
+- BasaManager **does not trust the payload fields or form status**. It takes `val_id` and immediately calls the SSLCommerz **Validation Server API** (`/validator/api/validationserverAPI.php`).
 - It verifies that:
-  - `status === 'VALID'`
-  - `tran_id === intent.tranId`
+  - `valRes.tran_id === intent.tranId` (if missing or mismatched, the IPN is ignored without touching the intent, defeating foreign or forged `val_id` probing).
+  - `valRes.status === 'VALID' || valRes.status === 'VALIDATED'` (both indicate success; any other status for our verified `tran_id` marks the intent `failed`).
   - `currency === 'BDT'`
   - `valRes.amount` converts exactly to `intent.amountPoisha`.
-- If any check fails, the intent is stamped `'flagged'` for manual admin review, and **no money is allocated**.
+- If currency or amount diverges, the intent is stamped `'flagged'` for manual admin review, and **no money is allocated**.
 - If valid, it enters an atomic database transaction:
   - Takes a row lock (`FOR UPDATE`) on the intent to guarantee idempotency.
   - Takes a row lock on the lease.
@@ -67,7 +66,9 @@ The BasaManager payment gateway implementation adheres to **Rule 8 (Online Payme
 - Every 10 minutes, the background worker executes `recheckPaymentIntentsJob`.
 - Scans all intents that have remained in `'initiated'` status for longer than 30 minutes via the `app_find_stale_payment_intents` function.
 - Queries SSLCommerz Merchant Transaction Validation API (`/validator/api/merchantTransIDvalidationAPI.php`).
-- If the gateway confirms payment was successful, the worker executes the exact same Rule 5 confirmation flow. If failed or missing, it updates status accordingly.
+- If the gateway query connection fails (`APIConnect !== 'DONE'`), the worker logs an error and skips the intent without modifying state.
+- Scans all transaction attempts in `queryRes.element` for any `VALID` or `VALIDATED` entry matching `tran_id`. If found, it executes the Rule 5 confirmation flow.
+- If no paid entry exists, an explicit `FAILED` or `CANCELLED` status marks it `failed`; otherwise unconfirmed intents remain `initiated` until 24 hours have elapsed, after which they transition to `expired`.
 
 ## Diagram
 
