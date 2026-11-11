@@ -182,28 +182,32 @@ export default function PaymentResultPage() {
 
         {/* Transaction Details Box */}
         <div className="rounded-xl bg-muted/40 border border-border/60 p-4 space-y-2.5 text-xs">
-          <div className="flex justify-between items-center text-fg-muted">
-            <span>{t('payments.transactionId', 'Transaction ID')}:</span>
-            <span className="font-mono text-fg font-medium break-all">{tranId}</span>
+          <div className="flex justify-between items-center gap-3 text-fg-muted">
+            <span className="whitespace-nowrap shrink-0">
+              {t('payments.transactionId', 'Transaction ID')}:
+            </span>
+            <span className="font-mono text-fg font-medium break-all text-right">{tranId}</span>
           </div>
           {intent?.receiptNumber && (
-            <div className="flex justify-between items-center text-fg-muted">
-              <span>{t('payments.receiptNumber', 'Receipt Number')}:</span>
-              <span className="font-mono font-bold text-fg">{intent.receiptNumber}</span>
+            <div className="flex justify-between items-center gap-3 text-fg-muted">
+              <span className="whitespace-nowrap shrink-0">
+                {t('payments.receiptNumber', 'Receipt Number')}:
+              </span>
+              <span className="font-mono font-bold text-fg text-right">{intent.receiptNumber}</span>
             </div>
           )}
           {intent?.amountPoisha && (
-            <div className="flex justify-between items-center text-fg-muted">
-              <span>{t('payments.amount', 'Amount')}:</span>
-              <span className="font-bold text-fg num">{formatMoney(intent.amountPoisha)}</span>
+            <div className="flex justify-between items-center gap-3 text-fg-muted">
+              <span className="whitespace-nowrap shrink-0">{t('payments.amount', 'Amount')}:</span>
+              <span className="font-bold text-fg num text-right">{formatMoney(intent.amountPoisha)}</span>
             </div>
           )}
-          <div className="flex justify-between items-center text-fg-muted">
-            <span>{t('payments.method', 'Payment Method')}:</span>
-            <span className="font-medium text-fg">SSLCommerz Sandbox</span>
+          <div className="flex justify-between items-center gap-3 text-fg-muted">
+            <span className="whitespace-nowrap shrink-0">{t('payments.method', 'Payment Method')}:</span>
+            <span className="font-medium text-fg text-right">SSLCommerz Sandbox</span>
           </div>
-          <div className="flex justify-between items-center text-fg-muted">
-            <span>{t('payments.status', 'Status')}:</span>
+          <div className="flex justify-between items-center gap-3 text-fg-muted">
+            <span className="whitespace-nowrap shrink-0">{t('payments.status', 'Status')}:</span>
             <span
               className={`badge text-xs capitalize ${
                 status === 'confirmed'

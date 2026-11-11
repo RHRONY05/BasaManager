@@ -21,7 +21,9 @@ type Scenario =
   | 'declined-then-valid'
   | 'query-error'
   | 'query-empty'
-  | 'foreign-val-id';
+  | 'foreign-val-id'
+  | 'currency-mismatch'
+  | 'only-declined';
 
 describe('V10: SSLCommerz online payments', () => {
   let ctx: TestCtx;
@@ -113,6 +115,35 @@ describe('V10: SSLCommerz online payments', () => {
           });
         }
         const tranId = new URL(url).searchParams.get('tran_id')!;
+        if (scenario === 'currency-mismatch') {
+          return json({
+            APIConnect: 'DONE',
+            no_of_trans_found: 1,
+            element: [
+              {
+                status: 'VALID',
+                tran_id: tranId,
+                val_id: `val-usd-${tranId}`,
+                amount: '5000.00',
+                currency_type: 'USD',
+              },
+            ],
+          });
+        }
+        if (scenario === 'only-declined') {
+          return json({
+            APIConnect: 'DONE',
+            no_of_trans_found: 1,
+            element: [
+              {
+                status: 'FAILED',
+                tran_id: tranId,
+                val_id: `val-failed-${tranId}`,
+                amount: '5000.00',
+              },
+            ],
+          });
+        }
         if (scenario === 'declined-then-valid') {
           return json({
             APIConnect: 'DONE',
@@ -488,6 +519,14 @@ describe('V10: SSLCommerz online payments', () => {
       expect((await request(ctx.app).get(`/api/payments/sslcommerz/intents/${tranId}`)).status).toBe(401);
     });
 
+    it('only the owning tenant can check intent status; same org landlord and caretaker get 404', async () => {
+      await issuedBill(lease, '2026-03-01', 500000);
+      const tranId = await startIntent(500000);
+      const ct = await actorIn(ctx, org.id, 'caretaker');
+      expect((await landlord.agent.get(`/api/payments/sslcommerz/intents/${tranId}`)).status).toBe(404);
+      expect((await ct.agent.get(`/api/payments/sslcommerz/intents/${tranId}`)).status).toBe(404);
+    });
+
     it('a landlord of another org gets 404', async () => {
       await issuedBill(lease, '2026-03-01', 500000);
       const tranId = await startIntent(500000);
@@ -551,6 +590,16 @@ describe('V10: SSLCommerz online payments', () => {
       expect(await count('payments')).toBe(0);
     });
 
+    it('flags a re-checked intent whose gateway currency is not BDT', async () => {
+      await issuedBill(lease, '2026-03-01', 500000);
+      const tranId = await startIntent(500000);
+      await age(tranId, 45);
+      scenario = 'currency-mismatch';
+      await job()!.run(jobCtx());
+      expect((await intentRow(tranId)).status).toBe('flagged');
+      expect(await count('payments')).toBe(0);
+    });
+
     it('confirms an intent when a declined attempt precedes the valid payment', async () => {
       const b = await issuedBill(lease, '2026-03-01', 500000);
       const tranId = await startIntent(500000);
@@ -560,6 +609,16 @@ describe('V10: SSLCommerz online payments', () => {
       expect((await intentRow(tranId)).status).toBe('confirmed');
       expect(await count('payments')).toBe(1);
       expect(await bill(b)).toEqual({ status: 'paid', paid: '500000' });
+    });
+
+    it('leaves an intent initiated even if only a declined attempt was found at 45 minutes (retry not lost)', async () => {
+      await issuedBill(lease, '2026-03-01', 500000);
+      const tranId = await startIntent(500000);
+      await age(tranId, 45);
+      scenario = 'only-declined';
+      await job()!.run(jobCtx());
+      expect((await intentRow(tranId)).status).toBe('initiated');
+      expect(await count('payments')).toBe(0);
     });
 
     it('skips intent and writes nothing when gateway query APIConnect is not DONE', async () => {

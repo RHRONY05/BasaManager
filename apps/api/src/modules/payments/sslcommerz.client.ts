@@ -61,9 +61,12 @@ export class SslcommerzClient {
 
   async initPayment(params: InitPaymentParams): Promise<SslcommerzInitResponse> {
     const totalAmount = (params.amountPoisha / 100).toFixed(2);
-    SslcommerzClient.mockAmounts.set(params.tranId, totalAmount);
     const isMock = this.config.isMock || process.env.PAYMENTS_MOCK === 'true';
     if (isMock) {
+      if (SslcommerzClient.mockAmounts.size > 500) {
+        SslcommerzClient.mockAmounts.clear();
+      }
+      SslcommerzClient.mockAmounts.set(params.tranId, totalAmount);
       return {
         status: 'SUCCESS',
         GatewayPageURL: `${params.appUrl}/api/payments/sslcommerz/mock-gateway?tran_id=${encodeURIComponent(params.tranId)}&amount=${totalAmount}`,

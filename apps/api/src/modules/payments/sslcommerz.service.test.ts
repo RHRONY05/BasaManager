@@ -456,7 +456,7 @@ describe('SslcommerzService', () => {
       );
     });
 
-    it('marks intent failed when gateway query returns FAILED', async () => {
+    it('keeps intent initiated when gateway query returns FAILED before 24h to allow retries', async () => {
       vi.mocked(mockPrisma.$queryRaw).mockResolvedValueOnce([
         {
           id: 'pi-1',
@@ -465,6 +465,7 @@ describe('SslcommerzService', () => {
           tran_id: 'TRAN-1',
           amount_poisha: 10000n,
           created_by: 'u-1',
+          created_at: new Date(Date.now() - 35 * 60 * 1000),
         },
       ]);
 
@@ -483,7 +484,42 @@ describe('SslcommerzService', () => {
 
       const summary = await service.recheckPaymentIntents({ cutoffMinutes: 30 });
       expect(summary.checked).toBe(1);
-      expect(summary.failed).toBe(1);
+      expect(summary.failed).toBe(0);
+      expect(summary.confirmed).toBe(0);
+      expect(summary.expired).toBe(0);
+      expect(mockTx.paymentIntent.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('marks intent flagged when gateway query currency is not BDT', async () => {
+      vi.mocked(mockPrisma.$queryRaw).mockResolvedValueOnce([
+        {
+          id: 'pi-1',
+          org_id: 'org-1',
+          lease_id: 'l-1',
+          tran_id: 'TRAN-1',
+          amount_poisha: 10000n,
+          created_by: 'u-1',
+          created_at: new Date(Date.now() - 35 * 60 * 1000),
+        },
+      ]);
+
+      vi.mocked(mockClient.queryTransaction).mockResolvedValue({
+        APIConnect: 'DONE',
+        no_of_trans_found: 1,
+        element: [
+          {
+            status: 'VALID',
+            tran_id: 'TRAN-1',
+            val_id: 'VAL-1',
+            amount: '100.00',
+            currency_type: 'USD',
+          },
+        ],
+      });
+
+      const summary = await service.recheckPaymentIntents({ cutoffMinutes: 30 });
+      expect(summary.checked).toBe(1);
+      expect(summary.flagged).toBe(1);
     });
 
     it('marks intent flagged when gateway query amount mismatches', async () => {

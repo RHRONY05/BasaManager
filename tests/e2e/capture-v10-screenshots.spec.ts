@@ -138,6 +138,9 @@ test.describe('V10 Visual Evidence Capture @capture', () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await snapModes(page, 'mobile-pay-online-dialog');
 
+    await page.setViewportSize({ width: 360, height: 780 });
+    await snapModes(page, 'mobile-360-pay-online-dialog');
+
     // 3. Proceed to Payment Mock Gateway
     const proceedBtn = page.getByRole('button', { name: /Proceed to Payment/i });
     await expect(proceedBtn).toBeEnabled();
@@ -151,6 +154,9 @@ test.describe('V10 Visual Evidence Capture @capture', () => {
 
     await page.setViewportSize({ width: 390, height: 844 });
     await snapModes(page, 'mobile-mock-gateway');
+
+    await page.setViewportSize({ width: 360, height: 780 });
+    await snapModes(page, 'mobile-360-mock-gateway');
 
     // 4. Simulate Success and land on Pay Result Page
     const successBtn = page.locator('#mock-pay-success');
@@ -166,6 +172,9 @@ test.describe('V10 Visual Evidence Capture @capture', () => {
 
     await page.setViewportSize({ width: 390, height: 844 });
     await snapModes(page, 'mobile-pay-result-confirmed');
+
+    await page.setViewportSize({ width: 360, height: 780 });
+    await snapModes(page, 'mobile-360-pay-result-confirmed');
 
     // 5. Pay Result Page - Cancelled State
     await page.goto('/pay/result?tran=BM-CANCEL-TEST');
@@ -191,5 +200,8 @@ test.describe('V10 Visual Evidence Capture @capture', () => {
 
     await page.setViewportSize({ width: 390, height: 844 });
     await snapModes(page, 'mobile-pay-result-cancelled');
+
+    await page.setViewportSize({ width: 360, height: 780 });
+    await snapModes(page, 'mobile-360-pay-result-cancelled');
   });
 });

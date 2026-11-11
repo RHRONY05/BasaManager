@@ -5,6 +5,8 @@ import { env as defaultEnv } from '../../config/env.js';
 import { clock, getDhakaDateString } from '../../lib/clock.js';
 import { ApiError } from '../../lib/ApiError.js';
 import { ErrorCode } from '@bm/shared/errors';
+import { createLogger } from '../../lib/logger.js';
+import { captureError } from '../../config/sentry.js';
 import type {
   InitOnlinePaymentInput,
   InitOnlinePaymentResponse,
@@ -34,6 +36,7 @@ const WORKER_SYSTEM_USER_ID = '00000000-0000-4000-8000-000000000000';
 export class SslcommerzService {
   private readonly client: SslcommerzClient;
   private readonly envConfig: Env;
+  private readonly logger = createLogger();
 
   constructor(
     private readonly prisma: Db,
@@ -224,6 +227,10 @@ export class SslcommerzService {
     // The background recheck job will securely query SSLCommerz by tran_id.
     const valId = body.val_id;
     if (!valId || body.status === 'FAILED' || body.status === 'CANCELLED') {
+      this.logger.warn(
+        { tranId, valId, formStatus: body.status },
+        'SSLCommerz IPN payload unverified or non-positive; ignored',
+      );
       return { status: 'ignored' };
     }
 
@@ -234,12 +241,23 @@ export class SslcommerzService {
     // If the gateway validation response names someone else's transaction ID (or no transaction ID),
     // an attacker may be probing with arbitrary or foreign val_ids. Do not touch our intent.
     if (!valRes.tran_id || valRes.tran_id !== intent.tranId) {
+      this.logger.warn(
+        { tranId: intent.tranId, returnedTranId: valRes.tran_id, valId },
+        'SSLCommerz validation response tran_id did not match payment intent tran_id; ignoring IPN',
+      );
       return { status: 'ignored' };
     }
 
     // Now we know valRes.tran_id === intent.tranId.
     // Both VALID and VALIDATED are accepted as successful. If gateway explicitly reports failure for our intent:
     if (valRes.status !== 'VALID' && valRes.status !== 'VALIDATED') {
+      this.logger.error(
+        { tranId: intent.tranId, valResStatus: valRes.status, valId },
+        'SSLCommerz IPN validation returned failure for intent',
+      );
+      captureError(
+        new Error(`SSLCommerz payment failed for tran_id ${intent.tranId}: gateway status ${valRes.status}`),
+      );
       await this.prisma.$tx(
         { orgId: intent.orgId, userId: WORKER_SYSTEM_USER_ID, role: null },
         async (tx) => {
@@ -257,6 +275,21 @@ export class SslcommerzService {
     const currency = valRes.currency || valRes.currency_type;
 
     if (currency !== 'BDT' || validatedPoisha !== Number(intent.amountPoisha)) {
+      this.logger.error(
+        {
+          tranId: intent.tranId,
+          expectedPoisha: Number(intent.amountPoisha),
+          validatedPoisha,
+          currency,
+          valId,
+        },
+        'SSLCommerz IPN flagged due to amount or currency mismatch',
+      );
+      captureError(
+        new Error(
+          `SSLCommerz IPN flagged for tran_id ${intent.tranId}: expected ${intent.amountPoisha} poisha BDT, got ${validatedPoisha} ${currency}`,
+        ),
+      );
       await this.prisma.$tx(
         { orgId: intent.orgId, userId: WORKER_SYSTEM_USER_ID, role: null },
         async (tx) => {
@@ -304,20 +337,22 @@ export class SslcommerzService {
         throw new ApiError(ErrorCode.NOT_FOUND, 'Payment intent not found');
       }
 
-      // Tenants can only inspect intents on their own lease
-      if (ctx.role === 'tenant') {
-        const isTenantOnLease = await tx.leaseTenant.findFirst({
-          where: {
-            leaseId: intent.leaseId,
-            membership: {
-              userId: ctx.userId,
-              orgId: ctx.orgId,
-            },
+      // Blocker 1: Only the tenant who owns the lease may inspect payment intent status
+      if (ctx.role !== 'tenant') {
+        throw new ApiError(ErrorCode.NOT_FOUND, 'Payment intent not found');
+      }
+
+      const isTenantOnLease = await tx.leaseTenant.findFirst({
+        where: {
+          leaseId: intent.leaseId,
+          membership: {
+            userId: ctx.userId,
+            orgId: ctx.orgId,
           },
-        });
-        if (!isTenantOnLease) {
-          throw new ApiError(ErrorCode.NOT_FOUND, 'Payment intent not found');
-        }
+        },
+      });
+      if (!isTenantOnLease) {
+        throw new ApiError(ErrorCode.NOT_FOUND, 'Payment intent not found');
       }
 
       let receiptId: string | null = null;
@@ -457,7 +492,7 @@ export class SslcommerzService {
 
     let confirmedCount = 0;
     let flaggedCount = 0;
-    let failedCount = 0;
+    const failedCount = 0;
     let expiredCount = 0;
     const nowMs = clock.now().getTime();
 
@@ -492,8 +527,10 @@ export class SslcommerzService {
         );
 
         if (paidEntry) {
+          const currency =
+            paidEntry.currency_type || (paidEntry as unknown as { currency?: string }).currency || 'BDT';
           const gatewayPoisha = parseAmountToPoisha(paidEntry.amount);
-          if (gatewayPoisha !== Number(intent.amountPoisha)) {
+          if (currency !== 'BDT' || gatewayPoisha !== Number(intent.amountPoisha)) {
             await this.prisma.$tx(
               { orgId: intent.orgId, userId: WORKER_SYSTEM_USER_ID, role: null },
               async (tx) => {
@@ -513,25 +550,10 @@ export class SslcommerzService {
           continue;
         }
 
-        // Should fix 1: If there is no paid entry:
-        // Only mark failed if gateway explicitly reports FAILED or CANCELLED for this tran_id.
-        // If not found / still pending (e.g. at 30 min), leave as 'initiated' until 24h.
-        const hasFailedEntry = elements.some(
-          (e) => (e.status === 'FAILED' || e.status === 'CANCELLED') && e.tran_id === intent.tranId,
-        );
-
-        if (hasFailedEntry) {
-          await this.prisma.$tx(
-            { orgId: intent.orgId, userId: WORKER_SYSTEM_USER_ID, role: null },
-            async (tx) => {
-              await tx.paymentIntent.updateMany({
-                where: { id: intent.id, status: 'initiated' },
-                data: { status: 'failed' },
-              });
-            },
-          );
-          failedCount++;
-        } else if (ageHours >= 24) {
+        // If there is no paid entry:
+        // Do NOT mark failed at 30 minutes even if an attempt was declined, because the tenant
+        // can retry with another method on the same checkout session. Leave in 'initiated' until 24h.
+        if (ageHours >= 24) {
           // After 24 h with no VALID/VALIDATED, set expired
           await this.prisma.$tx(
             { orgId: intent.orgId, userId: WORKER_SYSTEM_USER_ID, role: null },
